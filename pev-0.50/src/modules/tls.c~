@@ -1,0 +1,40 @@
+#include "tls.h"
+
+bool pe_get_tls_callbacks(PE_FILE *pe)
+{
+	IMAGE_TLS_DIRECTORY32 *tlsdir;
+	int i;
+	unsigned tls_addr = 0;
+
+	pe_get_directories(pe);	
+	for (i=0; i < pe->num_directories; i++)
+	{
+		if (pe->directories_ptr[i].Size > 0)
+		{
+		    if (i==9) // 9 is TLS directory
+		    	tls_addr = pe->directories_ptr[i].VirtualAddress;
+		}
+	}
+	//printf("tls_addr: %#x\n", tls_addr);
+	
+	pe_get_sections(pe);
+	for (i=0; i < pe->num_sections; i++)
+	{
+		if (tls_addr > pe->sections_ptr[i].VirtualAddress &&
+		    tls_addr < (pe->sections_ptr[i].VirtualAddress + pe->sections_ptr[i].SizeOfRawData))
+		{
+			tlsdir = (IMAGE_TLS_DIRECTORY32 *) malloc(sizeof(tlsdir));
+			
+			fseek(pe->handle, tls_addr - pe->sections_ptr[i].VirtualAddress
+			+ pe->sections_ptr[i].PointerToRawData, SEEK_SET);
+			
+			fread(tlsdir, sizeof(tlsdir), 1, pe->handle);
+			
+			pe->tls_ptr = tlsdir;
+			
+			return true;			
+		}
+	}
+	
+	return false;
+}

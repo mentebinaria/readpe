@@ -6,32 +6,20 @@
 #include "include/output.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #define SPACES 30
 
 extern struct options config;
 
-// remove needle from haystack (does not work yet)
-char *strdel(const char *haystack, const char *needle)
+void delspace(char *str)
 {
-	// TODO: code it!
-	char *s = (char *) malloc(sizeof(char) * strlen(haystack));
-	int i = 0;
-	
-	if (!s) return NULL;
-	
-	while (*needle)
-	{
-		for (i=0; i < (int)strlen(haystack); i++)
-		{
-			if (haystack[i] != *needle)
-				s[i] = haystack[i];
-		}
-		needle++;
-	}
-	s[i+1] = '\0';
-	
-	return s; // remember to free it!
+	char *p1 = str, *p2 = str;
+
+	do  
+		while (*p2 == ' ')
+			p2++;
+	while (*p1++ = *p2++);
 }
 
 void to_text(char *field, char *value)
@@ -53,6 +41,8 @@ void to_csv(char *field, char *value)
 
 void to_xml(char *field, char *value)
 {
+	delspace(field);
+
 	if (value && field)
 		printf("<%s>%s</%s>\n", field, value, field);
 	else if (field)

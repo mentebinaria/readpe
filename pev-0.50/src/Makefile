@@ -1,7 +1,7 @@
 CC=gcc
 SRC=$(shell find . -name "*.c")
 WARNS=-W -Wall -Wextra
-CFLAGS=$(WARNS) -O2 -std=c99
+CFLAGS=$(WARNS) -std=c99
 DFLAGS=-D __DEBUG_MODE__
 
 all:

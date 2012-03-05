@@ -41,8 +41,7 @@ void print_optional_header(PE_FILE *pe)
 	"EFI driver with boot",
 	"EFI run-time driver",
 	"EFI ROM",
-	"XBOX"
-};
+	"XBOX"};
 	
 	output("Optional/Image header", NULL);
 	
@@ -105,7 +104,7 @@ void print_optional_header(PE_FILE *pe)
 		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfImage);
 		output("Size of image", s);
 		
-		sprintf(s, "%#d", pe->optional_ptr->_32->SizeOfHeaders);
+		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfHeaders);
 		output("Size of headers", s);
 		
 		sprintf(s, "%#x", pe->optional_ptr->_32->CheckSum);
@@ -247,7 +246,7 @@ int main(int argc, char *argv[])
 	
 	parse_options(argc, argv); // opções
 	
-	for (i=argc-1, fp=NULL; i>0; i--)
+	for (i=argc-1; i>0; i--)
 	{
 		fp = fopen(argv[i], "rb");
 		if (fp)

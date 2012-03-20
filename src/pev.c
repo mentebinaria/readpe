@@ -30,6 +30,21 @@ void print_sections(PE_FILE *pe)
 	char s[MAX_MSG];
 	int i;
 	
+	char *v[] = {
+	"contains executable code",
+   "contains initialized data",
+   "contains uninitialized data",
+   "contains comments/info",
+   "contains data referenced through the GP",
+   "contains extended relocations",
+   "can be discarded as needed",
+   "cannot be cached",
+   "is not pageable",
+   "can be shared in memory",
+   "is executable",
+   "is readable",
+   "is writable" };
+	
 	output("Sections", NULL);
 	
 	for (i=0; i < pe->num_sections; i++)
@@ -53,8 +68,86 @@ void print_sections(PE_FILE *pe)
 		snprintf(s, MAX_MSG, "%d", pe->sections_ptr[i]->NumberOfRelocations);
 		output("Relocations", s);
 		
-		snprintf(s, MAX_MSG, "%#x\n", pe->sections_ptr[i]->Characteristics);
+		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Characteristics);
 		output("Characteristics", s);
+		
+		if (pe->sections_ptr[i]->Characteristics & 0x20)
+		{
+				snprintf(s, MAX_MSG, "%s", v[0]);
+				output(NULL, s);
+		}
+
+		if (pe->sections_ptr[i]->Characteristics & 0x40)
+		{
+				snprintf(s, MAX_MSG, "%s", v[1]);
+				output(NULL, s);
+		}
+		
+		if (pe->sections_ptr[i]->Characteristics & 0x80)
+		{
+				snprintf(s, MAX_MSG, "%s", v[2]);
+				output(NULL, s);
+		}
+						
+		if (pe->sections_ptr[i]->Characteristics & 0x200)
+		{
+				snprintf(s, MAX_MSG, "%s", v[3]);
+				output(NULL, s);
+		}
+						
+		if (pe->sections_ptr[i]->Characteristics & 0x8000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[4]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x1000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[5]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x2000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[6]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x4000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[7]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x8000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[8]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x10000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[9]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x20000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[10]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x40000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[11]);
+				output(NULL, s);
+		}
+				
+		if (pe->sections_ptr[i]->Characteristics & 0x80000000)
+		{
+				snprintf(s, MAX_MSG, "%s", v[12]);
+				output(NULL, s);
+		}
 	}
 }
 
@@ -64,6 +157,9 @@ void print_directories(PE_FILE *pe)
 	int i;
 	
 	output("Data directories", NULL);
+	
+	if (! pe->directories_ptr)
+		return;
 	
 	for (i=0; i < pe->num_directories; i++)
 	{
@@ -417,6 +513,7 @@ int main(int argc, char *argv[])
 		else { EXIT_WITH_ERROR("unable to read Optional (Image) file header"); }
 	}
 	
+	// directories
 	if (config.dirs || config.all)
 	{
 		if (pe_get_directories(&pe))
@@ -424,6 +521,7 @@ int main(int argc, char *argv[])
 		else { EXIT_WITH_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
+	// sections
 	if (config.sections || config.all)
 	{
 		if (pe_get_sections(&pe))

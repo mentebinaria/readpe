@@ -1,5 +1,5 @@
 CC=gcc
-SRC=$(shell find . -name "*.c")
+SRC=$(shell find src/ -name "*.c")
 WARNS=-W -Wall -Wextra
 CFLAGS=$(WARNS) -std=c99
 DFLAGS=-D __DEBUG_MODE__

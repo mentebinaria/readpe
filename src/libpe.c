@@ -258,24 +258,26 @@ void pe_clear(PE_FILE *pe)
 		free(pe->optional_ptr);
 	}
 	
-	for (i=0; i < pe->num_sections; i++)
-	{
-		if (pe->sections_ptr[i])
-			free(pe->sections_ptr[i]);
-	}
-	
-	if (pe->sections_ptr)
-		free(pe->sections_ptr);
-		
-	for (i=0; i < pe->num_directories; i++)
-	{
-		if (pe->directories_ptr[i])
-			free(pe->directories_ptr[i]);
-	}
-	
 	if (pe->directories_ptr)
+	{
+		for (i=0; i < pe->num_directories; i++)
+		{
+			if (pe->directories_ptr[i])
+				free(pe->directories_ptr[i]);
+		}
 		free(pe->directories_ptr);
-			
+	}
+
+	if (pe->sections_ptr)
+	{
+		for (i=0; i < pe->num_sections; i++)
+		{
+			if (pe->sections_ptr[i])
+				free(pe->sections_ptr[i]);
+		}
+		free(pe->sections_ptr);
+	}
+		
 	if (pe->tls_ptr)
 		free(pe->tls_ptr);
 }

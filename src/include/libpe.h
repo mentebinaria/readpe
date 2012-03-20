@@ -8,7 +8,7 @@
 
 #define PE32 0x10b
 #define PE64 0x20b
-#define ROM 0x107
+//#define ROM 0x107
 
 typedef unsigned int DWORD;
 typedef int LONG;
@@ -54,8 +54,6 @@ typedef struct _RESOURCE_ENTRY
 	char name[20];
 	int code;
 } RESOURCE_ENTRY;
-
-
 
 typedef struct _MACHINE_ENTRY
 {
@@ -104,7 +102,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER_32 {
 	DWORD SizeOfUninitializedData;
 	DWORD AddressOfEntryPoint;
 	DWORD BaseOfCode;
-	DWORD BaseOfData;					/* only PE32 */
+	DWORD BaseOfData; // only PE32
 	DWORD ImageBase;
 	DWORD SectionAlignment;
 	DWORD FileAlignment;
@@ -126,10 +124,10 @@ typedef struct _IMAGE_OPTIONAL_HEADER_32 {
 	DWORD SizeOfHeapCommit;
 	DWORD LoaderFlags;
 	DWORD NumberOfRvaAndSizes;
-	/*IMAGE_DATA_DIRECTORY DataDirectory[];*/
+	// IMAGE_DATA_DIRECTORY DataDirectory[];
 } IMAGE_OPTIONAL_HEADER_32;
 
-/* note that some fields are quad-words */
+/* note some fields are quad-words */
 typedef struct _IMAGE_OPTIONAL_HEADER_64 {
 	WORD Magic;
 	BYTE MajorLinkerVersion;
@@ -158,9 +156,9 @@ typedef struct _IMAGE_OPTIONAL_HEADER_64 {
 	QWORD SizeOfStackCommit;
 	QWORD SizeOfHeapReserve;
 	QWORD SizeOfHeapCommit;
-	DWORD LoaderFlags;				/* must be zero */
+	DWORD LoaderFlags; /* must be zero */
 	DWORD NumberOfRvaAndSizes;
-	/* IMAGE_DATA_DIRECTORY DataDirectory[]; */
+	// IMAGE_DATA_DIRECTORY DataDirectory[];
 } IMAGE_OPTIONAL_HEADER_64;
 
 typedef struct _IMAGE_OPTIONAL_HEADER {
@@ -176,16 +174,16 @@ typedef struct _IMAGE_DATA_DIRECTORY {
 typedef struct _IMAGE_SECTION_HEADER {
 	BYTE Name[IMAGE_SIZEOF_SHORT_NAME];
 	union {
-		DWORD PhysicalAddress;     // same value as next field
+		DWORD PhysicalAddress; // same value as next field
 		DWORD VirtualSize;
 	} Misc;
 	DWORD VirtualAddress;
 	DWORD SizeOfRawData;
 	DWORD PointerToRawData;
-	DWORD PointerToRelocations;   // always zero in executables
-	DWORD PointerToLinenumbers;   // deprecated
+	DWORD PointerToRelocations; // always zero in executables
+	DWORD PointerToLinenumbers; // deprecated
 	WORD NumberOfRelocations;
-	WORD NumberOfLinenumbers;     // deprecated
+	WORD NumberOfLinenumbers; // deprecated
 	DWORD Characteristics;
 } IMAGE_SECTION_HEADER;
 
@@ -242,10 +240,10 @@ typedef struct tagVS_FIXEDFILEINFO {
 typedef struct _IMAGE_TLS_DIRECTORY32 {
 	DWORD StartAddressOfRawData;
 	DWORD EndAddressOfRawData;
-	DWORD AddressOfIndex;         /* PDWORD */
-	DWORD AddressOfCallBacks;     /* PIMAGE_TLS_CALLBACK */
+	DWORD AddressOfIndex;
+	DWORD AddressOfCallBacks; // PIMAGE_TLS_CALLBACK
 	DWORD SizeOfZeroFill;
-	DWORD Characteristics;        /* Reserved for future use */
+	DWORD Characteristics; // reserved for future use
 } IMAGE_TLS_DIRECTORY32;
 
 typedef struct _IMAGE_TLS_DIRECTORY64 {
@@ -275,13 +273,13 @@ typedef struct _PE_FILE
 	
 	// pointers (will be freed if needed)
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
-	IMAGE_SECTION_HEADER *sections_ptr;
-	IMAGE_DATA_DIRECTORY *directories_ptr;
+	IMAGE_SECTION_HEADER **sections_ptr;
+	IMAGE_DATA_DIRECTORY **directories_ptr;
 	IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	
 } PE_FILE;
 
-static const char *DIRECTORY_NAMES[] =
+static const char *directory_names[] =
 {
 	"Export Table", // 0
 	"Import Table",
@@ -300,7 +298,7 @@ static const char *DIRECTORY_NAMES[] =
 	"CLR Runtime Header", "" // 15
 };
 
-static const RESOURCE_ENTRY RESOURCE_TYPES[] = 
+static const RESOURCE_ENTRY resource_types[] = 
 {
 	{"RT_CURSOR", 1},
 	{"RT_BITMAP", 2},
@@ -335,7 +333,7 @@ void pe_clear(PE_FILE *pe);
 bool pe_init(PE_FILE *pe, FILE *handle);
 bool pe_get_sections(PE_FILE *pe);
 bool pe_get_directories(PE_FILE *pe);
-bool pe_get_optional(PE_FILE *pe);//, PE_OPTIONAL_HEADER *header);
+bool pe_get_optional(PE_FILE *pe);
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header);
 int  pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 

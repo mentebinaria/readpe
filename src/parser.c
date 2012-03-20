@@ -40,7 +40,7 @@ void parse_headers(const char *optarg)
 		config.dos = true;
 	else if (! strcmp(optarg, "coff"))
 		config.coff = true;
-	else if (! strcmp(optarg, "opt"))
+	else if (! strcmp(optarg, "optional"))
 		config.opt = true;
 	else
 		EXIT_WITH_ERROR("invalid header option");
@@ -61,7 +61,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 	
 	/* Paramters for getopt_long() function */
-	static const char short_options[] = "Ah:s:d:e:f:rHv";
+	static const char short_options[] = "Ah:s:D:e:f:drHv";
 
 	static const struct option long_options[] = {
 		{"all",              no_argument,       NULL, 'A'},
@@ -70,7 +70,8 @@ void parse_options(int argc, char *argv[])
 		{"header",           required_argument, NULL, 'h'},
 		{"imports",          required_argument, NULL, 'i'},
 		{"section",          required_argument, NULL, 's'},
-		{"disassembly",      required_argument, NULL, 'd'},
+		{"disasm",           required_argument, NULL, 'D'},
+		{"dirs",             no_argument,       NULL, 'd'},
 		{"extract-resource", required_argument, NULL, 'e'},
 		{"format",           required_argument, NULL, 'f'},
 		{"resources",        no_argument,       NULL, 'r'},
@@ -87,6 +88,7 @@ void parse_options(int argc, char *argv[])
 	config.product = false;
 	config.resources = false;
 	config.sections = false;
+	config.dirs = false;
 	config.format = TEXT;
 	
 	if (argc == 2)
@@ -108,6 +110,9 @@ void parse_options(int argc, char *argv[])
 				
 			case 'c':
 				config.coff = true; break;
+				
+			case 'd':
+				config.dirs = true; break;
 				
 			case 'o':
 				config.opt = true; break;

@@ -7,8 +7,8 @@
 #include "include/libpe.h"
 #include "include/output.h"
 #include "include/parser.h"
-/* modules */
-#include "modules/tls.h"
+
+#define MAX_MSG 50
 
 extern struct options config;
 
@@ -25,9 +25,61 @@ char *dec2bin(unsigned int dec, char *bin, int bits)
 	return bin;
 }
 
+void print_sections(PE_FILE *pe)
+{
+	char s[MAX_MSG];
+	int i;
+	
+	output("Sections", NULL);
+	
+	for (i=0; i < pe->num_sections; i++)
+	{
+		snprintf(s, MAX_MSG, "%s", pe->sections_ptr[i]->Name);
+		output("Name", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->VirtualAddress);
+		output("Virtual Address", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Misc.PhysicalAddress);
+		output("Physical Address", s);
+		
+		snprintf(s, MAX_MSG, "%#x (%d bytes)", pe->sections_ptr[i]->SizeOfRawData,
+		pe->sections_ptr[i]->SizeOfRawData);
+		output("Size", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->PointerToRawData);
+		output("Pointer To Data", s);
+		
+		snprintf(s, MAX_MSG, "%d", pe->sections_ptr[i]->NumberOfRelocations);
+		output("Relocations", s);
+		
+		snprintf(s, MAX_MSG, "%#x\n", pe->sections_ptr[i]->Characteristics);
+		output("Characteristics", s);
+	}
+}
+
+void print_directories(PE_FILE *pe)
+{
+	char s[MAX_MSG];
+	int i;
+	
+	output("Data directories", NULL);
+	
+	for (i=0; i < pe->num_directories; i++)
+	{
+		if (pe->directories_ptr[i]->Size)
+		{
+			snprintf(s, MAX_MSG, "%#x (%d bytes)",
+			        pe->directories_ptr[i]->VirtualAddress,
+			        pe->directories_ptr[i]->Size);
+			output((char *) directory_names[i], s);
+		}
+	}
+}
+
 void print_optional_header(PE_FILE *pe)
 {
-	char s[50];
+	char s[MAX_MSG];
 	int subsystem;
 	
 	static const char *subs_desc[] = {
@@ -47,93 +99,174 @@ void print_optional_header(PE_FILE *pe)
 	
 	if (pe->optional_ptr->_32)
 	{
-		sprintf(s, "%#x (%s)", pe->optional_ptr->_32->Magic, "PE32");
+		snprintf(s, MAX_MSG, "%#x (%s)", pe->optional_ptr->_32->Magic, "PE32");
 		output("Magic number", s);
 		
-		sprintf(s, "%d", pe->optional_ptr->_32->MajorLinkerVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorLinkerVersion);
 		output("Linker major version", s);
 		
-		sprintf(s, "%d", pe->optional_ptr->_32->MinorLinkerVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorLinkerVersion);
 		output("Linker minor version", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfCode);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfCode);
 		output("Size of .text secion", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfInitializedData);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfInitializedData);
 		output("Size of .data secion", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfUninitializedData);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfUninitializedData);
 		output("Size of .bss secion", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->AddressOfEntryPoint);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->AddressOfEntryPoint);
 		output("Entrypoint", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->BaseOfCode);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->BaseOfCode);
 		output("Address of .text section", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->BaseOfData);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->BaseOfData);
 		output("Address of .data section", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->ImageBase);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->ImageBase);
 		output("ImageBase", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->SectionAlignment);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SectionAlignment);
 		output("Alignment of sections", s);
 				
-		sprintf(s, "%#x", pe->optional_ptr->_32->FileAlignment);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->FileAlignment);
 		output("Alignment factor", s);
 				
-		sprintf(s, "%d", pe->optional_ptr->_32->MajorOperatingSystemVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorOperatingSystemVersion);
 		output("Major version of required OS", s);
 				
-		sprintf(s, "%d", pe->optional_ptr->_32->MinorOperatingSystemVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorOperatingSystemVersion);
 		output("Minor version of required OS", s);
 				
-		sprintf(s, "%d", pe->optional_ptr->_32->MajorImageVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorImageVersion);
 		output("Major version of image", s);
 		
-		sprintf(s, "%d", pe->optional_ptr->_32->MinorImageVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorImageVersion);
 		output("Minor version of image", s);
 		
-		sprintf(s, "%d", pe->optional_ptr->_32->MajorSubsystemVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorSubsystemVersion);
 		output("Major version of subsystem", s);
 		
-		sprintf(s, "%d", pe->optional_ptr->_32->MinorSubsystemVersion);
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorSubsystemVersion);
 		output("Minor version of subsystem", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfImage);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfImage);
 		output("Size of image", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfHeaders);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfHeaders);
 		output("Size of headers", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->CheckSum);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->CheckSum);
 		output("Checksum", s);
 		
 		subsystem = pe->optional_ptr->_32->Subsystem;
-		sprintf(s, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
+		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->DllCharacteristics);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->DllCharacteristics);
 		output("DLL characteristics", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfStackReserve);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfStackReserve);
 		output("Size of stack to reserve", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfStackCommit);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfStackCommit);
 		output("Size of stack to commit", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfHeapReserve);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfHeapReserve);
 		output("Size of heap space to reserve", s);
 		
-		sprintf(s, "%#x", pe->optional_ptr->_32->SizeOfHeapCommit);
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfHeapCommit);
+		output("Size of heap space to commit", s);
+	}
+	else if (pe->optional_ptr->_64)
+	{
+		snprintf(s, MAX_MSG, "%#x (%s)", pe->optional_ptr->_64->Magic, "PE32+");
+		output("Magic number", s);
+		
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorLinkerVersion);
+		output("Linker major version", s);
+		
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorLinkerVersion);
+		output("Linker minor version", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfCode);
+		output("Size of .text secion", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfInitializedData);
+		output("Size of .data secion", s);
+				
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfUninitializedData);
+		output("Size of .bss secion", s);
+				
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
+		output("Entrypoint", s);
+				
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->BaseOfCode);
+		output("Address of .text section", s);
+				
+		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->ImageBase);
+		output("ImageBase", s);
+				
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SectionAlignment);
+		output("Alignment of sections", s);
+				
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->FileAlignment);
+		output("Alignment factor", s);
+				
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorOperatingSystemVersion);
+		output("Major version of required OS", s);
+				
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorOperatingSystemVersion);
+		output("Minor version of required OS", s);
+				
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorImageVersion);
+		output("Major version of image", s);
+		
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorImageVersion);
+		output("Minor version of image", s);
+		
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorSubsystemVersion);
+		output("Major version of subsystem", s);
+		
+		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorSubsystemVersion);
+		output("Minor version of subsystem", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfImage);
+		output("Size of image", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfHeaders);
+		output("Size of headers", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->CheckSum);
+		output("Checksum", s);
+		
+		subsystem = pe->optional_ptr->_64->Subsystem;
+		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
+		output("Subsystem required", s);
+		
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->DllCharacteristics);
+		output("DLL characteristics", s);
+		
+		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfStackReserve);
+		output("Size of stack to reserve", s);
+		
+		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfStackCommit);
+		output("Size of stack to commit", s);
+		
+		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfHeapReserve);
+		output("Size of heap space to reserve", s);
+		
+		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfHeapCommit);
 		output("Size of heap space to commit", s);
 	}
 }
 
 void print_coff_header(IMAGE_COFF_HEADER *header)
 {
-	char s[50];
+	char s[MAX_MSG];
 	char time[40];
 	register int i, j;
 	
@@ -157,103 +290,98 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	
 	output("COFF/File header", NULL);
 	
-	sprintf(s, "%#x %s", header->Machine, "INTEL");
+	snprintf(s, MAX_MSG, "%#x %s", header->Machine, "INTEL");
 	output("Machine", s);
 	
-	sprintf(s, "%d", header->NumberOfSections);
+	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 	
 	strftime(time, 40, "%a, %d %b %Y %H:%M:%S UTC", gmtime((time_t *) & header->TimeDateStamp));
-	sprintf(s, "%d (%s)", header->TimeDateStamp, time);
+	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, time);
 	output("Date/time stamp", s);
 
-	sprintf(s, "%#x", header->PointerToSymbolTable);
+	snprintf(s, MAX_MSG, "%#x", header->PointerToSymbolTable);
 	output("Symbol Table offset", s);
 	
-	sprintf(s, "%d", header->NumberOfSymbols);
+	snprintf(s, MAX_MSG, "%d", header->NumberOfSymbols);
 	output("Number of symbols", s);
 	
-	sprintf(s, "%#x", header->SizeOfOptionalHeader);
+	snprintf(s, MAX_MSG, "%#x", header->SizeOfOptionalHeader);
 	output("Size of optional header", s);
 	
-	sprintf(s, "%#x", header->Characteristics);
+	snprintf(s, MAX_MSG, "%#x", header->Characteristics);
 	output("Characteristics", s);
 	
 	for (i=1, j=0; i<0x8000; i<<=1, j++)
-		if (header->Characteristics & i) output(NULL, (char*)flags[j]);
+	{
+		if (header->Characteristics & i)
+			output(NULL, (char*)flags[j]);
+	}
 }
 
 void print_dos_header(IMAGE_DOS_HEADER *header)
 {
-	char s[50];
+	char s[MAX_MSG];
 	
 	output("DOS Header", NULL);
 	
-	sprintf(s, "%#x (MZ)", header->e_magic);
+	snprintf(s, MAX_MSG, "%#x (MZ)", header->e_magic);
 	output("Magic number", s);
 	
-	sprintf(s, "%d", header->e_cblp);
+	snprintf(s, MAX_MSG, "%d", header->e_cblp);
 	output("Bytes in last page", s);
 	
-	sprintf(s, "%d", header->e_cp);
+	snprintf(s, MAX_MSG, "%d", header->e_cp);
 	output("Pages in file", s);
 		
-	sprintf(s, "%d", header->e_crlc);
+	snprintf(s, MAX_MSG, "%d", header->e_crlc);
 	output("Relocations", s);
 		
-	sprintf(s, "%d", header->e_cparhdr);
+	snprintf(s, MAX_MSG, "%d", header->e_cparhdr);
 	output("Size of header in paragraphs", s);
 		
-	sprintf(s, "%d", header->e_minalloc);
+	snprintf(s, MAX_MSG, "%d", header->e_minalloc);
 	output("Minimum extra paragraphs", s);
 		
-	sprintf(s, "%d", header->e_maxalloc);
+	snprintf(s, MAX_MSG, "%d", header->e_maxalloc);
 	output("Maximum extra paragraphs", s);
 		
-	sprintf(s, "%#x", header->e_ss);
+	snprintf(s, MAX_MSG, "%#x", header->e_ss);
 	output("Initial (relative) SS value", s);
 	
-	sprintf(s, "%#x", header->e_sp);
+	snprintf(s, MAX_MSG, "%#x", header->e_sp);
 	output("Initial SP value", s);
 		
-	sprintf(s, "%#x", header->e_ip);
+	snprintf(s, MAX_MSG, "%#x", header->e_ip);
 	output("Initial IP value", s);
 		
-	sprintf(s, "%#x", header->e_cs);
+	snprintf(s, MAX_MSG, "%#x", header->e_cs);
 	output("Initial (relative) CS value", s);
 		
-	sprintf(s, "%#x", header->e_lfarlc);
+	snprintf(s, MAX_MSG, "%#x", header->e_lfarlc);
 	output("Address of relocation table", s);
 		
-	sprintf(s, "%#x", header->e_ovno);
+	snprintf(s, MAX_MSG, "%#x", header->e_ovno);
 	output("Overlay number", s);
 		
-	sprintf(s, "%#x", header->e_oemid);
+	snprintf(s, MAX_MSG, "%#x", header->e_oemid);
 	output("OEM identifier", s);
 		
-	sprintf(s, "%#x", header->e_oeminfo);
+	snprintf(s, MAX_MSG, "%#x", header->e_oeminfo);
 	output("OEM information", s);
 		
-	sprintf(s, "%#x", header->e_lfanew);
+	snprintf(s, MAX_MSG, "%#x", header->e_lfanew);
 	output("PE header offset", s);
 }
 
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
-	FILE *fp;
-	int i;
+	FILE *fp = NULL;
 	
 	parse_options(argc, argv); // opções
 	
-	for (i=argc-1; i>0; i--)
-	{
-		fp = fopen(argv[i], "rb");
-		if (fp)
-			break;
-	}
-	
-	if (fp == NULL)
+	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_WITH_ERROR("file not found or unreadable");
 	
 	pe_init(&pe, fp); // inicializa o struct pe
@@ -287,6 +415,20 @@ int main(int argc, char *argv[])
 		if (pe_get_optional(&pe))
 			print_optional_header(&pe);
 		else { EXIT_WITH_ERROR("unable to read Optional (Image) file header"); }
+	}
+	
+	if (config.dirs || config.all)
+	{
+		if (pe_get_directories(&pe))
+			print_directories(&pe);
+		else { EXIT_WITH_ERROR("unable to read the Directories entry from Optional header"); }
+	}
+
+	if (config.sections || config.all)
+	{
+		if (pe_get_sections(&pe))
+			print_sections(&pe);
+		else { EXIT_WITH_ERROR("unable to read Section header"); }
 	}
 
 	// libera a memória

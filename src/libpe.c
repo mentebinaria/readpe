@@ -35,9 +35,9 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	pe_get_sections(pe);
 	for (i=0; i < pe->num_sections; i++)
 	{
-		if (memcmp(pe->sections_ptr[i].Name, ".rsrc", 5) == 0)
+		if (memcmp(pe->sections_ptr[i]->Name, ".rsrc", 5) == 0)
 		{
-			fseek(pe->handle, pe->sections_ptr[i].PointerToRawData, SEEK_SET);
+			fseek(pe->handle, pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
 			fread(dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
 			return true;			
 		}
@@ -45,6 +45,7 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	return false;
 }
 
+/*
 bool pe_get_tls_callbacks(PE_FILE *pe)
 {
 	IMAGE_TLS_DIRECTORY32 *tlsdir;
@@ -80,34 +81,41 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 			return true;			
 		}
 	}
-	
+
 	return false;
 }
+*/
 
 bool pe_get_sections(PE_FILE *pe)
 {
-	IMAGE_SECTION_HEADER *sections;
+	IMAGE_SECTION_HEADER **sections;
+	int i;
 	
 	if (pe->sections_ptr)
 		return true;
 	
 	if (!pe->addr_sections || !pe->num_sections)
-	{
 		pe_get_directories(pe);
+
+	fseek(pe->handle, pe->addr_sections, SEEK_SET);
+
+	sections = (IMAGE_SECTION_HEADER **) malloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
+	
+	for (i=0; i < pe->num_sections; i++)
+	{
+		sections[i] = (IMAGE_SECTION_HEADER *) malloc(sizeof(IMAGE_SECTION_HEADER));
+		fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle);
 	}
 	
-	sections = (IMAGE_SECTION_HEADER *) malloc(sizeof(IMAGE_SECTION_HEADER) * pe->num_sections);
 	pe->sections_ptr = sections;
-	
-	fseek(pe->handle, pe->addr_sections, SEEK_SET);
-	fread(sections, sizeof(IMAGE_SECTION_HEADER), pe->num_sections, pe->handle);
 		
 	return true;
 }
 
 bool pe_get_directories(PE_FILE *pe)
 {
-	IMAGE_DATA_DIRECTORY *dirs;
+	IMAGE_DATA_DIRECTORY **dirs;
+	int i;
 
 	if (pe->directories_ptr)
 	{
@@ -122,25 +130,29 @@ bool pe_get_directories(PE_FILE *pe)
 
 	fseek(pe->handle, pe->addr_directories, SEEK_SET);
 
-	dirs = (IMAGE_DATA_DIRECTORY *) malloc(sizeof(IMAGE_DATA_DIRECTORY) * pe->num_directories);
+	dirs = (IMAGE_DATA_DIRECTORY **) malloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
 	
-	fread(dirs, sizeof(IMAGE_DATA_DIRECTORY), pe->num_directories, pe->handle);
-
+	for (i=0; i < pe->num_directories; i++)
+	{
+		dirs[i] = (IMAGE_DATA_DIRECTORY *) malloc(sizeof(IMAGE_DATA_DIRECTORY));
+		fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle);
+	}
+		
 	pe->addr_sections = ftell(pe->handle);
 	pe->directories_ptr = dirs;
 
 	return true;
 }
 
-bool pe_get_optional(PE_FILE *pe)//, IMAGE_OPTIONAL_HEADER *header)
+bool pe_get_optional(PE_FILE *pe)
 {
 	IMAGE_OPTIONAL_HEADER *header;
+	
+	if (!pe)
+		return false;
 
 	if (pe->optional_ptr)
-	{
-//		header = pe->optional_ptr;
 		return true;
-	}
 
 	if (!pe->addr_optional)
 	{
@@ -229,7 +241,9 @@ bool ispe(PE_FILE *pe)
 }
 
 void pe_clear(PE_FILE *pe)
-{	
+{
+	int i;
+
 	if (pe->handle)
 		fclose(pe->handle);
 	
@@ -244,12 +258,24 @@ void pe_clear(PE_FILE *pe)
 		free(pe->optional_ptr);
 	}
 	
+	for (i=0; i < pe->num_sections; i++)
+	{
+		if (pe->sections_ptr[i])
+			free(pe->sections_ptr[i]);
+	}
+	
 	if (pe->sections_ptr)
 		free(pe->sections_ptr);
 		
+	for (i=0; i < pe->num_directories; i++)
+	{
+		if (pe->directories_ptr[i])
+			free(pe->directories_ptr[i]);
+	}
+	
 	if (pe->directories_ptr)
 		free(pe->directories_ptr);
-		
+			
 	if (pe->tls_ptr)
 		free(pe->tls_ptr);
 }

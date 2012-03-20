@@ -12,16 +12,6 @@
 
 extern struct options config;
 
-void delspace(char *str)
-{
-	char *p1 = str, *p2 = str;
-
-	do  
-		while (*p2 == ' ')
-			p2++;
-	while (*p1++ = *p2++);
-}
-
 void to_text(char *field, char *value)
 {
 	size_t field_size = field ? strlen(field) : 0;
@@ -36,13 +26,13 @@ void to_text(char *field, char *value)
 
 void to_csv(char *field, char *value)
 {
+	// TODO validate this code
 	printf("%s,%s\n", field, value);
 }
 
 void to_xml(char *field, char *value)
 {
-	delspace(field);
-
+	// TODO remove spaces from xml fields name
 	if (value && field)
 		printf("<%s>%s</%s>\n", field, value, field);
 	else if (field)
@@ -51,6 +41,7 @@ void to_xml(char *field, char *value)
 
 void to_html(char *field, char *value)
 {
+	// TODO validate this code
 	printf("<p>%s: %s</p>\n", field, value);
 }
 

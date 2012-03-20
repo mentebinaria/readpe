@@ -30,6 +30,7 @@ struct options {
 	bool dos;
 	bool coff;
 	bool opt;
+	bool dirs;
 	bool sections;
 	bool resources;
 	bool product;

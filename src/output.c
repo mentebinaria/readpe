@@ -1,14 +1,18 @@
-#define TEXT 1
-#define HTML 2
-#define XML 3
-#define CSV 4
-
+/* OUTPUT FORMATS */
 #include "include/output.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
 #define SPACES 30
+#define TEXT 1
+#define HTML 2
+#define XML 3
+#define CSV 4
+
+
+
+
 
 extern struct options config;
 

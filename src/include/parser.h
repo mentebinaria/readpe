@@ -31,10 +31,10 @@ struct options {
 	bool coff;
 	bool opt;
 	bool dirs;
-	bool sections;
 	bool resources;
 	bool product;
 	bool all_headers;
+	bool all_sections;
 	short format;
 };
 

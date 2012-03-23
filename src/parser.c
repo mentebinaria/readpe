@@ -28,10 +28,10 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: pev [-cdhops] <file>\n\n");
+	printf("Usage: pev [OPTIONS] <file>\n\n");
 	printf("pev will get information about PE32 binaries and display \
 it on standard output.\n\n");
-	printf("All switches are optional, but --all is used by default.\n\n");
+	printf("All switches are optional.\n");
 }
 
 void parse_headers(const char *optarg)
@@ -61,7 +61,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 	
 	/* Paramters for getopt_long() function */
-	static const char short_options[] = "Ah:s:D:e:f:drHv";
+	static const char short_options[] = "AHSh:iD:de:f:rv";
 
 	static const struct option long_options[] = {
 		{"all",              no_argument,       NULL, 'A'},
@@ -69,14 +69,13 @@ void parse_options(int argc, char *argv[])
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
 		{"imports",          required_argument, NULL, 'i'},
-		{"section",          required_argument, NULL, 's'},
 		{"disasm",           required_argument, NULL, 'D'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"extract-resource", required_argument, NULL, 'e'},
 		{"format",           required_argument, NULL, 'f'},
 		{"resources",        no_argument,       NULL, 'r'},
-		{"product-version",  no_argument,       NULL,  0 },
-		{"help",             no_argument,       NULL,  0 },
+		{"product-version",  no_argument,       NULL,  8 },
+		{"help",             no_argument,       NULL,  9 },
 		{"version",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};
@@ -87,7 +86,8 @@ void parse_options(int argc, char *argv[])
 	config.opt = false;
 	config.product = false;
 	config.resources = false;
-	config.sections = false;
+	config.all_sections = false;
+	config.all_headers = false;
 	config.dirs = false;
 	config.format = TEXT;
 	
@@ -117,8 +117,8 @@ void parse_options(int argc, char *argv[])
 			case 'o':
 				config.opt = true; break;
 				
-			case 's':
-				config.sections = true;	break;
+			case 'S':
+				config.all_sections = true; break;
 				
 			case 'r':
 				config.resources = true; break; 	/* ─┬─ ├─ ─ */
@@ -136,9 +136,12 @@ void parse_options(int argc, char *argv[])
 			case 'f':
 				parse_format(optarg); break;
 
-				
+			case 9:
+				usage();
+				exit(EXIT_SUCCESS);
+
 			default:
-				fprintf(stderr, "%s: %s\n", PACKAGE, "try '--help' for more information");
+				fprintf(stderr, "pev: try '--help' for more information\n");
 				exit(EXIT_FAILURE);
 		}
 	}

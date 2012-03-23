@@ -240,7 +240,7 @@ bool ispe(PE_FILE *pe)
 	return true;
 }
 
-void pe_clear(PE_FILE *pe)
+void pe_deinit(PE_FILE *pe)
 {
 	int i;
 

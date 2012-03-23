@@ -486,7 +486,7 @@ int main(int argc, char *argv[])
 		EXIT_WITH_ERROR("not a valid PE file");
 		
 	// dos header
-	if (config.dos || config.all_headers)
+	if (config.dos || config.all_headers || config.all)
 	{
 		IMAGE_DOS_HEADER dos;
 		
@@ -496,7 +496,7 @@ int main(int argc, char *argv[])
 	}
 	
 	// coff/file header
-	if (config.coff || config.all_headers)
+	if (config.coff || config.all_headers || config.all)
 	{
 		IMAGE_COFF_HEADER coff;
 		
@@ -506,7 +506,7 @@ int main(int argc, char *argv[])
 	}
 	
 	// optional header
-	if (config.opt || config.all_headers)
+	if (config.opt || config.all_headers || config.all)
 	{
 		if (pe_get_optional(&pe))
 			print_optional_header(&pe);
@@ -522,7 +522,7 @@ int main(int argc, char *argv[])
 	}
 
 	// sections
-	if (config.sections || config.all)
+	if (config.all_sections || config.all)
 	{
 		if (pe_get_sections(&pe))
 			print_sections(&pe);
@@ -530,6 +530,6 @@ int main(int argc, char *argv[])
 	}
 
 	// libera a memória
-	pe_clear(&pe);
+	pe_deinit(&pe);
 	return 0;
 }

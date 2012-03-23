@@ -327,7 +327,7 @@ static const RESOURCE_ENTRY resource_types[] =
 
 // basic functions
 bool ispe(PE_FILE *pe);
-void pe_clear(PE_FILE *pe);
+void pe_deinit(PE_FILE *pe);
 
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);

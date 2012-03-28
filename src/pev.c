@@ -68,7 +68,7 @@ void print_sections(PE_FILE *pe)
 		
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Characteristics);
 		output("Characteristics", s);
-		
+
 		if (pe->sections_ptr[i]->Characteristics & 0x20)
 		{
 				snprintf(s, MAX_MSG, "%s", v[0]);
@@ -77,43 +77,43 @@ void print_sections(PE_FILE *pe)
 
 		if (pe->sections_ptr[i]->Characteristics & 0x40)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[1]);
+				snprintf(s, MAX_MSG, "%s", v[1]);
 				output(NULL, s);
 		}
 		
 		if (pe->sections_ptr[i]->Characteristics & 0x80)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[2]);
+				snprintf(s, MAX_MSG, "%s", v[2]);
 				output(NULL, s);
 		}
 						
 		if (pe->sections_ptr[i]->Characteristics & 0x200)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[3]);
+				snprintf(s, MAX_MSG, "%s", v[3]);
 				output(NULL, s);
 		}
 						
 		if (pe->sections_ptr[i]->Characteristics & 0x8000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[4]);
+				snprintf(s, MAX_MSG, "%s", v[4]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x1000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[5]);
+				snprintf(s, MAX_MSG, "%s", v[5]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x2000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[6]);
+				snprintf(s, MAX_MSG, "%s", v[6]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x4000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[7]);
+				snprintf(s, MAX_MSG, "%s", v[7]);
 				output(NULL, s);
 		}
 				
@@ -125,25 +125,25 @@ void print_sections(PE_FILE *pe)
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x10000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[9]);
+				snprintf(s, MAX_MSG, "%s", v[9]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x20000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[10]);
+				snprintf(s, MAX_MSG, "%s", v[10]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x40000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[11]);
+				snprintf(s, MAX_MSG, "%s", v[11]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x80000000)
 		{
-				snprintf(s, MAX_MSG, "%s,", v[12]);
+				snprintf(s, MAX_MSG, "%s", v[12]);
 				output(NULL, s);
 		}
 	}

@@ -28,10 +28,10 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: pev [OPTIONS] <file>\n\n");
+	printf("Usage: pev OPTIONS FILE\n\n");
 	printf("pev will get information about PE32 binaries and display \
 it on standard output.\n\n");
-	printf("All switches are optional.\n");
+	printf("Use -A or --all switch for full output.\n");
 }
 
 void parse_headers(const char *optarg)
@@ -52,7 +52,7 @@ void parse_format(const char *optarg)
 		config.format = TEXT;
 	else if (! strcmp(optarg, "xml"))
 		config.format = XML;
-    else if (! strcmp(optarg, "csv"))
+   else if (! strcmp(optarg, "csv"))
 		config.format = CSV;
 	else
 		EXIT_WITH_ERROR("invalid format option");
@@ -94,9 +94,6 @@ void parse_options(int argc, char *argv[])
 	config.dirs = false;
 	config.format = TEXT;
 	
-	if (argc == 2)
-		config.all = true;
-		
 	while ((c = getopt_long(argc, argv, short_options,
 			long_options, &ind)))
 	{

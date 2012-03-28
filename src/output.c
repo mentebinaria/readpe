@@ -1,22 +1,17 @@
-/* OUTPUT FORMATS */
-
 #include "include/output.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
 
 #define SPACES 30
+
+/* OUTPUT FORMATS */
 #define TEXT 1
 #define HTML 2
 #define XML 3
 #define CSV 4
 
-
-
-
-
 extern struct options config;
-const char *prev_field;
 
 void to_text(char *field, char *value)
 {
@@ -25,29 +20,24 @@ void to_text(char *field, char *value)
 	if (field && value)
 		printf("%s:%*c%s\n", field, (int) (SPACES-field_size), ' ', value);
 	else if (field)
-		printf("\n%*c** %s **\n",(int) (SPACES-field_size)/2+1, ' ', field);
+		printf("\n%s\n", field);
 	else if (value)
 		printf("%*c%s\n", (int) (SPACES-field_size+1), ' ', value);
 }
 
 void to_csv(const char *field, char *value)
 {
-    if (prev_field && field)
-    {
-        if (!strcmp(field, prev_field))
-            printf("%s,", value);
-    }
-    
-    printf("%s,%s\n", field ? field : "", value ? value : "\n");
-        
-    prev_field = field;
-    
-
+	if (field && value)
+		printf("%s,%s\n", field, value);
+	else if (field)
+		printf("\n%s\n", field);
+	else if (value)
+		printf(",%s\n", value);
 }
 
 void to_xml(char *field, char *value)
 {
-	// TODO remove spaces from xml fields name
+	// TODO output a valid xml
 	if (value && field)
 		printf("<%s>%s</%s>\n", field, value, field);
 	else if (field)
@@ -56,7 +46,7 @@ void to_xml(char *field, char *value)
 
 void to_html(char *field, char *value)
 {
-	// TODO validate this code
+	// TODO output a valid html
 	printf("<p>%s: %s</p>\n", field, value);
 }
 

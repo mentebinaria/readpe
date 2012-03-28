@@ -35,10 +35,10 @@ void to_csv(const char *field, char *value)
     if (prev_field && field)
     {
         if (!strcmp(field, prev_field))
-            printf("%s,\t", value);
+            printf("%s,", value);
     }
     
-    printf("%s,\t%s\n", field ? field : "", value ? value : "\n");
+    printf("%s,%s\n", field ? field : "", value ? value : "\n");
         
     prev_field = field;
     

@@ -52,6 +52,8 @@ void parse_format(const char *optarg)
 		config.format = TEXT;
 	else if (! strcmp(optarg, "xml"))
 		config.format = XML;
+    else if (! strcmp(optarg, "csv"))
+		config.format = CSV;
 	else
 		EXIT_WITH_ERROR("invalid format option");
 }
@@ -62,6 +64,7 @@ void parse_options(int argc, char *argv[])
 	
 	/* Paramters for getopt_long() function */
 	static const char short_options[] = "AHSh:iD:de:f:rv";
+
 
 	static const struct option long_options[] = {
 		{"all",              no_argument,       NULL, 'A'},

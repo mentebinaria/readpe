@@ -1,7 +1,4 @@
-#define TEXT 1
-#define HTML 2
-#define XML 3
-#define CSV 4
+/* OUTPUT FORMATS */
 
 #include "include/output.h"
 #include <string.h>
@@ -9,8 +6,17 @@
 #include <ctype.h>
 
 #define SPACES 30
+#define TEXT 1
+#define HTML 2
+#define XML 3
+#define CSV 4
+
+
+
+
 
 extern struct options config;
+const char *prev_field;
 
 void to_text(char *field, char *value)
 {
@@ -24,10 +30,19 @@ void to_text(char *field, char *value)
 		printf("%*c%s\n", (int) (SPACES-field_size+1), ' ', value);
 }
 
-void to_csv(char *field, char *value)
+void to_csv(const char *field, char *value)
 {
-	// TODO validate this code
-	printf("%s,%s\n", field, value);
+    if (prev_field && field)
+    {
+        if (!strcmp(field, prev_field))
+            printf("%s,", value);
+    }
+    
+    printf("%s,%s\n", field ? field : "", value ? value : "\n");
+        
+    prev_field = field;
+    
+
 }
 
 void to_xml(char *field, char *value)

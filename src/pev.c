@@ -14,9 +14,7 @@ extern struct options config;
 
 char *dec2bin(unsigned int dec, char *bin, int bits)
 {
-	// por Gabriel Duarte <confusosk8@gmail.com>
 	int i;
-
 	for(i=0; i<bits; i++)
 		bin[bits - i - 1] = (dec & (0x1 << i)) ? '1' : '0';
 
@@ -31,7 +29,7 @@ void print_sections(PE_FILE *pe)
 	int i;
 	
 	char *v[] = {
-	"contains executable code",
+   "contains executable code",
    "contains initialized data",
    "contains uninitialized data",
    "contains comments/info",
@@ -79,43 +77,43 @@ void print_sections(PE_FILE *pe)
 
 		if (pe->sections_ptr[i]->Characteristics & 0x40)
 		{
-				snprintf(s, MAX_MSG, "%s", v[1]);
+				snprintf(s, MAX_MSG, "%s,", v[1]);
 				output(NULL, s);
 		}
 		
 		if (pe->sections_ptr[i]->Characteristics & 0x80)
 		{
-				snprintf(s, MAX_MSG, "%s", v[2]);
+				snprintf(s, MAX_MSG, "%s,", v[2]);
 				output(NULL, s);
 		}
 						
 		if (pe->sections_ptr[i]->Characteristics & 0x200)
 		{
-				snprintf(s, MAX_MSG, "%s", v[3]);
+				snprintf(s, MAX_MSG, "%s,", v[3]);
 				output(NULL, s);
 		}
 						
 		if (pe->sections_ptr[i]->Characteristics & 0x8000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[4]);
+				snprintf(s, MAX_MSG, "%s,", v[4]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x1000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[5]);
+				snprintf(s, MAX_MSG, "%s,", v[5]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x2000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[6]);
+				snprintf(s, MAX_MSG, "%s,", v[6]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x4000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[7]);
+				snprintf(s, MAX_MSG, "%s,", v[7]);
 				output(NULL, s);
 		}
 				
@@ -127,25 +125,25 @@ void print_sections(PE_FILE *pe)
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x10000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[9]);
+				snprintf(s, MAX_MSG, "%s,", v[9]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x20000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[10]);
+				snprintf(s, MAX_MSG, "%s,", v[10]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x40000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[11]);
+				snprintf(s, MAX_MSG, "%s,", v[11]);
 				output(NULL, s);
 		}
 				
 		if (pe->sections_ptr[i]->Characteristics & 0x80000000)
 		{
-				snprintf(s, MAX_MSG, "%s", v[12]);
+				snprintf(s, MAX_MSG, "%s,", v[12]);
 				output(NULL, s);
 		}
 	}
@@ -392,7 +390,7 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 	
-	strftime(time, 40, "%a, %d %b %Y %H:%M:%S UTC", gmtime((time_t *) & header->TimeDateStamp));
+	strftime(time, 40, "%a - %d %b %Y %H:%M:%S UTC", gmtime((time_t *) & header->TimeDateStamp));
 	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, time);
 	output("Date/time stamp", s);
 

@@ -1,3 +1,22 @@
+/*
+	pev - the PE file analyzer
+
+	Copyright (C) 2010 - 2012 Fernando Mercês
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef LIBPE_H
 #define LIBPE_H
 
@@ -8,7 +27,7 @@
 
 #define PE32 0x10b
 #define PE64 0x20b
-//#define ROM 0x107
+#define MZ 0x5a4d
 
 typedef unsigned int DWORD;
 typedef int LONG;
@@ -264,18 +283,21 @@ typedef struct _PE_FILE
 	
 	int num_sections;
 	int num_directories;
+	int num_rsrc_entries;
 	
 	int addr_sections;
 	int addr_directories;
 	int addr_dos;
 	int addr_optional;
 	int addr_coff;
+	int addr_rsrc_dir;
 	
 	// pointers (will be freed if needed)
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
 	IMAGE_SECTION_HEADER **sections_ptr;
 	IMAGE_DATA_DIRECTORY **directories_ptr;
 	IMAGE_TLS_DIRECTORY32 *tls_ptr;
+	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	
 } PE_FILE;
 
@@ -335,7 +357,7 @@ bool pe_get_sections(PE_FILE *pe);
 bool pe_get_directories(PE_FILE *pe);
 bool pe_get_optional(PE_FILE *pe);
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header);
-int  pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
+bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 
 bool pe_get_tls_callbacks(PE_FILE *pe);
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);

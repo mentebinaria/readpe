@@ -1,7 +1,7 @@
 /*
-	pev - PE information dump utility
+	pev - the PE file analyzer
 
-	Copyright (C) 2010 - 2011 Coding 40°
+	Copyright (C) 2010 - 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -63,7 +63,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 	
 	/* Paramters for getopt_long() function */
-	static const char short_options[] = "AHSh:iD:de:f:rv";
+	static const char short_options[] = "AHSh:D:de:f:rv";
 
 
 	static const struct option long_options[] = {
@@ -71,14 +71,15 @@ void parse_options(int argc, char *argv[])
 		{"all-headers",      no_argument,       NULL, 'H'},
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
-		{"imports",          required_argument, NULL, 'i'},
+		{"imports",          no_argument,       NULL,  0 },
+		{"exports",          no_argument,       NULL,  0 },
 		{"disasm",           required_argument, NULL, 'D'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"extract-resource", required_argument, NULL, 'e'},
 		{"format",           required_argument, NULL, 'f'},
 		{"resources",        no_argument,       NULL, 'r'},
-		{"product-version",  no_argument,       NULL,  8 },
-		{"help",             no_argument,       NULL,  9 },
+		{"product-version",  no_argument,       NULL,  0 },
+		{"help",             no_argument,       NULL,  0 },
 		{"version",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};

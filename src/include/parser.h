@@ -1,7 +1,7 @@
 /*
-	pev - PE information dump utility
+	pev - the PE file analyzer
 
-	Copyright (C) 2010 - 2011 Coding 40°
+	Copyright (C) 2010 - 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -38,4 +38,4 @@ struct options {
 	short format;
 };
 
-#endif /* PARSER_H */
+#endif

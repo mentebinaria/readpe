@@ -1,3 +1,22 @@
+/*
+	pev - the PE file analyzer
+
+	Copyright (C) 2010 - 2012 Fernando Mercês
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "include/libpe.h"
 
 bool pe_init(PE_FILE *pe, FILE *handle)
@@ -12,12 +31,14 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	
 	pe->num_sections = 0;
 	pe->num_directories = 0;
+	pe->num_rsrc_entries = 0;
 	
 	pe->addr_sections = 0;
 	pe->addr_directories = 0;
 	pe->addr_dos = 0;
 	pe->addr_optional = 0;
 	pe->addr_coff = 0;
+	pe->addr_rsrc_dir = 0;
 	
 	// pointers (will be freed if needed)
 	pe->optional_ptr = NULL;
@@ -28,9 +49,27 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	return true;
 }
 
+int pe_get_section(PE_FILE *pe, const char *section_name)
+{
+	if (!pe->addr_sections || !pe->num_sections)
+		pe_get_sections(pe);
+
+	for (int i=0; i < pe->num_sections; i++)
+	{
+		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
+			return pe->sections_ptr[i]->PointerToRawData;
+	}
+	return 0;
+}
+
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 {
 	int i;
+	
+	if (!pe->addr_rsrc_dir)
+		pe->addr_rsrc_dir = pe_get_section(pe, ".rsrc");
+		
+	printf("%d\n", pe->addr_rsrc_dir); return true;
 	
 	pe_get_sections(pe);
 	for (i=0; i < pe->num_sections; i++)
@@ -210,10 +249,10 @@ bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header)
 	
 	fread(&pe->architecture, sizeof(WORD), 1, pe->handle);	
 	
-	return read ? true : false;
+	return read;
 }
 
-int pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
+bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 {
 	int read;
 	
@@ -226,18 +265,18 @@ int pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 
 bool ispe(PE_FILE *pe)
 {
-	unsigned char header[2];
+	WORD header;
 	
 	if (pe->handle == NULL)
 		return false;
 
 	rewind(pe->handle);
-	fread(header, sizeof(char) * 2, 1, pe->handle);
+	fread(&header, sizeof(WORD), 1, pe->handle);
 	
-	if (header[0] != 'M' || header[1] != 'Z')
-		return false;
+	if (header == MZ)
+		return true;
 
-	return true;
+	return false;
 }
 
 void pe_deinit(PE_FILE *pe)

@@ -1,3 +1,22 @@
+/*
+	pev - the PE file analyzer
+
+	Copyright (C) 2010 - 2012 Fernando Mercês
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -27,12 +46,12 @@ void print_sections(PE_FILE *pe)
 {
 	char s[MAX_MSG];
 	int i;
+	unsigned int j;
 	
-	char *v[] = {
+	char *flags[] = {
    "contains executable code",
    "contains initialized data",
    "contains uninitialized data",
-   "contains comments/info",
    "contains data referenced through the GP",
    "contains extended relocations",
    "can be discarded as needed",
@@ -42,6 +61,11 @@ void print_sections(PE_FILE *pe)
    "is executable",
    "is readable",
    "is writable" };
+   
+   // valid flags only for executables referenced in pecoffv8
+   unsigned int valid_flags[] =
+   { 0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
+     0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
 	
 	output("Sections", NULL);
 	
@@ -68,83 +92,14 @@ void print_sections(PE_FILE *pe)
 		
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Characteristics);
 		output("Characteristics", s);
-
-		if (pe->sections_ptr[i]->Characteristics & 0x20)
-		{
-				snprintf(s, MAX_MSG, "%s", v[0]);
-				output(NULL, s);
-		}
-
-		if (pe->sections_ptr[i]->Characteristics & 0x40)
-		{
-				snprintf(s, MAX_MSG, "%s", v[1]);
-				output(NULL, s);
-		}
 		
-		if (pe->sections_ptr[i]->Characteristics & 0x80)
+		for (j=0; j < sizeof(valid_flags) / sizeof(unsigned int); j++)
 		{
-				snprintf(s, MAX_MSG, "%s", v[2]);
-				output(NULL, s);
-		}
-						
-		if (pe->sections_ptr[i]->Characteristics & 0x200)
-		{
-				snprintf(s, MAX_MSG, "%s", v[3]);
-				output(NULL, s);
-		}
-						
-		if (pe->sections_ptr[i]->Characteristics & 0x8000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[4]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x1000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[5]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x2000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[6]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x4000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[7]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x8000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[8]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x10000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[9]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x20000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[10]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x40000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[11]);
-				output(NULL, s);
-		}
-				
-		if (pe->sections_ptr[i]->Characteristics & 0x80000000)
-		{
-				snprintf(s, MAX_MSG, "%s", v[12]);
-				output(NULL, s);
+			if (pe->sections_ptr[i]->Characteristics & valid_flags[j])
+			{
+					snprintf(s, MAX_MSG, "%s", flags[j]);
+					output(NULL, s);
+			}
 		}
 	}
 }
@@ -166,6 +121,7 @@ void print_directories(PE_FILE *pe)
 			snprintf(s, MAX_MSG, "%#x (%d bytes)",
 			        pe->directories_ptr[i]->VirtualAddress,
 			        pe->directories_ptr[i]->Size);
+
 			output((char *) directory_names[i], s);
 		}
 	}
@@ -362,29 +318,62 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 {
 	char s[MAX_MSG];
 	char time[40];
-	register int i, j;
+	register unsigned int i, j;
+	char *machine = "Unknown machine type";
 	
-	static const char *flags[] = {
-	"base relocations stripped",
-	"executable image",
-	"line numbers removed (deprecated)",
-	"local symbols removed (deprecated)",
-	"aggressively trim (deprecated for Windows 2000 and later)",
-	"can handle more than 2 GB addresses", "",
-	"little-endian (deprecated)",
-	"32-bit machine",
-	"debugging information removed",
-	"copy to swap if it's on removable media",
-	"copy to swap if it's on network media",
-	"system file",
-	"DLL image",
-	"uniprocessor machine",
-	"big-endian (deprecated)"
+	static const char *flags[] =
+	{
+		"base relocations stripped",
+		"executable image",
+		"line numbers removed (deprecated)",
+		"local symbols removed (deprecated)",
+		"aggressively trim (deprecated for Windows 2000 and later)",
+		"can handle more than 2 GB addresses", "",
+		"little-endian (deprecated)",
+		"32-bit machine",
+		"debugging information removed",
+		"copy to swap if it's on removable media",
+		"copy to swap if it's on network media",
+		"system file",
+		"DLL image",
+		"uniprocessor machine",
+		"big-endian (deprecated)"
+	};
+	
+	static const MACHINE_ENTRY arch[] = 
+	{
+		{"Any machine type", 0x0},
+		{"Matsushita AM33", 0x1d3},
+		{"x86-64 (64-bits)", 0x8664},
+		{"ARM little endian", 0x1c0},
+		{"ARMv7 (or higher) Thumb mode only", 0x1c4},
+		{"EFI byte code", 0xebc},
+		{"Intel 386 and compatible (32-bits)", 0x14c},
+		{"Intel Itanium", 0x200},
+		{"Mitsubishi M32R little endian", 0x9041},
+		{"MIPS16", 0x266},
+		{"MIPS with FPU", 0x366},
+		{"MIPS16 with FPU", 0x466},
+		{"Power PC little endian", 0x1f0},
+		{"Power PC with floating point support", 0x1f1},
+		{"MIPS little endian", 0x166},
+		{"Hitachi SH3", 0x1a2}, 
+		{"Hitachi SH3 DSP", 0x1a3},
+		{"Hitachi SH4", 0x1a6},
+		{"Hitachi SH5",  0x1a8},
+		{"ARM or Thumb (\"interworking\")", 0x1c2},
+		{"MIPS little-endian WCE v2", 0x169}
 	};
 	
 	output("COFF/File header", NULL);
 	
-	snprintf(s, MAX_MSG, "%#x %s", header->Machine, "INTEL");
+	for(i=0; i<(sizeof(arch)/sizeof(MACHINE_ENTRY)); i++)
+	{
+		if(header->Machine == arch[i].code)
+			machine = (char*)arch[i].name;
+	}
+	
+	snprintf(s, MAX_MSG, "%#x %s", header->Machine, machine);
 	output("Machine", s);
 	
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
@@ -409,7 +398,7 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	for (i=1, j=0; i<0x8000; i<<=1, j++)
 	{
 		if (header->Characteristics & i)
-			output(NULL, (char*)flags[j]);
+			output(NULL, (char*) flags[j]);
 	}
 }
 

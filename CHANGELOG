@@ -1,4 +1,4 @@
-pev - PE32 Version utility changelog
+pev - the PE file analyzer - changelog
 
 Legend:
 + Added feature
@@ -6,12 +6,13 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.50 - January 30, 2012
+pev 0.50 - April ??, 2012
  + New modularized code with libpe.
  + Support for full resource extratcion.
  + Output in monospaced text (default) and csv.
  + x86 and x86-64 disassembly support, using libudis86.
  + Get imported and exported functions.
+ + Fake entrypoint detection (commonly in packed/encrypted files).
  ! Missing other output formats like xml and html.
  ! Some infinite loops with tiny/corrupted PE files.
 

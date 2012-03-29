@@ -59,7 +59,7 @@ void parse_format(const char *optarg)
 void parse_options(int argc, char *argv[])
 {
 	int c;
-	
+
 	/* Paramters for getopt_long() function */
 	static const char short_options[] = "AHSh:iD:de:f:rv";
 
@@ -68,7 +68,7 @@ void parse_options(int argc, char *argv[])
 		{"all-headers",      no_argument,       NULL, 'H'},
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
-		{"imports",          required_argument, NULL, 'i'},
+		{"imports",          no_argument,       NULL, 'i'},
 		{"disasm",           required_argument, NULL, 'D'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"extract-resource", required_argument, NULL, 'e'},
@@ -79,7 +79,7 @@ void parse_options(int argc, char *argv[])
 		{"version",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};
-		
+
 	config.all = false;
 	config.coff = false;
 	config.dos = false;
@@ -89,40 +89,45 @@ void parse_options(int argc, char *argv[])
 	config.all_sections = false;
 	config.all_headers = false;
 	config.dirs = false;
+	config.imports = false;
+	config.exports = false;
 	config.format = TEXT;
-	
+
 	if (argc == 2)
 		config.all = true;
-		
+
 	while ((c = getopt_long(argc, argv, short_options,
 			long_options, &ind)))
 	{
-		if (c < 0)		
+		if (c < 0)
 			break;
 
 		switch (c)
 		{
 			case 'A':
 				config.all = true; break;
-			
+
 			case 'H':
 				config.all_headers = true; break;
-				
+
 			case 'c':
 				config.coff = true; break;
-				
+
 			case 'd':
 				config.dirs = true; break;
-				
+
+            case 'i':
+                config.imports = true; config.exports = true; break;
+
 			case 'o':
 				config.opt = true; break;
-				
+
 			case 'S':
 				config.all_sections = true; break;
-				
+
 			case 'r':
 				config.resources = true; break; 	/* ─┬─ ├─ ─ */
-				
+
 			case 'p':
 				config.product = true; break;
 

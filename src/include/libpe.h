@@ -280,6 +280,7 @@ typedef struct _PE_FILE
 	
 	int e_lfanew;
 	int architecture;
+	long entrypoint;
 	
 	int num_sections;
 	int num_directories;
@@ -361,5 +362,7 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 
 bool pe_get_tls_callbacks(PE_FILE *pe);
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);
+
+IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe);
 
 #endif

@@ -31,6 +31,8 @@ struct options {
 	bool coff;
 	bool opt;
 	bool dirs;
+	bool imports;
+	bool exports;
 	bool resources;
 	bool product;
 	bool all_headers;

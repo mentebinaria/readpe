@@ -1,1 +1,4 @@
-pev
+.gitignore
+pev.cbp
+bin
+obj

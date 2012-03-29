@@ -210,6 +210,7 @@ bool pe_get_optional(PE_FILE *pe)
 			header->_32 = (IMAGE_OPTIONAL_HEADER_32 *) malloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
 			fread(header->_32, sizeof(IMAGE_OPTIONAL_HEADER_32), 1, pe->handle);
 			pe->num_directories = header->_32->NumberOfRvaAndSizes;
+			pe->entrypoint = header->_32->AddressOfEntryPoint;
 			header->_64 = NULL;
 			break;
 	
@@ -217,6 +218,7 @@ bool pe_get_optional(PE_FILE *pe)
 			header->_64 = (IMAGE_OPTIONAL_HEADER_64 *) malloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
 			fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle);
 			pe->num_directories = header->_64->NumberOfRvaAndSizes;
+			pe->entrypoint = header->_64->AddressOfEntryPoint;
 			header->_32 = NULL;
 			break;
 	
@@ -277,6 +279,32 @@ bool ispe(PE_FILE *pe)
 		return true;
 
 	return false;
+}
+
+IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
+{
+   // Wagner Barongello <wagner@barongello.com.br>
+   // 2012-03-29
+
+	if (!pe->optional_ptr->_32)
+		pe_get_optional(pe);
+
+	if (!pe->num_sections || !pe->sections_ptr)
+		pe_get_sections(pe);
+
+   if (pe->optional_ptr->_32->AddressOfEntryPoint && pe->num_sections)
+   {   
+      long ep = pe->optional_ptr->_32->AddressOfEntryPoint;
+      int i = 0;
+
+      while (i < pe->num_sections &&
+      (ep < pe->sections_ptr[i]->VirtualAddress || ep >= pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->Misc.VirtualSize))
+         i++;
+
+      if (i < pe->num_sections && !(pe->sections_ptr[i]->Characteristics & 0x00000020))
+		   return pe->sections_ptr[i];
+   }
+   return NULL;
 }
 
 void pe_deinit(PE_FILE *pe)

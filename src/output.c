@@ -66,7 +66,12 @@ void to_xml(char *field, char *value)
 void to_html(char *field, char *value)
 {
 	// TODO output a valid html
-	printf("<p>%s: %s</p>\n", field, value);
+   	if (field && value)
+		printf("<span><b>%s:</b> %s</span><br />\n", field, value);
+	else if (field)
+		printf("\n<p>%s</p>\n", field);
+	else if (value)
+		printf("<span>%s</span><br />\n", value);
 }
 
 void output(char *field, char *value)

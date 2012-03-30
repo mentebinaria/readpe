@@ -54,6 +54,8 @@ void parse_format(const char *optarg)
 		config.format = XML;
    else if (! strcmp(optarg, "csv"))
 		config.format = CSV;
+   else if (! strcmp(optarg, "html"))
+		config.format = HTML;
 	else
 		EXIT_WITH_ERROR("invalid format option");
 }

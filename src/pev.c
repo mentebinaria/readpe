@@ -170,7 +170,7 @@ void print_optional_header(PE_FILE *pe)
 
 		if (sec_fake_ep)
 		{
-			snprintf(s, MAX_MSG, "%#x --> fake at section %s",
+			snprintf(s, MAX_MSG, "%#x --> entrypoint outside of code section %s",
 			         pe->optional_ptr->_32->AddressOfEntryPoint,
 						sec_fake_ep->Name);
 		}
@@ -264,7 +264,7 @@ void print_optional_header(PE_FILE *pe)
 
 		if (sec_fake_ep)
 		{
-			snprintf(s, MAX_MSG, "%#x --> fake at section %s",
+			snprintf(s, MAX_MSG, "%#x --> entrypoint outside of code section %s",
 			         pe->optional_ptr->_64->AddressOfEntryPoint,
 						sec_fake_ep->Name);
 		}

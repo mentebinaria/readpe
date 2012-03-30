@@ -2,3 +2,6 @@ pev.cbp
 bin
 obj
 pev
+support_files
+pev.project
+Debug

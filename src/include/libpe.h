@@ -71,7 +71,7 @@ typedef unsigned long long QWORD;
 typedef struct _RESOURCE_ENTRY
 {
 	char name[20];
-	int code;
+	unsigned int code;
 } RESOURCE_ENTRY;
 
 typedef struct _MACHINE_ENTRY
@@ -291,6 +291,7 @@ typedef struct _PE_FILE
 	int addr_dos;
 	int addr_optional;
 	int addr_coff;
+	int addr_rsrc_sec;
 	int addr_rsrc_dir;
 	
 	// pointers (will be freed if needed)
@@ -299,6 +300,7 @@ typedef struct _PE_FILE
 	IMAGE_DATA_DIRECTORY **directories_ptr;
 	IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
+	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
 	
 } PE_FILE;
 
@@ -362,6 +364,7 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 
 bool pe_get_tls_callbacks(PE_FILE *pe);
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);
+bool pe_get_resource_entries(PE_FILE *pe);
 
 IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe);
 

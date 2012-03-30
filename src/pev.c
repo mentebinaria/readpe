@@ -466,12 +466,61 @@ void print_dos_header(IMAGE_DOS_HEADER *header)
 	output("PE header offset", s);
 }
 
+void print_resources(PE_FILE *pe)
+{
+	char s[MAX_MSG];
+	int i;
+	unsigned int j;
+	static const RESOURCE_ENTRY r[] = 
+		{   
+			{"RT_CURSOR", 1}, 
+			{"RT_BITMAP", 2}, 
+			{"RT_ICON", 3}, 
+			{"RT_MENU", 4}, 
+			{"RT_DIALOG", 5}, 
+			{"RT_STRING", 6}, 
+			{"RT_FONTDIR", 7}, 
+			{"RT_FONT", 8}, 
+			{"RT_ACCELERATOR", 9}, 
+			{"RT_RCDATA", 10},
+			{"RT_MESSAGETABLE", 11},
+			{"RT_GROUP_CURSOR", 12},
+			{"RT_GROUP_ICON", 14},
+			{"RT_VERSION", 16},
+			{"RT_DLGINCLUDE", 17},
+			{"RT_PLUGPLAY", 19},
+			{"RT_VXD", 20},
+			{"RT_ANICURSOR", 21},
+			{"RT_ANIICON", 22},
+			{"RT_HTML", 23},
+			{"RT_MANIFEST", 24},
+			{"RT_DLGINIT", 240},
+			{"RT_TOOLBAR", 241}
+		};
+	
+		output("Resources", NULL);
+		for (i=0; i<pe->num_rsrc_entries;i++)
+		{
+			for (j=0; j<sizeof(r) / sizeof(r[0]); j++)
+			{
+				if (pe->rsrc_entries_ptr[i]->u1.Name == r[j].code)
+				{
+					snprintf(s, MAX_MSG, "%s", r[j].name);
+					output("Type", s);
+					snprintf(s, MAX_MSG, "%#x\n", pe->rsrc_entries_ptr[i]->u2.s2.OffsetToDirectory);
+					output("OffsetToDirectory", s);
+					break;
+				}
+			}
+		}
+}
+
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
 
-	parse_options(argc, argv); // op\E7\F5es
+	parse_options(argc, argv); // opcoes
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_WITH_ERROR("file not found or unreadable");
@@ -535,6 +584,17 @@ int main(int argc, char *argv[])
 		else { EXIT_WITH_ERROR("unable to read Imports"); }
 	}
 	*/
+
+	// resources
+	if (config.resources || config.all)
+	{
+		if (pe_get_resource_entries(&pe))
+			print_resources(&pe);
+		else if (config.resources)
+		{
+			EXIT_WITH_ERROR("unable to read resources");
+		}
+	}
 
 	// libera a memoria
 	pe_deinit(&pe);

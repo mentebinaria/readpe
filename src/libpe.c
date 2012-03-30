@@ -39,12 +39,15 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	pe->addr_optional = 0;
 	pe->addr_coff = 0;
 	pe->addr_rsrc_dir = 0;
+	pe->addr_rsrc_sec = 0;
 	
 	// pointers (will be freed if needed)
 	pe->optional_ptr = NULL;
 	pe->sections_ptr = NULL;
 	pe->directories_ptr = NULL;
 	pe->tls_ptr = NULL;
+	pe->rsrc_ptr = NULL;
+	pe->rsrc_entries_ptr = NULL;
 	
 	return true;
 }
@@ -62,21 +65,43 @@ int pe_get_section(PE_FILE *pe, const char *section_name)
 	return 0;
 }
 
+bool pe_get_resource_entries(PE_FILE *pe)
+{
+	IMAGE_RESOURCE_DIRECTORY dir;
+	int i;
+	
+	if (pe->rsrc_entries_ptr)
+		return pe->rsrc_entries_ptr;
+	
+	pe_get_resource_directory(pe, &dir);
+	pe->num_rsrc_entries = dir.NumberOfIdEntries + dir.NumberOfNamedEntries;
+	pe->rsrc_entries_ptr = (IMAGE_RESOURCE_DIRECTORY_ENTRY **)
+	malloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
+	
+	for (i=0; i < pe->num_rsrc_entries; i++)
+	{
+		pe->rsrc_entries_ptr[i] = (IMAGE_RESOURCE_DIRECTORY_ENTRY *) malloc
+		(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
+		
+		if (! fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
+			return false;
+	}
+	return true;	
+}
+
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 {
 	int i;
 	
-	if (!pe->addr_rsrc_dir)
-		pe->addr_rsrc_dir = pe_get_section(pe, ".rsrc");
+	if (!pe->addr_rsrc_sec)
+		pe->addr_rsrc_sec = pe_get_section(pe, ".rsrc");
 		
-	printf("%d\n", pe->addr_rsrc_dir); return true;
-	
-	pe_get_sections(pe);
 	for (i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, ".rsrc", 5) == 0)
 		{
-			fseek(pe->handle, pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
+			pe->addr_rsrc_dir = pe->sections_ptr[i]->PointerToRawData;
+			fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET);
 			fread(dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
 			return true;			
 		}
@@ -347,4 +372,21 @@ void pe_deinit(PE_FILE *pe)
 		
 	if (pe->tls_ptr)
 		free(pe->tls_ptr);
+		
+	if (pe->rsrc_entries_ptr)
+	{
+		for (i=0; i < pe->num_rsrc_entries; i++)
+		{
+			if (pe->rsrc_entries_ptr[i])
+				free(pe->rsrc_entries_ptr[i]);
+		}
+
+		free(pe->rsrc_entries_ptr);
+	}
+		
+	if (pe->rsrc_ptr)
+	{
+	
+	}
+	
 }

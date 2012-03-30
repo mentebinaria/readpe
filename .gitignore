@@ -5,3 +5,6 @@ pev
 support_files
 pev.project
 Debug
+.cproject
+.project
+*.swp

@@ -64,24 +64,24 @@ void parse_options(int argc, char *argv[])
 {
 	int c;
 
-	/* Paramters for getopt_long() function */
-	static const char short_options[] = "AHSh:D:dEe:f:rv";
+	/* Parameters for getopt_long() function */
+	static const char short_options[] = "AHSh:D:dEe:f:rvp";
 
 
 	static const struct option long_options[] = {
+		{"help",             no_argument,       NULL,  1 },
 		{"all",              no_argument,       NULL, 'A'},
 		{"all-headers",      no_argument,       NULL, 'H'},
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
 		{"imports",          no_argument,       NULL, 'i'},
-		{"exports",          no_argument,       NULL, 'e' },
+		{"exports",          no_argument,       NULL, 'e'},
 		{"disasm",           required_argument, NULL, 'D'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"extract-resource", required_argument, NULL, 'E'},
 		{"format",           required_argument, NULL, 'f'},
 		{"resources",        no_argument,       NULL, 'r'},
-		{"product-version",  no_argument,       NULL,  0 },
-		{"help",             no_argument,       NULL,  0 },
+		{"product-version",  no_argument,       NULL, 'p'},
 		{"version",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};
@@ -108,8 +108,12 @@ void parse_options(int argc, char *argv[])
 		if (c < 0)
 			break;
 
+
 		switch (c)
 		{
+			case 1:		// --help option
+				usage();
+				exit(EXIT_SUCCESS);
 			case 'A':
 				config.all = true; break;
 
@@ -146,10 +150,6 @@ void parse_options(int argc, char *argv[])
 
 			case 'f':
 				parse_format(optarg); break;
-
-			case 9:
-				usage();
-				exit(EXIT_SUCCESS);
 
 			default:
 				fprintf(stderr, "pev: try '--help' for more information\n");

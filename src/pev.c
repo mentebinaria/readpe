@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer
 
-	Copyright (C) 2010 - 2012 Fernando MercÃªs
+	Copyright (C) 2010 - 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ void print_sections(PE_FILE *pe)
 	char s[MAX_MSG];
 	int i;
 	unsigned int j;
-	
+
 	char *flags[] = {
    "contains executable code",
    "contains initialized data",
@@ -61,12 +61,12 @@ void print_sections(PE_FILE *pe)
    "is executable",
    "is readable",
    "is writable" };
-   
+
    // valid flags only for executables referenced in pecoffv8
    unsigned int valid_flags[] =
    { 0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
      0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
-	
+
 	output("Sections", NULL);
 
 	for (i=0; i < pe->num_sections; i++)
@@ -92,7 +92,7 @@ void print_sections(PE_FILE *pe)
 
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Characteristics);
 		output("Characteristics", s);
-		
+
 		for (j=0; j < sizeof(valid_flags) / sizeof(unsigned int); j++)
 		{
 			if (pe->sections_ptr[i]->Characteristics & valid_flags[j])
@@ -260,7 +260,17 @@ void print_optional_header(PE_FILE *pe)
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfUninitializedData);
 		output("Size of .bss secion", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
+		IMAGE_SECTION_HEADER *sec_fake_ep = pe_check_fake_entrypoint(pe);
+
+		if (sec_fake_ep)
+		{
+			snprintf(s, MAX_MSG, "%#x --> fake at section %s",
+			         pe->optional_ptr->_64->AddressOfEntryPoint,
+						sec_fake_ep->Name);
+		}
+		else
+			snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
+
 		output("Entrypoint", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->BaseOfCode);
@@ -329,7 +339,7 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	char time[40];
 	register unsigned int i, j;
 	char *machine = "Unknown machine type";
-	
+
 	static const char *flags[] =
 	{
 		"base relocations stripped",
@@ -348,8 +358,8 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 		"uniprocessor machine",
 		"big-endian (deprecated)"
 	};
-	
-	static const MACHINE_ENTRY arch[] = 
+
+	static const MACHINE_ENTRY arch[] =
 	{
 		{"Any machine type", 0x0},
 		{"Matsushita AM33", 0x1d3},
@@ -366,7 +376,7 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 		{"Power PC little endian", 0x1f0},
 		{"Power PC with floating point support", 0x1f1},
 		{"MIPS little endian", 0x166},
-		{"Hitachi SH3", 0x1a2}, 
+		{"Hitachi SH3", 0x1a2},
 		{"Hitachi SH3 DSP", 0x1a3},
 		{"Hitachi SH4", 0x1a6},
 		{"Hitachi SH5",  0x1a8},
@@ -375,19 +385,19 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	};
 
 	output("COFF/File header", NULL);
-	
+
 	for(i=0; i<(sizeof(arch)/sizeof(MACHINE_ENTRY)); i++)
 	{
 		if(header->Machine == arch[i].code)
 			machine = (char*)arch[i].name;
 	}
-	
+
 	snprintf(s, MAX_MSG, "%#x %s", header->Machine, machine);
 	output("Machine", s);
 
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
-	
+
 	strftime(time, 40, "%a - %d %b %Y %H:%M:%S UTC", gmtime((time_t *) & header->TimeDateStamp));
 	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, time);
 	output("Date/time stamp", s);

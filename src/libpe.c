@@ -25,27 +25,27 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 		return false;
 
 	pe->handle = handle;
-		
+
 	pe->e_lfanew = 0;
 	pe->architecture = 0;
-	
+
 	pe->num_sections = 0;
 	pe->num_directories = 0;
 	pe->num_rsrc_entries = 0;
-	
+
 	pe->addr_sections = 0;
 	pe->addr_directories = 0;
 	pe->addr_dos = 0;
 	pe->addr_optional = 0;
 	pe->addr_coff = 0;
 	pe->addr_rsrc_dir = 0;
-	
+
 	// pointers (will be freed if needed)
 	pe->optional_ptr = NULL;
 	pe->sections_ptr = NULL;
 	pe->directories_ptr = NULL;
 	pe->tls_ptr = NULL;
-	
+
 	return true;
 }
 
@@ -65,12 +65,12 @@ int pe_get_section(PE_FILE *pe, const char *section_name)
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 {
 	int i;
-	
+
 	if (!pe->addr_rsrc_dir)
 		pe->addr_rsrc_dir = pe_get_section(pe, ".rsrc");
-		
+
 	printf("%d\n", pe->addr_rsrc_dir); return true;
-	
+
 	pe_get_sections(pe);
 	for (i=0; i < pe->num_sections; i++)
 	{
@@ -78,7 +78,7 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 		{
 			fseek(pe->handle, pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
 			fread(dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-			return true;			
+			return true;
 		}
 	}
 	return false;
@@ -91,7 +91,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 	int i;
 	unsigned tls_addr = 0;
 
-	pe_get_directories(pe);	
+	pe_get_directories(pe);
 	for (i=0; i < pe->num_directories; i++)
 	{
 		if (pe->directories_ptr[i].Size > 0)
@@ -101,7 +101,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 		}
 	}
 	//printf("tls_addr: %#x\n", tls_addr);
-	
+
 	pe_get_sections(pe);
 	for (i=0; i < pe->num_sections; i++)
 	{
@@ -109,15 +109,15 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 		    tls_addr < (pe->sections_ptr[i].VirtualAddress + pe->sections_ptr[i].SizeOfRawData))
 		{
 			tlsdir = (IMAGE_TLS_DIRECTORY32 *) malloc(sizeof(tlsdir));
-			
+
 			fseek(pe->handle, tls_addr - pe->sections_ptr[i].VirtualAddress
 			+ pe->sections_ptr[i].PointerToRawData, SEEK_SET);
-			
+
 			fread(tlsdir, sizeof(tlsdir), 1, pe->handle);
-			
+
 			pe->tls_ptr = tlsdir;
-			
-			return true;			
+
+			return true;
 		}
 	}
 
@@ -129,25 +129,25 @@ bool pe_get_sections(PE_FILE *pe)
 {
 	IMAGE_SECTION_HEADER **sections;
 	int i;
-	
+
 	if (pe->sections_ptr)
 		return true;
-	
+
 	if (!pe->addr_sections || !pe->num_sections)
 		pe_get_directories(pe);
 
 	fseek(pe->handle, pe->addr_sections, SEEK_SET);
 
 	sections = (IMAGE_SECTION_HEADER **) malloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
-	
+
 	for (i=0; i < pe->num_sections; i++)
 	{
 		sections[i] = (IMAGE_SECTION_HEADER *) malloc(sizeof(IMAGE_SECTION_HEADER));
 		fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle);
 	}
-	
+
 	pe->sections_ptr = sections;
-		
+
 	return true;
 }
 
@@ -170,13 +170,13 @@ bool pe_get_directories(PE_FILE *pe)
 	fseek(pe->handle, pe->addr_directories, SEEK_SET);
 
 	dirs = (IMAGE_DATA_DIRECTORY **) malloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
-	
+
 	for (i=0; i < pe->num_directories; i++)
 	{
 		dirs[i] = (IMAGE_DATA_DIRECTORY *) malloc(sizeof(IMAGE_DATA_DIRECTORY));
 		fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle);
 	}
-		
+
 	pe->addr_sections = ftell(pe->handle);
 	pe->directories_ptr = dirs;
 
@@ -186,7 +186,7 @@ bool pe_get_directories(PE_FILE *pe)
 bool pe_get_optional(PE_FILE *pe)
 {
 	IMAGE_OPTIONAL_HEADER *header;
-	
+
 	if (!pe)
 		return false;
 
@@ -196,12 +196,12 @@ bool pe_get_optional(PE_FILE *pe)
 	if (!pe->addr_optional)
 	{
 		IMAGE_COFF_HEADER coff;
-		
+
 		pe_get_coff(pe, &coff);
 	}
 
 	fseek(pe->handle, pe->addr_optional, SEEK_SET);
-	
+
 	header = (IMAGE_OPTIONAL_HEADER *) malloc(sizeof(IMAGE_OPTIONAL_HEADER));
 
 	switch (pe->architecture)
@@ -213,7 +213,7 @@ bool pe_get_optional(PE_FILE *pe)
 			pe->entrypoint = header->_32->AddressOfEntryPoint;
 			header->_64 = NULL;
 			break;
-	
+
 		case PE64:
 			header->_64 = (IMAGE_OPTIONAL_HEADER_64 *) malloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
 			fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle);
@@ -221,11 +221,11 @@ bool pe_get_optional(PE_FILE *pe)
 			pe->entrypoint = header->_64->AddressOfEntryPoint;
 			header->_32 = NULL;
 			break;
-	
+
 		default:
 			return false;
 	}
-	
+
 	pe->optional_ptr = header;
 	pe->addr_directories = ftell(pe->handle);
 
@@ -245,36 +245,36 @@ bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header)
 
 	fseek(pe->handle, pe->addr_coff, SEEK_SET);
 	read = fread(header, sizeof(IMAGE_COFF_HEADER), 1, pe->handle);
-	
+
 	pe->num_sections = header->NumberOfSections;
 	pe->addr_optional = ftell(pe->handle);
-	
-	fread(&pe->architecture, sizeof(WORD), 1, pe->handle);	
-	
+
+	fread(&pe->architecture, sizeof(WORD), 1, pe->handle);
+
 	return read;
 }
 
 bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 {
 	int read;
-	
+
 	rewind(pe->handle);
 	read = fread(header, sizeof(IMAGE_DOS_HEADER), 1, pe->handle);
 	pe->addr_coff = header->e_lfanew + 4; // PE\0\0
-	
+
 	return read;
 }
 
 bool ispe(PE_FILE *pe)
 {
 	WORD header;
-	
+
 	if (pe->handle == NULL)
 		return false;
 
 	rewind(pe->handle);
 	fread(&header, sizeof(WORD), 1, pe->handle);
-	
+
 	if (header == MZ)
 		return true;
 
@@ -286,15 +286,15 @@ IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
    // Wagner Barongello <wagner@barongello.com.br>
    // 2012-03-29
 
-	if (!pe->optional_ptr->_32)
+	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
 		pe_get_optional(pe);
 
 	if (!pe->num_sections || !pe->sections_ptr)
 		pe_get_sections(pe);
 
-   if (pe->optional_ptr->_32->AddressOfEntryPoint && pe->num_sections)
-   {   
-      long ep = pe->optional_ptr->_32->AddressOfEntryPoint;
+   if (((pe->optional_ptr->_32 && pe->optional_ptr->_32->AddressOfEntryPoint) || (pe->optional_ptr->_64 && pe->optional_ptr->_64->AddressOfEntryPoint)) && pe->num_sections)
+   {
+      long ep = (pe->optional_ptr->_32 ? pe->optional_ptr->_32->AddressOfEntryPoint : (pe->optional_ptr->_64 ? pe->optional_ptr->_64->AddressOfEntryPoint : -1));
       int i = 0;
 
       while (i < pe->num_sections &&
@@ -304,6 +304,7 @@ IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
       if (i < pe->num_sections && !(pe->sections_ptr[i]->Characteristics & 0x00000020))
 		   return pe->sections_ptr[i];
    }
+
    return NULL;
 }
 
@@ -313,18 +314,18 @@ void pe_deinit(PE_FILE *pe)
 
 	if (pe->handle)
 		fclose(pe->handle);
-	
+
 	if (pe->optional_ptr)
-	{	
+	{
 		if (pe->optional_ptr->_32)
 			free(pe->optional_ptr->_32);
-		
+
 		if (pe->optional_ptr->_64)
 			free(pe->optional_ptr->_64);
-			
+
 		free(pe->optional_ptr);
 	}
-	
+
 	if (pe->directories_ptr)
 	{
 		for (i=0; i < pe->num_directories; i++)
@@ -344,7 +345,7 @@ void pe_deinit(PE_FILE *pe)
 		}
 		free(pe->sections_ptr);
 	}
-		
+
 	if (pe->tls_ptr)
 		free(pe->tls_ptr);
 }

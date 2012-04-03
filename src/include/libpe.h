@@ -20,6 +20,7 @@
 #ifndef LIBPE_H
 #define LIBPE_H
 
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -29,16 +30,11 @@
 #define PE64 0x20b
 #define MZ 0x5a4d
 
-typedef unsigned int DWORD;
-typedef int LONG;
-typedef unsigned char BYTE;
-typedef unsigned short WORD;
-
-#if __WORDSIZE == 64
-typedef unsigned long QWORD;
-#else
-typedef unsigned long long QWORD;
-#endif
+typedef uint32_t DWORD;
+typedef int32_t LONG;
+typedef uint8_t BYTE;
+typedef uint16_t WORD;
+typedef uint64_t QWORD;
 
 // section name size
 #define IMAGE_SIZEOF_SHORT_NAME 8

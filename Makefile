@@ -1,5 +1,5 @@
 CC=gcc
-SRC=$(shell find src/ -type f -name "*.c")
+SRC=$(wildcard src/*.c)
 WARNS=-W -Wall -Wextra -pedantic
 CFLAGS=$(WARNS) -std=c99
 DFLAGS=-D __DEBUG_MODE__

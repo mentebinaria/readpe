@@ -320,7 +320,7 @@ IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
    if (((pe->optional_ptr->_32 && pe->optional_ptr->_32->AddressOfEntryPoint) ||
 	(pe->optional_ptr->_64 && pe->optional_ptr->_64->AddressOfEntryPoint)) && pe->num_sections)
    {
-      long ep = (pe->optional_ptr->_32 ? pe->optional_ptr->_32->AddressOfEntryPoint :
+      DWORD ep = (pe->optional_ptr->_32 ? pe->optional_ptr->_32->AddressOfEntryPoint :
 		(pe->optional_ptr->_64 ? pe->optional_ptr->_64->AddressOfEntryPoint : 0));
       int i = 0;
 

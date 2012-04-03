@@ -37,7 +37,7 @@ struct options {
 	bool product;
 	bool all_headers;
 	bool all_sections;
-	short format;
+	format_e format;
 };
 
 #endif

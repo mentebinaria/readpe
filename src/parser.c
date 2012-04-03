@@ -49,13 +49,13 @@ void parse_headers(const char *optarg)
 void parse_format(const char *optarg)
 {
 	if (! strcmp(optarg, "text"))
-		config.format = TEXT;
+		config.format = FORMAT_TEXT;
 	else if (! strcmp(optarg, "xml"))
-		config.format = XML;
+		config.format = FORMAT_XML;
    else if (! strcmp(optarg, "csv"))
-		config.format = CSV;
+		config.format = FORMAT_CSV;
    else if (! strcmp(optarg, "html"))
-		config.format = HTML;
+		config.format = FORMAT_HTML;
 	else
 		EXIT_WITH_ERROR("invalid format option");
 }
@@ -97,7 +97,7 @@ void parse_options(int argc, char *argv[])
 	config.dirs = false;
 	config.imports = false;
 	config.exports = false;
-	config.format = TEXT;
+	config.format = FORMAT_TEXT;
 
 	if (argc == 2)
 		config.all = true;

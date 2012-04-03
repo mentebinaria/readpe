@@ -24,12 +24,6 @@
 
 #define SPACES 30
 
-/* OUTPUT FORMATS */
-#define TEXT 1
-#define HTML 2
-#define XML 3
-#define CSV 4
-
 extern struct options config;
 
 void to_text(char *field, char *value)
@@ -78,19 +72,19 @@ void output(char *field, char *value)
 {
 	switch (config.format)
 	{
-		case TEXT:
+		case FORMAT_TEXT:
 			to_text(field, value);
 			break;
 			
-		case CSV:
+		case FORMAT_CSV:
 			to_csv(field, value);
 			break;
 			
-		case XML:
+		case FORMAT_XML:
 			to_xml(field, value);
 			break;
 			
-		case HTML:
+		case FORMAT_HTML:
 			to_html(field, value);
 			break;
 			

@@ -26,10 +26,13 @@
 #define PACKAGE "pev"
 #define VERSION "0.50"
 
-#define TEXT 1
-#define HTML 2
-#define XML  3
-#define CSV  4
+/* Output formats */
+typedef enum {
+	FORMAT_TEXT = 1,
+	FORMAT_HTML = 2,
+	FORMAT_XML = 3,
+	FORMAT_CSV = 4
+} format_e;
 
 #ifdef __DEBUG_MODE__
 	#define EXIT_WITH_ERROR(msg) \

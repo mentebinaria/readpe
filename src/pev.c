@@ -276,7 +276,7 @@ void print_optional_header(PE_FILE *pe)
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->BaseOfCode);
 		output("Address of .text section", s);
 
-		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->ImageBase);
+		snprintf(s, MAX_MSG, "%#jx", pe->optional_ptr->_64->ImageBase);
 		output("ImageBase", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SectionAlignment);
@@ -319,16 +319,16 @@ void print_optional_header(PE_FILE *pe)
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->DllCharacteristics);
 		output("DLL characteristics", s);
 
-		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfStackReserve);
+		snprintf(s, MAX_MSG, "%#jx", pe->optional_ptr->_64->SizeOfStackReserve);
 		output("Size of stack to reserve", s);
 
-		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfStackCommit);
+		snprintf(s, MAX_MSG, "%#jx", pe->optional_ptr->_64->SizeOfStackCommit);
 		output("Size of stack to commit", s);
 
-		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfHeapReserve);
+		snprintf(s, MAX_MSG, "%#jx", pe->optional_ptr->_64->SizeOfHeapReserve);
 		output("Size of heap space to reserve", s);
 
-		snprintf(s, MAX_MSG, "%#lx", pe->optional_ptr->_64->SizeOfHeapCommit);
+		snprintf(s, MAX_MSG, "%#jx", pe->optional_ptr->_64->SizeOfHeapCommit);
 		output("Size of heap space to commit", s);
 	}
 }

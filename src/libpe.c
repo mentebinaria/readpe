@@ -52,7 +52,7 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	return true;
 }
 
-int pe_get_section(PE_FILE *pe, const char *section_name)
+IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 {
 	if (!pe->addr_sections || !pe->num_sections)
 		pe_get_sections(pe);
@@ -60,9 +60,9 @@ int pe_get_section(PE_FILE *pe, const char *section_name)
 	for (int i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
-			return pe->sections_ptr[i]->PointerToRawData;
+			return pe->sections_ptr[i];
 	}
-	return 0;
+	return NULL;
 }
 
 bool pe_get_resource_entries(PE_FILE *pe)
@@ -94,7 +94,7 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	int i;
 	
 	if (!pe->addr_rsrc_sec)
-		pe->addr_rsrc_sec = pe_get_section(pe, ".rsrc");
+		pe->addr_rsrc_sec = (pe_get_section(pe, ".rsrc"))->PointerToRawData;
 
 	for (i=0; i < pe->num_sections; i++)
 	{

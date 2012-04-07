@@ -353,6 +353,7 @@ void pe_deinit(PE_FILE *pe);
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);
 bool pe_get_sections(PE_FILE *pe);
+IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char* section_name);
 bool pe_get_directories(PE_FILE *pe);
 bool pe_get_optional(PE_FILE *pe);
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header);

@@ -24,30 +24,8 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	if (!pe || !handle)
 		return false;
 
+	memset(pe, 0, sizeof(PE_FILE));
 	pe->handle = handle;
-
-	pe->e_lfanew = 0;
-	pe->architecture = 0;
-
-	pe->num_sections = 0;
-	pe->num_directories = 0;
-	pe->num_rsrc_entries = 0;
-
-	pe->addr_sections = 0;
-	pe->addr_directories = 0;
-	pe->addr_dos = 0;
-	pe->addr_optional = 0;
-	pe->addr_coff = 0;
-	pe->addr_rsrc_dir = 0;
-	pe->addr_rsrc_sec = 0;
-	
-	// pointers (will be freed if needed)
-	pe->optional_ptr = NULL;
-	pe->sections_ptr = NULL;
-	pe->directories_ptr = NULL;
-	pe->tls_ptr = NULL;
-	pe->rsrc_ptr = NULL;
-	pe->rsrc_entries_ptr = NULL;
 
 	return true;
 }

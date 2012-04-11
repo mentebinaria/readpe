@@ -109,12 +109,32 @@ void print_directories(PE_FILE *pe)
 	char s[MAX_MSG];
 	int i;
 
+	static const char *directory_names[] =
+	{
+		"Export Table", // 0
+		"Import Table",
+		"Resource Table",
+		"Exception Table",
+		"Certificate Table",
+		"Base Relocation Table",
+		"Debug",
+		"Architecture",
+		"Global Ptr",
+		"Thread Local Storage (TLS) Table", // 9
+		"Load Config Table",
+		"Bound Import",
+		"Import Address Table (IAT)",
+		"Delay Import Descriptor",
+		"CLR Runtime Header", "" // 15
+	};
+
+
 	output("Data directories", NULL);
 
 	if (! pe->directories_ptr)
 		return;
 
-	for (i=0; i < pe->num_directories; i++)
+	for (i=0; i < pe->num_directories && i < 16; i++)
 	{
 		if (pe->directories_ptr[i]->Size)
 		{

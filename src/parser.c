@@ -86,17 +86,7 @@ void parse_options(int argc, char *argv[])
 		{ NULL,              0,                 NULL,  0 }
 	};
 
-	config.all = false;
-	config.coff = false;
-	config.dos = false;
-	config.opt = false;
-	config.product = false;
-	config.resources = false;
-	config.all_sections = false;
-	config.all_headers = false;
-	config.dirs = false;
-	config.imports = false;
-	config.exports = false;
+	memset(&config, false, sizeof(config));
 	config.format = FORMAT_TEXT;
 
 	if (argc == 2)

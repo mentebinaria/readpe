@@ -141,6 +141,9 @@ void parse_options(int argc, char *argv[])
 			case 'f':
 				parse_format(optarg); break;
 
+			case 'D':
+				config.disasm_section = optarg; break;
+
 			default:
 				fprintf(stderr, "pev: try '--help' for more information\n");
 				exit(EXIT_FAILURE);

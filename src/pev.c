@@ -22,6 +22,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
+#include <udis86.h>
 
 #include "include/libpe.h"
 #include "include/output.h"
@@ -40,6 +41,50 @@ char *dec2bin(unsigned int dec, char *bin, int bits)
 	bin[bits] = '\0';
 
 	return bin;
+}
+
+void print_disassembler(PE_FILE *pe,IMAGE_SECTION_HEADER *section){
+    ud_t ud_obj;
+    WORD *buff;
+
+
+    //inicializa um buffer com o tamanho da section
+    buff = (WORD *) malloc(section->SizeOfRawData);
+
+    //inicializa objeto do disassembly
+    ud_init(&ud_obj);
+
+    //seta o handle para o início da section
+    fseek(pe->handle, section->PointerToRawData, SEEK_SET);
+
+    if (!fread(buff, section->SizeOfRawData, 1, pe->handle))
+    	EXIT_WITH_ERROR("Erro ao executar fread --> função print_disassembler!");
+
+    //função utilizada para realizar o disassembler e armazenas em ud_obj
+    ud_set_input_buffer(&ud_obj, buff, section->SizeOfRawData);
+
+	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
+		pe_get_optional(pe);
+
+	//seta o arquivo para 32 ou 64 bits
+	if (!pe->optional_ptr->_32){
+		ud_set_mode(&ud_obj, 32);
+	}
+	else if (!pe->optional_ptr->_64)
+	{
+		ud_set_mode(&ud_obj, 32);
+	}
+
+	//seleciona a saída no padrão Assembly Intel
+	ud_set_syntax(&ud_obj, UD_SYN_INTEL);
+
+
+	while (ud_disassemble(&ud_obj)) {
+		printf("%016x\t%s\n",ud_insn_off(&ud_obj), ud_insn_asm(&ud_obj));
+	}
+
+	//libera o buffer
+    free(buff);
 }
 
 void print_sections(PE_FILE *pe)
@@ -624,6 +669,29 @@ int main(int argc, char *argv[])
 		{
 			EXIT_WITH_ERROR("unable to read resources");
 		}
+	}
+
+	//disassembler
+	if (config.disasm_section != NULL){
+		IMAGE_SECTION_HEADER *section;
+
+		//setando a seção que o usuário desaja realizar o disassembler
+		section = pe_get_section(&pe, config.disasm_section);
+
+
+		if (section != NULL)
+		{
+			//encontrou a seção que o usuário deseja realizar o disassembler
+			//e irá chamar a função para realizar o disassembler
+			print_disassembler(&pe,section);
+
+		}else
+		{
+			//não encontrou a seção que o usuário deseja realizar o disassembler
+			//logo é enviado uma mensagem de erro na tela.
+			EXIT_WITH_ERROR("Section inexistente!");
+		}
+
 	}
 
 	// libera a memoria

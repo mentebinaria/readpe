@@ -45,6 +45,7 @@ char *dec2bin(unsigned int dec, char *bin, int bits)
 
 void print_section_disasm(PE_FILE *pe,IMAGE_SECTION_HEADER *section)
 {
+	// Tiago Zaniquelli <ztiago@gmail.com>
 	ud_t ud_obj;
 	BYTE *buff;
 

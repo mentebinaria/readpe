@@ -1,11 +1,11 @@
 CC=gcc
-SRC=$(wildcard src/*.c)
+SRC=$(wildcard src/lib/libudis86/*.c src/*.c)
 WARNS=-W -Wall -Wextra -pedantic
 CFLAGS=$(WARNS) -std=c99
 DFLAGS=-D __DEBUG_MODE__
 
 all:
-	$(CC) $(CFLAGS) $(DFLAGS) -o pev $(SRC) -ludis86
+	$(CC) $(CFLAGS) $(DFLAGS) -o pev $(SRC)
 
 install:
 	install pev $(DESTDIR)/usr/bin

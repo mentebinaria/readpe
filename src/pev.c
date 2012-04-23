@@ -22,7 +22,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
-#include <udis86.h>
+#include "lib/udis86.h"
 
 #include "include/libpe.h"
 #include "include/output.h"
@@ -43,48 +43,51 @@ char *dec2bin(unsigned int dec, char *bin, int bits)
 	return bin;
 }
 
-void print_disassembler(PE_FILE *pe,IMAGE_SECTION_HEADER *section){
-    ud_t ud_obj;
-    WORD *buff;
+void print_section_disasm(PE_FILE *pe,IMAGE_SECTION_HEADER *section)
+{
+	ud_t ud_obj;
+	BYTE *buff;
 
+	// allocate a buffer with same section size
+	buff = (BYTE *) malloc(section->SizeOfRawData);
 
-    //inicializa um buffer com o tamanho da section
-    buff = (WORD *) malloc(section->SizeOfRawData);
+	if (!buff)
+		EXIT_WITH_ERROR("error allocating memory");
 
-    //inicializa objeto do disassembly
-    ud_init(&ud_obj);
+	ud_init(&ud_obj);
 
-    //seta o handle para o início da section
-    fseek(pe->handle, section->PointerToRawData, SEEK_SET);
+	// sets handle to section beginning
+	fseek(pe->handle, section->PointerToRawData, SEEK_SET);
 
-    if (!fread(buff, section->SizeOfRawData, 1, pe->handle))
-    	EXIT_WITH_ERROR("Erro ao executar fread --> função print_disassembler!");
+	if (!fread(buff, section->SizeOfRawData, 1, pe->handle))
+		EXIT_WITH_ERROR("error seeking through file");
 
-    //função utilizada para realizar o disassembler e armazenas em ud_obj
-    ud_set_input_buffer(&ud_obj, buff, section->SizeOfRawData);
+	// passes entire section to libudis86
+	ud_set_input_buffer(&ud_obj, buff, section->SizeOfRawData);
 
 	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
 		pe_get_optional(pe);
 
-	//seta o arquivo para 32 ou 64 bits
-	if (!pe->optional_ptr->_32){
+	if (pe->optional_ptr->_32)
 		ud_set_mode(&ud_obj, 32);
-	}
-	else if (!pe->optional_ptr->_64)
-	{
-		ud_set_mode(&ud_obj, 32);
-	}
+	else if (pe->optional_ptr->_64)
+		ud_set_mode(&ud_obj, 64);
+	else
+		EXIT_WITH_ERROR("unable to detect PE architecture");
 
-	//seleciona a saída no padrão Assembly Intel
+	// intel syntax
 	ud_set_syntax(&ud_obj, UD_SYN_INTEL);
 
+	while (ud_disassemble(&ud_obj))
+	{
+		char ofs[MAX_MSG], s[MAX_MSG];
 
-	while (ud_disassemble(&ud_obj)) {
-		printf("%016x\t%s\n",ud_insn_off(&ud_obj), ud_insn_asm(&ud_obj));
+		snprintf(ofs, MAX_MSG, "%016"PRIx64, ud_insn_off(&ud_obj));
+		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
+		output(ofs, s);
 	}
 
-	//libera o buffer
-    free(buff);
+	free(buff);
 }
 
 void print_sections(PE_FILE *pe)
@@ -671,27 +674,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//disassembler
-	if (config.disasm_section != NULL){
+	// section disassemby
+	if (config.disasm_section)
+	{
 		IMAGE_SECTION_HEADER *section;
 
-		//setando a seção que o usuário desaja realizar o disassembler
+		// search for section name
 		section = pe_get_section(&pe, config.disasm_section);
 
-
-		if (section != NULL)
-		{
-			//encontrou a seção que o usuário deseja realizar o disassembler
-			//e irá chamar a função para realizar o disassembler
-			print_disassembler(&pe,section);
-
-		}else
-		{
-			//não encontrou a seção que o usuário deseja realizar o disassembler
-			//logo é enviado uma mensagem de erro na tela.
-			EXIT_WITH_ERROR("Section inexistente!");
-		}
-
+		if (section) // section found
+			print_section_disasm(&pe, section);
+		else { EXIT_WITH_ERROR("invalid section name"); }
 	}
 
 	// libera a memoria

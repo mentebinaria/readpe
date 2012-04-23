@@ -77,13 +77,17 @@ void print_section_disasm(PE_FILE *pe,IMAGE_SECTION_HEADER *section)
 		EXIT_WITH_ERROR("unable to detect PE architecture");
 
 	// intel syntax
-	ud_set_syntax(&ud_obj, UD_SYN_INTEL);
+	ud_set_syntax(&ud_obj, config.asm_syntax ? UD_SYN_ATT : UD_SYN_INTEL);
 
 	while (ud_disassemble(&ud_obj))
 	{
 		char ofs[MAX_MSG], s[MAX_MSG];
 
-		snprintf(ofs, MAX_MSG, "%016"PRIx64, ud_insn_off(&ud_obj));
+		snprintf(ofs, MAX_MSG, "%016"PRIx64, 
+			((pe->optional_ptr->_32 ? pe->optional_ptr->_32->ImageBase : 
+			(pe->optional_ptr->_64 ? pe->optional_ptr->_64->ImageBase : 0))) +
+			section->PointerToRawData +
+			ud_insn_off(&ud_obj));
 		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
 		output(ofs, s);
 	}

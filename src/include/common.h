@@ -34,6 +34,9 @@ typedef enum {
 	FORMAT_CSV = 4
 } format_e;
 
+#define SYN_ATT 1
+#define SYN_INTEL 0
+
 #ifdef __DEBUG_MODE__
 	#define EXIT_WITH_ERROR(msg) \
 			{ \

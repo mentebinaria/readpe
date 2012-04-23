@@ -39,6 +39,7 @@ struct options {
 	bool all_sections;
 	format_e format;
 	char *disasm_section;
+	bool asm_syntax;
 };
 
 #endif

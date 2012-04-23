@@ -83,6 +83,7 @@ void parse_options(int argc, char *argv[])
 		{"resources",        no_argument,       NULL, 'r'},
 		{"product-version",  no_argument,       NULL, 'p'},
 		{"version",          no_argument,       NULL, 'v'},
+		{"att",              no_argument,       NULL,  2 },
 		{ NULL,              0,                 NULL,  0 }
 	};
 
@@ -105,6 +106,8 @@ void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
+			case 2:
+				config.asm_syntax = SYN_ATT; break;
 			case 'A':
 				config.all = true; break;
 

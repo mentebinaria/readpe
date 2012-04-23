@@ -5,7 +5,7 @@ CFLAGS=$(WARNS) -std=c99
 DFLAGS=-D __DEBUG_MODE__
 
 all:
-	$(CC) $(CFLAGS) $(DFLAGS) -o pev $(SRC)
+	$(CC) $(CFLAGS) $(DFLAGS) -o pev $(SRC) -ludis86
 
 install:
 	install pev $(DESTDIR)/usr/bin

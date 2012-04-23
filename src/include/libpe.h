@@ -48,10 +48,10 @@ typedef uint64_t QWORD;
 #define RT_STRING         6    // unicode string
 #define RT_FONTDIR        7    // font directory
 #define RT_FONT           8    // font
-#define RT_ACCELERATOR	  9    // hot keys
+#define RT_ACCELERATOR    9    // hot keys
 #define RT_RCDATA         10   // data
-#define RT_MESSAGETABLE	  11   // string table
-#define RT_GROUP_CURSOR	  12   // cursor group
+#define RT_MESSAGETABLE   11   // string table
+#define RT_GROUP_CURSOR   12   // cursor group
 #define RT_GROUP_ICON     14   // icon group
 #define RT_VERSION        16   // version information
 #define RT_DLGINCLUDE     17   // names of header files for dialogs (*.h) used by compiler
@@ -177,8 +177,8 @@ typedef struct _IMAGE_OPTIONAL_HEADER_64 {
 } IMAGE_OPTIONAL_HEADER_64;
 
 typedef struct _IMAGE_OPTIONAL_HEADER {
-    IMAGE_OPTIONAL_HEADER_32 *_32;
-    IMAGE_OPTIONAL_HEADER_64 *_64;
+	IMAGE_OPTIONAL_HEADER_32 *_32;
+	IMAGE_OPTIONAL_HEADER_64 *_64;
 } IMAGE_OPTIONAL_HEADER;
 
 typedef struct _IMAGE_DATA_DIRECTORY {
@@ -299,25 +299,6 @@ typedef struct _PE_FILE
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
 	
 } PE_FILE;
-
-static const char *directory_names[] =
-{
-	"Export Table", // 0
-	"Import Table",
-	"Resource Table",
-	"Exception Table",
-	"Certificate Table",
-	"Base Relocation Table",
-	"Debug",
-	"Architecture",
-	"Global Ptr",
-	"Thread Local Storage (TLS) Table", // 9
-	"Load Config Table",
-	"Bound Import",
-	"Import Address Table (IAT)",
-	"Delay Import Descriptor",
-	"CLR Runtime Header", "" // 15
-};
 
 static const RESOURCE_ENTRY resource_types[] = 
 {

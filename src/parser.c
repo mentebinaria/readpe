@@ -88,7 +88,6 @@ void parse_options(int argc, char *argv[])
 
 	// setting all fields to false
 	memset(&config, false, sizeof(config));
-
 	config.format = FORMAT_TEXT;
 
 	if (argc == 2)
@@ -142,6 +141,9 @@ void parse_options(int argc, char *argv[])
 
 			case 'f':
 				parse_format(optarg); break;
+
+			case 'D':
+				config.disasm_section = optarg; break;
 
 			default:
 				fprintf(stderr, "pev: try '--help' for more information\n");

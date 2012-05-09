@@ -98,7 +98,7 @@ void print_section_disasm(PE_FILE *pe,IMAGE_SECTION_HEADER *section)
 void print_sections(PE_FILE *pe)
 {
 	char s[MAX_MSG];
-	int i;
+	unsigned int i;
 	unsigned int j;
 
 	char *flags[] = {
@@ -160,7 +160,7 @@ void print_sections(PE_FILE *pe)
 void print_directories(PE_FILE *pe)
 {
 	char s[MAX_MSG];
-	int i;
+	unsigned int i;
 
 	static const char *directory_names[] =
 	{
@@ -552,7 +552,7 @@ void print_dos_header(IMAGE_DOS_HEADER *header)
 void print_resources(PE_FILE *pe)
 {
 	char s[MAX_MSG];
-	int i;
+	unsigned int i;
 	unsigned int j;
 	static const RESOURCE_ENTRY r[] = 
 		{   

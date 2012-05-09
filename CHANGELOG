@@ -6,13 +6,14 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.50 - April ??, 2012
+pev 0.50 - May?, 2012
  + New modularized code with libpe.
  + Support for full resource extratcion.
- + Output in monospaced text (default) and csv.
- + x86 and x86-64 disassembly support, using libudis86 1.7.
+ + Output in monospaced text and csv.
+ + x86 and x86-64 disassembly support, using libudis86 (thanks to @ztiago).
  + Get imported and exported functions.
- + Fake entrypoint detection (commonly in packed/encrypted files).
+ + Fake entrypoint detection (thanks to @barongello).
+ + xmalloc trick and fixes by @bsdaemon.
  ! Missing other output formats like xml and html.
  ! Some infinite loops with tiny/corrupted PE files.
 

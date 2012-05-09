@@ -64,6 +64,10 @@ typedef uint64_t QWORD;
 #define RT_DLGINIT        240  // strings used for initiating some controls in dialogs
 #define RT_TOOLBAR        241  // configuration of toolbars
 
+/* xmalloc trick */
+void *xmalloc(unsigned size);
+#define malloc(m) xmalloc(m)
+
 typedef struct _RESOURCE_ENTRY
 {
 	char name[20];
@@ -278,9 +282,9 @@ typedef struct _PE_FILE
 	int architecture;
 	long entrypoint;
 	
-	int num_sections;
-	int num_directories;
-	int num_rsrc_entries;
+	unsigned int num_sections;
+	unsigned int num_directories;
+	unsigned int num_rsrc_entries;
 	
 	int addr_sections;
 	int addr_directories;

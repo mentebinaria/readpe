@@ -35,7 +35,7 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 	if (!pe->addr_sections || !pe->num_sections)
 		pe_get_sections(pe);
 
-	for (int i=0; i < pe->num_sections; i++)
+	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
 			return pe->sections_ptr[i];
@@ -46,7 +46,7 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 bool pe_get_resource_entries(PE_FILE *pe)
 {
 	IMAGE_RESOURCE_DIRECTORY dir;
-	int i;
+	unsigned int i;
 	
 	if (pe->rsrc_entries_ptr)
 		return pe->rsrc_entries_ptr;
@@ -69,7 +69,7 @@ bool pe_get_resource_entries(PE_FILE *pe)
 
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 {
-	int i;
+	unsigned int i;
 	
 	if (!pe->addr_rsrc_sec)
 		pe->addr_rsrc_sec = (pe_get_section(pe, ".rsrc"))->PointerToRawData;
@@ -131,7 +131,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 bool pe_get_sections(PE_FILE *pe)
 {
 	IMAGE_SECTION_HEADER **sections;
-	int i;
+	unsigned int i;
 
 	if (pe->sections_ptr)
 		return true;
@@ -157,7 +157,7 @@ bool pe_get_sections(PE_FILE *pe)
 bool pe_get_directories(PE_FILE *pe)
 {
 	IMAGE_DATA_DIRECTORY **dirs;
-	int i;
+	unsigned int i;
 
 	if (pe->directories_ptr)
 	{
@@ -286,9 +286,6 @@ bool ispe(PE_FILE *pe)
 
 IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
 {
-   // Wagner Barongello <wagner@barongello.com.br>
-   // 2012-03-29
-
 	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
 		pe_get_optional(pe);
 
@@ -300,7 +297,7 @@ IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
    {
       DWORD ep = (pe->optional_ptr->_32 ? pe->optional_ptr->_32->AddressOfEntryPoint :
 		(pe->optional_ptr->_64 ? pe->optional_ptr->_64->AddressOfEntryPoint : 0));
-      int i = 0;
+      unsigned int i = 0;
 
       while (i < pe->num_sections &&
       (ep < pe->sections_ptr[i]->VirtualAddress || ep >= pe->sections_ptr[i]->VirtualAddress
@@ -316,7 +313,7 @@ IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
 
 void pe_deinit(PE_FILE *pe)
 {
-	int i;
+	unsigned int i;
 
 	if (pe->handle)
 		fclose(pe->handle);

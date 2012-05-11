@@ -1,7 +1,7 @@
 LIBPE=../lib/libpe
 LIBUDIS86=../lib/libudis86
 WARN=-W -Wall -Wextra -std=c99 -pedantic
-COMMON=xmalloc.c output.c
+COMMON=output.c
 
 all: readpe pedis fakeoep
 

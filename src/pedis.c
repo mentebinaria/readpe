@@ -110,10 +110,7 @@ void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 	BYTE *buff;
 
 	// allocate a buffer with same section size
-	buff = (BYTE *) malloc(section->SizeOfRawData);
-
-	if (!buff)
-		EXIT_ERROR("error allocating memory");
+	buff = (BYTE *) xmalloc(section->SizeOfRawData);
 
 	ud_init(&ud_obj);
 

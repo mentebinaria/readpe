@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 	
 	if (sec_fake_ep)
 	{
-		printf("Fake EP outside section: %#x\n", ep);
+		printf("Fake EP outside code section: %#x\n", ep);
 		return 0;
 	}
 	

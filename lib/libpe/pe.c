@@ -17,7 +17,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "include/libpe.h"
+#include "pe.h"
 
 bool pe_init(PE_FILE *pe, FILE *handle)
 {
@@ -34,7 +34,7 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 {
 	if (!pe->addr_sections || !pe->num_sections)
 		pe_get_sections(pe);
-
+		
 	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
@@ -282,33 +282,6 @@ bool ispe(PE_FILE *pe)
 		return true;
 
 	return false;
-}
-
-IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe)
-{
-	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
-		pe_get_optional(pe);
-
-	if (!pe->num_sections || !pe->sections_ptr)
-		pe_get_sections(pe);
-
-   if (((pe->optional_ptr->_32 && pe->optional_ptr->_32->AddressOfEntryPoint) ||
-	(pe->optional_ptr->_64 && pe->optional_ptr->_64->AddressOfEntryPoint)) && pe->num_sections)
-   {
-      DWORD ep = (pe->optional_ptr->_32 ? pe->optional_ptr->_32->AddressOfEntryPoint :
-		(pe->optional_ptr->_64 ? pe->optional_ptr->_64->AddressOfEntryPoint : 0));
-      unsigned int i = 0;
-
-      while (i < pe->num_sections &&
-      (ep < pe->sections_ptr[i]->VirtualAddress || ep >= pe->sections_ptr[i]->VirtualAddress
-		+ pe->sections_ptr[i]->Misc.VirtualSize))
-         i++;
-
-      if (i < pe->num_sections && !(pe->sections_ptr[i]->Characteristics & 0x00000020))
-		   return pe->sections_ptr[i];
-   }
-
-   return NULL;
 }
 
 void pe_deinit(PE_FILE *pe)

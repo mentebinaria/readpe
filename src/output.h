@@ -17,19 +17,19 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef OUTPUT_H
+#define OUTPUT_H
 
-#ifdef __DEBUG_MODE__
-	#define EXIT_WITH_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s, %d: %s\n", __FILE__, __LINE__, msg); \
-				exit(EXIT_FAILURE); \
-			}
-#else
-	#define EXIT_WITH_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s: %s\n", PACKAGE, msg); \
-				exit(EXIT_FAILURE); \
-			}
+void parse_format(const char *optarg);
+void output(char *field, char *value);
+
+typedef enum {
+	FORMAT_TEXT = 1,
+	FORMAT_HTML = 2,
+	FORMAT_XML = 3,
+	FORMAT_CSV = 4
+} format_e;
+
+format_e format;
+
 #endif

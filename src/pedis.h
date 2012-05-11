@@ -1,5 +1,5 @@
 /*
-	pev - the PE file analyzer
+	pedis - PE section disassembler
 
 	Copyright (C) 2010 - 2012 Fernando Mercês
 
@@ -17,29 +17,26 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef READPE_H 
+#define READPE_H
 #include <stdbool.h>
 #include <string.h>
-#include "common.h"
+#include <stdio.h>
+
+#define PROGRAM "pedis"
+#define VERSION "0.50"
+
+#define SYN_ATT 1
+#define SYN_INTEL 0
 
 void parse_options(int argc, char *argv[]);
 
 struct options {
-	bool all;
-	bool dos;
-	bool coff;
-	bool opt;
-	bool dirs;
-	bool imports;
-	bool exports;
-	bool resources;
-	bool product;
-	bool all_headers;
 	bool all_sections;
-	format_e format;
-	char *disasm_section;
-	bool asm_syntax;
+	char *section;
+	bool syntax;
 };
+
+struct options config;
 
 #endif

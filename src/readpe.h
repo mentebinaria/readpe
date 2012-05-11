@@ -17,12 +17,27 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OUTPUT_H
-#define OUTPUT_H 1
-
+#ifndef READPE_H
+#define READPE_H
+#include <stdbool.h>
+#include <string.h>
 #include <stdio.h>
-#include "parser.h"
 
-void output(char *field, char *value);
+#define PROGRAM "readpe"
+#define VERSION "0.50"
+
+struct options {
+	bool all;
+	bool dos;
+	bool coff;
+	bool opt;
+	bool dirs;
+	bool imports;
+	bool exports;
+	bool all_headers;
+	bool all_sections;
+};
+
+struct options config;
 
 #endif

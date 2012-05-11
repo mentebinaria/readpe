@@ -22,15 +22,123 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
-#include "lib/udis86.h"
+#include <getopt.h>
 
-#include "include/libpe.h"
-#include "include/output.h"
-#include "include/parser.h"
+#include <pe.h>
+#include "output.h"
+#include "readpe.h"
+#include "common.h"
 
 #define MAX_MSG 50
 
 extern struct options config;
+static int ind;
+
+void usage()
+{
+	printf("Usage: %s OPTIONS FILE\n\n", PROGRAM);
+	
+	printf(
+	"-A, --all                              full output (default)\n"
+	"-H, --all-headers                      print all PE headers\n"
+	"-S, --all-sections                     print all PE sections headers\n"
+	"-h, --header <dos|coff|optional>       show sepecific header\n"
+	"-d, --dirs                             show data directories\n"
+	"-f, --format <format>                  set output format\n"
+	"-i, --imports                          print imported functions (not available yet)\n"
+	"-e, --exports                          print exported functions (not available yet)\n"
+	"-v, --version                          show version and exit\n"
+	"--help                                 show this help and exit\n"
+	);
+
+}
+
+void parse_headers(const char *optarg)
+{
+	if (! strcmp(optarg, "dos"))
+		config.dos = true;
+	else if (! strcmp(optarg, "coff"))
+		config.coff = true;
+	else if (! strcmp(optarg, "optional"))
+		config.opt = true;
+	else
+		EXIT_ERROR("invalid header option");
+}
+
+void parse_options(int argc, char *argv[])
+{
+	int c;
+
+	/* Parameters for getopt_long() function */
+	static const char short_options[] = "AHSh:de:f:v";
+
+	static const struct option long_options[] = {
+		{"help",             no_argument,       NULL,  1 },
+		{"all",              no_argument,       NULL, 'A'},
+		{"all-headers",      no_argument,       NULL, 'H'},
+		{"all-sections",     no_argument,       NULL, 'S'},
+		{"header",           required_argument, NULL, 'h'},
+		{"imports",          no_argument,       NULL, 'i'},
+		{"exports",          no_argument,       NULL, 'e'},
+		{"dirs",             no_argument,       NULL, 'd'},
+		{"format",           required_argument, NULL, 'f'},
+		{"version",          no_argument,       NULL, 'v'},
+		{ NULL,              0,                 NULL,  0 }
+	};
+
+	// setting all fields to false
+	memset(&config, false, sizeof(config));
+
+	if (argc == 2)
+		config.all = true;
+
+	while ((c = getopt_long(argc, argv, short_options,
+			long_options, &ind)))
+	{
+		if (c < 0)
+			break;
+
+
+		switch (c)
+		{
+			case 1:		// --help option
+				usage();
+				exit(EXIT_SUCCESS);
+
+			case 'A':
+				config.all = true; break;
+
+			case 'H':
+				config.all_headers = true; break;
+
+			case 'c':
+				config.coff = true; break;
+
+			case 'd':
+				config.dirs = true; break;
+
+			case 'o':
+				config.opt = true; break;
+
+			case 'S':
+				config.all_sections = true; break;
+
+			case 'v':
+				printf("%s %s\n", PROGRAM, VERSION);
+				exit(EXIT_SUCCESS);
+
+			case 'h':
+				parse_headers(optarg); break;
+
+			case 'f':
+				parse_format(optarg); break;
+
+			default:
+				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
+				exit(EXIT_FAILURE);
+		}
+	}
+}
 
 char *dec2bin(unsigned int dec, char *bin, int bits)
 {
@@ -41,58 +149,6 @@ char *dec2bin(unsigned int dec, char *bin, int bits)
 	bin[bits] = '\0';
 
 	return bin;
-}
-
-void print_section_disasm(PE_FILE *pe,IMAGE_SECTION_HEADER *section)
-{
-	// Tiago Zaniquelli <ztiago@gmail.com>
-	ud_t ud_obj;
-	BYTE *buff;
-
-	// allocate a buffer with same section size
-	buff = (BYTE *) malloc(section->SizeOfRawData);
-
-	if (!buff)
-		EXIT_WITH_ERROR("error allocating memory");
-
-	ud_init(&ud_obj);
-
-	// sets handle to section beginning
-	fseek(pe->handle, section->PointerToRawData, SEEK_SET);
-
-	if (!fread(buff, section->SizeOfRawData, 1, pe->handle))
-		EXIT_WITH_ERROR("error seeking through file");
-
-	// passes entire section to libudis86
-	ud_set_input_buffer(&ud_obj, buff, section->SizeOfRawData);
-
-	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
-		pe_get_optional(pe);
-
-	if (pe->optional_ptr->_32)
-		ud_set_mode(&ud_obj, 32);
-	else if (pe->optional_ptr->_64)
-		ud_set_mode(&ud_obj, 64);
-	else
-		EXIT_WITH_ERROR("unable to detect PE architecture");
-
-	// intel syntax
-	ud_set_syntax(&ud_obj, config.asm_syntax ? UD_SYN_ATT : UD_SYN_INTEL);
-
-	while (ud_disassemble(&ud_obj))
-	{
-		char ofs[MAX_MSG], s[MAX_MSG];
-
-		snprintf(ofs, MAX_MSG, "%016"PRIx64, 
-			((pe->optional_ptr->_32 ? pe->optional_ptr->_32->ImageBase : 
-			(pe->optional_ptr->_64 ? pe->optional_ptr->_64->ImageBase : 0))) +
-			section->PointerToRawData +
-			ud_insn_off(&ud_obj));
-		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
-		output(ofs, s);
-	}
-
-	free(buff);
 }
 
 void print_sections(PE_FILE *pe)
@@ -239,17 +295,7 @@ void print_optional_header(PE_FILE *pe)
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfUninitializedData);
 		output("Size of .bss secion", s);
 
-		IMAGE_SECTION_HEADER *sec_fake_ep = pe_check_fake_entrypoint(pe);
-
-		if (sec_fake_ep)
-		{
-			snprintf(s, MAX_MSG, "%#x (%s) --> outside of code section",
-			         pe->optional_ptr->_32->AddressOfEntryPoint,
-						sec_fake_ep->Name);
-		}
-		else
-			snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->AddressOfEntryPoint);
-
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->AddressOfEntryPoint);
 		output("Entrypoint", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->BaseOfCode);
@@ -333,17 +379,7 @@ void print_optional_header(PE_FILE *pe)
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfUninitializedData);
 		output("Size of .bss secion", s);
 
-		IMAGE_SECTION_HEADER *sec_fake_ep = pe_check_fake_entrypoint(pe);
-
-		if (sec_fake_ep)
-		{
-			snprintf(s, MAX_MSG, "%#x --> entrypoint outside of code section %s",
-			         pe->optional_ptr->_64->AddressOfEntryPoint,
-						sec_fake_ep->Name);
-		}
-		else
-			snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
-
+		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
 		output("Entrypoint", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->BaseOfCode);
@@ -549,69 +585,22 @@ void print_dos_header(IMAGE_DOS_HEADER *header)
 	output("PE header offset", s);
 }
 
-void print_resources(PE_FILE *pe)
-{
-	char s[MAX_MSG];
-	unsigned int i;
-	unsigned int j;
-	static const RESOURCE_ENTRY r[] = 
-		{   
-			{"RT_CURSOR", 1}, 
-			{"RT_BITMAP", 2}, 
-			{"RT_ICON", 3}, 
-			{"RT_MENU", 4}, 
-			{"RT_DIALOG", 5}, 
-			{"RT_STRING", 6}, 
-			{"RT_FONTDIR", 7}, 
-			{"RT_FONT", 8}, 
-			{"RT_ACCELERATOR", 9}, 
-			{"RT_RCDATA", 10},
-			{"RT_MESSAGETABLE", 11},
-			{"RT_GROUP_CURSOR", 12},
-			{"RT_GROUP_ICON", 14},
-			{"RT_VERSION", 16},
-			{"RT_DLGINCLUDE", 17},
-			{"RT_PLUGPLAY", 19},
-			{"RT_VXD", 20},
-			{"RT_ANICURSOR", 21},
-			{"RT_ANIICON", 22},
-			{"RT_HTML", 23},
-			{"RT_MANIFEST", 24},
-			{"RT_DLGINIT", 240},
-			{"RT_TOOLBAR", 241}
-		};
-	
-		output("Resources", NULL);
-		for (i=0; i<pe->num_rsrc_entries;i++)
-		{
-			for (j=0; j<sizeof(r) / sizeof(r[0]); j++)
-			{
-				if (pe->rsrc_entries_ptr[i]->u1.Name == r[j].code)
-				{
-					snprintf(s, MAX_MSG, "%s", r[j].name);
-					output("Type", s);
-					snprintf(s, MAX_MSG, "%#x\n", pe->rsrc_entries_ptr[i]->u2.s2.OffsetToDirectory);
-					output("OffsetToDirectory", s);
-					break;
-				}
-			}
-		}
-}
-
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
+	
+	format = FORMAT_TEXT;
 
 	parse_options(argc, argv); // opcoes
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
-		EXIT_WITH_ERROR("file not found or unreadable");
+		EXIT_ERROR("file not found or unreadable");
 
 	pe_init(&pe, fp); // inicializa o struct pe
 
 	if (!ispe(&pe))
-		EXIT_WITH_ERROR("not a valid PE file");
+		EXIT_ERROR("not a valid PE file");
 
 	// dos header
 	if (config.dos || config.all_headers || config.all)
@@ -620,7 +609,7 @@ int main(int argc, char *argv[])
 
 		if (pe_get_dos(&pe, &dos))
 			print_dos_header(&dos);
-		else { EXIT_WITH_ERROR("unable to read DOS header"); }
+		else { EXIT_ERROR("unable to read DOS header"); }
 	}
 
 	// coff/file header
@@ -630,7 +619,7 @@ int main(int argc, char *argv[])
 
 		if (pe_get_coff(&pe, &coff))
 			print_coff_header(&coff);
-		else { EXIT_WITH_ERROR("unable to read COFF file header"); }
+		else { EXIT_ERROR("unable to read COFF file header"); }
 	}
 
 	// optional header
@@ -638,7 +627,7 @@ int main(int argc, char *argv[])
 	{
 		if (pe_get_optional(&pe))
 			print_optional_header(&pe);
-		else { EXIT_WITH_ERROR("unable to read Optional (Image) file header"); }
+		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
 	}
 
 	// directories
@@ -646,7 +635,7 @@ int main(int argc, char *argv[])
 	{
 		if (pe_get_directories(&pe))
 			print_directories(&pe);
-		else { EXIT_WITH_ERROR("unable to read the Directories entry from Optional header"); }
+		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// sections
@@ -654,42 +643,7 @@ int main(int argc, char *argv[])
 	{
 		if (pe_get_sections(&pe))
 			print_sections(&pe);
-		else { EXIT_WITH_ERROR("unable to read Section header"); }
-	}
-
-	// imports
-	/*
-	if (config.imports || config.all)
-	{
-		if ((pe.num_directories || pe_get_directories(&pe)) && (pe.num_sections || pe_get_sections(&pe)))
-			//print_imports(&pe);
-			printf("imports will be here soon!\n");
-		else { EXIT_WITH_ERROR("unable to read Imports"); }
-	}
-	*/
-
-	// resources
-	if (config.resources || config.all)
-	{
-		if (pe_get_resource_entries(&pe))
-			print_resources(&pe);
-		else if (config.resources)
-		{
-			EXIT_WITH_ERROR("unable to read resources");
-		}
-	}
-
-	// section disassemby
-	if (config.disasm_section)
-	{
-		IMAGE_SECTION_HEADER *section;
-
-		// search for section name
-		section = pe_get_section(&pe, config.disasm_section);
-
-		if (section) // section found
-			print_section_disasm(&pe, section);
-		else { EXIT_WITH_ERROR("invalid section name"); }
+		else { EXIT_ERROR("unable to read Section header"); }
 	}
 
 	// libera a memoria

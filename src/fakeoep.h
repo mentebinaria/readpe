@@ -1,5 +1,5 @@
 /*
-	pev - the PE file analyzer
+	fakeoep - check for fake entry point in PE files
 
 	Copyright (C) 2010 - 2012 Fernando Mercês
 
@@ -17,38 +17,15 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COMMON_H
-#define COMMON_H
-
-#include <stdlib.h>
+#ifndef FAKEOEP_H 
+#define FAKEOEP_H
+#include <stdbool.h>
+#include <string.h>
 #include <stdio.h>
 
-#define PACKAGE "pev"
+#define PROGRAM "fakeoep"
 #define VERSION "0.50"
 
-/* Output formats */
-typedef enum {
-	FORMAT_TEXT = 1,
-	FORMAT_HTML = 2,
-	FORMAT_XML = 3,
-	FORMAT_CSV = 4
-} format_e;
-
-#define SYN_ATT 1
-#define SYN_INTEL 0
-
-#ifdef __DEBUG_MODE__
-	#define EXIT_WITH_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s, %d: %s\n", __FILE__, __LINE__, msg); \
-				exit(EXIT_FAILURE); \
-			}
-#else
-	#define EXIT_WITH_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s: %s\n", PACKAGE, msg); \
-				exit(EXIT_FAILURE); \
-			}
-#endif
+void parse_options(int argc, char *argv[]);
 
 #endif

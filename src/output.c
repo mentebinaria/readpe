@@ -17,14 +17,30 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "include/output.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
+#include "output.h"
+#include "common.h"
+
+extern format_e format;
 
 #define SPACES 30
 
-extern struct options config;
+void parse_format(const char *optarg)
+{
+	if (! strcmp(optarg, "text"))
+		format = FORMAT_TEXT;
+	else if (! strcmp(optarg, "xml"))
+		format = FORMAT_XML;
+   else if (! strcmp(optarg, "csv"))
+		format = FORMAT_CSV;
+   else if (! strcmp(optarg, "html"))
+		format = FORMAT_HTML;
+	else
+		EXIT_ERROR("invalid format option");
+}
 
 void to_text(char *field, char *value)
 {
@@ -70,7 +86,7 @@ void to_html(char *field, char *value)
 
 void output(char *field, char *value)
 {
-	switch (config.format)
+	switch (format)
 	{
 		case FORMAT_TEXT:
 			to_text(field, value);

@@ -9,3 +9,5 @@ Debug
 .project
 *.swp
 *~
+*.so*
+*.o

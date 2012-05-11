@@ -8,7 +8,7 @@ all:
 	gcc -shared -Wl,-soname,libpe.so.1 -o libpe.so.$(VERSION) libpe.o
 
 clean:
-	rm *.so* *.o
+	rm -f *.so* *.o
 
 install:
 	cp libpe.so.1.0 $(DEST)

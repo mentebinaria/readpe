@@ -64,6 +64,8 @@ typedef uint64_t QWORD;
 #define RT_DLGINIT        240  // strings used for initiating some controls in dialogs
 #define RT_TOOLBAR        241  // configuration of toolbars
 
+#pragma pack(push, 1)
+
 typedef struct _RESOURCE_ENTRY
 {
 	char name[20];
@@ -294,11 +296,13 @@ typedef struct _PE_FILE
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
 	IMAGE_SECTION_HEADER **sections_ptr;
 	IMAGE_DATA_DIRECTORY **directories_ptr;
-	IMAGE_TLS_DIRECTORY32 *tls_ptr;
+	//IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
 	
 } PE_FILE;
+
+#pragma pack(pop)
 
 static const RESOURCE_ENTRY resource_types[] = 
 {
@@ -344,7 +348,7 @@ bool pe_get_optional(PE_FILE *pe);
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header);
 bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 
-bool pe_get_tls_callbacks(PE_FILE *pe);
+//bool pe_get_tls_callbacks(PE_FILE *pe);
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);
 bool pe_get_resource_entries(PE_FILE *pe);
 

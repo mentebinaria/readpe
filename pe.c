@@ -1,5 +1,5 @@
 /*
-	pev - the PE file analyzer
+	libpe - the PE library
 
 	Copyright (C) 2010 - 2012 Fernando Mercês
 
@@ -19,6 +19,19 @@
 
 #include "pe.h"
 
+void *xmalloc(unsigned int size)
+{
+	void *new_mem = malloc(size);	
+
+	if (new_mem == NULL)
+	{
+		fprintf(stderr, "fatal: memory exhausted (xmalloc of %u bytes)\n", size);
+		exit(-1);
+	}
+
+	return new_mem;
+}
+
 bool pe_init(PE_FILE *pe, FILE *handle)
 {
 	if (!pe || !handle)
@@ -32,8 +45,14 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 
 IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 {
+	if (!pe || !section_name)
+		return NULL;
+
 	if (!pe->addr_sections || !pe->num_sections)
 		pe_get_sections(pe);
+
+	if (!pe->num_sections || pe->num_sections > 96)
+		return NULL;
 		
 	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
@@ -46,41 +65,50 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 bool pe_get_resource_entries(PE_FILE *pe)
 {
 	IMAGE_RESOURCE_DIRECTORY dir;
-	unsigned int i;
+
+	if (!pe)
+		return false;
 	
 	if (pe->rsrc_entries_ptr)
 		return pe->rsrc_entries_ptr;
 	
-	pe_get_resource_directory(pe, &dir);
+	if (!pe_get_resource_directory(pe, &dir))
+		return false;
+
 	pe->num_rsrc_entries = dir.NumberOfIdEntries + dir.NumberOfNamedEntries;
+
+	if (!pe->num_rsrc_entries)
+		return false;
+
 	pe->rsrc_entries_ptr = (IMAGE_RESOURCE_DIRECTORY_ENTRY **)
-	malloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
+	xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
 	
-	for (i=0; i < pe->num_rsrc_entries; i++)
+	for (unsigned int i=0; i < pe->num_rsrc_entries; i++)
 	{
-		pe->rsrc_entries_ptr[i] = (IMAGE_RESOURCE_DIRECTORY_ENTRY *) malloc
+		pe->rsrc_entries_ptr[i] = (IMAGE_RESOURCE_DIRECTORY_ENTRY *) xmalloc
 		(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
 		
 		if (! fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
 			return false;
 	}
-	return true;	
+	return true;
 }
 
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 {
-	unsigned int i;
+	if (!pe)
+		return false;
 	
 	if (!pe->addr_rsrc_sec)
 		pe->addr_rsrc_sec = (pe_get_section(pe, ".rsrc"))->PointerToRawData;
 
-	for (i=0; i < pe->num_sections; i++)
+	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, ".rsrc", 5) == 0)
 		{
 			pe->addr_rsrc_dir = pe->sections_ptr[i]->PointerToRawData;
 			fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET);
-			fread(dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
+			fread(dir, sizeof(dir), 1, pe->handle);
 			return true;
 		}
 	}
@@ -111,7 +139,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 		if (tls_addr > pe->sections_ptr[i].VirtualAddress &&
 		    tls_addr < (pe->sections_ptr[i].VirtualAddress + pe->sections_ptr[i].SizeOfRawData))
 		{
-			tlsdir = (IMAGE_TLS_DIRECTORY32 *) malloc(sizeof(tlsdir));
+			tlsdir = (IMAGE_TLS_DIRECTORY32 *) xmalloc(sizeof(tlsdir));
 
 			fseek(pe->handle, tls_addr - pe->sections_ptr[i].VirtualAddress
 			+ pe->sections_ptr[i].PointerToRawData, SEEK_SET);
@@ -131,25 +159,35 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 bool pe_get_sections(PE_FILE *pe)
 {
 	IMAGE_SECTION_HEADER **sections;
-	unsigned int i;
+
+	if (!pe)
+		return false;
 
 	if (pe->sections_ptr)
 		return true;
 
 	if (!pe->addr_sections || !pe->num_sections)
-		pe_get_directories(pe);
+	{
+		if (!pe_get_directories(pe))
+			return false;
+	}
+
+	if (pe->num_sections > 96)
+		return false;
 
 	fseek(pe->handle, pe->addr_sections, SEEK_SET);
+	sections = (IMAGE_SECTION_HEADER **) xmalloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
 
-	sections = (IMAGE_SECTION_HEADER **) malloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
-
-	for (i=0; i < pe->num_sections; i++)
+	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
-		sections[i] = (IMAGE_SECTION_HEADER *) malloc(sizeof(IMAGE_SECTION_HEADER));
+		sections[i] = (IMAGE_SECTION_HEADER *) xmalloc(sizeof(IMAGE_SECTION_HEADER));
 		fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle);
 	}
 
 	pe->sections_ptr = sections;
+
+	if (!pe->sections_ptr)
+		return false;
 
 	return true;
 }
@@ -157,31 +195,38 @@ bool pe_get_sections(PE_FILE *pe)
 bool pe_get_directories(PE_FILE *pe)
 {
 	IMAGE_DATA_DIRECTORY **dirs;
-	unsigned int i;
+
+	if (!pe)
+		return false;
 
 	if (pe->directories_ptr)
-	{
-		dirs = pe->directories_ptr;
 		return true;
-	}
 
 	if (!pe->addr_directories)
 	{
-		pe_get_optional(pe);
+		if (!pe_get_optional(pe))
+			return false;
 	}
 
-	fseek(pe->handle, pe->addr_directories, SEEK_SET);
+	if (fseek(pe->handle, pe->addr_directories, SEEK_SET))
+		return false;
 
-	dirs = (IMAGE_DATA_DIRECTORY **) malloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
+	if (pe->num_directories > 32)
+		return false;
 
-	for (i=0; i < pe->num_directories; i++)
+	dirs = (IMAGE_DATA_DIRECTORY **) xmalloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
+
+	for (unsigned int i=0; i < pe->num_directories; i++)
 	{
-		dirs[i] = (IMAGE_DATA_DIRECTORY *) malloc(sizeof(IMAGE_DATA_DIRECTORY));
+		dirs[i] = (IMAGE_DATA_DIRECTORY *) xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
 		fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle);
 	}
 
 	pe->addr_sections = ftell(pe->handle);
 	pe->directories_ptr = dirs;
+
+	if (!pe->addr_sections || !pe->directories_ptr)
+		return false;
 
 	return true;
 }
@@ -200,26 +245,30 @@ bool pe_get_optional(PE_FILE *pe)
 	{
 		IMAGE_COFF_HEADER coff;
 
-		pe_get_coff(pe, &coff);
+		if (!pe_get_coff(pe, &coff))
+			return false;
 	}
 
-	fseek(pe->handle, pe->addr_optional, SEEK_SET);
+	if (fseek(pe->handle, pe->addr_optional, SEEK_SET))
+		return false;
 
-	header = (IMAGE_OPTIONAL_HEADER *) malloc(sizeof(IMAGE_OPTIONAL_HEADER));
+	header = (IMAGE_OPTIONAL_HEADER *) xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
 
 	switch (pe->architecture)
 	{
 		case PE32:
-			header->_32 = (IMAGE_OPTIONAL_HEADER_32 *) malloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
-			fread(header->_32, sizeof(IMAGE_OPTIONAL_HEADER_32), 1, pe->handle);
+			header->_32 = (IMAGE_OPTIONAL_HEADER_32 *) xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
+			if (!fread(header->_32, sizeof(IMAGE_OPTIONAL_HEADER_32), 1, pe->handle))
+				return false;
 			pe->num_directories = header->_32->NumberOfRvaAndSizes;
 			pe->entrypoint = header->_32->AddressOfEntryPoint;
 			header->_64 = NULL;
 			break;
 
 		case PE64:
-			header->_64 = (IMAGE_OPTIONAL_HEADER_64 *) malloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
-			fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle);
+			header->_64 = (IMAGE_OPTIONAL_HEADER_64 *) xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
+			if (!fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle))
+				return false;
 			pe->num_directories = header->_64->NumberOfRvaAndSizes;
 			pe->entrypoint = header->_64->AddressOfEntryPoint;
 			header->_32 = NULL;
@@ -232,40 +281,62 @@ bool pe_get_optional(PE_FILE *pe)
 	pe->optional_ptr = header;
 	pe->addr_directories = ftell(pe->handle);
 
+	if (!pe->optional_ptr || !pe->addr_directories)
+		return false;
+
 	return true;
 }
 
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header)
 {
-	int read;
+	if (!pe)
+		return false;
 
 	if (!pe->addr_coff)
 	{
 		IMAGE_DOS_HEADER dos;
 
-		pe_get_dos(pe, &dos);
+		if (!pe_get_dos(pe, &dos))
+			return false;
 	}
 
-	fseek(pe->handle, pe->addr_coff, SEEK_SET);
-	read = fread(header, sizeof(IMAGE_COFF_HEADER), 1, pe->handle);
+	if (!pe->handle)
+		return false;
+
+	if (fseek(pe->handle, pe->addr_coff, SEEK_SET))
+		return false;
+
+	if (!fread(header, sizeof(IMAGE_COFF_HEADER), 1, pe->handle))
+		return false;
 
 	pe->num_sections = header->NumberOfSections;
 	pe->addr_optional = ftell(pe->handle);
 
-	fread(&pe->architecture, sizeof(WORD), 1, pe->handle);
+	if (!fread(&pe->architecture, sizeof(WORD), 1, pe->handle))
+		return false;
 
-	return read;
+	if(!pe->num_sections || !pe->addr_optional)
+		return false;
+
+	return true;
 }
 
 bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 {
-	int read;
+	if (!pe)
+		return false;
+	
+	if (!pe->handle)
+		return false;
 
 	rewind(pe->handle);
-	read = fread(header, sizeof(IMAGE_DOS_HEADER), 1, pe->handle);
-	pe->addr_coff = header->e_lfanew + 4; // PE\0\0
 
-	return read;
+	if (!fread(header, sizeof(IMAGE_DOS_HEADER), 1, pe->handle))
+		return false;
+
+	pe->addr_coff = header->e_lfanew + 4; // NT signature (PE\0\0)
+
+	return true;
 }
 
 bool ispe(PE_FILE *pe)

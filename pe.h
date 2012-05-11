@@ -1,5 +1,5 @@
 /*
-	pev - the PE file analyzer
+	pev - libpe the PE library
 
 	Copyright (C) 2010 - 2012 Fernando Mercês
 
@@ -63,10 +63,6 @@ typedef uint64_t QWORD;
 #define RT_MANIFEST       24   // manifest of Windows XP build
 #define RT_DLGINIT        240  // strings used for initiating some controls in dialogs
 #define RT_TOOLBAR        241  // configuration of toolbars
-
-// xmalloc trick
-void *xmalloc(unsigned size);
-#define malloc(m) xmalloc(m)
 
 typedef struct _RESOURCE_ENTRY
 {
@@ -286,13 +282,13 @@ typedef struct _PE_FILE
 	unsigned int num_directories;
 	unsigned int num_rsrc_entries;
 	
-	int addr_sections;
-	int addr_directories;
-	int addr_dos;
-	int addr_optional;
-	int addr_coff;
-	int addr_rsrc_sec;
-	int addr_rsrc_dir;
+	unsigned int addr_sections;
+	unsigned int addr_directories;
+	unsigned int addr_dos;
+	unsigned int addr_optional;
+	unsigned int addr_coff;
+	unsigned int addr_rsrc_sec;
+	unsigned int addr_rsrc_dir;
 	
 	// pointers (will be freed if needed)
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
@@ -330,6 +326,10 @@ static const RESOURCE_ENTRY resource_types[] =
 	{"RT_DLGINIT", 240},
 	{"RT_TOOLBAR", 241}
 };
+
+
+// wrappers
+void *xmalloc(unsigned size);
 
 // basic functions
 bool ispe(PE_FILE *pe);

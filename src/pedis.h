@@ -19,9 +19,9 @@
 
 #ifndef READPE_H 
 #define READPE_H
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
+
+#include "common.h"
+#include "../lib/libudis86/udis86.h"
 
 #define PROGRAM "pedis"
 #define VERSION "0.50"

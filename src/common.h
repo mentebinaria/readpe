@@ -1,8 +1,14 @@
 #ifndef COMMON_H
 #define COMMON_H 1
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <getopt.h>
+
+#include <pe.h>
+#include "output.h"
 
 #ifdef __DEBUG_MODE__
 	#define EXIT_ERROR(msg) \
@@ -17,5 +23,7 @@
 				exit(EXIT_FAILURE); \
 			}
 #endif
+
+#define MAX_MSG 50
 
 #endif

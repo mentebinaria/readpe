@@ -17,20 +17,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
-#include <stdio.h>
-#include <getopt.h>
-
-#include <pe.h>
-#include "output.h"
-#include "common.h"
-
 #include "fakeoep.h"
-
-#define MAX_MSG 50
 
 static int ind;
 

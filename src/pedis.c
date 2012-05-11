@@ -17,21 +17,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
-#include <stdio.h>
-#include <getopt.h>
-
-#include <pe.h>
-#include "output.h"
-#include "common.h"
-
 #include "pedis.h"
-#include "../lib/libudis86/udis86.h"
-
-#define MAX_MSG 50
 
 extern struct options config;
 static int ind;
@@ -68,7 +54,6 @@ void parse_options(int argc, char *argv[])
 
 	// setting all fields to false
 	memset(&config, false, sizeof(config));
-	format = FORMAT_TEXT;
 	config.syntax = SYN_INTEL;
 
 	while ((c = getopt_long(argc, argv, short_options,

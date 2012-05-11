@@ -19,9 +19,8 @@
 
 #ifndef FAKEOEP_H 
 #define FAKEOEP_H
-#include <stdbool.h>
-#include <string.h>
-#include <stdio.h>
+
+#include "common.h"
 
 #define PROGRAM "fakeoep"
 #define VERSION "0.50"

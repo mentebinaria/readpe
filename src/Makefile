@@ -3,7 +3,7 @@ LIBUDIS86=../lib/libudis86
 WARN=-W -Wall -Wextra -std=c99 -pedantic
 COMMON=output.c
 
-all: readpe pedis fakeoep
+all: readpe pedis fakeoep petls
 
 readpe:
 	gcc $(WARN) -I$(LIBPE) -L$(LIBPE) readpe.c $(COMMON) -o readpe -lpe
@@ -14,5 +14,8 @@ pedis:
 fakeoep:
 	gcc $(WARN) -I$(LIBPE) -L$(LIBPE) fakeoep.c $(COMMON) -o fakeoep -lpe
 
+petls:
+	gcc $(WARN) -I$(LIBPE) -L$(LIBPE) petls.c $(COMMON) -o petls -lpe
+
 clean:
-	rm -f readpe pedis fakeoep
+	rm -f readpe pedis fakeoep petls

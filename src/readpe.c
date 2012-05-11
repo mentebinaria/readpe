@@ -17,19 +17,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <time.h>
-#include <stdio.h>
-#include <getopt.h>
-
-#include <pe.h>
-#include "output.h"
 #include "readpe.h"
-#include "common.h"
-
-#define MAX_MSG 50
 
 extern struct options config;
 static int ind;
@@ -178,6 +166,9 @@ void print_sections(PE_FILE *pe)
 
 	output("Sections", NULL);
 
+	if (pe->num_sections > 96)
+		return;
+
 	for (i=0; i < pe->num_sections; i++)
 	{
 		snprintf(s, MAX_MSG, "%s", pe->sections_ptr[i]->Name);
@@ -272,6 +263,9 @@ void print_optional_header(PE_FILE *pe)
 	"EFI run-time driver",
 	"EFI ROM",
 	"XBOX"};
+
+	if (!pe->optional_ptr)
+		return;
 
 	output("Optional/Image header", NULL);
 
@@ -590,8 +584,6 @@ int main(int argc, char *argv[])
 	PE_FILE pe;
 	FILE *fp = NULL;
 	
-	format = FORMAT_TEXT;
-
 	parse_options(argc, argv); // opcoes
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)

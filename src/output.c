@@ -105,6 +105,7 @@ void output(char *field, char *value)
 			break;
 			
 		default:
+			to_text(field, value);
 			break;
 	}
 }

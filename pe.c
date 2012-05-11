@@ -262,6 +262,7 @@ bool pe_get_optional(PE_FILE *pe)
 				return false;
 			pe->num_directories = header->_32->NumberOfRvaAndSizes;
 			pe->entrypoint = header->_32->AddressOfEntryPoint;
+			//pe->imagebase = header->_32->ImageBase;
 			header->_64 = NULL;
 			break;
 
@@ -271,6 +272,7 @@ bool pe_get_optional(PE_FILE *pe)
 				return false;
 			pe->num_directories = header->_64->NumberOfRvaAndSizes;
 			pe->entrypoint = header->_64->AddressOfEntryPoint;
+			//pe->imagebase = header->_64->ImageBase;
 			header->_32 = NULL;
 			break;
 
@@ -393,9 +395,11 @@ void pe_deinit(PE_FILE *pe)
 		free(pe->sections_ptr);
 	}
 
+	/*
 	if (pe->tls_ptr)
 		free(pe->tls_ptr);
-		
+	*/	
+
 	if (pe->rsrc_entries_ptr)
 	{
 		for (i=0; i < pe->num_rsrc_entries; i++)

@@ -32,6 +32,23 @@ void *xmalloc(unsigned int size)
 	return new_mem;
 }
 
+unsigned long rva2ofs(unsigned long rva, PE_FILE *pe)
+{
+	if (!pe_get_sections(pe))
+		return 0;
+
+	if (!pe->sections_ptr)
+		return 0;
+
+	for (unsigned int i=0; i < pe->num_sections; i++)
+	{   
+		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
+		rva < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
+			return rva - pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData;
+	}
+	return 0;
+}
+
 bool pe_init(PE_FILE *pe, FILE *handle)
 {
 	if (!pe || !handle)
@@ -185,6 +202,7 @@ bool pe_get_sections(PE_FILE *pe)
 	}
 
 	pe->sections_ptr = sections;
+	rewind(pe->handle);
 
 	if (!pe->sections_ptr)
 		return false;
@@ -262,7 +280,7 @@ bool pe_get_optional(PE_FILE *pe)
 				return false;
 			pe->num_directories = header->_32->NumberOfRvaAndSizes;
 			pe->entrypoint = header->_32->AddressOfEntryPoint;
-			//pe->imagebase = header->_32->ImageBase;
+			pe->imagebase = header->_32->ImageBase;
 			header->_64 = NULL;
 			break;
 
@@ -272,7 +290,7 @@ bool pe_get_optional(PE_FILE *pe)
 				return false;
 			pe->num_directories = header->_64->NumberOfRvaAndSizes;
 			pe->entrypoint = header->_64->AddressOfEntryPoint;
-			//pe->imagebase = header->_64->ImageBase;
+			pe->imagebase = header->_64->ImageBase;
 			header->_32 = NULL;
 			break;
 
@@ -348,8 +366,8 @@ bool ispe(PE_FILE *pe)
 	if (pe->handle == NULL)
 		return false;
 
-	rewind(pe->handle);
 	fread(&header, sizeof(WORD), 1, pe->handle);
+	rewind(pe->handle);
 
 	if (header == MZ)
 		return true;

@@ -276,21 +276,22 @@ typedef struct _PE_FILE
 {
 	FILE *handle;
 	
-	int e_lfanew;
-	int architecture;
-	long entrypoint;
+	WORD e_lfanew;
+	WORD architecture;
+	QWORD entrypoint;
+	QWORD imagebase;
 	
-	unsigned int num_sections;
-	unsigned int num_directories;
-	unsigned int num_rsrc_entries;
+	WORD num_sections;
+	WORD num_directories;
+	WORD num_rsrc_entries;
 	
-	unsigned int addr_sections;
-	unsigned int addr_directories;
-	unsigned int addr_dos;
-	unsigned int addr_optional;
-	unsigned int addr_coff;
-	unsigned int addr_rsrc_sec;
-	unsigned int addr_rsrc_dir;
+	WORD addr_sections;
+	WORD addr_directories;
+	WORD addr_dos;
+	WORD addr_optional;
+	WORD addr_coff;
+	WORD addr_rsrc_sec;
+	WORD addr_rsrc_dir;
 	
 	// pointers (will be freed if needed)
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
@@ -338,6 +339,7 @@ void *xmalloc(unsigned size);
 // basic functions
 bool ispe(PE_FILE *pe);
 void pe_deinit(PE_FILE *pe);
+unsigned long rva2ofs(unsigned long rva, PE_FILE *pe);
 
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);

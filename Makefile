@@ -14,3 +14,8 @@ install:
 	cp libpe.so.1.0 $(DEST)
 	ln -sf $(DEST)/libpe.so.$(VERSION) $(DEST)/libpe.so
 	ln -sf $(DEST)/libpe.so.$(VERSION) $(DEST)/libpe.so.1
+
+uninstall:
+	rm -f $(DEST)/libpe.so.1.0
+	rm -f $(DEST)/libpe.so.$(VERSION)
+	rm -f $(DEST)/libpe.so.$(VERSION)

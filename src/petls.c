@@ -79,9 +79,7 @@ int pe_get_tls_directory(PE_FILE *pe)
 		return false;
 
 	if (pe->num_directories > 32)
-		{printf("%d\n", pe->num_directories);puts("aqui");
-		return false;}
-
+		return false;
 
 	for (unsigned int i=0; (i < pe->num_directories) && (pe->directories_ptr[i]); i++)
 	{
@@ -122,7 +120,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, pe->handle))
 					return false;	
 
-				fseek(pe->handle, tlsdir32.AddressOfCallBacks - 0x400000 -
+				fseek(pe->handle, tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase -
 					pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
 			}
 			else if (pe->architecture == PE64)
@@ -132,7 +130,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, pe->handle))
 					return false;	
 
-				fseek(pe->handle, tlsdir64.AddressOfCallBacks - 0x400000 * 2 -
+				fseek(pe->handle, tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase -
 					pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
 			}
 			else

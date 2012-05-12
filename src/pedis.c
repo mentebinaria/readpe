@@ -28,6 +28,7 @@ void usage()
 	
 	printf(
 	"--att                                  set AT&T syntax (Intel default)\n"
+	"-f, --function <address>               disassembly function\n"
 	"-s, --section <section name>           disassembly specific section\n"
 	"-f, --format <text|csv|xml|html>       change output format (default text)\n"
 	"-v, --version                          show version and exit\n"
@@ -41,11 +42,12 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "s:f:v";
+	static const char short_options[] = "F:s:f:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
 		{"att",              no_argument,       NULL,  2 },
+		{"function",         required_argument, NULL, 'F'},
 		{"section",          required_argument, NULL, 's'},
 		{"format",           required_argument, NULL, 'f'},
 		{"version",          no_argument,       NULL, 'v'},
@@ -70,6 +72,9 @@ void parse_options(int argc, char *argv[])
 				
 			case 2:
 				config.syntax = SYN_ATT;
+
+			case 'F':
+				config.function = strtol(optarg, NULL, 0);
 				
 			case 's':
 				config.section = optarg; break;
@@ -90,31 +95,40 @@ void parse_options(int argc, char *argv[])
 
 void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 {
-	// libuds86 needed
+	// libuds86
 	ud_t ud_obj;
 	BYTE *buff;
+	char *ofstr;
 
 	// allocate a buffer with same section size
 	buff = (BYTE *) xmalloc(section->SizeOfRawData);
+	if (!buff)
+		exit(-1);
 
 	ud_init(&ud_obj);
 
-	// sets handle to section beginning
+	// set handle to section start
 	fseek(pe->handle, section->PointerToRawData, SEEK_SET);
 
 	if (!fread(buff, section->SizeOfRawData, 1, pe->handle))
 		EXIT_ERROR("error seeking through file");
 
-	// passes entire section to libudis86
+	// pass entire section to libudis86
 	ud_set_input_buffer(&ud_obj, buff, section->SizeOfRawData);
 
 	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
 		pe_get_optional(pe);
 
-	if (pe->optional_ptr->_32)
+	if (pe->architecture == PE32)
+	{
 		ud_set_mode(&ud_obj, 32);
-	else if (pe->optional_ptr->_64)
+		ofstr = "%08"PRIx64;
+	}
+	else if (pe->architecture == PE64)
+	{
 		ud_set_mode(&ud_obj, 64);
+		ofstr = "%016"PRIx64;
+	}
 	else
 		EXIT_ERROR("unable to detect PE architecture");
 
@@ -125,16 +139,50 @@ void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 	{
 		char ofs[MAX_MSG], s[MAX_MSG];
 
-		snprintf(ofs, MAX_MSG, "%016"PRIx64, 
-			((pe->optional_ptr->_32 ? pe->optional_ptr->_32->ImageBase : 
-			(pe->optional_ptr->_64 ? pe->optional_ptr->_64->ImageBase : 0))) +
-			section->PointerToRawData +
-			ud_insn_off(&ud_obj));
+		snprintf(ofs, MAX_MSG, ofstr, pe->imagebase + section->VirtualAddress + ud_insn_off(&ud_obj));
 		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
 		output(ofs, s);
 	}
 
 	free(buff);
+}
+
+void print_function_disasm(PE_FILE *pe, QWORD function_addr)
+{
+	ud_t ud_obj;
+
+	if (!pe->architecture)
+	{
+		IMAGE_COFF_HEADER coff;
+		pe_get_coff(pe, &coff);
+	}
+
+	ud_set_mode(&ud_obj, pe->architecture == PE64 ? 64 : 32);
+	ud_set_syntax(&ud_obj, UD_SYN_INTEL);
+	fseek(pe->handle, rva2ofs(function_addr - pe->imagebase, pe), SEEK_SET);
+	ud_set_input_file(&ud_obj, pe->handle);
+
+	if (!pe->imagebase)
+		pe_get_optional(pe);
+
+	ud_input_skip(&ud_obj, rva2ofs(function_addr - pe->imagebase, pe));
+
+	while (ud_disassemble(&ud_obj))
+	{
+		char ofs[MAX_MSG], s[MAX_MSG];
+		uint8_t* opcodes = ud_insn_ptr(&ud_obj); 
+
+		snprintf(ofs, MAX_MSG, "%#lx", function_addr + ud_insn_off(&ud_obj));
+		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
+		output(ofs, s);
+
+		// leave or ret opcodes
+		for (unsigned i=0; i<ud_insn_len(&ud_obj); i++)
+		{
+			if (opcodes[i] == 0xc9 || opcodes[i] == 0xc3)
+				return;
+		}
+	}
 }
 
 int main(int argc, char *argv[])
@@ -151,8 +199,10 @@ int main(int argc, char *argv[])
 
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
-		
-	if (config.section)
+
+	if (config.function)
+		print_function_disasm(&pe, config.function); // not working yet!
+	else if (config.section)
 	{
 		IMAGE_SECTION_HEADER *section;
 

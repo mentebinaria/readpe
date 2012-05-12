@@ -35,6 +35,7 @@ struct options {
 	bool all_sections;
 	char *section;
 	bool syntax;
+	QWORD function;
 };
 
 struct options config;

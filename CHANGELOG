@@ -1,4 +1,4 @@
-pekit - the PE toolkit - changelog
+pev - changelog
 
 Legend:
 + Added feature
@@ -6,13 +6,14 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pekit 0.50 - May ?, 2012
- * Project renamed from 'pev' to 'pekit'. Now we have small binaries to each feature.
+pev 0.50 - May ?, 2012
+ * pev now is a collection of binaries to work with PE executables.
  + Released libpe 1.0 to support our programs.
- + Added readpe program to show headers.
- + Added fakeoep program to check fake entrypoints (thanks to @barongello).
- + Added pedis program to disassemble PE sections (thanks to @ztiago).
- + Output in monospaced text and csv in readpe.
+ + petls: search for TLS callback functions.
+ + pedis: disassemble functions by address or entire sections.
+ + readpe: show PE headers and sections information (most of obsolete pev binary).
+ + fakeoep: detect EP outside a code section.
+ + Output in monospaced text and csv in most programs.
  + libpe: xmalloc trick and fixes by @bsdaemon.
  ! Missing other output formats like xml and html.
  ! Bugs with with tiny/corrupted PE files.

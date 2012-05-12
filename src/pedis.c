@@ -172,7 +172,7 @@ void print_function_disasm(PE_FILE *pe, QWORD function_addr)
 		char ofs[MAX_MSG], s[MAX_MSG];
 		uint8_t* opcodes = ud_insn_ptr(&ud_obj); 
 
-		snprintf(ofs, MAX_MSG, "%#lx", function_addr + ud_insn_off(&ud_obj));
+		snprintf(ofs, MAX_MSG, "%#lx", function_addr + ud_insn_off(&ud_obj)-1);
 		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
 		output(ofs, s);
 

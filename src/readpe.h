@@ -24,7 +24,6 @@
 #include <time.h>
 
 #define PROGRAM "readpe"
-#define VERSION "0.50"
 
 struct options {
 	bool all;

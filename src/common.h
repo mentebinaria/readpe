@@ -25,5 +25,6 @@
 #endif
 
 #define MAX_MSG 50
+#define VERSION "0.50"
 
 #endif

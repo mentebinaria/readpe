@@ -23,7 +23,6 @@
 #include "common.h"
 
 #define PROGRAM "fakeoep"
-#define VERSION "0.50"
 
 void parse_options(int argc, char *argv[]);
 

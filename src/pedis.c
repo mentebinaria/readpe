@@ -18,7 +18,7 @@
 */
 
 #include "pedis.h"
-
+#define mozovo 1
 extern struct options config;
 static int ind;
 

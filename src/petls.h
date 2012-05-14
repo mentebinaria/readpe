@@ -17,13 +17,12 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef FAKEOEP_H 
-#define FAKEOEP_H
+#ifndef PETLS_H
+#define PETLS_H
 
 #include "common.h"
 
 #define PROGRAM "petls"
-#define VERSION "0.50"
 
 void parse_options(int argc, char *argv[]);
 

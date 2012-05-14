@@ -1,5 +1,5 @@
 /*
-	pedis - PE section disassembler
+	strpe - search for strings inside a PE file
 
 	Copyright (C) 2010 - 2012 Fernando Mercês
 
@@ -17,26 +17,14 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef READPE_H 
-#define READPE_H
+#ifndef STRPE_H 
+#define STRPE_H
 
 #include "common.h"
-#include "../lib/libudis86/udis86.h"
+#include <ctype.h>
 
-#define PROGRAM "pedis"
-
-#define SYN_ATT 1
-#define SYN_INTEL 0
+#define PROGRAM "strpe"
 
 void parse_options(int argc, char *argv[]);
-
-struct options {
-	bool all_sections;
-	char *section;
-	bool syntax;
-	QWORD function;
-};
-
-struct options config;
 
 #endif

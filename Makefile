@@ -1,21 +1,27 @@
-DEST=/usr/lib
+PREFIX=/usr
+DEST=$(PREFIX)/lib
 VERSION=1.0
-WARN=-W -Wall -Wextra -pedantic -std=c99
+CFLAGS=-W -Wall -Wextra -pedantic -std=c99
 SRC=pe.c
+RM=rm -f
+CC=gcc
+LN=ln -sf
+STRIP=strip
+LIBNAME=libpe
+INSTALL=install -m 0644
 
-all:
-	gcc -o libpe.o -c $(WARN) -fPIC $(SRC)
-	gcc -shared -Wl,-soname,libpe.so.1 -o libpe.so.$(VERSION) libpe.o
-
-clean:
-	rm -f *.so* *.o
+all: pe.c pe.h
+	$(CC) -o $(LIBNAME).o -c $(CFLAGS) -fPIC $(SRC)
+	$(CC) -shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so.$(VERSION) $(LIBNAME).o
 
 install:
-	cp libpe.so.1.0 $(DEST)
-	ln -sf $(DEST)/libpe.so.$(VERSION) $(DEST)/libpe.so
-	ln -sf $(DEST)/libpe.so.$(VERSION) $(DEST)/libpe.so.1
+	$(STRIP) $(LIBNAME).so.$(VERSION)
+	$(INSTALL) $(LIBNAME).so.$(VERSION) $(DEST)
+	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so
+	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so.1
 
 uninstall:
-	rm -f $(DEST)/libpe.so.1.0
-	rm -f $(DEST)/libpe.so.$(VERSION)
-	rm -f $(DEST)/libpe.so.$(VERSION)
+	$(RM) $(DEST)/$(LIBNAME).so.*
+
+clean:
+	$(RM) $(LIBNAME).*o*

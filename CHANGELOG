@@ -9,6 +9,7 @@ Legend:
 pev 0.50 - May ?, 2012
  * pev now is a collection of binaries to work with PE executables.
  + Released libpe 1.0 to support our programs.
+ + pesec: find security features in PE files.
  + petls: search for TLS callback functions.
  + pedis: disassemble functions by address or entire sections.
  + readpe: show PE headers and sections information (most of obsolete pev binary).

@@ -73,6 +73,40 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
+/*
+find stack cookies, a.k.a canary, buffer security check
+option in MVS 2010
+*/
+bool stack_cookies(PE_FILE *pe)
+{
+	unsigned int i, found = 0;
+	unsigned char buff;
+	const unsigned char mvs2010[] =
+	{0x55, 0x8b, 0xec, 0x83,
+   0x33, 0xc5, 0x33, 0xcd,
+	0xe8, 0xc3};
+
+	if (!pe)
+		return false;
+
+	if (!pe->entrypoint)
+		if (!pe_get_optional(pe))
+			return false;
+
+	rewind(pe->handle);
+
+	while (fread(&buff, 1, 1, pe->handle))
+	{
+		for (i=0; i < sizeof(mvs2010); i++)
+		{
+			if (buff == mvs2010[i] && found == i)
+				found++;
+		}
+	}
+	
+	return (found == sizeof(mvs2010));
+}
+
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
@@ -100,14 +134,21 @@ int main(int argc, char *argv[])
 	else
 		return 1;
 
+	// aslr
 	snprintf(field, MAX_MSG, "ASLR");	
 	output(field, (dllchar & 0x40) ? "found" : "not found");
 
+	// dep/nx
 	snprintf(field, MAX_MSG, "DEP/NX");	
 	output(field, (dllchar & 0x100) ? "found" : "not found");
 
+	// seh
 	snprintf(field, MAX_MSG, "SEH");	
-	output(field, !(dllchar & 0x400) ? "found" : "not found");
+	output(field, (dllchar & 0x400) ? "not vulnerable" : "vulnerable");
+
+	// stack cookies
+	snprintf(field, MAX_MSG, "Stack cookies");
+	output(field, stack_cookies(&pe) ? "found" : "not found");
 
 	// libera a memoria
 	pe_deinit(&pe);

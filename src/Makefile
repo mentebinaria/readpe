@@ -4,7 +4,7 @@ CFLAGS=-W -Wall -Wextra -std=c99 -pedantic
 CC=gcc
 RM=rm -f
 COMMON=output.c
-PROGS=readpe pedis fakeoep petls rva2ofs pesec strpe
+PROGS=readpe pedis packid petls rva2ofs pesec
 
 # 'make' only will compile all binaries
 all: $(PROGS)

@@ -339,7 +339,7 @@ void *xmalloc(unsigned size);
 // basic functions
 bool ispe(PE_FILE *pe);
 void pe_deinit(PE_FILE *pe);
-unsigned long rva2ofs(unsigned long rva, PE_FILE *pe);
+QWORD rva2ofs(QWORD rva, PE_FILE *pe);
 
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);
@@ -353,5 +353,7 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 //bool pe_get_tls_callbacks(PE_FILE *pe);
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);
 bool pe_get_resource_entries(PE_FILE *pe);
+
+IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva);
 
 #endif

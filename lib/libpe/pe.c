@@ -32,7 +32,7 @@ void *xmalloc(unsigned int size)
 	return new_mem;
 }
 
-unsigned long rva2ofs(unsigned long rva, PE_FILE *pe)
+QWORD rva2ofs(QWORD rva, PE_FILE *pe)
 {
 	if (!pe_get_sections(pe))
 		return 0;
@@ -58,6 +58,24 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	pe->handle = handle;
 
 	return true;
+}
+
+IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva)
+{
+	if (!pe || !rva)
+		return NULL;
+
+	if (!pe->num_sections || !pe->sections_ptr)
+		pe_get_sections(pe);
+
+	for (unsigned int i=0; i < pe->num_sections; i++)
+	{
+		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
+		rva <= pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->Misc.VirtualSize)
+			return pe->sections_ptr[i];
+	}
+
+	return NULL;
 }
 
 IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)

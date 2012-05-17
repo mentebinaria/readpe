@@ -1,7 +1,9 @@
 /*
-	petls - find TLS callbacks in PE files
+	pev - the PE file analyzer toolkit
+	
+	petls.c - find TLS callbacks in PE files
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,14 +25,14 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: %s OPTIONS FILE\n\n", PROGRAM);
-	
-	printf(
-	"-f, --format <format>                  set output format\n"
-	"-v, --version                          show version and exit\n"
-	"--help                                 show this help and exit\n"
-	);
-
+	printf("Usage: %s [OPTIONS] FILE\n"
+	"Find TLS callbacks in PE files\n"
+	"\nExample: %s winzip.exe\n"
+	"\nOptions:\n"
+	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -v, --version                          show version and exit\n"
+	" --help                                 show this help and exit\n",
+	PROGRAM, PROGRAM);
 }
 
 void parse_options(int argc, char *argv[])
@@ -63,7 +65,7 @@ void parse_options(int argc, char *argv[])
 				parse_format(optarg); break;
 				
 			case 'v':
-				printf("%s %s\n", PROGRAM, VERSION);
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 
 			default:
@@ -161,6 +163,12 @@ int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
+	
+	if (argc < 2)
+	{
+		usage();
+		exit(1);
+	}
 
 	parse_options(argc, argv); // opcoes
 

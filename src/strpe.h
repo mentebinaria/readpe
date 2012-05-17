@@ -1,7 +1,9 @@
 /*
-	strpe - search for strings inside a PE file
+	pev - the PE file analyzer toolkit
+	
+	strpe.h - definitions for strpe.c
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

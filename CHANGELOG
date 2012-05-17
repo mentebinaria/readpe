@@ -1,4 +1,4 @@
-pev - changelog
+pev - the PE analyzer toolkit - ChangeLog
 
 Legend:
 + Added feature
@@ -13,7 +13,7 @@ pev 0.50 - May ?, 2012
  + petls: search for TLS callback functions.
  + pedis: disassemble functions by address or entire sections.
  + readpe: show PE headers and sections information (most of obsolete pev binary).
- + packid: detect EP outside a code section (fake OEP) and generic packers.
+ + packid: detect EP outside a code section (@barongello) and generic packers.
  + Output in monospaced text and csv in most programs.
  + libpe: xmalloc trick and fixes by @bsdaemon.
  ! Missing other output formats like xml and html.

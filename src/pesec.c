@@ -1,7 +1,9 @@
 /*
-	pesec - search for security features in PE files
+	pev - the PE file analyzer toolkit
+	
+	pesec.c - Check for security features in PE files
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,16 +23,17 @@
 
 static int ind;
 
+
 void usage()
 {
-	printf("Usage: %s OPTIONS FILE\n\n", PROGRAM);
-	
-	printf(
-	"-f, --format <format>                  set output format\n"
-	"-v, --version                          show version and exit\n"
-	"--help                                 show this help and exit\n"
-	);
-
+	printf("Usage: %s [OPTIONS] FILE\n"
+	"Check for security features in PE files\n"
+	"\nExample: %s wordpad.exe\n"
+	"\nOptions:\n"
+	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -v, --version                          show version and exit\n"
+	" --help                                 show this help and exit\n",
+	PROGRAM, PROGRAM);
 }
 
 void parse_options(int argc, char *argv[])
@@ -63,7 +66,7 @@ void parse_options(int argc, char *argv[])
 				parse_format(optarg); break;
 				
 			case 'v':
-				printf("%s %s\n", PROGRAM, VERSION);
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 
 			default:
@@ -113,9 +116,15 @@ int main(int argc, char *argv[])
 	FILE *fp = NULL;
 	WORD dllchar = 0;
 	char field[MAX_MSG];
+	
+	if (argc < 2)
+	{
+		usage();
+		exit(1);
+	}
 
 	parse_options(argc, argv); // opcoes
-
+	
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
 
@@ -136,20 +145,20 @@ int main(int argc, char *argv[])
 
 	// aslr
 	snprintf(field, MAX_MSG, "ASLR");	
-	output(field, (dllchar & 0x40) ? "found" : "not found");
+	output(field, (dllchar & 0x40) ? "yes" : "no");
 
 	// dep/nx
 	snprintf(field, MAX_MSG, "DEP/NX");	
-	output(field, (dllchar & 0x100) ? "found" : "not found");
+	output(field, (dllchar & 0x100) ? "yes" : "no");
 
 	// seh
 	snprintf(field, MAX_MSG, "SEH");	
-	output(field, (dllchar & 0x400) ? "not vulnerable" : "vulnerable");
+	output(field, (dllchar & 0x400) ? "no" : "yes");
 
 	// stack cookies
 	snprintf(field, MAX_MSG, "Stack cookies");
-	output(field, stack_cookies(&pe) ? "found" : "not found");
-
+	output(field, stack_cookies(&pe) ? "yes" : "no");
+	
 	// libera a memoria
 	pe_deinit(&pe);
 	

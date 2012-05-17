@@ -1,3 +1,5 @@
+PREFIX=/usr
+DEST=$(PREFIX)/bin
 LIBPE=../lib/libpe
 LIBUDIS86=../lib/libudis86
 CFLAGS=-W -Wall -Wextra -std=c99 -pedantic
@@ -5,6 +7,7 @@ CC=gcc
 RM=rm -f
 COMMON=output.c
 PROGS=readpe pedis packid petls rva2ofs pesec
+INSTALL=install -m 0755
 
 # 'make' only will compile all binaries
 all: $(PROGS)
@@ -13,10 +16,19 @@ all: $(PROGS)
 pedis: pedis.c
 	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) -I$(LIBUDIS86) $(LIBUDIS86)/libudis86/*.c $^ $(COMMON) -o $@ -lpe
 
-# general rule match binary name and source
+# generic rule matching binary names and sources
 %: %.c
 	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe
 
-# remove compiled binaries
+install:
+	for prog in $(PROGS); do \
+		$(INSTALL) $$prog $(DEST); \
+	done
+
+uninstall:
+	for prog in $(PROGS); do \
+		$(RM) $(DEST)/$$prog; \
+	done
+
 clean:
 	$(RM) $(PROGS)

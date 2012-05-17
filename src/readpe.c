@@ -1,7 +1,9 @@
 /*
-	pev - the PE file analyzer
+	pev - the PE file analyzer toolkit
+	
+	readpe.c - show PE file headers
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,21 +26,19 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: %s OPTIONS FILE\n\n", PROGRAM);
-	
-	printf(
-	"-A, --all                              full output (default)\n"
-	"-H, --all-headers                      print all PE headers\n"
-	"-S, --all-sections                     print all PE sections headers\n"
-	"-h, --header <dos|coff|optional>       show sepecific header\n"
-	"-d, --dirs                             show data directories\n"
-	"-f, --format <format>                  set output format\n"
-	"-i, --imports                          print imported functions (not available yet)\n"
-	"-e, --exports                          print exported functions (not available yet)\n"
-	"-v, --version                          show version and exit\n"
-	"--help                                 show this help and exit\n"
-	);
-
+	printf("Usage: %s OPTIONS FILE\n"
+	"Show PE file headers\n"
+	"\nExample: %s --header optional winzip.exe\n"
+	"\nOptions:\n"
+	" -A, --all                              full output (default)\n"
+	" -H, --all-headers                      print all PE headers\n"
+	" -S, --all-sections                     print all PE sections headers\n"
+	" -h, --header <dos|coff|optional>       show sepecific header\n"
+	" -d, --dirs                             show data directories\n"		
+	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -v, --version                          show version and exit\n"
+	" --help                                 show this help and exit\n",
+	PROGRAM, PROGRAM);
 }
 
 void parse_headers(const char *optarg)
@@ -58,7 +58,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "AHSh:de:f:v";
+	static const char short_options[] = "AHSh:df:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
@@ -66,8 +66,6 @@ void parse_options(int argc, char *argv[])
 		{"all-headers",      no_argument,       NULL, 'H'},
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
-		{"imports",          no_argument,       NULL, 'i'},
-		{"exports",          no_argument,       NULL, 'e'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"format",           required_argument, NULL, 'f'},
 		{"version",          no_argument,       NULL, 'v'},
@@ -77,8 +75,7 @@ void parse_options(int argc, char *argv[])
 	// setting all fields to false
 	memset(&config, false, sizeof(config));
 
-	if (argc == 2)
-		config.all = true;
+	config.all = true;
 
 	while ((c = getopt_long(argc, argv, short_options,
 			long_options, &ind)))
@@ -97,25 +94,23 @@ void parse_options(int argc, char *argv[])
 				config.all = true; break;
 
 			case 'H':
+				config.all = false;
 				config.all_headers = true; break;
 
-			case 'c':
-				config.coff = true; break;
-
 			case 'd':
+				config.all = false;
 				config.dirs = true; break;
 
-			case 'o':
-				config.opt = true; break;
-
 			case 'S':
+				config.all = false;
 				config.all_sections = true; break;
 
 			case 'v':
-				printf("%s %s\n", PROGRAM, VERSION);
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 
 			case 'h':
+				config.all = false;
 				parse_headers(optarg); break;
 
 			case 'f':
@@ -128,10 +123,11 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-char *dec2bin(unsigned int dec, char *bin, int bits)
+char *dec2bin(unsigned int dec, char *bin, unsigned int bits)
 {
-	int i;
-	for(i=0; i<bits; i++)
+	unsigned int i;
+	
+	for(i=0; i < bits; i++)
 		bin[bits - i - 1] = (dec & (0x1 << i)) ? '1' : '0';
 
 	bin[bits] = '\0';
@@ -142,8 +138,7 @@ char *dec2bin(unsigned int dec, char *bin, int bits)
 void print_sections(PE_FILE *pe)
 {
 	char s[MAX_MSG];
-	unsigned int i;
-	unsigned int j;
+	unsigned int i, j;
 
 	char *flags[] = {
    "contains executable code",
@@ -228,7 +223,6 @@ void print_directories(PE_FILE *pe)
 		"CLR Runtime Header", "" // 15
 	};
 
-
 	output("Data directories", NULL);
 
 	if (! pe->directories_ptr)
@@ -281,13 +275,13 @@ void print_optional_header(PE_FILE *pe)
 		output("Linker minor version", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfCode);
-		output("Size of .text secion", s);
+		output("Size of .text section", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfInitializedData);
-		output("Size of .data secion", s);
+		output("Size of .data section", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfUninitializedData);
-		output("Size of .bss secion", s);
+		output("Size of .bss section", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->AddressOfEntryPoint);
 		output("Entrypoint", s);
@@ -365,13 +359,13 @@ void print_optional_header(PE_FILE *pe)
 		output("Linker minor version", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfCode);
-		output("Size of .text secion", s);
+		output("Size of .text section", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfInitializedData);
-		output("Size of .data secion", s);
+		output("Size of .data section", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfUninitializedData);
-		output("Size of .bss secion", s);
+		output("Size of .bss section", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
 		output("Entrypoint", s);
@@ -584,6 +578,12 @@ int main(int argc, char *argv[])
 	PE_FILE pe;
 	FILE *fp = NULL;
 	
+	if (argc < 2)
+	{
+		usage();
+		exit(1);
+	}
+	
 	parse_options(argc, argv); // opcoes
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
 		else { EXIT_ERROR("unable to read Section header"); }
 	}
 
-	// libera a memoria
+	// free
 	pe_deinit(&pe);
 	return 0;
 }

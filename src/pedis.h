@@ -1,7 +1,9 @@
 /*
-	pedis - PE section disassembler
+	pev - the PE file analyzer toolkit
+	
+	pedis.h - definitions for pedis.c
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

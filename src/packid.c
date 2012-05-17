@@ -1,7 +1,9 @@
 /*
-	packid  - check for generic packers
+	pev - the PE file analyzer toolkit
+	
+	packid.c - search for genereic packers in PE files
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,13 +25,13 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: %s OPTIONS FILE\n\n", PROGRAM);
-	
-	printf(
-	"-v, --version                          show version and exit\n"
-	"--help                                 show this help and exit\n"
-	);
-
+	printf("Usage: %s <rva> FILE\n"
+	"Search for genereic packers in PE files\n"
+	"\nExample: %s putty.exe\n"
+	"\nOptions:\n"
+	" -v, --version                          show version and exit\n"
+	" --help                                 show this help and exit\n",
+	PROGRAM, PROGRAM);
 }
 
 void parse_options(int argc, char *argv[])
@@ -58,7 +60,7 @@ void parse_options(int argc, char *argv[])
 				exit(EXIT_SUCCESS);
 				
 			case 'v':
-				printf("%s %s\n", PROGRAM, VERSION);
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 
 			default:

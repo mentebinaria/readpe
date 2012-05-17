@@ -12,16 +12,16 @@ INSTALL=install -m 0644
 
 all: pe.c pe.h
 	$(CC) -o $(LIBNAME).o -c $(CFLAGS) -fPIC $(SRC)
-	$(CC) -shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so.$(VERSION) $(LIBNAME).o
+	$(CC) -shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o
 
 install:
-	$(STRIP) $(LIBNAME).so.$(VERSION)
-	$(INSTALL) $(LIBNAME).so.$(VERSION) $(DEST)
+	$(STRIP) $(LIBNAME).so
+	$(INSTALL) $(LIBNAME).so $(DEST)/$(LIBNAME).so.$(VERSION)
 	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so
 	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so.1
 
 uninstall:
-	$(RM) $(DEST)/$(LIBNAME).so.*
+	$(RM) $(DEST)/$(LIBNAME).so*
 
 clean:
 	$(RM) $(LIBNAME).*o*

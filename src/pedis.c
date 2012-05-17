@@ -95,6 +95,34 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
+char *insert_spaces(char *s) 
+{
+	size_t size;
+	char *new; 
+
+	size = strlen(s);
+
+	if (!size)
+		return NULL;
+
+	new = (char *) xmalloc(size + (size/2)+1);
+
+	for (unsigned int i=0, j=0, pos=0; i<size+(size/2); i++)
+	{   
+		if (pos==2)
+		{   
+			new[i] = ' ';
+			pos=0;
+		}   
+		else
+		{   
+			new[i] = s[j++];
+			pos++;
+		}   
+	}   
+	return new;
+}
+
 void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 {
 	// libuds86
@@ -139,10 +167,13 @@ void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 
 	while (ud_disassemble(&ud_obj))
 	{
-		char ofs[MAX_MSG], s[MAX_MSG];
+		char ofs[MAX_MSG], s[MAX_MSG], *bytes;
 
 		snprintf(ofs, MAX_MSG, ofstr, pe->imagebase + section->VirtualAddress + ud_insn_off(&ud_obj));
-		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
+		bytes = insert_spaces(ud_insn_hex(&ud_obj));
+		snprintf(s, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(&ud_obj));
+		if (bytes)
+			free(bytes);
 		output(ofs, s);
 	}
 
@@ -188,11 +219,14 @@ void print_function_disasm(PE_FILE *pe, QWORD function_rva)
 
 	while (ud_disassemble(&ud_obj))
 	{
-		char ofs[MAX_MSG], s[MAX_MSG];
+		char ofs[MAX_MSG], s[MAX_MSG], *bytes;
 		uint8_t* opcodes = ud_insn_ptr(&ud_obj);
 		
 		snprintf(ofs, MAX_MSG, ofstr, (DWORD) function_rva + ud_insn_off(&ud_obj));
-		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
+		bytes = insert_spaces(ud_insn_hex(&ud_obj));
+		snprintf(s, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(&ud_obj));
+		if (bytes)
+			free(bytes);
 		output(ofs, s);
 
 		// leave or ret opcodes

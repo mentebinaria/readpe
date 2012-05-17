@@ -28,17 +28,15 @@
 
 extern format_e format;
 
-#define SPACES 30
-
 void parse_format(const char *optarg)
 {
 	if (! strcmp(optarg, "text"))
 		format = FORMAT_TEXT;
 	else if (! strcmp(optarg, "xml"))
 		format = FORMAT_XML;
-   else if (! strcmp(optarg, "csv"))
+	else if (! strcmp(optarg, "csv"))
 		format = FORMAT_CSV;
-   else if (! strcmp(optarg, "html"))
+	else if (! strcmp(optarg, "html"))
 		format = FORMAT_HTML;
 	else
 		EXIT_ERROR("invalid format option");
@@ -78,7 +76,7 @@ void to_xml(char *field, char *value)
 void to_html(char *field, char *value)
 {
 	// TODO output a valid html
-   	if (field && value)
+	if (field && value)
 		printf("<span><b>%s:</b> %s</span><br />\n", field, value);
 	else if (field)
 		printf("\n<p>%s</p>\n", field);
@@ -90,10 +88,6 @@ void output(char *field, char *value)
 {
 	switch (format)
 	{
-		case FORMAT_TEXT:
-			to_text(field, value);
-			break;
-			
 		case FORMAT_CSV:
 			to_csv(field, value);
 			break;
@@ -106,6 +100,7 @@ void output(char *field, char *value)
 			to_html(field, value);
 			break;
 			
+		case FORMAT_TEXT:
 		default:
 			to_text(field, value);
 			break;

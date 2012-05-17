@@ -32,12 +32,23 @@ void *xmalloc(unsigned int size)
 	return new_mem;
 }
 
-QWORD rva2ofs(QWORD rva, PE_FILE *pe)
+DWORD ofs2rva(DWORD ofs, PE_FILE *pe)
 {
-	if (!pe_get_sections(pe))
+	if (!ofs || !pe || !pe_get_sections(pe))
 		return 0;
 
-	if (!pe->sections_ptr)
+	for (unsigned int i=0; i <  pe->num_sections; i++)
+	{
+		if (ofs >= pe->sections_ptr[i]->PointerToRawData &&
+		ofs < (pe->sections_ptr[i]->PointerToRawData + pe->sections_ptr[i]->SizeOfRawData))
+			return ofs + pe->sections_ptr[i]->VirtualAddress;
+	}
+	return 0;	
+}
+
+QWORD rva2ofs(QWORD rva, PE_FILE *pe)
+{
+	if (!rva || !pe || !pe_get_sections(pe))
 		return 0;
 
 	for (unsigned int i=0; i < pe->num_sections; i++)

@@ -340,6 +340,7 @@ void *xmalloc(unsigned size);
 bool ispe(PE_FILE *pe);
 void pe_deinit(PE_FILE *pe);
 QWORD rva2ofs(QWORD rva, PE_FILE *pe);
+DWORD ofs2rva(DWORD ofs, PE_FILE *pe);
 
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);

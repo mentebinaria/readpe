@@ -1,7 +1,9 @@
 /*
-	pedis - PE section disassembler
+	pev - the PE file analyzer toolkit
+	
+	pedis.c - PE disassembler
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2012 Fernando Mercês
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,23 +20,23 @@
 */
 
 #include "pedis.h"
-#define mozovo 1
+
 extern struct options config;
 static int ind;
 
 void usage()
 {
-	printf("Usage: %s OPTIONS FILE\n\n", PROGRAM);
-	
-	printf(
-	"--att                                  set AT&T syntax (Intel default)\n"
-	"-f, --function <address>               disassembly function\n"
-	"-s, --section <section name>           disassembly specific section\n"
-	"-f, --format <text|csv|xml|html>       change output format (default text)\n"
-	"-v, --version                          show version and exit\n"
-	"--help                                 show this help and exit\n"
-	);
-
+	printf("Usage: %s OPTIONS FILE\n"
+	"Disassemble PE sections and functions\n"
+	"\nExample: %s -F 0x4c4df putty.exe\n"
+	"\nOptions:\n"
+	" --att                                  set AT&T syntax\n"
+	" -F, --function <rva>                   disassemble function\n"
+	" -s, --section <section name>           disassemble an entire section\n"
+	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -v, --version                          show version and exit\n"
+	" --help                                 show this help and exit\n",
+	PROGRAM, PROGRAM);
 }
 
 void parse_options(int argc, char *argv[])
@@ -80,7 +82,7 @@ void parse_options(int argc, char *argv[])
 				config.section = optarg; break;
 
 			case 'v':
-				printf("%s %s\n", PROGRAM, VERSION);
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 
 			case 'f':
@@ -147,9 +149,17 @@ void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 	free(buff);
 }
 
-void print_function_disasm(PE_FILE *pe, QWORD function_addr)
+void print_function_disasm(PE_FILE *pe, QWORD function_rva)
 {
 	ud_t ud_obj;
+	QWORD offset = rva2ofs(function_rva, pe);
+	char *ofstr;
+	
+	if (!offset)
+	{
+		pe_deinit(pe);
+		EXIT_ERROR("unable to retrieve offset from RVA");
+	}
 
 	if (!pe->architecture)
 	{
@@ -157,22 +167,31 @@ void print_function_disasm(PE_FILE *pe, QWORD function_addr)
 		pe_get_coff(pe, &coff);
 	}
 
-	ud_set_mode(&ud_obj, pe->architecture == PE64 ? 64 : 32);
-	ud_set_syntax(&ud_obj, UD_SYN_INTEL);
-	fseek(pe->handle, rva2ofs(function_addr - pe->imagebase, pe), SEEK_SET);
+	rewind(pe->handle);
+	
+	if (pe->architecture == PE32)
+	{
+		ud_set_mode(&ud_obj, 32);
+		ofstr = "%08"PRIx64;
+	}
+	else if (pe->architecture == PE64)
+	{
+		ud_set_mode(&ud_obj, 64);
+		ofstr = "%016"PRIx64;
+	}
+	else
+		EXIT_ERROR("unable to detect PE architecture");
+
+	ud_set_syntax(&ud_obj, config.syntax ? UD_SYN_ATT : UD_SYN_INTEL);
 	ud_set_input_file(&ud_obj, pe->handle);
-
-	if (!pe->imagebase)
-		pe_get_optional(pe);
-
-	ud_input_skip(&ud_obj, rva2ofs(function_addr - pe->imagebase, pe));
+	ud_input_skip(&ud_obj, offset);
 
 	while (ud_disassemble(&ud_obj))
 	{
 		char ofs[MAX_MSG], s[MAX_MSG];
-		uint8_t* opcodes = ud_insn_ptr(&ud_obj); 
-
-		snprintf(ofs, MAX_MSG, "%#"PRIx64, function_addr + ud_insn_off(&ud_obj)-1);
+		uint8_t* opcodes = ud_insn_ptr(&ud_obj);
+		
+		snprintf(ofs, MAX_MSG, ofstr, (DWORD) function_rva + ud_insn_off(&ud_obj));
 		snprintf(s, MAX_MSG, "%s", ud_insn_asm(&ud_obj));
 		output(ofs, s);
 
@@ -190,32 +209,41 @@ int main(int argc, char *argv[])
 	PE_FILE pe;
 	FILE *fp = NULL;
 
-	parse_options(argc, argv); // opcoes
+	if (argc < 2)
+	{
+		usage();
+		exit(1);
+	}
 
+	parse_options(argc, argv);
+	
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
 
-	pe_init(&pe, fp); // inicializa o struct pe
+	pe_init(&pe, fp);
 
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
 
 	if (config.function)
-		print_function_disasm(&pe, config.function); // not working yet!
+		print_function_disasm(&pe, config.function);
 	else if (config.section)
 	{
 		IMAGE_SECTION_HEADER *section;
 
-		// search for section name
-			
 		section = pe_get_section(&pe, config.section);
 
 		if (section) // section found
 			print_section_disasm(&pe, section);
 		else { EXIT_ERROR("invalid section name"); }
 	}
+	else
+	{
+		usage();
+		exit(1);
+	}
 
-	// libera a memoria
+	// free
 	pe_deinit(&pe);
 	return 0;
 }

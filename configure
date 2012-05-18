@@ -5,7 +5,8 @@ makef_pev="src/Makefile"
 prefix=/usr
 os=
 gccver=
-tmpmakef=/tmp/makef_pev
+tmpmakef=
+tmptestc=
 
 # test code for ISO C99 standard
 testc="
@@ -45,10 +46,13 @@ echo -n "Checking for which... "
 which which 2>&1 > /dev/null && echo "yes" || quit "no"
 
 # check for needed programs
-for i in sed make gcc ld test mkdir rmdir install strip rm uname cut; do
+for i in sed make gcc ld test mkdir rmdir install strip rm mv mktemp uname cut mktemp; do
 	echo -n "Checking for $i... "
 	which $i > /dev/null && echo "yes" || quit "no"
 done
+
+tmpmakef=$(mktemp)
+tmptestc=$(mktemp)
 
 # get os type
 os=$(uname -a | cut -d' ' -f1)
@@ -60,22 +64,22 @@ echo "Checking for gcc version... $gccver"
 
 # compile test.c in a temp directory to check c99 support
 echo -n "Checking ISO C99 support in gcc... "
-echo "$testc" > /tmp/test.c || quit "fail"
-if gcc -std=c99 -o /tmp/test /tmp/test.c 2> /dev/null; then
+echo "$testc" > $tmptestc.c || quit "fail"
+if gcc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null; then
 	echo "yes"
 else
 	echo "no"
-	rm -f /tmp/test /tmp/test.c
+	rm -f $tmptestc $tmptestc.c
 	exit 1
 fi
-rm -f /tmp/test /tmp/test.c
+rm -f $tmptestc $tmptestc.c
 
 # replace prefix in Makefiles
 echo -n "Configuring prefix to "$prefix"... "
-sed "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail1"
-mv $tmpmakef "$makef_libpe" || quit "fail2"
-sed "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_pev" > $tmpmakef 2> /dev/null || quit "fail3"
-mv $tmpmakef "$makef_pev" || quit "fail4"
+sed "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail"
+mv $tmpmakef "$makef_libpe" || quit "fail"
+sed "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_pev" > $tmpmakef 2> /dev/null || quit "fail"
+mv $tmpmakef "$makef_pev" || quit "fail"
 echo "ok"
 
 # apply specific OS patches in Makefiles
@@ -94,3 +98,4 @@ case "$os" in
 		mv $tmpmakef "$makef_libpe" || quit "fail"
 		echo "ok" ;;
 esac
+rm -f $tmpmakef

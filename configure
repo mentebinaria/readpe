@@ -29,6 +29,7 @@ usage()
 quit()
 {
 	echo "$1"
+	echo -e "\nError in configure script. You can't follow to build (make) step."
 	exit 1
 }
 
@@ -51,8 +52,8 @@ for i in sed make gcc ld test mkdir rmdir install strip rm mv mktemp uname cut m
 	which $i > /dev/null && echo "yes" || quit "no"
 done
 
-tmpmakef=$(mktemp)
-tmptestc=$(mktemp)
+tmpmakef=$(mktemp /tmp/pev.XXXX)
+tmptestc=$(mktemp /tmp/pev.XXXX)
 
 # get os type
 os=$(uname -a | cut -d' ' -f1)

@@ -12,5 +12,5 @@ all:
 
 # zip rule only Cygwin targets
 zip:
-	zip -rj $(ZIPFILE) lib/libpe/libpe.dll \
-	src/ AUTHORS CHANGELOG LICENSE README -x *.c *.h Makefile
+	zip -j $(ZIPFILE) lib/libpe/libpe.dll \
+	src/*.exe AUTHORS CHANGELOG LICENSE README

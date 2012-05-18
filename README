@@ -83,8 +83,10 @@
   * mingw32-gcc (32-bit system)
   * x86_64-w64-mingw32-gcc (64-bit system)
   * binutils
+  * mingw-binutils
   * make
   * sed
+  * zip
 
   Compile with:
 

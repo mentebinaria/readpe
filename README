@@ -9,7 +9,11 @@
 
 1. What is pev
 2. OS support
-3. Installing
+3. Building and installing
+ 3.1. Installing all tools (Linux and OSX)
+ 3.2. Building libpe only
+ 3.3. Building a particular tool
+ 3.4. Building in Windows (via Cygwin)
 4. Included programs
 5. Development
 6. Bugs
@@ -17,21 +21,21 @@
 1. What is pev
 
  pev is a PE file analysis toolkit that includes some
- nice programs to work with PE files in non-Windows
- systems. It can be useful for programmers, security
- analysts and forensic investigators. It's licensed
- under GPLv3+ terms.
+ nice programs to work with PE files in many systems
+ It can be useful for programmers, security analysts
+ and forensic investigators. It's licensed  under
+ GPLv3+ terms.
 
 2. OS support
 
- This version is tested in Linux, x86 and x86-64
- and OSX systems. If you're running pev tools
- sucessfully in other environments, please let
- us know.
+ This version is tested in Linux (x86 and x86-64),
+ OSX systems and Windows under Cygwin (http://www.cygwin.com).
+ If you'rerunning pev tools sucessfully in other environments,
+ please let  us know.
 
-3. Installing
+3. Building and installing
 
- 3.1. Installing all tools
+ 3.1. Installing all tools (Linux and OSX)
 
   To compile and install libpe and all pev tools, do the
   following:
@@ -70,6 +74,29 @@
   $ make pesec
 
   The commmand above will build only pesec binary.
+
+ 3.4. Building in Windows (via Cygwin)
+
+  Under Cygwin, you'll need following packages
+  in order to compile pev:
+
+  * mingw32-gcc (32-bit system)
+  * x86_64-w64-mingw32-gcc (64-bit system)
+  * binutils
+  * make
+  * sed
+
+  Compile with:
+
+  $ ./configure
+  $ make
+
+  Build a zip package with libpe.dll and all tools:
+
+  $ make zip
+
+  You can't call other make targets (like make install)
+  in Cygwin environment.
 
 4. Included programs
 

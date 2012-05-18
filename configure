@@ -109,20 +109,6 @@ case "$os" in
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef_pev" || quit fail
 		echo "ok" ;;
-	CYGWIN*WOW32)
-		sed 's/^CC=.*/CC=mingw32-gcc.exe/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-shared.*\.o$/-shared -o $(LIBNAME).dll $(LIBNAME).o/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/^CC=.*/CC=mingw32-gcc.exe/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_pev" || quit fail
-		sed 's/^ZIPFILE=.*/ZIPFILE=pev-$(VERSION)_x86.zip/' "$makef" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef" || quit fail
-		echo "ok" ;;
 	CYGWIN*WOW64)
 		sed 's/^CC=.*/CC=x86_64-w64-mingw32-gcc.exe/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
 		[ -s "$tmpmakef" ] || quit fail
@@ -134,6 +120,20 @@ case "$os" in
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef_pev" || quit fail
 		sed 's/^ZIPFILE=.*/ZIPFILE=pev-$(VERSION)_x86-64.zip/' "$makef" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef" || quit fail
+		echo "ok" ;;
+	CYGWIN*)
+		sed 's/^CC=.*/CC=mingw32-gcc.exe/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/-shared.*\.o$/-shared -o $(LIBNAME).dll $(LIBNAME).o/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/^CC=.*/CC=mingw32-gcc.exe/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_pev" || quit fail
+		sed 's/^ZIPFILE=.*/ZIPFILE=pev-$(VERSION)_x86.zip/' "$makef" > $tmpmakef 2> /dev/null || quit fail
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef" || quit fail
 		echo "ok" ;;

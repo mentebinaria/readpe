@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# pev configure script
+# run with ./configure before make step
+
 makef_libpe="lib/libpe/Makefile"
 makef_pev="src/Makefile"
 prefix=/usr
@@ -29,7 +32,8 @@ usage()
 quit()
 {
 	echo "$1"
-	echo -e "\nError in configure script. You can't follow to build (make) step."
+	echo -e "\nError in configure script. You need to satisfy all dependencies and
+run this script again. Maybe you can try to run 'make' and analyze the output."
 	exit 1
 }
 
@@ -65,7 +69,7 @@ echo "Checking for gcc version... $gccver"
 
 # compile test.c in a temp directory to check c99 support
 echo -n "Checking ISO C99 support in gcc... "
-echo "$testc" > $tmptestc.c || quit "fail"
+echo "$testc" > $tmptestc.c || quit fail
 if gcc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null; then
 	echo "yes"
 else
@@ -77,26 +81,33 @@ rm -f $tmptestc $tmptestc.c
 
 # replace prefix in Makefiles
 echo -n "Configuring prefix to "$prefix"... "
-sed "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail"
-mv $tmpmakef "$makef_libpe" || quit "fail"
-sed "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_pev" > $tmpmakef 2> /dev/null || quit "fail"
-mv $tmpmakef "$makef_pev" || quit "fail"
+prefix=$(echo $prefix | sed 's/\//\\\//g') # escape slashes
+sed "s/^PREFIX=.*/PREFIX=$prefix/" "$makef_libpe" > "$tmpmakef"  || quit fail1
+[ -s "$tmpmakef" ] || quit fail
+mv "$tmpmakef" "$makef_libpe" || quit fail
+sed "s/^PREFIX=.*/PREFIX=$prefix/" "$makef_pev" > "$tmpmakef" 2> /dev/null || quit fail
+[ -s "$tmpmakef" ] || quit fail
+mv "$tmpmakef" "$makef_pev" || quit fail
 echo "ok"
 
 # apply specific OS patches in Makefiles
 echo -n "Patching Makefiles for "$os"... "
 case "$os" in
 	"Darwin")
-		sed 's/STRIP=.*/STRIP=strip -x/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail"
-		mv $tmpmakef "$makef_libpe" || quit "fail"
-		sed 's/-Wl,-[a-z_]*,/-Wl,-install_name,/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail"
-		mv $tmpmakef "$makef_libpe" || quit "fail"
+		sed 's/STRIP=.*/STRIP=strip -x/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/-Wl,-[a-z_]*,/-Wl,-install_name,/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
 		echo "ok" ;;
 	*) # Linux and unknown
-		sed 's/STRIP=.*/STRIP=strip --strip-unneeded/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail"
-		mv $tmpmakef "$makef_libpe" || quit "fail"
-		sed 's/-Wl,-[a-z_]*,/-Wl,-soname,/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit "fail"
-		mv $tmpmakef "$makef_libpe" || quit "fail"
+		sed 's/STRIP=.*/STRIP=strip --strip-unneeded/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/-Wl,-[a-z_]*,/-Wl,-soname,/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
 		echo "ok" ;;
 esac
 rm -f $tmpmakef

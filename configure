@@ -93,21 +93,46 @@ echo "ok"
 # apply specific OS patches in Makefiles
 echo -n "Patching Makefiles for "$os"... "
 case "$os" in
-	"Darwin")
+	Darwin)
+		sed 's/^CC=.*/CC=gcc/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
 		sed 's/STRIP=.*/STRIP=strip -x/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-Wl,-[a-z_]*,/-Wl,-install_name,/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		sed 's/-shared.*\.o$/-shared -Wl,-install_name,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o/' \
+			"$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/^CC=.*/CC=gcc/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_pev" || quit fail
+		echo "ok" ;;
+	CYGWIN*WOW64)
+		sed 's/^CC=.*/CC=x86_64-w64-mingw32-gcc.exe/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/-shared.*\.o$/-shared -o $(LIBNAME).dll $(LIBNAME).o/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/^CC=.*/CC=x86_64-w64-mingw32-gcc.exe/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_pev" || quit fail
 		echo "ok" ;;
 	*) # Linux and unknown
+		sed 's/^CC=.*/CC=gcc/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_libpe" || quit fail
 		sed 's/STRIP=.*/STRIP=strip --strip-unneeded/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-Wl,-[a-z_]*,/-Wl,-soname,/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
+		sed 's/-shared.*\.o$/-shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o/' \
+			"$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
 		[ -s "$tmpmakef" ] || quit fail
 		mv "$tmpmakef" "$makef_libpe" || quit fail
+		sed 's/^CC=.*/CC=gcc/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
+		[ -s "$tmpmakef" ] || quit fail
+		mv "$tmpmakef" "$makef_pev" || quit fail
 		echo "ok" ;;
 esac
 rm -f $tmpmakef

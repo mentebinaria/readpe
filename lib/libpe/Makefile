@@ -6,7 +6,7 @@ SRC=pe.c
 RM=rm -f
 CC=gcc
 LN=ln -sf
-STRIP=strip
+STRIP=strip --strip-unneeded
 LIBNAME=libpe
 INSTALL=install -m 0644
 
@@ -16,6 +16,7 @@ all: pe.c pe.h
 
 install:
 	$(STRIP) $(LIBNAME).so
+	test -d $(DEST) || mkdir -p $(DEST)
 	$(INSTALL) $(LIBNAME).so $(DEST)/$(LIBNAME).so.$(VERSION)
 	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so
 	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so.1

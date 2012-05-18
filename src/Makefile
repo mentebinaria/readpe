@@ -21,6 +21,7 @@ pedis: pedis.c
 	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe
 
 install:
+	test -d $(DEST) || mkdir -p $(DEST)
 	for prog in $(PROGS); do \
 		$(INSTALL) $$prog $(DEST); \
 	done

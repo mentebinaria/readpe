@@ -1,0 +1,89 @@
+#!/bin/bash
+
+makef_libpe="lib/libpe/Makefile"
+makef_pev="src/Makefile"
+prefix=/usr
+os=
+gccver=
+
+# test code for ISO C99 standard
+testc="
+int main(void)
+{
+	for (int i=0, j=0; i<10; i++)
+		j = 2*i;
+
+	return 0;
+}"
+
+usage()
+{
+	echo -e "Usage: ./configure OPTIONS\n
+ --prefix=PREFIX          change PREFIX to install files (default: $prefix)
+ -h, --help               show this help and exit"
+	exit 0
+}
+
+quit()
+{
+	echo "$1"
+	exit 1
+}
+
+[ $# -gt 1 ] && usage
+
+for arg in "$@"; do
+	[ "$1" == "--help" -o "$1" == "-h" ] && usage
+	# get prefix path, if passed
+	[ ${arg:0:9} == "--prefix=" ] || usage
+	[ -n ${arg:9} ] && prefix=${arg:9}
+done
+
+# check for which
+echo -n "Checking for which... "
+which which 2>&1 > /dev/null && echo "yes" || quit "no"
+
+# check for needed programs
+for i in sed make gcc ld test mkdir rmdir install strip rm uname cut; do
+	echo -n "Checking for $i... "
+	which $i > /dev/null && echo "yes" || quit "no"
+done
+
+# get os type
+os=$(uname -a | cut -d' ' -f1)
+echo -n "Getting OS type... "
+[ -n $os ] && echo "$os" || (echo "unable to retrieve OS type" && exit 1)
+
+gccver=$(gcc -v 2>&1 | sed -n '$s/.*\([0-9]\.[0-9]\.[0-9]\).*/\1/p')
+echo "Checking for gcc version... $gccver"
+
+# compile test.c in a temp directory to check c99 support
+echo -n "Checking ISO C99 support in gcc... "
+echo "$testc" > /tmp/test.c || quit "fail"
+if gcc -std=c99 -o /tmp/test /tmp/test.c 2> /dev/null; then
+	echo "yes"
+else
+	echo "no"
+	rm -f /tmp/test /tmp/test.c
+	exit 1
+fi
+rm -f /tmp/test /tmp/test.c
+
+# replace prefix in Makefiles
+echo -n "Configuring prefix to "$prefix"... "
+sed -i "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_libpe" 2> /dev/null || quit "fail"
+sed -i "s/^PREFIX=.*/PREFIX=\\$prefix/" "$makef_pev" || quit "fail"
+echo "ok"
+
+# apply specific OS patches in Makefiles
+echo -n "Patching Makefiles for "$os"... "
+case "$os" in
+	"Darwin")
+		sed -i 's/STRIP=.*/STRIP=strip -x/' "$makef_libpe" 2> /dev/null || quit "fail"
+		sed -i 's/-Wl,-[a-z_]*,/-Wl,-install_name,/' "$makef_libpe" 2> /dev/null || quit "fail"
+		echo "ok" ;;
+	*) # Linux and unknown
+		sed -i 's/STRIP=.*/STRIP=strip --strip-unneeded/' "$makef_libpe" 2> /dev/null || quit "fail"
+		sed -i 's/-Wl,-[a-z_]*,/-Wl,-soname,/' "$makef_libpe" 2> /dev/null || quit "fail"
+		echo "ok" ;;
+esac

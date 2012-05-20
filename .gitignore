@@ -11,3 +11,4 @@ Debug
 *~
 *.so*
 *.o
+*.log

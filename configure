@@ -3,14 +3,18 @@
 # pev configure script
 # run with ./configure before make step
 
-makef_libpe="lib/libpe/Makefile"
-makef_pev="src/Makefile"
-makef="Makefile"
+makef_libpe=lib/libpe/Makefile
+makef_pev=src/Makefile
+makef=Makefile
 prefix=/usr
 os=
 gccver=
 tmpmakef=
 tmptestc=
+new_cc=
+new_strip=
+new_libpe=
+new_zipfile='ZIPFILE=pev.zip'
 
 # test code for ISO C99 standard
 testc="
@@ -35,11 +39,22 @@ quit()
 	echo "$1"
 	echo -e "\nError in configure script. You need to satisfy all dependencies and
 run this script again. Maybe you can try to run 'make' and analyze the output."
+	rm -f $tempfile $tmptestc
 	exit 1
 }
 
-[ $# -gt 1 ] && usage
+replace() # replace(regex, file)
+{
+	tempfile=$(mktemp /tmp/pev.XXXX)
 
+	(sed "$1" "$2" > $tempfile 2> /dev/null && \
+	[ -s $tempfile ] && \
+	mv $tempfile "$2") || quit fail
+	rm -f $tempfile
+}
+
+# parse args
+[ $# -gt 1 ] && usage
 for arg in "$@"; do
 	[ "$1" == "--help" -o "$1" == "-h" ] && usage
 	# get prefix path, if passed
@@ -57,100 +72,65 @@ for i in sed make gcc ld test mkdir rmdir install strip rm mv mktemp uname cut m
 	which $i > /dev/null && echo "yes" || quit "no"
 done
 
-tmpmakef=$(mktemp /tmp/pev.XXXX)
-tmptestc=$(mktemp /tmp/pev.XXXX)
-
 # get os type
 os=$(uname -a | cut -d' ' -f1)
 echo -n "Getting OS type... "
 [ -n $os ] && echo "$os" || (echo "unable to retrieve OS type" && exit 1)
 
+# get gcc version
 gccver=$(gcc -v 2>&1 | sed -n '$s/.*\([0-9]\.[0-9]\.[0-9]\).*/\1/p')
 echo "Checking for gcc version... $gccver"
 
 # compile test.c in a temp directory to check c99 support
 echo -n "Checking ISO C99 support in gcc... "
+tmptestc=$(mktemp /tmp/pev.XXXX)
 echo "$testc" > $tmptestc.c || quit fail
-if gcc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null; then
-	echo "yes"
-else
-	echo "no"
-	rm -f $tmptestc $tmptestc.c
-	exit 1
-fi
-rm -f $tmptestc $tmptestc.c
+gcc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null && echo yes || quit no
 
 # replace prefix in Makefiles
 echo -n "Configuring prefix to "$prefix"... "
 prefix=$(echo $prefix | sed 's/\//\\\//g') # escape slashes
-sed "s/^PREFIX=.*/PREFIX=$prefix/" "$makef_libpe" > "$tmpmakef"  || quit fail1
-[ -s "$tmpmakef" ] || quit fail
-mv "$tmpmakef" "$makef_libpe" || quit fail
-sed "s/^PREFIX=.*/PREFIX=$prefix/" "$makef_pev" > "$tmpmakef" 2> /dev/null || quit fail
-[ -s "$tmpmakef" ] || quit fail
-mv "$tmpmakef" "$makef_pev" || quit fail
+replace "s/^PREFIX=.*/PREFIX=$prefix/" "$makef_libpe"
+replace "s/^PREFIX=.*/PREFIX=$prefix/" "$makef_pev"
 echo "ok"
 
 # apply specific OS patches in Makefiles
-echo -n "Patching Makefiles for "$os"... "
 case "$os" in
 	Darwin)
-		sed 's/^CC=.*/CC=gcc/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/STRIP=.*/STRIP=strip -x/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-shared.*\.o$/-shared -Wl,-install_name,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o/' \
-			"$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/^CC=.*/CC=gcc/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_pev" || quit fail
-		echo "ok" ;;
+		new_cc='CC=gcc'
+		new_strip='strip -x'
+		new_libpe='-shared -Wl,-install_name,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o'
+		;;
 	CYGWIN*WOW64)
-		sed 's/^CC=.*/CC=x86_64-w64-mingw32-gcc.exe/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-shared.*\.o$/-shared -o $(LIBNAME).dll $(LIBNAME).o/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/^CC=.*/CC=x86_64-w64-mingw32-gcc.exe/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_pev" || quit fail
-		sed 's/^ZIPFILE=.*/ZIPFILE=pev-$(VERSION)_x86-64.zip/' "$makef" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef" || quit fail
-		echo "ok" ;;
+		new_cc='CC=x86_64-w64-mingw32-gcc.exe'
+		new_strip='strip --strip-unneeded'
+		new_libpe='-shared -o $(LIBNAME).dll $(LIBNAME).o'
+		new_zipfile='ZIPFILE=pev-$(VERSION)_x86-64.zip'
+		;;
 	CYGWIN*)
-		sed 's/^CC=.*/CC=mingw32-gcc.exe/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-shared.*\.o$/-shared -o $(LIBNAME).dll $(LIBNAME).o/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/^CC=.*/CC=mingw32-gcc.exe/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_pev" || quit fail
-		sed 's/^ZIPFILE=.*/ZIPFILE=pev-$(VERSION)_x86.zip/' "$makef" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef" || quit fail
-		echo "ok" ;;
-	*) # Linux and unknown
-		sed 's/^CC=.*/CC=gcc/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/STRIP=.*/STRIP=strip --strip-unneeded/' "$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/-shared.*\.o$/-shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o/' \
-			"$makef_libpe" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_libpe" || quit fail
-		sed 's/^CC=.*/CC=gcc/' "$makef_pev" > $tmpmakef 2> /dev/null || quit fail
-		[ -s "$tmpmakef" ] || quit fail
-		mv "$tmpmakef" "$makef_pev" || quit fail
-		echo "ok" ;;
+		new_cc='CC=mingw32-gcc.exe'
+		new_strip='strip --strip-unneeded'
+		new_libpe='-shared -o $(LIBNAME).dll $(LIBNAME).o'
+		new_zipfile='ZIPFILE=pev-$(VERSION)_x86.zip'
+		;;
+	*) # Default: Linux
+		new_cc='CC=gcc'
+		new_strip='STRIP=strip --strip-unneeded'
+		new_libpe='-shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o'
+		;;
 esac
-rm -f $tmpmakef
+
+echo -n "Patching Makefiles for "$os"... "
+
+# libpe patches
+replace "s/^CC=.*/$new_cc/" "$makef_libpe"
+replace "s/STRIP=.*/$new_strip/" "$makef_libpe"
+replace "s/-shared.*\.o$/$new_libpe/" "$makef_libpe"
+
+# pev patches
+replace "s/^CC=.*/$new_cc/" "$makef_pev"
+
+# top level Makefile patches
+replace "s/^ZIPFILE=.*/$new_zipfile/" "$makef"
+
+echo ok

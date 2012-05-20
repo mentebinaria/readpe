@@ -2,7 +2,7 @@ LIBPE_DIR=lib/libpe
 PEV_DIR=src
 MAKE=make
 VERSION=0.50_alpha2
-ZIPFILE=pev-$(VERSION)_x86.zip
+ZIPFILE=pev.zip
 
 # simple call each separated Makefile
 all:

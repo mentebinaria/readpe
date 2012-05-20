@@ -103,7 +103,7 @@ case "$os" in
 		;;
 	CYGWIN*WOW64)
 		new_cc='x86_64-w64-mingw32-gcc.exe'
-		new_strip='STRIP=strip --strip-unneeded'
+		new_strip='strip --strip-unneeded'
 		new_libpe='-shared -o $(LIBNAME).dll $(LIBNAME).o'
 		new_zipfile='pev-$(VERSION)_x86-64.zip'
 		;;

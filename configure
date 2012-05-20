@@ -14,7 +14,7 @@ tmptestc=
 new_cc=
 new_strip=
 new_libpe=
-new_zipfile='ZIPFILE=pev.zip'
+new_zipfile='pev.zip'
 
 # test code for ISO C99 standard
 testc="
@@ -97,25 +97,25 @@ echo "ok"
 # apply specific OS patches in Makefiles
 case "$os" in
 	Darwin)
-		new_cc='CC=gcc'
+		new_cc='gcc'
 		new_strip='strip -x'
 		new_libpe='-shared -Wl,-install_name,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o'
 		;;
 	CYGWIN*WOW64)
-		new_cc='CC=x86_64-w64-mingw32-gcc.exe'
-		new_strip='strip --strip-unneeded'
+		new_cc='x86_64-w64-mingw32-gcc.exe'
+		new_strip='STRIP=strip --strip-unneeded'
 		new_libpe='-shared -o $(LIBNAME).dll $(LIBNAME).o'
-		new_zipfile='ZIPFILE=pev-$(VERSION)_x86-64.zip'
+		new_zipfile='pev-$(VERSION)_x86-64.zip'
 		;;
 	CYGWIN*)
-		new_cc='CC=mingw32-gcc.exe'
+		new_cc='mingw32-gcc.exe'
 		new_strip='strip --strip-unneeded'
 		new_libpe='-shared -o $(LIBNAME).dll $(LIBNAME).o'
-		new_zipfile='ZIPFILE=pev-$(VERSION)_x86.zip'
+		new_zipfile='pev-$(VERSION)_x86.zip'
 		;;
 	*) # Default: Linux
-		new_cc='CC=gcc'
-		new_strip='STRIP=strip --strip-unneeded'
+		new_cc='gcc'
+		new_strip='strip --strip-unneeded'
 		new_libpe='-shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o'
 		;;
 esac
@@ -123,14 +123,14 @@ esac
 echo -n "Patching Makefiles for "$os"... "
 
 # libpe patches
-replace "s/^CC=.*/$new_cc/" "$makef_libpe"
-replace "s/STRIP=.*/$new_strip/" "$makef_libpe"
+replace "s/^CC=.*/CC=$new_cc/" "$makef_libpe"
+replace "s/STRIP=.*/STRIP=$new_strip/" "$makef_libpe"
 replace "s/-shared.*\.o$/$new_libpe/" "$makef_libpe"
 
 # pev patches
-replace "s/^CC=.*/$new_cc/" "$makef_pev"
+replace "s/^CC=.*/CC=$new_cc/" "$makef_pev"
 
 # top level Makefile patches
-replace "s/^ZIPFILE=.*/$new_zipfile/" "$makef"
+replace "s/^ZIPFILE=.*/ZIPFILE=$new_zipfile/" "$makef"
 
 echo ok

@@ -43,7 +43,8 @@ run this script again. Maybe you can try to run 'make' and analyze the output."
 	exit 1
 }
 
-replace() # replace(regex, file)
+# replace(regex, file)
+replace()
 {
 	tempfile=$(mktemp /tmp/pev.XXXX)
 
@@ -51,6 +52,14 @@ replace() # replace(regex, file)
 	[ -s $tempfile ] && \
 	mv $tempfile "$2") || quit fail
 	rm -f $tempfile
+}
+
+check()
+{
+	for i in $*; do
+		echo -n "Checking for $i... "
+		which $i 2>&1 > /dev/null && echo yes || quit no
+	done
 }
 
 # parse args
@@ -62,30 +71,14 @@ for arg in "$@"; do
 	[ -n ${arg:9} ] && prefix=${arg:9}
 done
 
-# check for which
-echo -n "Checking for which... "
-which which 2>&1 > /dev/null && echo "yes" || quit "no"
-
 # check for needed programs
-for i in sed make gcc ld test mkdir rmdir install strip rm mv mktemp uname cut mktemp; do
-	echo -n "Checking for $i... "
-	which $i > /dev/null && echo "yes" || quit "no"
-done
+check which
+check sed make ld test mkdir rmdir install strip rm mv mktemp uname cut mktemp
 
 # get os type
 os=$(uname -a | cut -d' ' -f1)
 echo -n "Getting OS type... "
 [ -n $os ] && echo "$os" || (echo "unable to retrieve OS type" && exit 1)
-
-# get gcc version
-gccver=$(gcc -v 2>&1 | sed -n '$s/.*\([0-9]\.[0-9]\.[0-9]\).*/\1/p')
-echo "Checking for gcc version... $gccver"
-
-# compile test.c in a temp directory to check c99 support
-echo -n "Checking ISO C99 support in gcc... "
-tmptestc=$(mktemp /tmp/pev.XXXX)
-echo "$testc" > $tmptestc.c || quit fail
-gcc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null && echo yes || quit no
 
 # replace prefix in Makefiles
 echo -n "Configuring prefix to "$prefix"... "
@@ -134,3 +127,16 @@ replace "s/^CC=.*/CC=$new_cc/" "$makef_pev"
 replace "s/^ZIPFILE=.*/ZIPFILE=$new_zipfile/" "$makef"
 
 echo ok
+
+check $new_cc
+
+# get gcc version
+gccver=$($new_cc -v 2>&1 | sed -n '$s/.*\([0-9]\.[0-9]\.[0-9]\).*/\1/p')
+echo "Checking for gcc version... $gccver"
+
+# compile test.c in a temp directory to check c99 support
+echo -n "Checking ISO C99 support in gcc... "
+tmptestc=$(mktemp /tmp/pev.XXXX)
+echo "$testc" > $tmptestc.c || quit fail
+$new_cc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null && echo yes || quit no
+rm -f $tmptestc

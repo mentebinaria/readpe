@@ -1,4 +1,5 @@
 LIBPE_DIR=lib/libpe
+LIBMXML_DIR=lib/libmxml
 PEV_DIR=src
 MAKE=make
 VERSION=0.50_alpha2
@@ -8,6 +9,13 @@ ZIPFILE=pev.zip
 all:
 %:
 	cd $(LIBPE_DIR); $(MAKE) $@
+	cd $(LIBMXML_DIR); ./configure; $(MAKE) $@
+	cd $(PEV_DIR); $(MAKE) $@
+
+
+clean:
+	cd $(LIBPE_DIR); $(MAKE) $@
+	cd $(LIBMXML_DIR); $(MAKE) $@
 	cd $(PEV_DIR); $(MAKE) $@
 
 # zip rule only Cygwin targets

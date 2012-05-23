@@ -594,10 +594,11 @@ int main(int argc, char *argv[])
 
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
+	
+	
+	start_output(); // shows where the header must be placed
 
 	// dos header
-	start_output();
-	
 	
 	if (config.dos || config.all_headers || config.all)
 	{
@@ -642,7 +643,8 @@ int main(int argc, char *argv[])
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 	
-	end_output();
+	end_output(); //closes the header
+	
 	// free
 	pe_deinit(&pe);
 	

@@ -9,13 +9,13 @@ ZIPFILE=pev.zip
 all:
 %:
 	cd $(LIBPE_DIR); $(MAKE) $@
-	cd $(LIBMXML_DIR); ./configure; $(MAKE) $@
+#	cd $(LIBMXML_DIR); ./configure; $(MAKE) $@
 	cd $(PEV_DIR); $(MAKE) $@
 
 
 clean:
 	cd $(LIBPE_DIR); $(MAKE) $@
-	cd $(LIBMXML_DIR); $(MAKE) $@
+#	cd $(LIBMXML_DIR); $(MAKE) $@
 	cd $(PEV_DIR); $(MAKE) $@
 
 

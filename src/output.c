@@ -143,13 +143,26 @@ void to_html(char *field, char *value)
 {
 	// TODO output a valid html
 	
+	if(1 == start_out)
+	{
+		printf("<html>\n  <head>\n    <title>PE</title>\n  </head>\n"
+				"<body>\n");
+		start_out = 0;
+	}
 	
+
 	if (field && value)
 		printf("<span><b>%s:</b> %s</span><br />\n", field, value);
 	else if (field)
 		printf("\n<p>%s</p>\n", field);
 	else if (value)
 		printf("<span>%s</span><br />\n", value);
+	
+	if(1 == end_out)
+	{
+		printf("\n</body>\n</html>\n");
+		end_out = 0;
+	}
 }
 
 void output(char *field, char *value)

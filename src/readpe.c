@@ -596,6 +596,9 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	// dos header
+	start_output();
+	
+	
 	if (config.dos || config.all_headers || config.all)
 	{
 		IMAGE_DOS_HEADER dos;
@@ -623,14 +626,6 @@ int main(int argc, char *argv[])
 		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
 	}
 
-	// directories
-	if (config.dirs || config.all)
-	{
-		if (pe_get_directories(&pe))
-			print_directories(&pe);
-		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
-	}
-
 	// sections
 	if (config.all_sections || config.all)
 	{
@@ -638,8 +633,18 @@ int main(int argc, char *argv[])
 			print_sections(&pe);
 		else { EXIT_ERROR("unable to read Section header"); }
 	}
-
+	
+	// directories
+	if (config.dirs || config.all)
+	{
+		if (pe_get_directories(&pe))
+			print_directories(&pe);
+		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
+	}
+	
+	end_output();
 	// free
 	pe_deinit(&pe);
+	
 	return 0;
 }

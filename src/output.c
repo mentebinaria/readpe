@@ -31,12 +31,14 @@ extern format_e format;
 
 void parse_format(const char *optarg)
 {
+	start_out = 0;
+	end_out = 0;
+	
 	if (! strcmp(optarg, "text"))
 		format = FORMAT_TEXT;
 	else if (! strcmp(optarg, "xml"))
 	{
 		format = FORMAT_XML;
-		pass = 0;
 	}
 	else if (! strcmp(optarg, "csv"))
 		format = FORMAT_CSV;
@@ -46,8 +48,20 @@ void parse_format(const char *optarg)
 		EXIT_ERROR("invalid format option");
 }
  /* intended to solve the problems of opening and closing headers */
-void start_output(){} /* to be implemented */
-void end_output(){}    /* to be implemented */
+void start_output()
+{
+	start_out = 1;
+} /* to be implemented */
+
+
+void end_output()
+{
+	end_out = 1;
+ 	output(NULL, NULL); 
+ 	/* wrapper to call output before the end
+	 *to close the document.
+	 */
+}
 
 
 void to_text(char *field, char *value)
@@ -79,13 +93,22 @@ void to_xml(char *field, char *value)
 	char c;
 	char *pt = NULL;
 	
-	if(0 == pass)
+	if(1 == start_out)
 	{
 		printf("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" \
 														  "<PE>\n");
+		start_out = 0;
 	}
 	
-	if(field)
+	if(1 == end_out)
+	{
+		printf("</PE>\n");
+		end_out = 0;
+	}
+	
+
+	
+	if(field) /* this is always valid or not? */
 	{
 		for(i = 0; field[i]; ++i);
 	
@@ -114,8 +137,15 @@ void to_xml(char *field, char *value)
 		
 		free((char*)pt);
 	}
-	pass = 1;
+	
+	if(1 == end_out)
+	{
+		printf("</PE>\n");
+		end_out = 0;
+	}
 }
+	
+
 
 void to_html(char *field, char *value)
 {

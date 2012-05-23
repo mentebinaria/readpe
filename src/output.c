@@ -88,7 +88,7 @@ void to_csv(const char *field, char *value)
 
 void to_xml(char *field, char *value)
 {
-	// TODO output a valid xml
+	// TODO output a valid xml ???
 	int i;
 	char c;
 	char *pt = NULL;
@@ -100,27 +100,36 @@ void to_xml(char *field, char *value)
 		start_out = 0;
 	}
 	
-	if(field) /* this is always valid or not? */
+	if(field) /* this is always valid or not? I don't think so... */
 	{
 		for(i = 0; field[i]; ++i);
 	
 		pt = (char*) malloc(sizeof(char*)*i);
 		
 		strcpy(pt, field);
+		
+		/* replace undesired characters */
 	
-		for(i = 0; pt[i]; ++i)
+		for(i = 0; *(pt+i); ++i)
 		{
-			if(pt[i] == ' ')
-				pt[i] =  '_';
-			if(pt[i] == '\\' || pt[i] == '/' || pt[i] == '(' 	
-							 || pt[i] == ')' || pt[i] == '.')
-				pt[i] = '_';
-			if(isupper(pt[i]))
+			if(*(pt+i) == ' ')
+				*(pt+i) =  '_';
+			if(*(pt+i) == '\\' || *(pt+i) == '/' || *(pt+i) == '(' 	
+							 || *(pt+i) == ')' || *(pt+i) == '.')
+				*(pt+i) = '_';
+			if(isupper(*(pt+i)))
 			{
-				c = pt[i];
-				pt[i] =  tolower(c);
+				c = *(pt+i);
+				*(pt+i) =  tolower(c);
 			}
 		}
+		
+		/* remove double underscores */
+		
+		for(i = 0; *(pt+i); ++i)
+			if(*(pt+i) == '_' && *(pt+i+1) == '_')
+				*(pt+i+1) = '\b';
+			
 			
 		if (value)
 			printf("\t<%s>%s</%s>\n", pt, value, pt);

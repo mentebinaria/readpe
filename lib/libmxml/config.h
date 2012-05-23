@@ -1,3 +1,4 @@
+/* config.h.  Generated from config.h.in by configure.  */
 /*
  * "$Id: config.h.in 408 2010-09-19 05:26:46Z mike $"
  *
@@ -29,7 +30,7 @@
  * Version number...
  */
 
-#define MXML_VERSION	""
+#define MXML_VERSION "Mini-XML v2.7"
 
 
 /*
@@ -43,29 +44,29 @@
  * Long long support...
  */
 
-#undef HAVE_LONG_LONG
+#define HAVE_LONG_LONG 1
 
 
 /*
  * Do we have the snprintf() and vsnprintf() functions?
  */
 
-#undef HAVE_SNPRINTF
-#undef HAVE_VSNPRINTF
+#define HAVE_SNPRINTF 1
+#define HAVE_VSNPRINTF 1
 
 
 /*
  * Do we have the strXXX() functions?
  */
 
-#undef HAVE_STRDUP
+#define HAVE_STRDUP 1
 
 
 /*
  * Do we have threading support?
  */
 
-#undef HAVE_PTHREAD_H
+#define HAVE_PTHREAD_H 1
 
 
 /*

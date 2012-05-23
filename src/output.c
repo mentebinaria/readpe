@@ -132,7 +132,7 @@ void to_xml(char *field, char *value)
 		for(i = 0; i < pz; ++i)
 			if(*(pt+i) == '_' && *(pt+i+1) == '_')
 				while()
-				pt[i+1] = pt[i+2];
+				pt[i+1] = '\b'; :-(
 		*/	
 			
 		if (value)

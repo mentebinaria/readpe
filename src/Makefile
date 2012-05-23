@@ -1,7 +1,7 @@
 PREFIX=/usr
 DEST=$(PREFIX)/bin
 LIBPE=../lib/libpe
-LIBMXMK=../lib/libmxml
+LIBMXML=../lib/libmxml
 LIBUDIS86=../lib/libudis86
 CFLAGS=-W -Wall -Wextra -std=c99 -pedantic -g
 CC=gcc

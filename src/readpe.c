@@ -4,6 +4,7 @@
 	readpe.c - show PE file headers
 
 	Copyright (C) 2012 Fernando Mercês
+	Copyright (C) 2012 Gabriel Duarte
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

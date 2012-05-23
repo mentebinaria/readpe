@@ -91,7 +91,7 @@ void to_xml(char *field, char *value)
 	
 		pt = (char*) malloc(sizeof(char*)*i);
 		
-		memcpy(pt, field, i);
+		strcpy(pt, field);
 	
 		for(i = 0; pt[i]; ++i)
 		{

@@ -24,6 +24,8 @@
 
 void parse_format(const char *optarg);
 void output(char *field, char *value);
+void start_output();
+void end_output();
 
 typedef enum {
 	FORMAT_TEXT = 1,
@@ -33,5 +35,7 @@ typedef enum {
 } format_e;
 
 format_e format;
+short pass;
+
 
 #endif

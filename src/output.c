@@ -4,6 +4,7 @@
 	output.c - functions to output results in different formats
 
 	Copyright (C) 2012 Fernando Mercês
+	Copyright (C) 2012 Gabriel Duarte
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -33,7 +34,10 @@ void parse_format(const char *optarg)
 	if (! strcmp(optarg, "text"))
 		format = FORMAT_TEXT;
 	else if (! strcmp(optarg, "xml"))
+	{
 		format = FORMAT_XML;
+		pass = 0;
+	}
 	else if (! strcmp(optarg, "csv"))
 		format = FORMAT_CSV;
 	else if (! strcmp(optarg, "html"))
@@ -41,6 +45,10 @@ void parse_format(const char *optarg)
 	else
 		EXIT_ERROR("invalid format option");
 }
+ /* intended to solve the problems of opening and closing headers */
+void start_output(){} /* to be implemented */
+void end_output(){}    /* to be implemented */
+
 
 void to_text(char *field, char *value)
 {
@@ -67,15 +75,53 @@ void to_csv(const char *field, char *value)
 void to_xml(char *field, char *value)
 {
 	// TODO output a valid xml
-	if (value && field)
-		printf("<%s>%s</%s>\n", field, value, field);
-	else if (field)
-		printf("<%s>\n", field);
+	int i;
+	char c;
+	char *pt = NULL;
+	
+	if(0 == pass)
+	{
+		printf("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" \
+														  "<PE>\n");
+	}
+	
+	if(field)
+	{
+		for(i = 0; field[i]; ++i);
+	
+		pt = (char*) malloc(sizeof(char*)*i);
+		
+		strcpy(pt, field);
+	
+		for(i = 0; pt[i]; ++i)
+		{
+			if(pt[i] == ' ')
+				pt[i] =  '_';
+			if(pt[i] == '\\' || pt[i] == '/' || pt[i] == '(' 	
+							 || pt[i] == ')' || pt[i] == '.')
+				pt[i] = '_';
+			if(isupper(pt[i]))
+			{
+				c = pt[i];
+				pt[i] =  tolower(c);
+			}
+		}
+			
+		if (value)
+			printf("\t<%s>%s</%s>\n", pt, value, pt);
+		else
+			printf("<%s></%s>\n", pt, pt);
+		
+		free((char*)pt);
+	}
+	pass = 1;
 }
 
 void to_html(char *field, char *value)
 {
 	// TODO output a valid html
+	
+	
 	if (field && value)
 		printf("<span><b>%s:</b> %s</span><br />\n", field, value);
 	else if (field)

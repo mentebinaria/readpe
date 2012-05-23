@@ -33,7 +33,10 @@ void parse_format(const char *optarg)
 	if (! strcmp(optarg, "text"))
 		format = FORMAT_TEXT;
 	else if (! strcmp(optarg, "xml"))
+	{
 		format = FORMAT_XML;
+		pass = 0;
+	}
 	else if (! strcmp(optarg, "csv"))
 		format = FORMAT_CSV;
 	else if (! strcmp(optarg, "html"))
@@ -67,15 +70,55 @@ void to_csv(const char *field, char *value)
 void to_xml(char *field, char *value)
 {
 	// TODO output a valid xml
+	int i;
+	char c;
+	char *pt;
+	
+	if(0 == pass)
+	{
+		printf("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" \
+														  "<PE>\n");
+	}
+	
+	if(field)
+	{
+		for(i = 0; field[i]; ++i);
+	
+		pt = (char*) malloc(sizeof(i));
+		strcpy(pt, field);
+	
+		for(i = 0; pt[i]; ++i)
+		{
+			if(pt[i] == ' ')
+				pt[i] =  '_';
+			if(pt[i] == '\\' || pt[i] == '/' || pt[i] == '(' 	
+							 || pt[i] == ')' || pt[i] == '.')
+				pt[i] = '_';
+			if(isupper(pt[i]))
+			{
+				c = pt[i];
+				pt[i] =  tolower(c);
+			}
+		}
+	}		
+	
+	
 	if (value && field)
-		printf("<%s>%s</%s>\n", field, value, field);
+		printf("\t<%s>%s</%s>\n", pt, value, pt);
 	else if (field)
-		printf("<%s>\n", field);
+		printf("<%s></%s>\n", pt, pt);
+	
+	//if(pt != NULL)
+		//free(pt);
+	
+	pass = 1;
 }
 
 void to_html(char *field, char *value)
 {
 	// TODO output a valid html
+	
+	
 	if (field && value)
 		printf("<span><b>%s:</b> %s</span><br />\n", field, value);
 	else if (field)

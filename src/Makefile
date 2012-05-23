@@ -2,7 +2,7 @@ PREFIX=/usr
 DEST=$(PREFIX)/bin
 LIBPE=../lib/libpe
 LIBUDIS86=../lib/libudis86
-CFLAGS=-W -Wall -Wextra -std=c99 -pedantic
+CFLAGS=-W -Wall -Wextra -std=c99 -pedantic -g
 CC=gcc
 RM=rm -f
 COMMON=output.c

@@ -36,9 +36,9 @@ typedef enum {
 
 format_e format;
 
-static short pass,
-	     start_out,
-	     end_out;
+short pass,
+      start_out,
+      end_out;
 
 
 

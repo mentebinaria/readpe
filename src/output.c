@@ -106,16 +106,14 @@ void to_xml(char *field, char *value)
 				pt[i] =  tolower(c);
 			}
 		}
-	}		
-	
-	if (value && field)
-		printf("\t<%s>%s</%s>\n", pt, value, pt);
-	else if (field)
-		printf("<%s></%s>\n", pt, pt);
-	
-	if(pt)
+			
+		if (value)
+			printf("\t<%s>%s</%s>\n", pt, value, pt);
+		else
+			printf("<%s></%s>\n", pt, pt);
+		
 		free((char*)pt);
-	
+	}
 	pass = 1;
 }
 

@@ -194,7 +194,7 @@ void print_sections(PE_FILE *pe)
 			if (pe->sections_ptr[i]->Characteristics & valid_flags[j])
 			{
 					snprintf(s, MAX_MSG, "%s", flags[j]);
-					output(NULL, s);
+					output("characteristics", s);
 			}
 		}
 	}

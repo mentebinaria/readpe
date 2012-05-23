@@ -45,6 +45,10 @@ void parse_format(const char *optarg)
 	else
 		EXIT_ERROR("invalid format option");
 }
+ /* intended to solve the problems of opening and closing headers */
+void start_output(){} /* to be implemented */
+void end_output(){}    /* to be implemented */
+
 
 void to_text(char *field, char *value)
 {

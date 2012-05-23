@@ -100,14 +100,6 @@ void to_xml(char *field, char *value)
 		start_out = 0;
 	}
 	
-	if(1 == end_out)
-	{
-		printf("</PE>\n");
-		end_out = 0;
-	}
-	
-
-	
 	if(field) /* this is always valid or not? */
 	{
 		for(i = 0; field[i]; ++i);

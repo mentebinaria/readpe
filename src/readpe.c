@@ -4,6 +4,7 @@
 	readpe.c - show PE file headers
 
 	Copyright (C) 2012 Fernando Mercês
+	Copyright (C) 2012 Gabriel Duarte
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -193,7 +194,7 @@ void print_sections(PE_FILE *pe)
 			if (pe->sections_ptr[i]->Characteristics & valid_flags[j])
 			{
 					snprintf(s, MAX_MSG, "%s", flags[j]);
-					output(NULL, s);
+					output("characteristics", s);
 			}
 		}
 	}
@@ -593,8 +594,12 @@ int main(int argc, char *argv[])
 
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
+	
+	
+	start_output(); // shows where the header must be placed
 
 	// dos header
+	
 	if (config.dos || config.all_headers || config.all)
 	{
 		IMAGE_DOS_HEADER dos;
@@ -622,14 +627,6 @@ int main(int argc, char *argv[])
 		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
 	}
 
-	// directories
-	if (config.dirs || config.all)
-	{
-		if (pe_get_directories(&pe))
-			print_directories(&pe);
-		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
-	}
-
 	// sections
 	if (config.all_sections || config.all)
 	{
@@ -637,8 +634,19 @@ int main(int argc, char *argv[])
 			print_sections(&pe);
 		else { EXIT_ERROR("unable to read Section header"); }
 	}
-
+	
+	// directories
+	if (config.dirs || config.all)
+	{
+		if (pe_get_directories(&pe))
+			print_directories(&pe);
+		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
+	}
+	
+	end_output(); //closes the header
+	
 	// free
 	pe_deinit(&pe);
+	
 	return 0;
 }

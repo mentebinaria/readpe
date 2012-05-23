@@ -77,7 +77,7 @@ void to_xml(char *field, char *value)
 	// TODO output a valid xml
 	int i;
 	char c;
-	char *pt;
+	char *pt = NULL;
 	
 	if(0 == pass)
 	{
@@ -89,8 +89,9 @@ void to_xml(char *field, char *value)
 	{
 		for(i = 0; field[i]; ++i);
 	
-		pt = (char*) malloc(sizeof(i));
-		strcpy(pt, field);
+		pt = (char*) malloc(sizeof(char*)*i);
+		
+		memcpy(pt, field, i);
 	
 		for(i = 0; pt[i]; ++i)
 		{
@@ -107,14 +108,13 @@ void to_xml(char *field, char *value)
 		}
 	}		
 	
-	
 	if (value && field)
 		printf("\t<%s>%s</%s>\n", pt, value, pt);
 	else if (field)
 		printf("<%s></%s>\n", pt, pt);
 	
-	//if(pt != NULL)
-		//free(pt);
+	if(pt)
+		free((char*)pt);
 	
 	pass = 1;
 }

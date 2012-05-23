@@ -18,6 +18,12 @@ clean:
 	cd $(LIBMXML_DIR); $(MAKE) $@
 	cd $(PEV_DIR); $(MAKE) $@
 
+
+install:
+	cd $(LIBPE_DIR); $(MAKE) $@
+	cd $(PEV_DIR); $(MAKE) $@
+
+
 # zip rule only Cygwin targets
 zip:
 	zip -j $(ZIPFILE) lib/libpe/libpe.dll \

@@ -135,8 +135,8 @@ gccver=$($new_cc -v 2>&1 | sed -n '$s/.*\([0-9]\.[0-9]\.[0-9]\).*/\1/p')
 echo "Checking for gcc version... $gccver"
 
 # compile test.c in a temp directory to check c99 support
-echo -n "Checking ISO C99 support in gcc... "
+echo -n "Checking for ISO C99 support in gcc... "
 tmptestc=$(mktemp /tmp/pev.XXXX)
 echo "$testc" > $tmptestc.c || quit fail
 $new_cc -std=c99 -o $tmptestc $tmptestc.c 2> /dev/null && echo yes || quit no
-rm -f $tmptestc
+rm -f $tmptestc $tmptestc.c

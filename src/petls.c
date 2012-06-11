@@ -122,6 +122,9 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, pe->handle))
 					return false;	
 
+				if (! (tlsdir32.AddressOfCallBacks & pe->optional_ptr->_32->ImageBase))
+					break;
+
 				fseek(pe->handle, tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase -
 					pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
 			}
@@ -131,6 +134,9 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 
 				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, pe->handle))
 					return false;	
+
+				if (! (tlsdir64.AddressOfCallBacks & pe->optional_ptr->_64->ImageBase))
+					break;
 
 				fseek(pe->handle, tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase -
 					pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData, SEEK_SET);

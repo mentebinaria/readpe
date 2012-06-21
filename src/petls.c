@@ -95,6 +95,7 @@ DWORD pe_get_tls_directory(PE_FILE *pe)
 bool pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
+	bool found = false;
 	
 	if (!pe)
 		return false;
@@ -149,21 +150,19 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 			do
 			{ 
 				fread(&funcaddr, sizeof(int), 1, pe->handle);
-				if (funcaddr && funcaddr - pe->optional_ptr->_32->ImageBase < 0xffff)
+				if (funcaddr)
 				{
 					char field[MAX_MSG];
 					char value[MAX_MSG];
 
+					found = true;
 					snprintf(field, MAX_MSG, "Function %d", ++j);
 					snprintf(value, MAX_MSG, "%#x", funcaddr);
 					output(field, value);
 				}
-				else
-					return false;
-
 			} while (funcaddr);
 
-			return true;
+			return found;
 		}
 	}
 	return false;
@@ -191,10 +190,10 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	if (pe_get_tls_callbacks(&pe))
-		return 0;
+		return 1;
 		
 	// libera a memoria
 	pe_deinit(&pe);
 	
-	return 1;
+	return 0;
 }

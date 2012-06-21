@@ -1,11 +1,12 @@
-Written by:
-Fernando Mercês <fernando@mentebinaria.com.br> - programmer and Debian maintainer
-Francivan Bezerra <fba.rio@gmail.com> - programmer
+Fernando Mercês <fernando at mentebinaria.com.br> - maintainer / core programmer
+Francivan Bezerra <fba.rio at gmail.com> - programmer
+Gabriel Duarte <confusosk8 at gmail.com> - programmer
+Tiago Zaniquelli <ztiago at gmail.com> - pedis programmer
+Wagner Barongello <wagner at barongello.com.br> - packid programmer
 
-Thanks to:
-Evan Teran <eteran@alum.rit.edu> - ideas and tips
-Filipe Barros - new pev website with online analysis
-Diogo Leal <me@diogoleal.com> - Slackware package
-Gabriel Duarte <confusosk8@gmail.com> - some code
-Gustavo Roberto <robertux> - OSX package
-Robson Cardoso <> - Arch Linux package
+Special thanks to:
+Diogo Leal <me at diogoleal.com> - Slackware packaging
+Evan Teran <eteran at alum.rit.edu> - ideas and tips
+Filipe Barros <fbzlude at gmail.com> - pev website with online analysis
+Gustavo Roberto <gustavorobertux at gmail.com> - OSX packaging
+Robson Cardoso - Arch Linux packaging

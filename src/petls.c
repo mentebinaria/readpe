@@ -75,25 +75,27 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-int pe_get_tls_directory(PE_FILE *pe)
+DWORD pe_get_tls_directory(PE_FILE *pe)
 {
 	if (!pe_get_directories(pe))
-		return false;
+		return 0;
 
 	if (pe->num_directories > 32)
-		return false;
+		return 0;
 
-	for (unsigned int i=0; (i < pe->num_directories) && (pe->directories_ptr[i]); i++)
+	for (unsigned int i=0; (i < pe->num_directories && pe->directories_ptr[i]); i++)
 	{
 		// 9 is a tls directory
 		if (i == 9 && pe->directories_ptr[i]->Size > 0)
-			return pe->directories_ptr[i]->VirtualAddress;}
+			return pe->directories_ptr[i]->VirtualAddress;
+	}
 	return 0;
 }
 
 bool pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
+	bool found = false;
 	
 	if (!pe)
 		return false;
@@ -111,6 +113,7 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 		tls_addr < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
 		{
 			unsigned int funcaddr = 0;
+
 			if (fseek(pe->handle, tls_addr - pe->sections_ptr[i]->VirtualAddress
 			+ pe->sections_ptr[i]->PointerToRawData, SEEK_SET))
 			 	return false;
@@ -125,8 +128,8 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 				if (! (tlsdir32.AddressOfCallBacks & pe->optional_ptr->_32->ImageBase))
 					break;
 
-				fseek(pe->handle, tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase -
-					pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
+				fseek(pe->handle,
+				 rva2ofs(tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase, pe), SEEK_SET);
 			}
 			else if (pe->architecture == PE64)
 			{
@@ -138,8 +141,8 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 				if (! (tlsdir64.AddressOfCallBacks & pe->optional_ptr->_64->ImageBase))
 					break;
 
-				fseek(pe->handle, tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase -
-					pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData, SEEK_SET);
+				fseek(pe->handle,
+				 rva2ofs(tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase, pe), SEEK_SET);
 			}
 			else
 				return false;
@@ -152,14 +155,14 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 					char field[MAX_MSG];
 					char value[MAX_MSG];
 
+					found = true;
 					snprintf(field, MAX_MSG, "Function %d", ++j);
 					snprintf(value, MAX_MSG, "%#x", funcaddr);
 					output(field, value);
 				}
-
 			} while (funcaddr);
 
-			return true;
+			return found;
 		}
 	}
 	return false;
@@ -187,10 +190,10 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	if (pe_get_tls_callbacks(&pe))
-		return 0;
+		return 1;
 		
 	// libera a memoria
 	pe_deinit(&pe);
 	
-	return 1;
+	return 0;
 }

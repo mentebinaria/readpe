@@ -65,7 +65,6 @@ typedef uint64_t QWORD;
 #define RT_TOOLBAR        241  // configuration of toolbars
 
 // directory Entries
-// Directory Entries
 #define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
 #define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
 #define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
@@ -290,6 +289,42 @@ typedef struct _IMAGE_TLS_DIRECTORY64 {
 	DWORD SizeOfZeroFill;
 	DWORD Characteristics;
 } IMAGE_TLS_DIRECTORY64;
+
+typedef struct _IMAGE_IMPORT_DESCRIPTOR {
+  union {
+  DWORD Characteristics; // 0 for terminating null import descriptor
+  DWORD OriginalFirstThunk; // RVA to original unbound IAT
+  } u1;
+  DWORD TimeDateStamp;
+  DWORD ForwarderChain; // -1 if no forwarders
+  DWORD Name;
+  // RVA to IAT (if bound this IAT has actual addresses)
+  DWORD FirstThunk;
+} IMAGE_IMPORT_DESCRIPTOR;
+
+// import name entry
+typedef struct _IMAGE_IMPORT_BY_NAME {
+	WORD Hint;
+	BYTE Name;
+} IMAGE_IMPORT_BY_NAME;
+
+typedef struct _IMAGE_THUNK_DATA64 {
+	union {
+		QWORD ForwarderString;
+		QWORD Function;
+		QWORD Ordinal;
+		QWORD AddressOfData;
+	} u1;
+} IMAGE_THUNK_DATA64;
+
+typedef struct _IMAGE_THUNK_DATA32 {
+	union {
+		DWORD ForwarderString;
+		DWORD Function;
+		DWORD Ordinal;
+		DWORD AddressOfData;
+	} u1;
+} IMAGE_THUNK_DATA32;
 
 typedef struct _PE_FILE
 {

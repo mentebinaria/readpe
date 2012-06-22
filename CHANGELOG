@@ -7,6 +7,8 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.50 - ?, 2012
+ + readpe can now show imported functions with --imports or -i switch.
+ ! show erroneours ord number for imported functions without name
  - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting)
  * MEW packer detection in packid (Rodrigo Rubira <rbranco at qualys.com>)
  * Improved Makefile (Gabriel Barbosa <gbarbsa at qualys.com>)

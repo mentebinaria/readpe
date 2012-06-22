@@ -33,9 +33,10 @@ void usage()
 	" -A, --all                              full output (default)\n"
 	" -H, --all-headers                      print all PE headers\n"
 	" -S, --all-sections                     print all PE sections headers\n"
-	" -h, --header <dos|coff|optional>       show sepecific header\n"
-	" -d, --dirs                             show data directories\n"		
 	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -d, --dirs                             show data directories\n"
+	" -h, --header <dos|coff|optional>       show sepecific header\n"
+	" -i, --imports                          show imported functions\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);
@@ -58,7 +59,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "AHSh:df:v";
+	static const char short_options[] = "AHSh:dif:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
@@ -66,6 +67,7 @@ void parse_options(int argc, char *argv[])
 		{"all-headers",      no_argument,       NULL, 'H'},
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
+		{"imports",          no_argument,       NULL, 'i'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"format",           required_argument, NULL, 'f'},
 		{"version",          no_argument,       NULL, 'v'},
@@ -112,6 +114,10 @@ void parse_options(int argc, char *argv[])
 			case 'h':
 				config.all = false;
 				parse_headers(optarg); break;
+				
+			case 'i':
+				config.all = false;
+				config.imports = true; break;
 
 			case 'f':
 				parse_format(optarg); break;
@@ -215,12 +221,12 @@ void print_directories(PE_FILE *pe)
 		"Debug",
 		"Architecture",
 		"Global Ptr",
-		"Thread Local Storage (TLS) Table", // 9
+		"Thread Local Storage (TLS)", // 9
 		"Load Config Table",
 		"Bound Import",
 		"Import Address Table (IAT)",
 		"Delay Import Descriptor",
-		"CLR Runtime Header", "" // 15
+		"CLR Runtime Header", "" // 14
 	};
 
 	output("Data directories", NULL);
@@ -573,6 +579,125 @@ void print_dos_header(IMAGE_DOS_HEADER *header)
 	output("PE header offset", s);
 }
 
+void print_imported_functions(PE_FILE *pe, long offset)
+{
+	QWORD fptr = 0; // pointer to functions
+	long aux2, aux = ftell(pe->handle);
+	WORD hint = 0; // function number
+	char c;
+	char fname[MAX_FUNCTION_NAME];
+	char hintstr[16];
+	unsigned int i;
+	
+	if (fseek(pe->handle, offset, SEEK_SET))
+		return;
+
+	memset(&fname, 0, sizeof(fname));
+	memset(&hintstr, 0, sizeof(hintstr));
+	
+	while (1)
+	{
+		if (!fread(&fptr, (pe->architecture == PE64) ? sizeof(QWORD) : sizeof(DWORD), 1, pe->handle))
+			return;
+		
+		if (!fptr)
+			break;
+		
+		// save file pointer in functions array
+		aux2 = ftell(pe->handle);
+		
+		if (fseek(pe->handle, rva2ofs(pe, fptr), SEEK_SET))
+			return;
+
+		// follow function pointer
+		if (!fread(&hint, sizeof(hint), 1, pe->handle))
+			return;
+		
+		for (i=0; i<MAX_FUNCTION_NAME; i++)
+		{
+			if (!fread(&c, sizeof(c), 1, pe->handle))
+				return;
+			
+			if (!isprint(c)) // 0 and non-printable
+				break;
+			
+			fname[i] = c;
+		}
+		snprintf(hintstr, 15, "%x", hint);
+		output(hintstr, fname);
+		memset(&fname, 0, sizeof(fname));
+		memset(&hintstr, 0, sizeof(hintstr));
+		
+		// restore file pointer to functions array
+		if (fseek(pe->handle, aux2, SEEK_SET))
+			return;
+	}
+		
+	fseek(pe->handle, aux, SEEK_SET);
+}
+
+void print_imports(PE_FILE *pe)
+{
+	QWORD va; // store temporary addresses
+	long aux;
+	IMAGE_IMPORT_DESCRIPTOR id;
+	char c = 0;
+	char dllname[MAX_DLL_NAME];
+	unsigned int i;
+
+	va = pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_IMPORT] ? 
+	pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_IMPORT]->VirtualAddress : 0;
+
+	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
+		EXIT_ERROR("error seeking file");
+	
+	memset(&id, 0, sizeof(id));
+	memset(&dllname, 0, sizeof(dllname));
+
+	while (1)
+	{
+		if (!fread(&id, sizeof(id), 1, pe->handle))
+			return;
+
+		if (!id.u1.OriginalFirstThunk)
+			break;
+
+		aux = ftell(pe->handle);
+		va = rva2ofs(pe, id.Name);
+		
+		if (!va)
+			return;
+
+		// shortcut to read DLL name
+		if (fseek(pe->handle, va, SEEK_SET))
+			return;
+
+		// print dll name
+		for (i=0; i < MAX_DLL_NAME; i++)
+		{
+			fread(&c, sizeof(c), 1, pe->handle);
+			
+			if (!c)
+				break;
+			
+			dllname[i] = c;
+		}
+		
+		output(dllname, NULL);
+		
+		if (fseek(pe->handle, aux, SEEK_SET)) // restore file pointer
+			return;
+
+		// search for dll imported functions
+		va = rva2ofs(pe, id.u1.OriginalFirstThunk);
+
+		if (!va)
+			return;
+
+		print_imported_functions(pe, va);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
@@ -629,13 +754,21 @@ int main(int argc, char *argv[])
 			print_directories(&pe);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
+	
+	// imports
+	if (config.imports || config.all)
+	{
+		if (pe_get_directories(&pe))
+			print_imports(&pe);
+		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
+	}	
 
 	// sections
 	if (config.all_sections || config.all)
 	{
 		if (pe_get_sections(&pe))
 			print_sections(&pe);
-		else { EXIT_ERROR("unable to read Section header"); }
+		else { EXIT_ERROR("unable to read sections"); }
 	}
 
 	// free

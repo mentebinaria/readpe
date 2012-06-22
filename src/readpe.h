@@ -24,8 +24,12 @@
 
 #include "common.h"
 #include <time.h>
+#include <ctype.h>
 
 #define PROGRAM "readpe"
+
+#define MAX_DLL_NAME 256
+#define MAX_FUNCTION_NAME 512
 
 struct options {
 	bool all;

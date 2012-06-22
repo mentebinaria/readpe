@@ -149,19 +149,17 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 {
 	if (!pe)
 		return false;
-	
-	if (!pe->addr_rsrc_sec)
-		pe->addr_rsrc_sec = (pe_get_section(pe, ".rsrc"))->PointerToRawData;
 
-	for (unsigned int i=0; i < pe->num_sections; i++)
+	if (!pe->directories_ptr)
+		if (!pe_get_directories(pe))
+			return false;
+
+	if (pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->Size > 0)
 	{
-		if (memcmp(pe->sections_ptr[i]->Name, ".rsrc", 5) == 0)
-		{
-			pe->addr_rsrc_dir = pe->sections_ptr[i]->PointerToRawData;
-			fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET);
-			fread(dir, sizeof(dir), 1, pe->handle);
-			return true;
-		}
+		pe->addr_rsrc_dir = rva2ofs(pe, pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->VirtualAddress);
+		fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET);
+		fread(dir, sizeof(dir), 1, pe->handle);
+		return true;
 	}
 	return false;
 }

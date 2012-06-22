@@ -38,6 +38,8 @@ typedef uint64_t QWORD;
 
 // section name size
 #define IMAGE_SIZEOF_SHORT_NAME 8
+#define IMAGE_ORDINAL_FLAG32 0x80000000
+#define IMAGE_ORDINAL_FLAG64 0x8000000000000000ULL
 
 // resources types
 #define RT_CURSOR         1    // cursor image

@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
 		
-	printf("%#"PRIx64"\n", rva2ofs(rva, &pe));
+	printf("%#"PRIx64"\n", rva2ofs(&pe, rva));
 	// libera a memoria
 	pe_deinit(&pe);
 	

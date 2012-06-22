@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
 		
-	printf("%#x\n", ofs2rva(ofs, &pe));
+	printf("%#x\n", ofs2rva(&pe, ofs));
 	// libera a memoria
 	pe_deinit(&pe);
 	

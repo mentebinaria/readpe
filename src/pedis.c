@@ -183,7 +183,7 @@ void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 void print_function_disasm(PE_FILE *pe, QWORD function_rva)
 {
 	ud_t ud_obj;
-	QWORD offset = rva2ofs(function_rva, pe);
+	QWORD offset = rva2ofs(pe, function_rva);
 	char *ofstr;
 	
 	if (!offset)

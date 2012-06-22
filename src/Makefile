@@ -6,7 +6,7 @@ CFLAGS=-W -Wall -Wextra -std=c99 -pedantic
 CC=gcc
 RM=rm -f
 COMMON=output.c
-PROGS=readpe pedis packid petls rva2ofs pesec ofs2rva
+PROGS=readpe pedis pepack petls rva2ofs pesec ofs2rva
 INSTALL=install -m 0755
 
 # 'make' only will compile all binaries

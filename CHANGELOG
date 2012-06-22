@@ -7,7 +7,7 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.50 - ?, 2012
- + Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting)
+ - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting)
  * MEW packer detection in packid (Rodrigo Rubira <rbranco at qualys.com>)
  * Improved Makefile (Gabriel Barbosa <gbarbsa at qualys.com>)
  * pev now is a collection of binaries to work with PE executables.
@@ -16,7 +16,7 @@ pev 0.50 - ?, 2012
  + petls: search for TLS callback functions.
  + pedis: disassemble functions and sections (Tiago Zaniquelli <ztiago at gmail.com>).
  + readpe: show PE headers and sections information (most of obsolete pev binary).
- + packid: detect fake EP (Wagner Barongello <wagner at barongello.com).
+ + pepack: detect fake EP (Wagner Barongello <wagner at barongello.com).
  + Output in monospaced text and csv in most programs.
  + libpe: xmalloc trick and fixes (Rodrigo Rubira <rbranco at qualys.com>.
  ! Missing other output formats like xml and html.

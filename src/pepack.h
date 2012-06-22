@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	strpe.h - definitions for strpe.c
+	pepack.h - definitions for packid.c
 
 	Copyright (C) 2012 Fernando Mercês
 
@@ -19,13 +19,12 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STRPE_H 
-#define STRPE_H
+#ifndef PACKID_H 
+#define PACKID_H
 
 #include "common.h"
-#include <ctype.h>
 
-#define PROGRAM "strpe"
+#define PROGRAM "pepack"
 
 void parse_options(int argc, char *argv[]);
 

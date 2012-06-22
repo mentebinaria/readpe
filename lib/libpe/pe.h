@@ -64,6 +64,25 @@ typedef uint64_t QWORD;
 #define RT_DLGINIT        240  // strings used for initiating some controls in dialogs
 #define RT_TOOLBAR        241  // configuration of toolbars
 
+// directory Entries
+// Directory Entries
+#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
+#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
+#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
+#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory
+#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory
+#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table
+#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory
+//      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)
+#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data
+#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP
+#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory
+#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory
+#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers
+#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
+#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
+#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
+
 #pragma pack(push, 1)
 
 typedef struct _RESOURCE_ENTRY
@@ -339,8 +358,8 @@ void *xmalloc(unsigned size);
 // basic functions
 bool ispe(PE_FILE *pe);
 void pe_deinit(PE_FILE *pe);
-QWORD rva2ofs(QWORD rva, PE_FILE *pe);
-DWORD ofs2rva(DWORD ofs, PE_FILE *pe);
+QWORD rva2ofs(PE_FILE *pe, QWORD rva);
+DWORD ofs2rva(PE_FILE *pe, DWORD ofs);
 
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);

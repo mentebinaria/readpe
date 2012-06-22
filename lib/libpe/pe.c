@@ -31,14 +31,16 @@ void *xmalloc(unsigned int size)
 
 	return new_mem;
 }
-
-DWORD ofs2rva(DWORD ofs, PE_FILE *pe)
+ 
+// return a rva of given offset
+DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
 {
 	if (!ofs || !pe || !pe_get_sections(pe))
 		return 0;
 
 	for (unsigned int i=0; i <  pe->num_sections; i++)
 	{
+		// if offset is inside section, return your VA in section
 		if (ofs >= pe->sections_ptr[i]->PointerToRawData &&
 		ofs < (pe->sections_ptr[i]->PointerToRawData + pe->sections_ptr[i]->SizeOfRawData))
 			return ofs + pe->sections_ptr[i]->VirtualAddress;
@@ -46,7 +48,7 @@ DWORD ofs2rva(DWORD ofs, PE_FILE *pe)
 	return 0;	
 }
 
-QWORD rva2ofs(QWORD rva, PE_FILE *pe)
+QWORD rva2ofs(PE_FILE *pe, QWORD rva)
 {
 	if (!rva || !pe || !pe_get_sections(pe))
 		return 0;
@@ -60,6 +62,7 @@ QWORD rva2ofs(QWORD rva, PE_FILE *pe)
 	return 0;
 }
 
+// the first function you need to call
 bool pe_init(PE_FILE *pe, FILE *handle)
 {
 	if (!pe || !handle)
@@ -71,6 +74,7 @@ bool pe_init(PE_FILE *pe, FILE *handle)
 	return true;
 }
 
+// return the section of given rva
 IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva)
 {
 	if (!pe || !rva)
@@ -89,6 +93,7 @@ IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva)
 	return NULL;
 }
 
+// return a section by name
 IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 {
 	if (!pe || !section_name)
@@ -160,47 +165,6 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	}
 	return false;
 }
-
-/*
-bool pe_get_tls_callbacks(PE_FILE *pe)
-{
-	IMAGE_TLS_DIRECTORY32 *tlsdir;
-	int i;
-	unsigned tls_addr = 0;
-
-	pe_get_directories(pe);
-	for (i=0; i < pe->num_directories; i++)
-	{
-		if (pe->directories_ptr[i].Size > 0)
-		{
-		    if (i==9) // 9 is TLS directory
-		    	tls_addr = pe->directories_ptr[i].VirtualAddress;
-		}
-	}
-	//printf("tls_addr: %#x\n", tls_addr);
-
-	pe_get_sections(pe);
-	for (i=0; i < pe->num_sections; i++)
-	{
-		if (tls_addr > pe->sections_ptr[i].VirtualAddress &&
-		    tls_addr < (pe->sections_ptr[i].VirtualAddress + pe->sections_ptr[i].SizeOfRawData))
-		{
-			tlsdir = (IMAGE_TLS_DIRECTORY32 *) xmalloc(sizeof(tlsdir));
-
-			fseek(pe->handle, tls_addr - pe->sections_ptr[i].VirtualAddress
-			+ pe->sections_ptr[i].PointerToRawData, SEEK_SET);
-
-			fread(tlsdir, sizeof(tlsdir), 1, pe->handle);
-
-			pe->tls_ptr = tlsdir;
-
-			return true;
-		}
-	}
-
-	return false;
-}
-*/
 
 bool pe_get_sections(PE_FILE *pe)
 {
@@ -404,6 +368,7 @@ bool ispe(PE_FILE *pe)
 	return false;
 }
 
+// free pointers
 void pe_deinit(PE_FILE *pe)
 {
 	unsigned int i;
@@ -441,11 +406,6 @@ void pe_deinit(PE_FILE *pe)
 		}
 		free(pe->sections_ptr);
 	}
-
-	/*
-	if (pe->tls_ptr)
-		free(pe->tls_ptr);
-	*/	
 
 	if (pe->rsrc_entries_ptr)
 	{

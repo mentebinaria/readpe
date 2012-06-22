@@ -85,25 +85,28 @@ DWORD pe_get_tls_directory(PE_FILE *pe)
 
 	for (unsigned int i=0; (i < pe->num_directories && pe->directories_ptr[i]); i++)
 	{
-		// 9 is a tls directory
-		if (i == 9 && pe->directories_ptr[i]->Size > 0)
+		if ((i == IMAGE_DIRECTORY_ENTRY_TLS) && pe->directories_ptr[i]->Size > 0)
 			return pe->directories_ptr[i]->VirtualAddress;
 	}
 	return 0;
 }
 
-bool pe_get_tls_callbacks(PE_FILE *pe)
+/* 0 - no tls section
+   1 - tls callbacks functions found
+   2 - fake tls callbacks detected
+*/
+int pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
-	bool found = false;
+	int ret = 0;
 	
 	if (!pe)
-		return false;
+		return 0;
 
 	tls_addr = pe_get_tls_directory(pe);
 		
 	if (!tls_addr || !pe_get_sections(pe))
-		return false;
+		return 0;
 
 
 	// search for tls in all sections
@@ -116,37 +119,40 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 
 			if (fseek(pe->handle, tls_addr - pe->sections_ptr[i]->VirtualAddress
 			+ pe->sections_ptr[i]->PointerToRawData, SEEK_SET))
-			 	return false;
+			 	return 0;
 
 			if (pe->architecture == PE32)
 			{
 				IMAGE_TLS_DIRECTORY32 tlsdir32;
 
 				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, pe->handle))
-					return false;	
+					return 0;	
 
 				if (! (tlsdir32.AddressOfCallBacks & pe->optional_ptr->_32->ImageBase))
 					break;
 
-				fseek(pe->handle,
-				 rva2ofs(tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase, pe), SEEK_SET);
+				if (fseek(pe->handle,
+						rva2ofs(pe, tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase), SEEK_SET))
+					return 0;
 			}
 			else if (pe->architecture == PE64)
 			{
 				IMAGE_TLS_DIRECTORY64 tlsdir64;
 
 				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, pe->handle))
-					return false;	
+					return 0;	
 
 				if (! (tlsdir64.AddressOfCallBacks & pe->optional_ptr->_64->ImageBase))
 					break;
 
-				fseek(pe->handle,
-				 rva2ofs(tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase, pe), SEEK_SET);
+				if (fseek(pe->handle,
+				 rva2ofs(pe, tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase), SEEK_SET))
+					return 0;
 			}
 			else
-				return false;
+				return 0;
 
+			ret = 2; // tls directory and section exists
 			do
 			{ 
 				fread(&funcaddr, sizeof(int), 1, pe->handle);
@@ -155,23 +161,24 @@ bool pe_get_tls_callbacks(PE_FILE *pe)
 					char field[MAX_MSG];
 					char value[MAX_MSG];
 
-					found = true;
+					ret = 1; // function found
 					snprintf(field, MAX_MSG, "Function %d", ++j);
 					snprintf(value, MAX_MSG, "%#x", funcaddr);
 					output(field, value);
 				}
 			} while (funcaddr);
 
-			return found;
+			return ret;
 		}
 	}
-	return false;
+	return 0;
 }
 
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
+	char field[MAX_MSG], value[MAX_MSG];
 	
 	if (argc < 2)
 	{
@@ -189,9 +196,27 @@ int main(int argc, char *argv[])
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
 
-	if (pe_get_tls_callbacks(&pe))
-		return 1;
-		
+	snprintf(field, MAX_MSG, "TLS directory");
+
+	switch (pe_get_tls_callbacks(&pe))
+	{
+		case 0:
+			snprintf(value, MAX_MSG, "not found");
+			break;
+
+		case 1:
+			snprintf(value, MAX_MSG, "found, with functions");
+			break;
+
+		case 2:
+			snprintf(value, MAX_MSG, "found, no functions");
+			break;
+
+		default:
+			break;
+	}
+	output(field, value);
+
 	// libera a memoria
 	pe_deinit(&pe);
 	

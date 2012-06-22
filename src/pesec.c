@@ -156,11 +156,11 @@ int main(int argc, char *argv[])
 	output(field, (dllchar & 0x400) ? "no" : "yes");
 
 	// stack cookies
-	snprintf(field, MAX_MSG, "Stack cookies");
+	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
 	output(field, stack_cookies(&pe) ? "yes" : "no");
 	
 	// libera a memoria
 	pe_deinit(&pe);
 	
-	return 1;
+	return 0;
 }

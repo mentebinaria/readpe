@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	packid.c - search for genereic packers in PE files
+	pepack.c - search for genereic packers in PE files
 
 	Copyright (C) 2012 Fernando Mercês
 
@@ -19,7 +19,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "packid.h"
+#include "pepack.h"
 
 static int ind;
 
@@ -132,6 +132,12 @@ int main(int argc, char *argv[])
 	DWORD ep;
 	int ret = 0;
 	char value[MAX_MSG];
+
+	if (argc < 2)
+	{
+		usage();
+		exit(1);
+	}
 
 	parse_options(argc, argv); // opcoes
 

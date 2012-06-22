@@ -602,35 +602,43 @@ void print_imported_functions(PE_FILE *pe, long offset)
 		
 		if (!fptr)
 			break;
-		
-		// save file pointer in functions array
-		aux2 = ftell(pe->handle);
-		
-		if (fseek(pe->handle, rva2ofs(pe, fptr), SEEK_SET))
-			return;
 
-		// follow function pointer
-		if (!fread(&hint, sizeof(hint), 1, pe->handle))
-			return;
-		
-		for (i=0; i<MAX_FUNCTION_NAME; i++)
+		// function without name (test msb)
+		if (fptr & ((pe->architecture == PE64) ? IMAGE_ORDINAL_FLAG64 : IMAGE_ORDINAL_FLAG32))
+			snprintf(hintstr, 15, "%lu", fptr & 0x0fffffff);
+		else
 		{
-			if (!fread(&c, sizeof(c), 1, pe->handle))
+			// save file pointer in functions array
+			aux2 = ftell(pe->handle);
+		
+			if (fseek(pe->handle, rva2ofs(pe, fptr), SEEK_SET))
 				return;
+
+			// follow function pointer
+			if (!fread(&hint, sizeof(hint), 1, pe->handle))
+				return;
+		
+			for (i=0; i<MAX_FUNCTION_NAME; i++)
+			{
+				if (!fread(&c, sizeof(c), 1, pe->handle))
+					return;
 			
-			if (!isprint(c)) // 0 and non-printable
-				break;
+				if (!isprint(c)) // 0 and non-printable
+					break;
 			
-			fname[i] = c;
+				fname[i] = c;
+			}
+			snprintf(hintstr, 15, "%d", hint);
+		
+			// restore file pointer to functions array
+			if (fseek(pe->handle, aux2, SEEK_SET))
+				return;
 		}
-		snprintf(hintstr, 15, "%x", hint);
+
+		// print things
 		output(hintstr, fname);
 		memset(&fname, 0, sizeof(fname));
 		memset(&hintstr, 0, sizeof(hintstr));
-		
-		// restore file pointer to functions array
-		if (fseek(pe->handle, aux2, SEEK_SET))
-			return;
 	}
 		
 	fseek(pe->handle, aux, SEEK_SET);
@@ -684,6 +692,7 @@ void print_imports(PE_FILE *pe)
 		}
 		
 		output(dllname, NULL);
+		memset(&dllname, 0, sizeof(dllname));
 		
 		if (fseek(pe->handle, aux, SEEK_SET)) // restore file pointer
 			return;

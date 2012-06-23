@@ -130,7 +130,6 @@ int main(int argc, char *argv[])
 	PE_FILE pe;
 	FILE *fp = NULL;
 	DWORD ep;
-	int ret = 0;
 	char value[MAX_MSG];
 
 	if (argc < 2)
@@ -159,20 +158,16 @@ int main(int argc, char *argv[])
 		return 1;
 
 	if (pe_check_fake_entrypoint(&pe, &ep))
-	{
-		snprintf(value, MAX_MSG, "yes, %#x", ep);
-		ret = 1;
-	}
+		snprintf(value, MAX_MSG, "yes - %#x", ep);
 	else
 		snprintf(value, MAX_MSG, "no");
 		
 	output("fake entrypoint", value);
 	
 	if (pe_mew_packer(&pe, &ep))
-	{
 		snprintf(value, MAX_MSG, "MEW");
-		ret = 1;
-	}
+	else if (strncmp(value, "yes", 3)==0)
+		snprintf(value, MAX_MSG, "generic");
 	else
 		snprintf(value, MAX_MSG, "none");
 
@@ -181,5 +176,5 @@ int main(int argc, char *argv[])
 	// libera a memoria
 	pe_deinit(&pe);
 	
-	return ret;
+	return 0;
 }

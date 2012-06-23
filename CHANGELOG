@@ -24,6 +24,7 @@ pev 0.50 - ?, 2012
  + Released libpe 1.0 to support our programs.
  * pev now is a collection of binaries to work with PE executables.
  ! Missing documentation
+ ! pedis shows arguments of jumps and calls as relative positions.
 
 pev 0.40 - August 7, 2011
  + PE32+ support. Now pev can handle 64-bits executables.

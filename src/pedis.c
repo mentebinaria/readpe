@@ -224,12 +224,15 @@ void print_function_disasm(PE_FILE *pe, QWORD function_rva)
 		
 		snprintf(ofs, MAX_MSG, ofstr, (DWORD) function_rva + ud_insn_off(&ud_obj));
 		bytes = insert_spaces(ud_insn_hex(&ud_obj));
+
+		if (!bytes)
+			return;
+
 		snprintf(s, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(&ud_obj));
-		if (bytes)
-			free(bytes);
+		free(bytes);
 		output(ofs, s);
 
-		// leave or ret opcodes
+		// search for LEAVE or RET insrtuctions
 		for (unsigned i=0; i<ud_insn_len(&ud_obj); i++)
 		{
 			if (opcodes[i] == 0xc9 || opcodes[i] == 0xc3)

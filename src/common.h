@@ -45,7 +45,7 @@
 			}
 #endif
 
-#define MAX_MSG 50
+#define MAX_MSG 80
 #define VERSION "0.50"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
 #define COPY \
@@ -54,6 +54,6 @@
 "This is free software: you are free to change and redistribute it.\n" \
 "There is NO WARRANTY, to the extent permitted by law."
 
-#define SPACES 30 // spaces # for text-based output
+#define SPACES 32 // spaces # for text-based output
 
 #endif

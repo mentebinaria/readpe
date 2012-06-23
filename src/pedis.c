@@ -105,9 +105,12 @@ char *insert_spaces(char *s)
 	if (!size)
 		return NULL;
 
-	new = (char *) xmalloc(size + (size/2)+1);
+	size = size + (size/2);
 
-	for (unsigned int i=0, j=0, pos=0; i<size+(size/2); i++)
+	new = (char *) xmalloc(size+1);
+	memset(new, 0, size+1);
+
+	for (unsigned int i=0, j=0, pos=0; i < size; i++)
 	{   
 		if (pos==2)
 		{   
@@ -198,6 +201,7 @@ void print_function_disasm(PE_FILE *pe, QWORD function_rva)
 		pe_get_coff(pe, &coff);
 	}
 
+	ud_init(&ud_obj);
 	rewind(pe->handle);
 	
 	if (pe->architecture == PE32)
@@ -222,7 +226,8 @@ void print_function_disasm(PE_FILE *pe, QWORD function_rva)
 		char ofs[MAX_MSG], s[MAX_MSG], *bytes;
 		uint8_t* opcodes = ud_insn_ptr(&ud_obj);
 		
-		snprintf(ofs, MAX_MSG, ofstr, (DWORD) function_rva + ud_insn_off(&ud_obj));
+		snprintf(ofs, MAX_MSG, ofstr, pe->imagebase + function_rva + ud_insn_off(&ud_obj));
+		//snprintf(ofs, MAX_MSG, ofstr, (DWORD) function_rva + ud_insn_off(&ud_obj));
 		bytes = insert_spaces(ud_insn_hex(&ud_obj));
 
 		if (!bytes)

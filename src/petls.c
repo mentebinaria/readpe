@@ -205,11 +205,11 @@ int main(int argc, char *argv[])
 			break;
 
 		case 1:
-			snprintf(value, MAX_MSG, "found, with functions");
+			snprintf(value, MAX_MSG, "found - with functions");
 			break;
 
 		case 2:
-			snprintf(value, MAX_MSG, "found, no functions");
+			snprintf(value, MAX_MSG, "found - without functions");
 			break;
 
 		default:

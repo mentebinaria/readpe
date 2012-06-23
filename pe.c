@@ -21,9 +21,14 @@
 
 void *xmalloc(unsigned int size)
 {
-	void *new_mem = malloc(size);	
+	void *new_mem;
 
-	if (new_mem == NULL)
+	if (size <= 0)
+		return NULL;
+
+	new_mem = malloc(size);	
+
+	if (!new_mem)
 	{
 		fprintf(stderr, "fatal: memory exhausted (xmalloc of %u bytes)\n", size);
 		exit(-1);

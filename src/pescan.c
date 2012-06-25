@@ -240,14 +240,38 @@ int pe_get_tls_callbacks(PE_FILE *pe)
 }
 
 /* TODO
-  25 secoes com caracteres nao imprimiveis
- 26 muitas secoes
- 27 nenhuma secao
- 28 entrypoint nulo
- 29 timestamp invalido
- 30 sem imagebase
- 31 diretorios sem tamanho
+ timestamp invalido
+ sem imagebase
+ diretorios sem tamanho
 */
+
+bool strange_sections(PE_FILE *pe, unsigned int *num_sections)
+{
+	if (!pe_get_sections(pe))
+		return 0;
+
+	*num_sections = pe->num_sections;
+
+	for (unsigned int i=0; i < *num_sections && i <= 65535; i++)
+	{
+		// name doest not start with dot
+		if (pe->sections_ptr[i]->Name[0] != '.')
+			return true;
+
+		// zero sized section
+		if (pe->sections_ptr[i]->SizeOfRawData == 0)
+			return true;
+
+		// name with non-printable chars
+		for (unsigned int j=0; pe->sections_ptr[i]->Name[j] && j < IMAGE_SIZEOF_SHORT_NAME; j++)
+		{
+			if (!isprint(pe->sections_ptr[i]->Name[j]))
+				return true;
+		}
+	}
+
+	return false;
+}
 
 int main(int argc, char *argv[])
 {
@@ -256,6 +280,7 @@ int main(int argc, char *argv[])
 	DWORD ep, stub_offset;
 	char value[MAX_MSG];
 	int callbacks;
+	unsigned int num_sections;
 
 	if (argc < 2)
 	{
@@ -279,11 +304,10 @@ int main(int argc, char *argv[])
    ep = (pe.optional_ptr->_32 ? pe.optional_ptr->_32->AddressOfEntryPoint :
 	(pe.optional_ptr->_64 ? pe.optional_ptr->_64->AddressOfEntryPoint : 0));
 
-	if (!ep)
-		return 1;
-
 	// fake ep
-	if (pe_check_fake_entrypoint(&pe, &ep))
+	if (ep == 0)
+		snprintf(value, MAX_MSG, "null");
+	else if (pe_check_fake_entrypoint(&pe, &ep))
 		if (config.show_offsets)
 			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#lx", ep, rva2ofs(&pe, ep));
 		else
@@ -320,6 +344,14 @@ int main(int argc, char *argv[])
 		snprintf(value, MAX_MSG, "found - %d function(s)", callbacks);
 	
 	output("TLS directory", value);
+
+	memset(&value, 0, sizeof(value));
+	if (strange_sections(&pe, &num_sections))
+		snprintf(value, MAX_MSG, "%d - suspicious", num_sections);
+	else
+		snprintf(value, MAX_MSG, "%d", num_sections);
+
+	output("Sections", value);
 
 	pe_deinit(&pe);
 	return 0;

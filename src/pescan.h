@@ -23,6 +23,7 @@
 #define PESCAN_H
 
 #include "common.h"
+#include <ctype.h>
 
 #define PROGRAM "pescan"
 

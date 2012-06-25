@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	petls.h - definitions for petls.c
+	pescan - definitions for pescan.c
 
 	Copyright (C) 2012 Fernando Mercês
 
@@ -19,13 +19,19 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PETLS_H
-#define PETLS_H
+#ifndef PESCAN_H 
+#define PESCAN_H
 
 #include "common.h"
 
-#define PROGRAM "petls"
+#define PROGRAM "pescan"
 
 void parse_options(int argc, char *argv[]);
+
+struct options {
+	bool show_offsets;
+};
+
+struct options config;
 
 #endif

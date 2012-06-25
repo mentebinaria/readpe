@@ -7,13 +7,13 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.50 - ?, 2012
+ + pescan: new tool to search for suspicious things in PE files including TLS callbacks
  - Fixed erroneuous ord numbers in functions imported without name
  + readpe can now show imported functions with --imports or -i switch.
  - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting)
  * MEW packer detection in packid (Rodrigo Rubira <rbranco at qualys.com>)
  * Improved pev tools Makefile (Gabriel Barbosa <gbarbsa at qualys.com>)
  + pesec: find security features in PE files.
- + petls: search for TLS callback functions.
  + pedis: disassemble functions and sections (Tiago Zaniquelli <ztiago at gmail.com>).
  + readpe: show PE headers and sections information (most of obsolete pev binary).
  + pepack: detect fake EP (Wagner Barongello <wagner at barongello.com).
@@ -22,7 +22,7 @@ pev 0.50 - ?, 2012
  + libpe: xmalloc trick and fixes (Rodrigo Rubira <rbranco at qualys.com>).
  ! Missing valid XML and HTML output formats.
  + Released libpe 1.0 to support our programs.
- * pev now is a collection of binaries to work with PE executables.
+ * pev now is a collection of binaries and a library to work with PE executables.
  ! Missing documentation
  ! pedis shows arguments of jumps and calls as relative positions.
 

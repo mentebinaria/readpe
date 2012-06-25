@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	petls.c - find TLS callbacks in PE files
+	pescan.c - search for suspicious things in PE files
 
 	Copyright (C) 2012 Fernando Mercês
 
@@ -19,17 +19,17 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "petls.h"
+#include "pescan.h"
 
 static int ind;
 
 void usage()
 {
-	printf("Usage: %s [OPTIONS] FILE\n"
-	"Find TLS callbacks in PE files\n"
-	"\nExample: %s winzip.exe\n"
+	printf("Usage: %s <rva> FILE\n"
+	"Search for genereic packers in PE files\n"
+	"\nExample: %s putty.exe\n"
 	"\nOptions:\n"
-	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -o, --offsets                          show things offsets when possible\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);
@@ -40,14 +40,16 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "f:v";
+	static const char short_options[] = "vo";
 
 	static const struct option long_options[] = {
-		{"format",           required_argument, NULL, 'f'},
+		{"offsets",          no_argument,       NULL, 'o'},
 		{"help",             no_argument,       NULL,  1 },
 		{"version",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};
+	
+	memset(&config, 0, sizeof(config));
 
 	while ((c = getopt_long(argc, argv, short_options,
 			long_options, &ind)))
@@ -60,9 +62,10 @@ void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-
-			case 'f':
-				parse_format(optarg); break;
+				
+			case 'o':
+				config.show_offsets = true;
+				break;
 				
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
@@ -73,6 +76,65 @@ void parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
+}
+
+// check for abnormal dos stub (common in packed files)
+bool abnormal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
+{
+   BYTE dos_stub[] =
+   "\x0e"               // push cs
+   "\x1f"               // pop ds
+   "\xba\x0e\x00"       // mov dx, 0x0e
+   "\xb4\x09"           // mov ah, 0x09
+   "\xcd\x21"           // int 0x21
+   "\xb8\x01\x4c"       // mov ax, 0x4c01
+   "\xcd\x21"           // int 0x21
+   "This program cannot be run in DOS mode.\r\r\n$";
+
+   BYTE data[sizeof(dos_stub)-1]; // -1 to ignore ending null
+   IMAGE_DOS_HEADER dos;
+
+
+   if (!pe_get_dos(pe, &dos))
+      EXIT_ERROR("unable to retrieve PE DOS header");
+	
+	*stub_offset = dos.e_cparhdr << 4;
+
+   // dos stub starts at e_cparhdr shifted by 4
+   if (fseek(pe->handle, *stub_offset, SEEK_SET))
+      EXIT_ERROR("unable to seek in file");
+
+   if (!fread(&data, sizeof(data), 1, pe->handle))
+      EXIT_ERROR("unable to read DOS stub");
+	
+   if (memcmp(dos_stub, data, sizeof(data)))
+      return true;
+
+   return false;
+}
+
+IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe, DWORD *ep)
+{
+	IMAGE_SECTION_HEADER *epsec = NULL;
+
+	if (!pe->optional_ptr)
+		pe_get_optional(pe);
+
+	if (!pe->num_sections || !pe->sections_ptr)
+		pe_get_sections(pe);
+
+	if (!pe->num_sections)
+		return NULL;
+
+	epsec = pe_rva2section(pe, *ep);
+
+	if (!epsec)
+		return NULL;
+
+	if (!(epsec->Characteristics & 0x20))
+		return epsec;
+
+   return NULL;
 }
 
 DWORD pe_get_tls_directory(PE_FILE *pe)
@@ -91,9 +153,10 @@ DWORD pe_get_tls_directory(PE_FILE *pe)
 	return 0;
 }
 
-/* 0 - no tls section
-   1 - tls callbacks functions found
-   2 - fake tls callbacks detected
+/*
+ * -1 - fake tls callbacks detected
+ *  0 - no tls directory
+ * >0 - number of callbacks functions found
 */
 int pe_get_tls_callbacks(PE_FILE *pe)
 {
@@ -152,19 +215,21 @@ int pe_get_tls_callbacks(PE_FILE *pe)
 			else
 				return 0;
 
-			ret = 2; // tls directory and section exists
+			ret = -1; // tls directory and section exists
 			do
 			{ 
 				fread(&funcaddr, sizeof(int), 1, pe->handle);
 				if (funcaddr)
 				{
-					char field[MAX_MSG];
 					char value[MAX_MSG];
 
-					ret = 1; // function found
-					snprintf(field, MAX_MSG, "Function %d", ++j);
-					snprintf(value, MAX_MSG, "%#x", funcaddr);
-					output(field, value);
+					ret = ++j; // function found
+					
+					if (config.show_offsets)
+					{
+						snprintf(value, MAX_MSG, "%#x", funcaddr);
+						output("TLS callback function", value);
+					}
 				}
 			} while (funcaddr);
 
@@ -174,12 +239,24 @@ int pe_get_tls_callbacks(PE_FILE *pe)
 	return 0;
 }
 
+/* TODO
+  25 secoes com caracteres nao imprimiveis
+ 26 muitas secoes
+ 27 nenhuma secao
+ 28 entrypoint nulo
+ 29 timestamp invalido
+ 30 sem imagebase
+ 31 diretorios sem tamanho
+*/
+
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
-	char field[MAX_MSG], value[MAX_MSG];
-	
+	DWORD ep, stub_offset;
+	char value[MAX_MSG];
+	int callbacks;
+
 	if (argc < 2)
 	{
 		usage();
@@ -196,29 +273,54 @@ int main(int argc, char *argv[])
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
 
-	snprintf(field, MAX_MSG, "TLS directory");
+	if (!pe_get_optional(&pe))
+		return 1;
 
-	switch (pe_get_tls_callbacks(&pe))
+   ep = (pe.optional_ptr->_32 ? pe.optional_ptr->_32->AddressOfEntryPoint :
+	(pe.optional_ptr->_64 ? pe.optional_ptr->_64->AddressOfEntryPoint : 0));
+
+	if (!ep)
+		return 1;
+
+	// fake ep
+	if (pe_check_fake_entrypoint(&pe, &ep))
+		if (config.show_offsets)
+			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#lx", ep, rva2ofs(&pe, ep));
+		else
+			snprintf(value, MAX_MSG, "fake");
+	else
+		if (config.show_offsets)
+			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#lx", ep, rva2ofs(&pe, ep));
+		else
+			snprintf(value, MAX_MSG, "normal");
+		
+	output("entrypoint", value);
+
+	// dos stub
+	memset(&value, 0, sizeof(value));
+	if (abnormal_dos_stub(&pe, &stub_offset))
 	{
-		case 0:
-			snprintf(value, MAX_MSG, "not found");
-			break;
-
-		case 1:
-			snprintf(value, MAX_MSG, "found - with functions");
-			break;
-
-		case 2:
-			snprintf(value, MAX_MSG, "found - without functions");
-			break;
-
-		default:
-			break;
+		if (config.show_offsets)
+			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
+		else
+			snprintf(value, MAX_MSG, "suspicious");
 	}
-	output(field, value);
-
-	// libera a memoria
-	pe_deinit(&pe);
+	else
+		snprintf(value, MAX_MSG, "normal");
 	
+	output("DOS stub", value);
+	
+	callbacks = pe_get_tls_callbacks(&pe);
+	
+	if (callbacks == 0)
+		snprintf(value, MAX_MSG, "not found");
+	else if (callbacks == -1)
+		snprintf(value, MAX_MSG, "found - no functions");
+	else if (callbacks >0)
+		snprintf(value, MAX_MSG, "found - %d function(s)", callbacks);
+	
+	output("TLS directory", value);
+
+	pe_deinit(&pe);
 	return 0;
 }

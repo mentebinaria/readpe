@@ -101,30 +101,6 @@ bool pe_mew_packer(PE_FILE *pe, DWORD *ep)
    return (mew_packer < '3');
 }
 
-IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe, DWORD *ep)
-{
-	IMAGE_SECTION_HEADER *epsec = NULL;
-
-	if (!pe->optional_ptr)
-		pe_get_optional(pe);
-
-	if (!pe->num_sections || !pe->sections_ptr)
-		pe_get_sections(pe);
-
-	if (!pe->num_sections)
-		return NULL;
-
-	epsec = pe_rva2section(pe, *ep);
-
-	if (!epsec)
-		return NULL;
-
-	if (!(epsec->Characteristics & 0x20))
-		return epsec;
-
-   return NULL;
-}
-
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
@@ -157,17 +133,9 @@ int main(int argc, char *argv[])
 	if (!ep)
 		return 1;
 
-	if (pe_check_fake_entrypoint(&pe, &ep))
-		snprintf(value, MAX_MSG, "yes - %#x", ep);
-	else
-		snprintf(value, MAX_MSG, "no");
-		
-	output("fake entrypoint", value);
-	
+	// mew packer
 	if (pe_mew_packer(&pe, &ep))
 		snprintf(value, MAX_MSG, "MEW");
-	else if (strncmp(value, "yes", 3)==0)
-		snprintf(value, MAX_MSG, "generic");
 	else
 		snprintf(value, MAX_MSG, "none");
 

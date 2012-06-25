@@ -101,7 +101,7 @@ case "$os" in
 		new_zipfile='pev-$(VERSION)_x86-64.zip'
 		;;
 	CYGWIN*)
-		new_cc='mingw32-gcc.exe'
+		new_cc='i686-pc-mingw32-gcc.exe'
 		new_strip='strip --strip-unneeded'
 		new_libpe='-shared -o $(LIBNAME).dll $(LIBNAME).o'
 		new_zipfile='pev-$(VERSION)_x86.zip'

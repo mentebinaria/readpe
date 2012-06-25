@@ -1,11 +1,9 @@
-                      
-  __ \    _ \ \ \   / 
-  |   |   __/  \ \ /  
-  .__/  \___|   \_/   
- _|
- the PE file analysis toolkit
 
-*For stable release, please go to http://pev.sf.net
+         __ \    _ \ \ \   / 
+         |   |   __/  \ \ /  
+         .__/  \___|   \_/   
+        _|
+ the PE file analysis toolkit v0.50
 
 1. What is pev
 2. OS support
@@ -80,7 +78,7 @@
   Under Cygwin, you'll need following packages
   in order to compile pev:
 
-  * mingw32-gcc (32-bit system)
+  * i686-pc-mingw32-gcc.exe (32-bit system)
   * x86_64-w64-mingw32-gcc (64-bit system)
   * binutils
   * mingw-binutils
@@ -104,13 +102,13 @@
 
  This pev toolkit version include:
 
- * readpe   - show PE file headers
+ * readpe   - show PE file headers, sections and more
  * pedis    - PE disassembler
  * pesec    - check security features in PE files
- * petls    - find TLS callbacks in PE files
+ * pescan   - search for suspicious things in PE files, including TLS callbacks
  * rva2ofs  - convert RVA to raw file offsets
  * ofs2rva  - convert raw file offsets to RVA
- * packid   - generic packer detector
+ * papack   - packer detector
 
 5. Development
 

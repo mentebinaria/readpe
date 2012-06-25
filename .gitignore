@@ -2,7 +2,6 @@ pev.cbp
 bin
 obj
 pev
-support_files
 pev.project
 Debug
 .cproject
@@ -12,3 +11,5 @@ Debug
 *.so*
 *.o
 *.log
+tests/samples
+tests/*.exe

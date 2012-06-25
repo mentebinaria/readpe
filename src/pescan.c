@@ -25,7 +25,7 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: %s <rva> FILE\n"
+	printf("Usage: %s OPTIONS FILE\n"
 	"Search for genereic packers in PE files\n"
 	"\nExample: %s putty.exe\n"
 	"\nOptions:\n"

@@ -1,7 +1,7 @@
 LIBPE_DIR=lib/libpe
 PEV_DIR=src
 MAKE=make
-VERSION=0.50_alpha2
+VERSION=0.50
 ZIPFILE=pev.zip
 
 # simple call each separated Makefile

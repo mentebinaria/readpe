@@ -144,7 +144,7 @@ bool pe_get_resource_entries(PE_FILE *pe)
 		pe->rsrc_entries_ptr[i] = (IMAGE_RESOURCE_DIRECTORY_ENTRY *) xmalloc
 		(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
 		
-		if (! fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
+		if (!fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
 			return false;
 	}
 	return true;
@@ -162,8 +162,12 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	if (pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->Size > 0)
 	{
 		pe->addr_rsrc_dir = rva2ofs(pe, pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->VirtualAddress);
-		fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET);
-		fread(dir, sizeof(dir), 1, pe->handle);
+		if (fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET))
+			return false;
+
+		if (!fread(dir, sizeof(dir), 1, pe->handle))
+			return false;
+
 		return true;
 	}
 	return false;
@@ -188,13 +192,15 @@ bool pe_get_sections(PE_FILE *pe)
 	if (pe->num_sections > 96)
 		return false;
 
-	fseek(pe->handle, pe->addr_sections, SEEK_SET);
+	if (fseek(pe->handle, pe->addr_sections, SEEK_SET))
+		return false;
 	sections = (IMAGE_SECTION_HEADER **) xmalloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
 
 	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
 		sections[i] = (IMAGE_SECTION_HEADER *) xmalloc(sizeof(IMAGE_SECTION_HEADER));
-		fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle);
+		if (!fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle))
+			return false;
 	}
 
 	pe->sections_ptr = sections;
@@ -233,7 +239,8 @@ bool pe_get_directories(PE_FILE *pe)
 	for (unsigned int i=0; i < pe->num_directories; i++)
 	{
 		dirs[i] = (IMAGE_DATA_DIRECTORY *) xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
-		fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle);
+		if (!fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
+			return false;
 	}
 
 	pe->addr_sections = ftell(pe->handle);
@@ -358,17 +365,39 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 bool ispe(PE_FILE *pe)
 {
 	WORD header;
+	LONG elfanew;
+	DWORD pesig;
+
+	header = elfanew = pesig = 0;
 
 	if (pe->handle == NULL)
 		return false;
 
-	fread(&header, sizeof(WORD), 1, pe->handle);
-	rewind(pe->handle);
+	if (!fread(&header, sizeof(WORD), 1, pe->handle))
+		return false;
 
-	if (header == MZ)
-		return true;
+	// check MZ header
+	if (header != MZ)
+		return false;
 
-	return false;
+	// check PE signature
+	if (fseek(pe->handle, sizeof(IMAGE_DOS_HEADER) - sizeof(LONG), SEEK_SET))
+		return false;
+
+	if (!fread(&elfanew, sizeof(LONG), 1, pe->handle))
+		return false;
+
+	if (fseek(pe->handle, elfanew, SEEK_SET))
+		return false;
+
+	if (!fread(&pesig, sizeof(DWORD), 1, pe->handle))
+		return false;
+
+	if (pesig != 0x4550) // "PE\0\0"
+		return false;	
+
+	rewind(pe->handle);	
+	return true;
 }
 
 // free pointers

@@ -6,7 +6,7 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.50 - ?, 2012
+pev 0.50 - June 25, 2012
  + pescan: new tool to search for suspicious things in PE files including TLS callbacks
  - Fixed erroneuous ord numbers in functions imported without name
  + readpe can now show imported functions with --imports or -i switch.

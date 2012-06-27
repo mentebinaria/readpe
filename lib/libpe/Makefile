@@ -1,5 +1,5 @@
 PREFIX=/usr
-DEST=$(PREFIX)/lib
+DEST=$(DESTDIR)/$(PREFIX)/lib
 VERSION=1.0
 CFLAGS=-W -Wall -Wextra -pedantic -std=c99
 SRC=pe.c

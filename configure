@@ -92,7 +92,7 @@ case "$os" in
 	Darwin)
 		new_cc='gcc'
 		new_strip='strip -x'
-		new_libpe='-shared -Wl,-install_name,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o'
+		new_libpe='-shared -Wl,-install_name,$prefix/lib/$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o'
 		;;
 	CYGWIN*WOW64)
 		new_cc='x86_64-w64-mingw32-gcc.exe'

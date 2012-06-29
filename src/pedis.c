@@ -33,6 +33,7 @@ void usage()
 	" --att                                  set AT&T syntax\n"
 	" -e, --entrypoint                       disassemble entrypoint\n"
 	" -n, <instructions limit>               number of instructions to be disassembled  (no effect if used with  -s)\n"
+	" -o, --offset <offset>                  disassemble at specified file offset\n"
 	" -r, --rva <rva>                        disassemble at specified RVA\n"
 	" -s, --section <section name>           disassemble entire section given\n"
 	" -f, --format <text|csv|xml|html>       change output format (default text)\n"

@@ -40,6 +40,7 @@ struct options {
 	QWORD lenght;           // limit the number of disassembled instructions. 0 means no limit.
 	bool entrypoint;
 	bool offset_is_rva;
+	WORD mode;
 };
 
 struct options config;

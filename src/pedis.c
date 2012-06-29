@@ -32,11 +32,12 @@ void usage()
 	"\nOptions:\n"
 	" --att                                  set AT&T syntax\n"
 	" -e, --entrypoint                       disassemble entrypoint\n"
-	" -n, <instructions limit>               number of instructions to be disassembled  (no effect if used with  -s)\n"
+	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
+	" -n, <number>                           number of instructions to be disassembled\n"
 	" -o, --offset <offset>                  disassemble at specified file offset\n"
 	" -r, --rva <rva>                        disassemble at specified RVA\n"
 	" -s, --section <section name>           disassemble entire section given\n"
-	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);
@@ -47,13 +48,14 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "en:o:r:s:f:v";
+	static const char short_options[] = "em:n:o:r:s:f:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
 		{"att",              no_argument,       NULL,  2 },
 		{"",                 required_argument, NULL, 'n'},
 		{"entrypoint",       no_argument,       NULL, 'e'},
+		{"mode",             required_argument, NULL, 'm'},
 		{"offset",           required_argument, NULL, 'o'},
 		{"rva",              required_argument, NULL, 'r'},
 		{"section",          required_argument, NULL, 's'},
@@ -84,11 +86,15 @@ void parse_options(int argc, char *argv[])
 			case 'e':
 				config.entrypoint = true; break;
 				
+			case 'm':
+				config.mode = strtol(optarg, NULL, 10); break;
+
 			case 'n':
 				config.lenght = strtol(optarg, NULL, 0); break;
 
 			case 'o':
-				config.offset = strtol(optarg, NULL, 0); break;
+				config.offset = strtol(optarg, NULL, 0);
+				config.offset_is_rva = false; break;
 				
 			case 'r':
 				config.offset = strtol(optarg, NULL, 0);
@@ -175,7 +181,7 @@ void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		mnic = ud_obj->mnemonic;
 		op_t = ud_obj->operand ? ud_obj->operand[0].type : 0;
 		
-		snprintf(ofs, MAX_MSG, "%"PRIx64, pe->imagebase + offset + ud_insn_off(ud_obj));
+		snprintf(ofs, MAX_MSG, "%"PRIx64, (config.offset_is_rva ? pe->imagebase : 0) + offset + ud_insn_off(ud_obj));
 		bytes = insert_spaces(ud_insn_hex(ud_obj));
 
 		if (!bytes)
@@ -239,7 +245,7 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("unable to retrieve Optional header");
 	
 	// set disassembly mode according with PE architecture
-	ud_set_mode(&ud_obj, pe.architecture == PE64 ? 64 : 32);
+	ud_set_mode(&ud_obj, config.mode ? config.mode : (pe.architecture == PE64 ? 64 : 32));
 
 	rewind(pe.handle);
 	

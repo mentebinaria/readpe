@@ -29,6 +29,7 @@ void usage()
 	"Search for genereic packers in PE files\n"
 	"\nExample: %s putty.exe\n"
 	"\nOptions:\n"
+   " -f, --format <text|csv|xml|html>       change output format (default text)\n"
 	" -o, --offsets                          show things offsets when possible\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
@@ -40,9 +41,10 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "vo";
+	static const char short_options[] = "f:vo";
 
 	static const struct option long_options[] = {
+		{"format",           required_argument, NULL, 'f'},
 		{"offsets",          no_argument,       NULL, 'o'},
 		{"help",             no_argument,       NULL,  1 },
 		{"version",          no_argument,       NULL, 'v'},
@@ -63,9 +65,11 @@ void parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 				
+			case 'f':
+				parse_format(optarg); break;
+				
 			case 'o':
-				config.show_offsets = true;
-				break;
+				config.show_offsets = true; break;
 				
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);

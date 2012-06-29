@@ -6,57 +6,65 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
+pev 0.60 - ?, 2012
+ ! pedis: fixed address representation in calls and jump instructions.
+ * pedis: -F/--function option replaced by -r/--rva.
+ + pedis: added -m/--mode option to set disassembly mode (16, 32 or 64-bit).
+ + pedis: added -n option to limit number of disassembled instructions.
+ + pedis: added options to disassembly entrypoint and raw fille offset.
+ + pescan: added -f/--format option to format output.
+
 pev 0.50 - June 25, 2012
- + pescan: new tool to search for suspicious things in PE files including TLS callbacks
- - Fixed erroneuous ord numbers in functions imported without name
- + readpe can now show imported functions with --imports or -i switch.
- - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting)
- * MEW packer detection in packid (Rodrigo Rubira <rbranco at qualys.com>)
- * Improved pev tools Makefile (Gabriel Barbosa <gbarbsa at qualys.com>)
- + pesec: find security features in PE files.
- + pedis: disassemble functions and sections (Tiago Zaniquelli <ztiago at gmail.com>).
- + readpe: show PE headers and sections information (most of obsolete pev binary).
- + pepack: detect fake EP (Wagner Barongello <wagner at barongello.com).
- + rva2ofs and ofs2rva: convert from rva to raw file offset and vice-versa.
- + Output in monospaced text and csv in most programs.
- + libpe: xmalloc trick and fixes (Rodrigo Rubira <rbranco at qualys.com>).
+ ! Missing documentation.
  ! Missing valid XML and HTML output formats.
- + Released libpe 1.0 to support our programs.
- * pev now is a collection of binaries and a library to work with PE executables.
- ! Missing documentation
  ! pedis shows arguments of jumps and calls as relative positions.
+ * Improved pev tools Makefile (Gabriel Barbosa <gbarbsa at qualys.com>).
+ * MEW packer detection in packid (Rodrigo Rubira <rbranco at qualys.com>).
+ * pev now is a collection of binaries and a library to work with PE executables.
+ + Output in monospaced text and csv in most programs.
+ + Released libpe 1.0 to support our programs.
+ + libpe: xmalloc trick and fixes (Rodrigo Rubira <rbranco at qualys.com>).
+ + pedis: disassemble functions and sections (Tiago Zaniquelli <ztiago at gmail.com>).
+ + pepack: detect fake EP (Wagner Barongello <wagner at barongello.com).
+ + pescan: new tool to search for suspicious things in PE files including TLS callbacks.
+ + pesec: find security features in PE files.
+ + readpe can now show imported functions with --imports or -i switch.
+ + readpe: show PE headers and sections information (most of obsolete pev binary).
+ + rva2ofs and ofs2rva: convert from rva to raw file offset and vice-versa.
+ - Fixed erroneuous ord numbers in functions imported without name.
+ - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting).
 
 pev 0.40 - August 7, 2011
+ * Compatible with PE/COFF specification v8.2.
+ * Date format in COFF header similar to RFC 2822.
+ * Improved function to get machine type (thanks to Gabriel Duarte).
+ + ASLR and DEP identification.
+ + Added "-r" option to show resource items at first level.
+ + Added TLS callback functions detection in every PE section.
+ + Added more human-readable fields, like subsystem and section characteristics.
  + PE32+ support. Now pev can handle 64-bits executables.
  + Variable data directories support (no more fixed in 16).
- + Added more human-readable fields, like subsystem and section characteristics.
- + Added TLS callback functions detection in every PE section.
- + Added "-r" option to show resource items at first level.
- + ASLR and DEP identification.
- * Improved function to get machine type (thanks to Gabriel Duarte).
- * Date format in COFF header similar to RFC 2822.
- * Compatible with PE/COFF specification v8.2.
 
 pev 0.31 - May 11, 2011
- + Added human-readable machine types in COFF output.
  + Added characteristics flags in COFF output.
+ + Added human-readable machine types in COFF output.
  - Fixed warning with Linux 32-bits boxes when compiling.
  - Now pev compiles in OSX without any changes (thanks to Gustavo Roberto).
 
 pev 0.30 - February 20, 2011
- + Added option "-d" to show the DOS header.
- + Added option "-c" to show the COFF header.
- + Added option "-o" to show the Option (PE) header.
- + Added option "-s" to show executable sections.
- + Added option "-a" to show all information.
  * Improved memory use.
  * Now pev shows the Product Version with option "-p".
+ + Added option "-a" to show all information.
+ + Added option "-c" to show the COFF header.
+ + Added option "-d" to show the DOS header.
+ + Added option "-o" to show the Option (PE) header.
+ + Added option "-s" to show executable sections.
  
 pev 0.22 - January 9, 2011
- + Added manpage.
- * Improved Makefile.
- ! Plans to read more PE informations.
  ! Does not support PE32+ files.
+ ! Plans to read more PE informations.
+ * Improved Makefile.
+ + Added manpage.
 
 pev 0.2 - December 26, 2011
  * Improved search algorithm.

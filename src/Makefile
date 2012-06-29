@@ -1,5 +1,5 @@
 PREFIX=/usr
-DEST=$(PREFIX)/bin
+DEST=$(DESTDIR)/$(PREFIX)/bin
 LIBPE=../lib/libpe
 LIBUDIS86=../lib/libudis86
 CFLAGS=-W -Wall -Wextra -std=c99 -pedantic

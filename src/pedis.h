@@ -36,7 +36,10 @@ struct options {
 	bool all_sections;
 	char *section;
 	bool syntax;
-	QWORD function;
+	QWORD offset;
+	QWORD lenght;           // limit the number of disassembled instructions. 0 means no limit.
+	bool entrypoint;
+	bool offset_is_rva;
 };
 
 struct options config;

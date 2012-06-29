@@ -27,12 +27,14 @@ static int ind;
 void usage()
 {
 	printf("Usage: %s OPTIONS FILE\n"
-	"Disassemble PE sections and functions\n"
-	"\nExample: %s -F 0x4c4df putty.exe\n"
+	"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
+	"\nExample: %s -r 0x4c4df putty.exe\n"
 	"\nOptions:\n"
 	" --att                                  set AT&T syntax\n"
-	" -F, --function <rva>                   disassemble function\n"
-	" -s, --section <section name>           disassemble an entire section\n"
+	" -e, --entrypoint                       disassemble entrypoint\n"
+	" -n, <instructions limit>               number of instructions to be disassembled  (no effect if used with  -s)\n"
+	" -r, --rva <rva>                        disassemble at specified RVA\n"
+	" -s, --section <section name>           disassemble entire section given\n"
 	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
@@ -44,12 +46,15 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "F:s:f:v";
+	static const char short_options[] = "en:o:r:s:f:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
 		{"att",              no_argument,       NULL,  2 },
-		{"function",         required_argument, NULL, 'F'},
+		{"",                 required_argument, NULL, 'n'},
+		{"entrypoint",       no_argument,       NULL, 'e'},
+		{"offset",           required_argument, NULL, 'o'},
+		{"rva",              required_argument, NULL, 'r'},
 		{"section",          required_argument, NULL, 's'},
 		{"format",           required_argument, NULL, 'f'},
 		{"version",          no_argument,       NULL, 'v'},
@@ -73,11 +78,21 @@ void parse_options(int argc, char *argv[])
 				exit(EXIT_SUCCESS);
 				
 			case 2:
-				config.syntax = SYN_ATT;
-
-			case 'F':
-				config.function = strtol(optarg, NULL, 0);
+				config.syntax = SYN_ATT; break;
 				
+			case 'e':
+				config.entrypoint = true; break;
+				
+			case 'n':
+				config.lenght = strtol(optarg, NULL, 0); break;
+				
+			case 'o':
+				config.offset = strtol(optarg, NULL, 0); break;
+				
+			case 'r':
+				config.offset = strtol(optarg, NULL, 0);
+				config.offset_is_rva = true; break;
+
 			case 's':
 				config.section = optarg; break;
 
@@ -126,121 +141,69 @@ char *insert_spaces(char *s)
 	return new;
 }
 
-void print_section_disasm(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
+bool is_ret_instruction(unsigned char opcode)
 {
-	// libuds86
-	ud_t ud_obj;
-	BYTE *buff;
-	char *ofstr;
-
-	// allocate a buffer with same section size
-	buff = (BYTE *) xmalloc(section->SizeOfRawData);
-	if (!buff)
-		exit(-1);
-
-	ud_init(&ud_obj);
-
-	// set handle to section start
-	fseek(pe->handle, section->PointerToRawData, SEEK_SET);
-
-	if (!fread(buff, section->SizeOfRawData, 1, pe->handle))
-		EXIT_ERROR("error seeking through file");
-
-	// pass entire section to libudis86
-	ud_set_input_buffer(&ud_obj, buff, section->SizeOfRawData);
-
-	if (!pe->optional_ptr->_32 && !pe->optional_ptr->_64)
-		pe_get_optional(pe);
-
-	if (pe->architecture == PE32)
+	switch (opcode)
 	{
-		ud_set_mode(&ud_obj, 32);
-		ofstr = "%08"PRIx64;
+		case 0xc9: // leave
+		//case 0xc2: // ret
+		case 0xc3: // ret
+		case 0xca: // retf
+		//case 0xcb: // retf
+			return true;
+		
+		default:
+			return false;
 	}
-	else if (pe->architecture == PE64)
-	{
-		ud_set_mode(&ud_obj, 64);
-		ofstr = "%016"PRIx64;
-	}
-	else
-		EXIT_ERROR("unable to detect PE architecture");
-
-	// intel syntax
-	ud_set_syntax(&ud_obj, config.syntax ? UD_SYN_ATT : UD_SYN_INTEL);
-
-	while (ud_disassemble(&ud_obj))
-	{
-		char ofs[MAX_MSG], s[MAX_MSG], *bytes;
-
-		snprintf(ofs, MAX_MSG, ofstr, pe->imagebase + section->VirtualAddress + ud_insn_off(&ud_obj));
-		bytes = insert_spaces(ud_insn_hex(&ud_obj));
-		snprintf(s, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(&ud_obj));
-		if (bytes)
-			free(bytes);
-		output(ofs, s);
-	}
-
-	free(buff);
 }
 
-void print_function_disasm(PE_FILE *pe, QWORD function_rva)
+void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 {
-	ud_t ud_obj;
-	QWORD offset = rva2ofs(pe, function_rva);
-	char *ofstr;
+	QWORD c = 0; // counter to instructions disassembled
 	
-	if (!offset)
-	{
-		pe_deinit(pe);
-		EXIT_ERROR("unable to retrieve offset from RVA");
-	}
-
-	if (!pe->architecture)
-	{
-		IMAGE_COFF_HEADER coff;
-		pe_get_coff(pe, &coff);
-	}
-
-	ud_init(&ud_obj);
-	rewind(pe->handle);
+	if (!pe || !offset)
+		return;
 	
-	if (pe->architecture == PE32)
+	while (ud_disassemble(ud_obj))
 	{
-		ud_set_mode(&ud_obj, 32);
-		ofstr = "%08"PRIx64;
-	}
-	else if (pe->architecture == PE64)
-	{
-		ud_set_mode(&ud_obj, 64);
-		ofstr = "%016"PRIx64;
-	}
-	else
-		EXIT_ERROR("unable to detect PE architecture");
+		char ofs[MAX_MSG], value[MAX_MSG], *bytes;
+		unsigned char *opcode = ud_insn_ptr(ud_obj);
+		unsigned int mnic, op_t;
 
-	ud_set_syntax(&ud_obj, config.syntax ? UD_SYN_ATT : UD_SYN_INTEL);
-	ud_set_input_file(&ud_obj, pe->handle);
-	ud_input_skip(&ud_obj, offset);
-
-	while (ud_disassemble(&ud_obj))
-	{
-		char ofs[MAX_MSG], s[MAX_MSG], *bytes;
-		uint8_t* opcodes = ud_insn_ptr(&ud_obj);
+		mnic = ud_obj->mnemonic;
+		op_t = ud_obj->operand ? ud_obj->operand[0].type : 0;
 		
-		snprintf(ofs, MAX_MSG, ofstr, pe->imagebase + function_rva + ud_insn_off(&ud_obj));
-		//snprintf(ofs, MAX_MSG, ofstr, (DWORD) function_rva + ud_insn_off(&ud_obj));
-		bytes = insert_spaces(ud_insn_hex(&ud_obj));
+		snprintf(ofs, MAX_MSG, "%"PRIx64, pe->imagebase + offset + ud_insn_off(ud_obj));
+		bytes = insert_spaces(ud_insn_hex(ud_obj));
 
 		if (!bytes)
 			return;
 
-		snprintf(s, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(&ud_obj));
-		free(bytes);
-		output(ofs, s);
-
-		// search for LEAVE or RET insrtuctions
-		for (unsigned i=0; i<ud_insn_len(&ud_obj); i++)
+		// correct near operand addresses for calls and jumps
+		if (op_t && (op_t != UD_OP_MEM) && (mnic == UD_Icall || (mnic >= UD_Ijo && mnic <= UD_Ijmp)))
 		{
-			if (opcodes[i] == 0xc9 || opcodes[i] == 0xc3)
+			//char *s = ud_insn_asm(ud_obj);
+			char *ins = strtok(ud_insn_asm(ud_obj), "0x");
+
+			snprintf(value, MAX_MSG, "%s%*c%s%#lx", bytes, SPACES - (int) strlen(bytes), ' ', ins ? ins : "",
+			pe->imagebase + offset + ud_insn_off(ud_obj) + ud_obj->operand[0].lval.sdword + ud_insn_len(ud_obj));
+		}
+		else
+			snprintf(value, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(ud_obj));
+
+		free(bytes);
+		output(ofs, value);
+		
+		// for sections, we stop at end of section
+		if (config.section && ud_insn_off(ud_obj) >= config.lenght)
+			break;
+		else if (++c >= config.lenght && config.lenght)
+			break;
+		else if (config.entrypoint)
+		{
+		// search for LEAVE or RET insrtuctions
+		for (unsigned int i=0; i < ud_insn_len(ud_obj); i++)
+			if (is_ret_instruction(opcode[i]))
 				return;
 		}
 	}
@@ -250,6 +213,8 @@ int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
+	ud_t ud_obj;              // libudis86 object
+	QWORD offset = 0;         // offset to start disassembly
 
 	if (argc < 2)
 	{
@@ -263,12 +228,24 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("file not found or unreadable");
 
 	pe_init(&pe, fp);
+	ud_init(&ud_obj);
 
 	if (!ispe(&pe))
 		EXIT_ERROR("not a valid PE file");
+	
+	// get entrypoint and architecture
+	if (!pe_get_optional(&pe))
+		EXIT_ERROR("unable to retrieve Optional header");
+	
+	// set disassembly mode according with PE architecture
+	ud_set_mode(&ud_obj, pe.architecture == PE64 ? 64 : 32);
 
-	if (config.function)
-		print_function_disasm(&pe, config.function);
+	rewind(pe.handle);
+	
+	if (config.entrypoint)
+		offset = rva2ofs(&pe, pe.entrypoint);
+	else if (config.offset)
+		offset = config.offset_is_rva ? rva2ofs(&pe, config.offset) : config.offset;
 	else if (config.section)
 	{
 		IMAGE_SECTION_HEADER *section;
@@ -276,14 +253,26 @@ int main(int argc, char *argv[])
 		section = pe_get_section(&pe, config.section);
 
 		if (section) // section found
-			print_section_disasm(&pe, section);
-		else { EXIT_ERROR("invalid section name"); }
+		{
+			offset = section->PointerToRawData;
+			config.lenght = section->SizeOfRawData;
+		}
+		else
+			EXIT_ERROR("invalid section name");
 	}
 	else
 	{
 		usage();
 		exit(1);
 	}
+	
+	if (!offset)
+		EXIT_ERROR("unable to reach file offset");
+
+	ud_set_syntax(&ud_obj, config.syntax ? UD_SYN_ATT : UD_SYN_INTEL);
+	ud_set_input_file(&ud_obj, pe.handle);
+	ud_input_skip(&ud_obj, offset);
+	disassemble_offset(&pe, &ud_obj, offset);
 
 	// free
 	pe_deinit(&pe);

@@ -1,5 +1,5 @@
 PREFIX=/usr
-DEST=$(PREFIX)/lib
+DEST=$(DESTDIR)/$(PREFIX)/lib
 VERSION=1.0
 CFLAGS=-W -Wall -Wextra -pedantic -std=c99
 SRC=pe.c
@@ -18,8 +18,8 @@ install:
 	$(STRIP) $(LIBNAME).so
 	test -d $(DEST) || mkdir -p $(DEST)
 	$(INSTALL) $(LIBNAME).so $(DEST)/$(LIBNAME).so.$(VERSION)
-	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so
-	$(LN) $(DEST)/$(LIBNAME).so.$(VERSION) $(DEST)/$(LIBNAME).so.1
+	cd $(DEST); $(LN) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
+	cd $(DEST); $(LN) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 
 uninstall:
 	$(RM) $(DEST)/$(LIBNAME).so*

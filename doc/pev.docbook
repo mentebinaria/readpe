@@ -1,0 +1,36 @@
+<chapter id="pev">
+<title>O que é o pev?</title>
+
+<para>Desde a versão 0.50, o pev é um kit de ferramentas multiplataforma para
+se trabalhar com binários PE em linha de comando.</para>
+
+<sect1 id="history">
+<title>História</title>
+<para>
+O pev naseceu da uma necessidade bem simples: um programa que rodasse em Linux,
+em linha de comando e exibisse a versão (File Version) de arquivos executáveis
+do Windows (.exe, .dll etc). Este número de versão fica na seção de
+resources (recursos) do arquivo PE, caso exista. No entanto, foi desenvolvido
+um pequeno programa que buscava em todo o binário este número de versão, sem
+qualquer otimização.
+</para>
+
+<para>
+Num outro momento decidimos encontrar os resources do PE de maneira mais
+inteligente e tivemos que passar por vários cabeçalhos do PE para chegar onde
+queríamos. Então percebemos que poderíamos também imprimir tais cabeçalhos
+e trasnformar o pev num programa para exibir várias informações sobre o PE (e
+não mais só a versão).
+</para>
+
+<para>
+Até a versão 0.40, o pev era um binário único mas na versão 0.50,
+decidimos dividir as operações entre os binários e dar mais
+foco em análise de binários suspeitos. Além disso, o código em comum de
+trabalho com o arquivo PE deu origem à uma biblioteca, batizada de libpe.
+Atualmente todos os binários do kit pev são dependentes da libpe.
+</para>
+
+</sect1>
+
+</chapter>

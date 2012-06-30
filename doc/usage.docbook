@@ -1,0 +1,25 @@
+<chapter id="usage">
+<title>Usando o pev</title>
+
+<sect1 id="usgbasic">
+<title>Obtendo informações básicas do PE</title>
+<para>
+Use o readpe.
+</para>
+</sect1>
+
+<sect1 id="usgscan">
+<title>Escaneando um executável suspeito</title>
+<para>
+Use o pescan.
+</para>
+</sect1>
+
+<sect1 id="usgdis">
+<title>Obtendo código do executável</title>
+<para>
+Use o pedis.
+</para>
+</sect1>
+
+</chapter>

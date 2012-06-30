@@ -1,0 +1,135 @@
+<chapter id="installpev">
+<title>Obtendo e instalando o pev</title>
+
+<para>
+O pev pode ser obtido de duas maneiras: via código-fonte ou binários
+compilados. Na primeira maneira, você vai precisar possuir compiladores e
+dependências para realizar a compilação do pev. Por favor, leia o arquivo
+README para maiores informações.
+</para>
+
+<para>
+Se optar pela segunda forma,
+basta baixar o pacote correto para a sua arquitetura. São fornecidos pacotes
+ZIP com os binários para Windows x86 e x86-64, para Linux (DEB e RPM) também
+x86 e x86-64 e para Mac OS X (PKG) x86-64.
+</para>
+
+<para>
+Além disso, é possível que usuários Linux se beneficiem do sistema de
+repositório de pacotes para instalar o pev. Sabemos que usuários do Debian,
+Ubuntu, Slackware e Arch Linux já possuem pacotes para o pev, além do projeto MacPorts,
+para Mac OS X.
+</para>
+
+<sect1 id="source">
+<title>A partir do código-fonte</title>
+
+<para>
+Acesse <ulink url="http://pev.sourceforge.net" />, clique em
+Download e baixe o tarball pev-x.xx.tar.gz, onde x.xx é o número de versão.
+</para>
+
+<para>Alternativamente, você pode obter o código-fonte da versão mais recente em
+desenvolvimento a partir do <ulink url="https://github.com/merces/pev">
+repositório git do pev no GitHub</ulink>. Se tiver o git instalado, pode clonar
+nosso respositório com:</para>
+
+<prompt>$ </prompt> <command>git git://github.com/merces/pev.git</command>
+
+<sect2 id="complinux">
+<title>Compilando no Linux ou Mac OS X</title>
+
+<para>
+Certifique-se de que os seguintes programas estão instalados e funcionando
+corretamente:
+</para>
+
+<simplelist>
+<member>gcc >= 4.5.0</member>
+<member>make</member>
+<member>bash</member>
+<member>sed</member>
+<member>strip</member>
+</simplelist>
+
+<para>Se você baixou o tarball, descompacte-o com o tar:</para>
+
+<screen>
+<prompt>$ </prompt><command>tar xf pev-x.xx.tar.gz</command>
+<prompt>$ </prompt><command>cd pev-x.xx</command>
+</screen>
+<para>Se clonou o respositório git, entre no diretório e faça:</para>
+
+<screen>
+<prompt>$ </prompt><command>chmod +x configure</command>
+<prompt>$ </prompt><command>./configure</command>
+<prompt>$ </prompt><command>make</command>
+<prompt># </prompt><command>make install</command> (com sudo ou com privilégios administrativos)
+</screen>
+
+<para>Os comandos acima vão compilar a libpe e todos os binários do pev. Para
+compilar somente a libpe, depois de rodar o configure, faça:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>cd lib/libpe</command>
+<prompt>$ </prompt><command>make</command>
+</screen>
+
+<para>Para compilar binários individuais do kit pev:</para>
+<screen>
+<prompt>$ </prompt><command>cd src/</command>
+<prompt>$ </prompt><command>make <replaceable>programa</replaceable></command>
+</screen>
+
+</sect2>
+
+<sect2 id="compwin">
+<title>Compilando no Windows (via Cygwin)</title>
+Dá trabalho.
+</sect2>
+
+<sect2 id="compother">
+<title>Compilando em outras plataformas</title>
+Dá trabalho.
+</sect2>
+
+</sect1>
+
+<sect1 id="binary">
+<title>A partir de binários pré-compilados</title>
+
+<sect2 id="binlinux">
+<title>No Linux</title>
+Instalar o deb ou rpm
+</sect2>
+
+<sect2 id="binwin">
+<title>No Windows</title>
+Descompactar o .zip e rodar!
+</sect2>
+
+<sect2 id="binmac">
+<title>No Mac</title>
+Instalar o .pkg
+</sect2>
+
+</sect1>
+
+<sect1 id="package">
+<title>A partir do repositório de pacotes</title>
+
+<sect2 id="pkglinux">
+<title>No Linux</title>
+apt-get, yum...
+</sect2>
+
+<sect2 id="pkgmac">
+<title>No Mac</title>
+MacPorts
+</sect2>
+
+</sect1>
+
+</chapter>

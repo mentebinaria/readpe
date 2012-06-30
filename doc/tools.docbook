@@ -1,0 +1,18 @@
+<chapter id="tools">
+<title>Ferramentas incluídas</title>
+
+<sect1 id="readpe">
+<title>readpe</title>
+<para>
+readpe --header optional winzip.exe
+</para>
+</sect1>
+
+<sect1 id="pesec">
+<title>readpe</title>
+<para>
+pesec winzip.exe
+</para>
+</sect1>
+
+</chapter>

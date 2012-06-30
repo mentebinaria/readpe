@@ -1,0 +1,79 @@
+<chapter>
+<title>O que é o pev?</title>
+<para>This is my first DocBook file.</para>
+<simplelist>
+<member>Apples</member>
+<member>Oranges</member>
+<member>Bananas</member>
+<member>Grapefruit</member>
+<member>Black Beans</member>
+</simplelist>
+</chapter>
+
+<chapter>
+
+<screenshot>
+<screeninfo>Colored Rectangles</screeninfo>
+<mediaobject>
+<imageobject> <imagedata fileref="/home/fernando/pev-logo/pev-icon.png" format="PNG" /> </imageobject>
+<textobject> <phrase>A bunch of rectangles</phrase> </textobject>
+<caption>
+<para>Here are a bunch of rectangles</para>
+</caption>
+</mediaobject>
+</screenshot> 
+
+<screen>
+<prompt>bash$</prompt> <command>twiddle <replaceable>myfile</replaceable>
+</command>
+twiddling myfile.....done!
+</screen> 
+
+<cmdsynopsis>
+   <!-- This is a synopsis for the command foo.
+        The options -a and -x are optional and exclusive
+        The option -c takes a cheese and is optional and repeatable
+        The options -t and -k are referred to in another fragment
+        The options -i, -j, and -k are required and exclusive
+        The option -f takes a filename and is required
+        The -t and -k options specify the kind of milk and mold in an
+            optional and repeatable group
+   -->
+   <command>foo</command>
+   <group>
+     <arg>-a</arg>
+     <arg>-x</arg>
+   </group>
+   <group>
+   <arg rep="repeat">-c <replaceable>cheese</replaceable></arg>
+   <synopfragmentref linkend="cheesetype">cheesetype</synopfragmentref>
+   </group>
+   <group choice="req">
+     <arg>-i</arg>
+     <arg>-j</arg>
+     <arg>-k</arg>
+   </group>
+   <arg choice="req">-f <replaceable>filename</replaceable></arg>
+   <synopfragment id="cheesetype">
+     <group rep="repeat">
+        <arg>-t <replaceable>milk</replaceable></arg>
+        <arg>-k <replaceable>mold</replaceable></arg>
+     </group>
+   </synopfragment>
+ </cmdsynopsis>
+
+<funcsynopsis>
+<funcsynopsisinfo>#include &lt;stdlib.h&gt;</funcsynopsisinfo>
+<funcprototype>
+<funcdef>double <function>atof</function></funcdef>
+<paramdef>const char *<parameter>nptr</parameter></paramdef>
+</funcprototype>
+</funcsynopsis>
+
+<warning><para>Danger, Will Robinson!</para></warning>
+<tip><para>Danger, Will Robinson!</para></tip>
+<caution><para>Danger, Will Robinson!</para></caution>
+<note><para>Danger, Will Robinson!</para></note>
+<important><para>Danger, Will Robinson!</para></important>
+
+</chapter>

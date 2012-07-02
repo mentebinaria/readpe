@@ -6,13 +6,17 @@ CFLAGS=-W -Wall -Wextra -std=c99 -pedantic
 CC=gcc
 RM=rm -f
 COMMON=output.c
-PROGS=readpe pedis pepack pescan rva2ofs pesec ofs2rva
+PROGS=readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash
 INSTALL=install -m 0755
 
 # 'make' only will compile all binaries
 all: $(PROGS)
 
-# special rule to include libudis86
+# include libssl
+pehash: pehash.c
+	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe -lssl
+
+# include libudis86
 pedis: pedis.c
 	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) -I$(LIBUDIS86) $(LIBUDIS86)/libudis86/*.c $^ $(COMMON) -o $@ -lpe
 

@@ -66,7 +66,8 @@ void parse_options(int argc, char *argv[])
 				exit(EXIT_SUCCESS);
 
 			case 'f':
-				config.functions = true;
+				//config.functions = true;
+				EXIT_ERROR("not implemented yee");
 				break;
 
 			case 'n':
@@ -95,7 +96,9 @@ void parse_options(int argc, char *argv[])
 unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
 {
 	unsigned int i;
-	unsigned long sect_size, sect_offset;
+	unsigned long sect_size, sect_offset, aux=0;
+
+	aux = ftell(pe->handle);
 
 	pe_get_sections(pe);
 	for (i=0; i < pe->num_sections; i++)
@@ -104,28 +107,40 @@ unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
 		sect_size = pe->sections_ptr[i]->SizeOfRawData;
 
 		if (offset >= sect_offset && offset <= (sect_offset + sect_size))
+		{
+			fseek(pe->handle, aux, SEEK_SET);
 			return pe->sections_ptr[i]->Name;
+		}
 	}
+	fseek(pe->handle, aux, SEEK_SET);
 	return NULL;
 }
 
 unsigned char *ref_functions(PE_FILE *pe, unsigned long offset)
 {
-	unsigned long buff, aux;
+	unsigned long buff, aux=0;
+	unsigned char *str = (unsigned char *) xmalloc(sizeof(char) * 100);
+	FILE *fp = pe->handle;
 
-	aux = ftell(pe->handle);
-	rewind(pe->handle);
+	aux = ftell(fp);
+	rewind(fp);
+	memset(str, 0, sizeof(str));
 
-	while (fread(&buff, sizeof(buff), 1, pe->handle))
+	while (fread(&buff, 1, sizeof(buff), fp))
 	{
-		if (buff == (DWORD) ofs2rva(pe, offset) + pe->imagebase)
+		snprintf(str, 100, "%#lx", ofs2rva(pe, offset));
+		return str;
+		if (buff == ofs2rva(pe, offset) + pe->imagebase)
+
+		{
+			fseek(fp, aux, SEEK_SET);
 			return "aqui|";
+		}
 
 		// slow search
-		fseek(pe->handle, - (sizeof(buff)-1), SEEK_CUR);
+		//fseek(fp, - (sizeof(buff)-1), SEEK_CUR);
 	}
-
-	fseek(pe->handle, aux, SEEK_SET);
+	fseek(fp, aux, SEEK_SET);
 
 	return NULL;
 }
@@ -133,19 +148,21 @@ unsigned char *ref_functions(PE_FILE *pe, unsigned long offset)
 void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned lenght, unsigned long
 offset)
 {
-
 	if (config.offset)
-		printf("%#lx\t", offset);
+		printf("%#lx\t", (unsigned long) offset);
 
 	if (config.section)
-		printf("%s\t", ofs2section(pe, offset));
+	{
+		char *s = ofs2section(pe, offset);
+		printf("%s\t", s ? s : "[none]");
+	}
 
 	if (config.functions)
 	{
 		char *s = ref_functions(pe, offset);
 
 		printf("%s\t", s ? s : "[none]");
-		
+		free(s);
 	}
 
 	// print the string
@@ -160,7 +177,7 @@ int main(int argc, char *argv[])
 	PE_FILE pe;
 	FILE *fp = NULL;
 	unsigned char buff[BUFSIZE];
-	unsigned int c, i, ofs;
+	unsigned int c, i, ofs=0;
 
 	memset(&config, 0, sizeof(config));
 	parse_options(argc, argv); // opcoes
@@ -181,14 +198,14 @@ int main(int argc, char *argv[])
 
 	rewind(pe.handle);
 
-	for (ofs=0; fread(&buff, sizeof(buff), 1, pe.handle); ofs++)
+	for (ofs=0; fread(&buff, 1, sizeof(buff), pe.handle); ofs++)
 	{
 		for (i=0; i<sizeof(buff); i++)
 		{
 			if (isprint(buff[i]))
 			{
 				if (i == BUFSIZE-1)
-					printb(&pe, buff, i-c, i, (ofs-1) * sizeof(buff) + i-c);
+					printb(&pe, buff, i-c, i, ofs * sizeof(buff) + i-c);
 
 				c++;
 				continue;
@@ -196,12 +213,12 @@ int main(int argc, char *argv[])
 			else
 			{
 				if (c >= (config.strsize ? config.strsize : 4))
-					printb(&pe, buff, i-c, i, (ofs-1) * sizeof(buff) + i-c);
-					//printb(&pe, buff, i-c, i, ofs * BUFSIZE + i - c);
+					printb(&pe, buff, i-c, i, ofs * sizeof(buff) + i-c);
 
 				c=0;
 			}
 		}
+		memset(&buff, 0, sizeof(buff));
 	}
 	
 	// libera a memoria

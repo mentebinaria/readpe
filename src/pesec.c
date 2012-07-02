@@ -24,6 +24,7 @@
 static int ind;
 
 
+
 void usage()
 {
 	printf("Usage: %s [OPTIONS] FILE\n"

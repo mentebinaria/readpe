@@ -31,22 +31,14 @@
 #include <pe.h>
 #include "output.h"
 
-#ifdef __DEBUG_MODE__
-	#define EXIT_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s, %d: %s\n", __FILE__, __LINE__, msg); \
-				exit(EXIT_FAILURE); \
-			}
-#else
-	#define EXIT_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s\n", msg); \
-				exit(EXIT_FAILURE); \
-			}
-#endif
+#define EXIT_ERROR(msg) \
+{ \
+	fprintf(stderr, "%s\n", msg); \
+	exit(1); \
+}
 
 #define MAX_MSG 80
-#define VERSION "0.50"
+#define VERSION "0.60"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
 #define COPY \
 "Copyright (C) 2012 Fernando Mercês.\n" \

@@ -26,7 +26,7 @@
 #include <ctype.h>
 
 #define PROGRAM "pestr"
-#define BUFSIZE 1024
+#define BUFSIZE 4
 
 struct options {
    unsigned short strsize;

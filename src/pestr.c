@@ -116,10 +116,10 @@ unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
 	return NULL;
 }
 
-unsigned char *ref_functions(PE_FILE *pe, unsigned long offset)
+char *ref_functions(PE_FILE *pe, unsigned long offset)
 {
 	unsigned long buff, aux=0;
-	unsigned char *str = (unsigned char *) xmalloc(sizeof(char) * 100);
+	char *str = (char *) xmalloc(sizeof(char) * 100);
 	FILE *fp = pe->handle;
 
 	aux = ftell(fp);
@@ -128,7 +128,7 @@ unsigned char *ref_functions(PE_FILE *pe, unsigned long offset)
 
 	while (fread(&buff, 1, sizeof(buff), fp))
 	{
-		snprintf(str, 100, "%#lx", ofs2rva(pe, offset));
+		snprintf(str, 100, "%#x", ofs2rva(pe, offset));
 		return str;
 		if (buff == ofs2rva(pe, offset) + pe->imagebase)
 
@@ -153,7 +153,7 @@ offset)
 
 	if (config.section)
 	{
-		char *s = ofs2section(pe, offset);
+		char *s = (char *) ofs2section(pe, offset);
 		printf("%s\t", s ? s : "[none]");
 	}
 
@@ -167,7 +167,15 @@ offset)
 
 	// print the string
 	while (pos < lenght)
+	{
+	
+		if (bytes[pos] == '\0') // unicode printing
+		{
+			pos++;
+			continue;
+		}
 		putchar(bytes[pos++]);
+	}
 
 	putchar('\n');
 }
@@ -176,8 +184,9 @@ int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
-	unsigned char buff[BUFSIZE];
-	unsigned int c, i, ofs=0;
+	unsigned char *buff, byte;
+	unsigned int ascii, ofs, pos;
+	unsigned int utf = 0;
 
 	memset(&config, 0, sizeof(config));
 	parse_options(argc, argv); // opcoes
@@ -197,29 +206,36 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	rewind(pe.handle);
+	buff = (unsigned char *) xmalloc(2048);
+	memset(buff, 0, sizeof(buff));
 
-	for (ofs=0; fread(&buff, 1, sizeof(buff), pe.handle); ofs++)
+	for (ofs=0, ascii=0, pos=0; fread(&byte, 1, 1, pe.handle); ofs++)
 	{
-		for (i=0; i<sizeof(buff); i++)
-		{
-			if (isprint(buff[i]))
+			if (isprint(byte))
 			{
-				if (i == BUFSIZE-1)
-					printb(&pe, buff, i-c, i, ofs * sizeof(buff) + i-c);
-
-				c++;
+				ascii++;
+				buff[pos++] = byte;
+				continue;
+			}
+			else if (ascii == 1 && byte == '\0')
+			{
+				utf++;
+				buff[pos++] = byte;
+				ascii = 0;
 				continue;
 			}
 			else
 			{
-				if (c >= (config.strsize ? config.strsize : 4))
-					printb(&pe, buff, i-c, i, ofs * sizeof(buff) + i-c);
+				if (ascii >= (config.strsize ? config.strsize : 4))
+					printb(&pe, buff, 0, ascii, ofs - ascii);
+				else if (utf >= (config.strsize ? config.strsize : 4))
+					printb(&pe, buff, 0, utf*2, ofs - utf*2);
 
-				c=0;
+				ascii = utf = pos = 0;
+				memset(buff, 0, sizeof(buff));
 			}
-		}
-		memset(&buff, 0, sizeof(buff));
 	}
+	free(buff);
 	
 	// libera a memoria
 	pe_deinit(&pe);

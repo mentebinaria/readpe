@@ -9,9 +9,11 @@ Legend:
 pev 0.60 - ?, 2012
  ! pedis: fixed address representation in calls and jump instructions.
  * pedis: -F/--function option replaced by -r/--rva.
+ + pehash: new tool to calculate PE file hashes (Jan Seidl <janseidl *noSPAM* gmail.com>)
  + pedis: added -m/--mode option to set disassembly mode (16, 32 or 64-bit).
  + pedis: added -n option to limit number of disassembled instructions.
  + pedis: added options to disassembly entrypoint and raw fille offset.
+ + pepack: added PEiD signature search (Rodrigo Escobar <ipax *noSPAM* dclabs.com.br>)
  + pescan: added -f/--format option to format output.
 
 pev 0.50 - June 25, 2012

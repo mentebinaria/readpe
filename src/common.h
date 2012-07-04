@@ -3,7 +3,7 @@
 	
 	common.h - common defitions for pev toolkit
 
-	Copyright (C) 2012 Fernando Mercês
+	Copyright (C) 2012 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@
 #define VERSION "0.60"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
 #define COPY \
-"Copyright (C) 2012 Fernando Mercês.\n" \
+"Copyright (C) 2012 pev authors
 "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n" \
 "This is free software: you are free to change and redistribute it.\n" \
 "There is NO WARRANTY, to the extent permitted by law."

@@ -1,4 +1,5 @@
 NAME=pev-manual
+#XSL=/usr/share/xml/docbook/stylesheet/nwalsh/html/docbook.xsl
 XSL=/usr/share/xml/docbook/stylesheet/nwalsh/html/chunk.xsl
 FOXSL=/usr/share/xml/docbook/stylesheet/nwalsh/fo/docbook.xsl
 SRC=pev-manual.docbook

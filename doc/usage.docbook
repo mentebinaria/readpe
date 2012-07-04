@@ -4,22 +4,177 @@
 <sect1 id="usgbasic">
 <title>Obtendo informações básicas do PE</title>
 <para>
-Use o readpe.
+Analisar um binário exige algum conhecimento de suas características, mas
+algumas informações podem ser particularmente úteis quando não se conhece
+absolutamente nada de um executável.
 </para>
+
+<para>Um primeiro passo interessante pode ser obter os cabeçalhos de um arquivo PE
+com o readpe. Você pode usar a opção -H para obter todos os cabeçalhos, mas
+vamos começar por um cabeçalho bem interessante chamado de
+<emphasis>Optional Header</emphasis>:</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe --header optional putty.exe</command>
+
+Optional/Image header
+Magic number:                    0x10b (PE32)
+Linker major version:            7
+Linker minor version:            10
+Size of .text section:           0x54000
+Size of .data section:           0x28000
+Size of .bss section:            0
+Entrypoint:                      0x4c4df
+Address of .text section:        0x1000
+Address of .data section:        0x55000
+ImageBase:                       0x400000
+Alignment of sections:           0x1000
+Alignment factor:                0x1000
+Major version of required OS:    4
+Minor version of required OS:    0
+Major version of image:          0
+Minor version of image:          0
+Major version of subsystem:      4
+Minor version of subsystem:      0
+Size of image:                   0x7d000
+Size of headers:                 0x1000
+Checksum:                        0
+Subsystem required:              0x2 (Windows GUI)
+DLL characteristics:             0
+Size of stack to reserve:        0x100000
+Size of stack to commit:         0x1000
+Size of heap space to reserve:   0x100000
+Size of heap space to commit:    0x1000
+</screen>
+
+<para>Logo no primeiro campo, chamdo de <emphasis>Magic number</emphasis>,
+temos o valor 0x10b (em hexadecimal), o que significa que estamos analisando um PE32,
+(executável PE de 32-bits). Se fosse 0x20b, seria um PE32+, de 64-bits.
+</para>
+
+<para>Os dois campos seguintes podem nos dar uma indicação da versão do
+compilador utlizado para gerar o executável.</para>
+
+<para>O campo <emphasis>Entrypoint</emphasis> é bem importante, pois mantém
+o RVA (Relative Virtual Offset) do início do código, ou seja, onde a
+execução do PE começa. Explicaremos o que é um RVA mais tarde.
+</para>
+
+<para>
+Em <emphasis>Address of .text section</emphasis>, temos o offset (posição) da
+seção da primeira código do PE. Normalmente, o entrypoint (EP) está nela. Se
+não estiver, pode ser uma indicação de que o executável está comprimido
+(packeado).
+</para>
+
+<para>
+<emphasis>Subsystem required</emphasis> revela que tratamos de um executável
+que exige GUI (Graphical User Interface), ou seja, não é um executável de linha
+de comando. Na sequência, o campo <emphasis>DLL characteristics</emphasis>
+zerado nos diz que não se trata de uma biblioteca. Todos os campos têm um
+significado, provavelmente explicado na documentação do formato.
+</para>
+
+
 </sect1>
 
 <sect1 id="usgscan">
 <title>Escaneando um executável suspeito</title>
 <para>
-Use o pescan.
+O readpe também é capaz de analisar as seções com a opção -S. Você deve
+procurar por seções com nomes estanhos, de tamanhos fora do comum, dentre
+outros. Na realide, a ferramenta pescan já faz um trabalho deste tipo:
 </para>
+
+<screen>
+<prompt>$ </prompt><command>pescan putty.exe</command>
+entrypoint:                      normal
+DOS stub:                        normal
+TLS directory:                   not found
+Sections:                        4
+
+<prompt>$ </prompt><command>pescan malware.exe</command>
+entrypoint:                      normal
+DOS stub:                        suspicious
+TLS directory:                   not found
+Sections:                        2 - suspicious
+</screen>
+
+<para>A primeira execução do pescan foi contra um executável inofensivo e nada
+foi detectado. Já a segunda execução foi contra um malware. Perceba que foi
+detectada modificação do código do DOS e as seções também foram detectadas como
+suspeitas. Vamos analisá-las:</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe -S malware.exe</command>
+
+Sections
+Name:                            CODE
+Virtual Address:                 0x1000
+Physical Address:                0x422000
+Size:                            0xfc200 (1032704 bytes)
+Pointer To Data:                 0x400
+Relocations:                     0
+Characteristics:                 0xe0000020
+                                 contains executable code
+                                 is executable
+                                 is readable
+                                 is writable
+
+Name:                            .rsrc
+Virtual Address:                 0x423000
+Physical Address:                0xb000
+Size:                            0xae00 (44544 bytes)
+Pointer To Data:                 0xfc600
+Relocations:                     0
+Characteristics:                 0xe0000020
+                                 contains executable code
+                                 is executable
+                                 is readable
+                                 is writable
+</screen>
+
+<para>A seção CODE do executável possui permissões de execução, escrita e
+leitura, por isso foi marcada como suspeita, uma vez que o normal é não possuir
+a permissão de escrita.
+</para>
+
+<para>O pepack pode identificar se o executável está comprimido:</para>
+
+
+<screen>
+<prompt>$ </prompt><command>pepack --database userdb.txt malware.exe</command>
+packer:                          PECompact 2.xx --> BitSum Technologies
+</screen>
+
+<para>Uma versão do banco de dados <emphasis>userdb.txt</emphasis> é
+distribuída com o pev, mas você pode criar suas próprias assinaturas ou
+utilizar outro banco de assinaturas de packers.
+</para>
+
 </sect1>
 
 <sect1 id="usgdis">
 <title>Obtendo código do executável</title>
 <para>
-Use o pedis.
+O pedis é um disassembler que pode ser utilizado tanto para obter o código de
+uma determinada função (RVA) como de uma seçao inteira, através de seu nome.
 </para>
-</sect1>
 
+<screen>
+<prompt>$ </prompt><command>pedis --entrypoint malware.exe | head</command>
+
+400:                             b8 1c dd 82 00                  mov eax, 0x82dd1c
+405:                             50                              push eax
+406:                             64 ff 35 00 00 00 00            push dword [fs:0x0]
+40d:                             64 89 25 00 00 00 00            mov [fs:0x0], esp
+414:                             33 c0                           xor eax, eax
+416:                             89 08                           mov [eax], ecx
+418:                             50                              push eax
+419:                             45                              inc ebp
+41a:                             43                              inc ebx
+41b:                             6f                              outsd
+</screen>
+
+</sect1>
 </chapter>

@@ -86,7 +86,7 @@ void parse_options(int argc, char *argv[])
    executable and/or writable flags)
    Windows Loader still executes the binary
 */
-bool genereic_packer(PE_FILE *pe, QWORD ep)
+bool generic_packer(PE_FILE *pe, QWORD ep)
 {
    unsigned char packer = '0';
 	IMAGE_SECTION_HEADER *sec = pe_rva2section(pe, ep);
@@ -252,8 +252,8 @@ int main(int argc, char *argv[])
 	
 	// packer by signature
 	if (compare_signature(pe_data, ep_offset, dbfile, value));
-	// genereic detection
-	else if (genereic_packer(&pe, ep_offset))
+	// generic detection
+	else if (generic_packer(&pe, ep_offset))
 		snprintf(value, MAX_MSG, "generic");
 	else
 		snprintf(value, MAX_MSG, "no packer found");

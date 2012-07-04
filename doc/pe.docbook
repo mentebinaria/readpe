@@ -18,7 +18,7 @@ etc. Essas adição de informações precisa obedecer um padrão, uma especifica
 e é exatamente aí que o formato PE entra.
 </para>
 
-<sect1 id="headers">
+<section id="headers">
 <title>Cabeçalhos</title>
 
 Os primeiros bytes de um arquivo PE são elementos de vários cabeçalhos
@@ -206,7 +206,7 @@ Existem outros cabeçalhos no arquivo PE. Por favor, leia a documentação ofici
 para maiores detalhes sobre este e outros cabeçalhos existentes.
 </para>
 
-</sect1>
+</section>
 
 <sect1 id="secoes">
 <title>Seções</title>

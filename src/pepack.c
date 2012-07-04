@@ -26,7 +26,7 @@ static int ind;
 
 void usage()
 {
-	printf("Usage: %s <rva> FILE\n"
+	printf("Usage: %s FILE\n"
 	"Search for packers in PE files\n"
 	"\nExample: %s putty.exe\n"
 	"\nOptions:\n"
@@ -42,7 +42,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "v";
+	static const char short_options[] = "d:f:v";
 
 	static const struct option long_options[] = {
 		{"database",         required_argument, NULL, 'd'},
@@ -261,7 +261,6 @@ int main(int argc, char *argv[])
 		snprintf(value, MAX_MSG, "no packer found");
 	
 	free(pe_data);
-
 	output("packer", value);
 
 	if (dbfile)

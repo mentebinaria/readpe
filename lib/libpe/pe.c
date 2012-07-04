@@ -362,6 +362,19 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 	return true;
 }
 
+QWORD pe_get_size(PE_FILE *pe)
+{
+	if (pe->size)
+		return pe->size;
+	
+	if (fseek(pe->handle, 0, SEEK_END))
+		return 0;
+	
+	pe->size = ftell(pe->handle);
+	rewind(pe->handle);
+	return pe->size;
+}
+
 bool ispe(PE_FILE *pe)
 {
 	WORD header;

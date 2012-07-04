@@ -336,6 +336,7 @@ typedef struct _PE_FILE
 	WORD architecture;
 	QWORD entrypoint;
 	QWORD imagebase;
+	QWORD size;
 	
 	WORD num_sections;
 	WORD num_directories;
@@ -397,6 +398,7 @@ bool ispe(PE_FILE *pe);
 void pe_deinit(PE_FILE *pe);
 QWORD rva2ofs(PE_FILE *pe, QWORD rva);
 DWORD ofs2rva(PE_FILE *pe, DWORD ofs);
+QWORD pe_get_size(PE_FILE *pe);
 
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);

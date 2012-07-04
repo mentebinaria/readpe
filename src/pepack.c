@@ -120,10 +120,9 @@ bool loaddb(FILE **fp)
 	return (*fp != NULL);
 }
 
-bool match_peid_signature(unsigned char data[], char *sig)
+bool match_peid_signature(unsigned char *data, char *sig)
 {
 	unsigned char byte_str[3], byte;
-	unsigned long int i=0;
 	
 	// add null terminator
 	byte_str[2] = '\0';
@@ -141,19 +140,18 @@ bool match_peid_signature(unsigned char data[], char *sig)
 		if (*sig == '?')
 		{
 			sig += 2;
-			i++;
+			data++;
 			continue;
 		}
 
 		memcpy(byte_str, sig, 2);
 		byte = strtoul((char *) byte_str, NULL, 16);
 
-		if (data[i++] != byte)
+		if (*data++ != byte)
 			return false;
 
 		sig += 2; // next two characters of signature
 	}
-	
 	return true;
 }
 

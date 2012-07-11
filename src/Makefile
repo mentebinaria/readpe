@@ -14,7 +14,7 @@ all: $(PROGS)
 
 # include libssl
 pehash: pehash.c
-	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe -lssl
+	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe -lssl -lcrypto
 
 # include libudis86
 pedis: pedis.c

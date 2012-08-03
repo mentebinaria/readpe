@@ -1,13 +1,25 @@
+####### Platform specifics
+
+PLATFORM_OS := $(shell uname)
+
+####### Compiler, tools and options
+
 PREFIX=/usr
 DEST=$(DESTDIR)/$(PREFIX)/bin
 LIBPE=../lib/libpe
 LIBUDIS86=../lib/libudis86
 CFLAGS=-W -Wall -Wextra -std=c99 -pedantic
+ifeq ($(PLATFORM_OS), Darwin)
+	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
+	CFLAGS += -Wno-deprecated-declarations
+endif
 CC=gcc
 RM=rm -f
 COMMON=output.c
 PROGS=readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash
 INSTALL=install -m 0755
+
+####### Build rules
 
 # 'make' only will compile all binaries
 all: $(PROGS)

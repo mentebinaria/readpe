@@ -76,7 +76,7 @@ check which
 check sed make ld test mkdir rmdir install strip rm mv mktemp uname cut mktemp
 
 # get os type
-os=$(uname -a | cut -d' ' -f1)
+os=$(uname)
 echo -n "Getting OS type... "
 [ -n $os ] && echo "$os" || (echo "unable to retrieve OS type" && exit 1)
 

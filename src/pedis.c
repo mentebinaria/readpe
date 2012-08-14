@@ -90,7 +90,7 @@ void parse_options(int argc, char *argv[])
 				config.mode = strtol(optarg, NULL, 10); break;
 
 			case 'n':
-				config.lenght = strtol(optarg, NULL, 0); break;
+				config.length = strtol(optarg, NULL, 0); break;
 
 			case 'o':
 				config.offset = strtol(optarg, NULL, 0);
@@ -202,9 +202,9 @@ void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		output(ofs, value);
 
 		// for sections, we stop at end of section
-		if (config.section && c >= config.lenght)
+		if (config.section && c >= config.length)
 			break;
-		else if (c >= config.lenght && config.lenght)
+		else if (c >= config.length && config.length)
 			break;
 		else if (config.entrypoint)
 		{
@@ -262,8 +262,8 @@ int main(int argc, char *argv[])
 		if (section) // section found
 		{
 			offset = section->PointerToRawData;
-			if (!config.lenght)
-				config.lenght = section->SizeOfRawData;
+			if (!config.length)
+				config.length = section->SizeOfRawData;
 		}
 		else
 			EXIT_ERROR("invalid section name");

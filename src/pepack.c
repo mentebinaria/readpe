@@ -166,7 +166,7 @@ bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile, char 
 	//memset(buff, 0, MAX_SIG_SIZE);
 	while (fgets(buff, MAX_SIG_SIZE, dbfile))
 	{
-		// line lenght
+		// line length
 		len = strlen(buff);
 		
 		// ifgore comments and blank lines
@@ -182,7 +182,7 @@ bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile, char 
 		{
 			*(buff+len-2) = '\0';
 			//*(buff+len-1) = '\0';
-			len--; // update line lenght
+			len--; // update line length
 		}
 		
 		// line have [packer name]? Fill packer_name pointer

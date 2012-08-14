@@ -30,7 +30,7 @@ void usage()
 	"Search for encrypted strings in PE files\n"
 	"\nExample: %s acrobat.exe\n"
 	"\nOptions:\n"
-	" -n, --min-lenght                       set minimun string lenght (default: 4)\n"
+	" -n, --min-length                       set minimun string length (default: 4)\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);
@@ -47,7 +47,7 @@ void parse_options(int argc, char *argv[])
 		{"functions",       no_argument,        NULL, 'f'},
 		{"offset",          no_argument,        NULL, 'o'},
 		{"section",         no_argument,        NULL, 's'},
-		{"min-lenght",      required_argument,  NULL,  1 },
+		{"min-length",      required_argument,  NULL,  1 },
 		{"help",            no_argument,        NULL,  1 },
 		{"version",         no_argument,        NULL, 'v'},
 		{ NULL,             0,                  NULL,  0 }
@@ -145,7 +145,7 @@ char *ref_functions(PE_FILE *pe, unsigned long offset)
 	return NULL;
 }
 
-void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned lenght, unsigned long
+void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned length, unsigned long
 offset)
 {
 	if (config.offset)
@@ -166,7 +166,7 @@ offset)
 	}
 
 	// print the string
-	while (pos < lenght)
+	while (pos < length)
 	{
 	
 		if (bytes[pos] == '\0') // unicode printing

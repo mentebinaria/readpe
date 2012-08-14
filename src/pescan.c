@@ -289,9 +289,9 @@ void print_strange_sections(PE_FILE *pe)
 			stradd(value, "suspicious name", &aux);
 
 		if (!pe->sections_ptr[i]->SizeOfRawData)
-			stradd(value, "zero lenght", &aux);
+			stradd(value, "zero length", &aux);
 		else if (pe->sections_ptr[i]->SizeOfRawData <= 512)
-			stradd(value, "small lenght", &aux);
+			stradd(value, "small length", &aux);
 
 		// rwx or writable + executable code
 		if (pe->sections_ptr[i]->Characteristics & 0x80000000 &&

@@ -332,6 +332,7 @@ typedef struct _PE_FILE
 {
 	FILE *handle;
 	
+	bool isdll;
 	WORD e_lfanew;
 	WORD architecture;
 	QWORD entrypoint;

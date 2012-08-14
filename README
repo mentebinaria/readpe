@@ -3,7 +3,10 @@
          |   |   __/  \ \ /  
          .__/  \___|   \_/   
         _|
- the PE file analysis toolkit v0.50
+ the PE file analysis toolkit v0.60
+ 
+ THIS VERSION IS UNDER DEVELOPMENT. FOR STABLE RELEASES, PLEASE
+ GO TO http://pev.sf.net.
 
 1. What is pev
 2. OS support
@@ -42,23 +45,12 @@
 
 4. Building and installing
 
- 4.1. Installing all tools (Linux and OSX)
+ 4.1. Installing all tools (Linux and OS X)
 
-  To compile and install libpe and all pev tools, do the
-  following:
+  To compile and install libpe and all pev tools:
 
-  $ ./configure
   $ make
   # make install
-
-  Additionally, you can set a prefix dir by running:
-
-  $ ./configure --prefix=/usr
-
-  Note that libpe will be installed under prefix
-  directory too. So you need to ensure that
-  PREFIX/lib is in your LD_LIBRARY_PATH environment
-  variable before running pev tools.
 
  4.2. Building libpe only
 
@@ -104,7 +96,7 @@
 
   $ make zip
 
-  You can't call other make targets (like make install)
+  You can't call another targets (like make install)
   in Cygwin environment.
 
 5. Included tools

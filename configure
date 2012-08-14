@@ -46,6 +46,7 @@ run this script again. Maybe you can try to run 'make' and analyze the output."
 # replace(regex, file)
 replace()
 {
+	return # disable makefile changing
 	tempfile=$(mktemp /tmp/pev.XXXXXX)
 
 	(sed "$1" "$2" > $tempfile 2> /dev/null && \

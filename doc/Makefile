@@ -12,7 +12,7 @@ html:
 
 pdf:
 	xsltproc -o $(NAME).fo $(FOXSL) $(SRC)
-	fop $(NAME).fo -pdf $(PDF_DIR)/pev-0.50-manual-v1.0.pdf
+	fop $(NAME).fo -pdf $(PDF_DIR)/pev-0.60-manual-v1.0.pdf
 
 clean:
 	rm -f *.html *.pdf *.fo html-doc/* pdf-doc/* *~ .html .fo .pdf

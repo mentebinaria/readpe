@@ -24,13 +24,14 @@
 
 #include "common.h"
 #include <ctype.h>
+#include <time.h>
 
 #define PROGRAM "pescan"
 
 void parse_options(int argc, char *argv[]);
 
 struct options {
-	bool show_offsets;
+	bool verbose;
 };
 
 struct options config;

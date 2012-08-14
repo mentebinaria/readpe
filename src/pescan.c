@@ -22,18 +22,18 @@
 #include "pescan.h"
 
 static int ind;
+char value[MAX_MSG];
 
 void usage()
 {
-	printf("Usage: %s OPTIONS FILE\n"
-	"Search for genereic packers in PE files\n"
+	printf("\n%s %s\n%s\n\nUsage: %s OPTIONS FILE\n"
+	"Search for suspicious things in PE files\n"
 	"\nExample: %s putty.exe\n"
 	"\nOptions:\n"
    " -f, --format <text|csv|xml|html>       change output format (default text)\n"
-	" -o, --offsets                          show things offsets when possible\n"
-	" -v, --version                          show version and exit\n"
+	" -v, --verbose                          show more info about items found\n"
 	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+	PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
 }
 
 void parse_options(int argc, char *argv[])
@@ -41,13 +41,12 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "f:vo";
+	static const char short_options[] = "f:v";
 
 	static const struct option long_options[] = {
 		{"format",           required_argument, NULL, 'f'},
-		{"offsets",          no_argument,       NULL, 'o'},
 		{"help",             no_argument,       NULL,  1 },
-		{"version",          no_argument,       NULL, 'v'},
+		{"verbose",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};
 	
@@ -68,13 +67,9 @@ void parse_options(int argc, char *argv[])
 			case 'f':
 				parse_format(optarg); break;
 				
-			case 'o':
-				config.show_offsets = true; break;
-				
 			case 'v':
-				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
-				exit(EXIT_SUCCESS);
-
+				config.verbose = true; break;
+				
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
@@ -98,10 +93,9 @@ bool abnormal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
    BYTE data[sizeof(dos_stub)-1]; // -1 to ignore ending null
    IMAGE_DOS_HEADER dos;
 
-
    if (!pe_get_dos(pe, &dos))
       EXIT_ERROR("unable to retrieve PE DOS header");
-	
+
 	*stub_offset = dos.e_cparhdr << 4;
 
    // dos stub starts at e_cparhdr shifted by 4
@@ -229,7 +223,7 @@ int pe_get_tls_callbacks(PE_FILE *pe)
 
 					ret = ++j; // function found
 					
-					if (config.show_offsets)
+					if (config.verbose)
 					{
 						snprintf(value, MAX_MSG, "%#x", funcaddr);
 						output("TLS callback function", value);
@@ -243,38 +237,113 @@ int pe_get_tls_callbacks(PE_FILE *pe)
 	return 0;
 }
 
-/* TODO
- timestamp invalido
- sem imagebase
- diretorios sem tamanho
-*/
-
-bool strange_sections(PE_FILE *pe, unsigned int *num_sections)
+bool strisprint(const char *string)
 {
-	if (!pe_get_sections(pe))
-		return 0;
+	char *s = (char *) string;
 
-	*num_sections = pe->num_sections;
+	if (memcmp(string, ".tls", 4) == 0)
+		return false;
 
-	for (unsigned int i=0; i < *num_sections && i <= 65535; i++)
+	if (*s++ != '.')
+		return false;
+
+	while (*s)
 	{
-		// name doest not start with dot
-		if (pe->sections_ptr[i]->Name[0] != '.')
-			return true;
+		if (!isalpha(*s))
+			return false;
 
-		// zero sized section
-		if (pe->sections_ptr[i]->SizeOfRawData == 0)
-			return true;
-
-		// name with non-printable chars
-		for (unsigned int j=0; pe->sections_ptr[i]->Name[j] && j < IMAGE_SIZEOF_SHORT_NAME; j++)
-		{
-			if (!isprint(pe->sections_ptr[i]->Name[j]))
-				return true;
-		}
+		s++;
 	}
+	return true;
+}
+
+void stradd(char *dest, char *src, bool *pad)
+{
+	if (*pad)
+		strcat(dest, ", ");
+
+	strcat(dest, src);
+	*pad = true;
+}
+
+void print_strange_sections(PE_FILE *pe)
+{
+	bool aux = false;
+
+	if (!pe_get_sections(pe) || !pe->num_sections)
+		return;
+
+	if (pe->num_sections <= 2)
+		snprintf(value, MAX_MSG, "%d (low)", pe->num_sections);
+	else if (pe->num_sections > 8)
+		snprintf(value, MAX_MSG, "%d (high)", pe->num_sections);
+	else
+		snprintf(value, MAX_MSG, "%d", pe->num_sections);
+
+	output("section count", value);
+	for (unsigned i=0; i < pe->num_sections && i <= 65535; i++, aux=false)
+	{
+		memset(&value, 0, sizeof(value));
+		
+		if (!strisprint((const char *)pe->sections_ptr[i]->Name))
+			stradd(value, "suspicious name", &aux);
+
+		if (!pe->sections_ptr[i]->SizeOfRawData)
+			stradd(value, "zero lenght", &aux);
+		else if (pe->sections_ptr[i]->SizeOfRawData <= 512)
+			stradd(value, "small lenght", &aux);
+
+		// rwx or writable + executable code
+		if (pe->sections_ptr[i]->Characteristics & 0x80000000 &&
+		(pe->sections_ptr[i]->Characteristics & 0x20 ||
+		pe->sections_ptr[i]->Characteristics & 0x20000000))
+			stradd(value, "self-modifying", &aux);
+
+		if (!aux)
+			strncpy(value, "normal", 7);
+
+		output((char *)pe->sections_ptr[i]->Name, value);
+	}
+}
+
+bool abnormal_imagebase(PE_FILE *pe)
+{
+	if (!pe->imagebase)
+		pe_get_optional(pe);
+
+	if (pe->imagebase != (pe->architecture == PE64 ? 0x100000000 : 0x400000))
+			return true;
 
 	return false;
+}
+
+void print_timestamp(DWORD *stamp)
+{
+	time_t now = time(NULL);
+	char timestr[30];
+
+	if (*stamp == 0)
+		snprintf(value, MAX_MSG, "zero/invalid");
+	else if (*stamp < 946692000)
+		snprintf(value, MAX_MSG, "too old (pre-2000)");
+	else if (*stamp > now)
+		snprintf(value, MAX_MSG, "future time");
+	else
+		snprintf(value, MAX_MSG, "normal");
+
+	if (config.verbose)
+	{
+		strftime(timestr, sizeof(timestr),
+			" - %a, %d %b %Y %H:%M:%S UTC",
+			gmtime((time_t *) stamp));
+
+		strcat(value, timestr);
+		//strcat(value, " - ");
+		//strcat(value, ctime((time_t *) stamp));
+	}
+
+	output("timestamp", value);
+
 }
 
 int main(int argc, char *argv[])
@@ -282,9 +351,8 @@ int main(int argc, char *argv[])
 	PE_FILE pe;
 	FILE *fp = NULL;
 	DWORD ep, stub_offset;
-	char value[MAX_MSG];
 	int callbacks;
-	unsigned int num_sections;
+//	unsigned int num_sections;
 
 	if (argc < 2)
 	{
@@ -312,13 +380,13 @@ int main(int argc, char *argv[])
 	if (ep == 0)
 		snprintf(value, MAX_MSG, "null");
 	else if (pe_check_fake_entrypoint(&pe, &ep))
-		if (config.show_offsets)
-			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#lx", ep, rva2ofs(&pe, ep));
+		if (config.verbose)
+			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "fake");
 	else
-		if (config.show_offsets)
-			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#lx", ep, rva2ofs(&pe, ep));
+		if (config.verbose)
+			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "normal");
 		
@@ -328,7 +396,7 @@ int main(int argc, char *argv[])
 	memset(&value, 0, sizeof(value));
 	if (abnormal_dos_stub(&pe, &stub_offset))
 	{
-		if (config.show_offsets)
+		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
 		else
 			snprintf(value, MAX_MSG, "suspicious");
@@ -337,7 +405,8 @@ int main(int argc, char *argv[])
 		snprintf(value, MAX_MSG, "normal");
 	
 	output("DOS stub", value);
-	
+
+	// tls callbacks
 	callbacks = pe_get_tls_callbacks(&pe);
 	
 	if (callbacks == 0)
@@ -346,16 +415,37 @@ int main(int argc, char *argv[])
 		snprintf(value, MAX_MSG, "found - no functions");
 	else if (callbacks >0)
 		snprintf(value, MAX_MSG, "found - %d function(s)", callbacks);
-	
+		
 	output("TLS directory", value);
-
 	memset(&value, 0, sizeof(value));
-	if (strange_sections(&pe, &num_sections))
-		snprintf(value, MAX_MSG, "%d - suspicious", num_sections);
-	else
-		snprintf(value, MAX_MSG, "%d", num_sections);
 
-	output("Sections", value);
+	// section analysis
+	print_strange_sections(&pe);
+
+	// no imagebase
+	if (abnormal_imagebase(&pe))
+	{
+		if (config.verbose)
+			snprintf(value, MAX_MSG, "suspicious - %#"PRIx64, pe.imagebase);
+		else
+			snprintf(value, MAX_MSG, "suspicious");
+	}
+	else
+	{
+		if (config.verbose)
+			snprintf(value, MAX_MSG, "normal - %#"PRIx64, pe.imagebase);
+		else
+			snprintf(value, MAX_MSG, "normal");
+	}
+	output("imagebase", value);
+
+	// invalid timestamp
+	IMAGE_COFF_HEADER coff;
+
+	if (!pe_get_coff(&pe, &coff))
+		EXIT_ERROR("unable to read coff header");
+
+	print_timestamp(&coff.TimeDateStamp);
 
 	pe_deinit(&pe);
 	return 0;

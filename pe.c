@@ -334,11 +334,12 @@ bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header)
 
 	pe->num_sections = header->NumberOfSections;
 	pe->addr_optional = ftell(pe->handle);
+	pe->isdll = header->Characteristics & (1<<13) ? true : false;
 
 	if (!fread(&pe->architecture, sizeof(WORD), 1, pe->handle))
 		return false;
 
-	if(!pe->num_sections || !pe->addr_optional)
+	if(!pe->addr_optional)
 		return false;
 
 	return true;

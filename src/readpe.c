@@ -439,7 +439,7 @@ void print_optional_header(PE_FILE *pe)
 void print_coff_header(IMAGE_COFF_HEADER *header)
 {
 	char s[MAX_MSG];
-	char time[40];
+	char timestr[40];
 	register unsigned int i, j;
 	char *machine = "Unknown machine type";
 
@@ -501,8 +501,9 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 
-	strftime(time, 40, "%a - %d %b %Y %H:%M:%S UTC", gmtime((time_t *) & header->TimeDateStamp));
-	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, time);
+	strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC",
+		gmtime((time_t *) &header->TimeDateStamp));
+	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
 	output("Date/time stamp", s);
 
 	snprintf(s, MAX_MSG, "%#x", header->PointerToSymbolTable);

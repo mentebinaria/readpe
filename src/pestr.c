@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	pestr.c - search for encrypted strings in PE files
+	pestr.c - search for [encrypted] strings in PE files
 
 	Copyright (C) 2012 pev authors
 
@@ -27,10 +27,13 @@ static int ind;
 void usage()
 {
 	printf("Usage: %s OPTIONS FILE\n"
-	"Search for encrypted strings in PE files\n"
+	"Search for [encrypted] strings in PE files\n"
 	"\nExample: %s acrobat.exe\n"
 	"\nOptions:\n"
 	" -n, --min-length                       set minimun string length (default: 4)\n"
+	" -o, --offset                           show string offset in file\n"
+	" -s, --section                          show string section, if exists\n"
+	" --net                                  show network-related strings (IPs, hostnames etc)\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);
@@ -47,9 +50,10 @@ void parse_options(int argc, char *argv[])
 		{"functions",       no_argument,        NULL, 'f'},
 		{"offset",          no_argument,        NULL, 'o'},
 		{"section",         no_argument,        NULL, 's'},
-		{"min-length",      required_argument,  NULL,  1 },
+		{"min-length",      required_argument,  NULL, 'n'},
 		{"help",            no_argument,        NULL,  1 },
-		{"version",         no_argument,        NULL, 'v'},
+		{"version",         no_argument,        NULL,  3 },
+		{"net",           no_argument,          NULL,  2 },
 		{ NULL,             0,                  NULL,  0 }
 	};
 
@@ -65,9 +69,13 @@ void parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 
+			case 2:
+				config.net = true;
+				break;
+
 			case 'f':
 				//config.functions = true;
-				EXIT_ERROR("not implemented yee");
+				EXIT_ERROR("not implemented yet");
 				break;
 
 			case 'n':
@@ -145,6 +153,52 @@ char *ref_functions(PE_FILE *pe, unsigned long offset)
 	return NULL;
 }
 
+#define ASCII 0
+#define UNICODE 1
+
+bool ishostname(const char *s, unsigned short encoding)
+{
+	pcre *re;
+	const char *err;
+	int rc, errofs, ovector[OVECCOUNT];
+	unsigned i;
+	char *patterns[] = {
+		"^[a-zA-Z]{3,}://.*$", // protocol://
+		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
+	};
+
+	char *domains[] = {
+	".aero",	".asia",	".biz",	".com",	".cat",	".com",	".coop",
+	".info",	".int",	".jobs",	".mobi",	".museum",	".name",	".net",
+	".org",	".pro",	".tel",	".travel",	".xxx", ".edu", ".gov", ".mil",
+	};
+
+	if (!isalnum(*s))
+		return false;
+
+	for (i=0; i < sizeof(domains) / sizeof(domains[0]); i++)
+	{
+		if (strcasestr(s, ".com"))
+			return true;
+	}
+
+	for (i=0; i < sizeof(patterns) / sizeof(patterns[0]); i++)
+	{
+		re = pcre_compile(patterns[i], (encoding == UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
+
+		if (!re)
+			EXIT_ERROR("regex compilation failed");
+
+		rc = pcre_exec(re, NULL, s, strlen(s), 0, 0, ovector, OVECCOUNT);
+		pcre_free(re);
+
+		if (rc > 0)
+			return true;
+	}
+
+	return false;
+}
+
 void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned length, unsigned long
 offset)
 {
@@ -209,31 +263,48 @@ int main(int argc, char *argv[])
 	buff = (unsigned char *) xmalloc(2048);
 	memset(buff, 0, sizeof(buff));
 
-	for (ofs=0, ascii=0, pos=0; fread(&byte, 1, 1, pe.handle); ofs++)
+	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle);	ofs++)
 	{
-			if (isprint(byte))
+		if (isprint(byte))
+		{
+			ascii++;
+			buff[pos++] = byte;
+			continue;
+		}
+		else if (ascii == 1 && byte == '\0')
+		{
+			utf++;
+			buff[pos++] = byte;
+			ascii = 0;
+			continue;
+		}
+		else
+		{
+			if (ascii >= (config.strsize ? config.strsize : 4))
 			{
-				ascii++;
-				buff[pos++] = byte;
-				continue;
-			}
-			else if (ascii == 1 && byte == '\0')
-			{
-				utf++;
-				buff[pos++] = byte;
-				ascii = 0;
-				continue;
-			}
-			else
-			{
-				if (ascii >= (config.strsize ? config.strsize : 4))
+				if (config.net)
+				{
+					if (ishostname((char *) buff, ASCII))
+						printb(&pe, buff, 0, ascii, ofs - ascii);
+				}
+				else
 					printb(&pe, buff, 0, ascii, ofs - ascii);
-				else if (utf >= (config.strsize ? config.strsize : 4))
-					printb(&pe, buff, 0, utf*2, ofs - utf*2);
-
-				ascii = utf = pos = 0;
-				memset(buff, 0, sizeof(buff));
+					
 			}
+			else if (utf >= (config.strsize ? config.strsize : 4))
+			{
+				if (config.net)
+				{
+					if (ishostname((char *) buff, UNICODE))
+						printb(&pe, buff, 0, utf*2, ofs - utf*2);
+				}
+				else
+					printb(&pe, buff, 0, utf*2, ofs - utf*2);
+					
+			}
+			ascii = utf = pos = 0;
+			memset(buff, 0, sizeof(buff));
+		}
 	}
 	free(buff);
 	

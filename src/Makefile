@@ -16,13 +16,17 @@ endif
 CC=gcc
 RM=rm -f
 COMMON=output.c
-PROGS=readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash
+PROGS=readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr
 INSTALL=install -m 0755
 
 ####### Build rules
 
 # 'make' only will compile all binaries
 all: $(PROGS)
+
+# include libpcre
+pestr: pestr.c
+	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) -D_GNU_SOURCE=1 $^ $(COMMON) -o $@ -lpe -lpcre
 
 # include libssl
 pehash: pehash.c

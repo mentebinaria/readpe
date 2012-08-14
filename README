@@ -37,9 +37,10 @@
 
 3. Pre-requisites
 
- libssl >= 1.0.0 (pehash only)
- libc >= 2.10
- gcc >= 4.5.0
+ libssl (pehash only)
+ libpcre (pestr only)
+ libc
+ gcc
  make
  sed (for configure script)
 

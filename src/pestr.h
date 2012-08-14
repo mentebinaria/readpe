@@ -24,15 +24,19 @@
 
 #include "common.h"
 #include <ctype.h>
+#include <string.h>
+#include <pcre.h>
 
 #define PROGRAM "pestr"
 #define BUFSIZE 4
+#define OVECCOUNT 30
 
 struct options {
    unsigned short strsize;
 	bool offset;
 	bool section;
 	bool functions;
+	bool net;
 };
 
 void parse_options(int argc, char *argv[]);

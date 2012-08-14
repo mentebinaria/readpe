@@ -606,7 +606,7 @@ void print_imported_functions(PE_FILE *pe, long offset)
 
 		// function without name (test msb)
 		if (fptr & ((pe->architecture == PE64) ? IMAGE_ORDINAL_FLAG64 : IMAGE_ORDINAL_FLAG32))
-			snprintf(hintstr, 15, "%lu", fptr & 0x0fffffff);
+			snprintf(hintstr, 15, "%"PRIu64, fptr & 0x0fffffff);
 		else
 		{
 			// save file pointer in functions array

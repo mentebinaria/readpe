@@ -326,7 +326,7 @@ void print_timestamp(DWORD *stamp)
 		snprintf(value, MAX_MSG, "zero/invalid");
 	else if (*stamp < 946692000)
 		snprintf(value, MAX_MSG, "too old (pre-2000)");
-	else if (*stamp > now)
+	else if (*stamp > (DWORD) now)
 		snprintf(value, MAX_MSG, "future time");
 	else
 		snprintf(value, MAX_MSG, "normal");

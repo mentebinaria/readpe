@@ -192,7 +192,7 @@ void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		{
 			char *ins = strtok(ud_insn_asm(ud_obj), "0x");
 
-			snprintf(value, MAX_MSG, "%s%*c%s%#lx", bytes, SPACES - (int) strlen(bytes), ' ', ins ? ins : "",
+			snprintf(value, MAX_MSG, "%s%*c%s%#"PRIx64, bytes, SPACES - (int) strlen(bytes), ' ', ins ? ins : "",
 			pe->imagebase + offset + ud_insn_off(ud_obj) + ud_obj->operand[0].lval.sdword + ud_insn_len(ud_obj));
 		}
 		else

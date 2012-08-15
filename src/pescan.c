@@ -78,7 +78,7 @@ void parse_options(int argc, char *argv[])
 }
 
 // check for abnormal dos stub (common in packed files)
-bool abnormal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
+bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 {
    BYTE dos_stub[] =
    "\x0e"               // push cs
@@ -105,7 +105,7 @@ bool abnormal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
    if (!fread(&data, sizeof(data), 1, pe->handle))
       EXIT_ERROR("unable to read DOS stub");
 	
-   if (memcmp(dos_stub, data, sizeof(data)))
+   if (memcmp(dos_stub, data, sizeof(data))==0)
       return true;
 
    return false;
@@ -306,15 +306,14 @@ void print_strange_sections(PE_FILE *pe)
 	}
 }
 
-bool abnormal_imagebase(PE_FILE *pe)
+bool normal_imagebase(PE_FILE *pe)
 {
 	if (!pe->imagebase)
 		pe_get_optional(pe);
 
-	if (pe->imagebase != (pe->architecture == PE64 ? 0x100000000 : 0x400000))
-			return true;
-
-	return false;
+	return  (pe->imagebase == 0x100000000 || 
+				pe->imagebase == 0x1000000 ||
+				pe->imagebase == 0x400000);
 }
 
 void print_timestamp(DWORD *stamp)
@@ -394,7 +393,7 @@ int main(int argc, char *argv[])
 
 	// dos stub
 	memset(&value, 0, sizeof(value));
-	if (abnormal_dos_stub(&pe, &stub_offset))
+	if (!normal_dos_stub(&pe, &stub_offset))
 	{
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
@@ -423,7 +422,7 @@ int main(int argc, char *argv[])
 	print_strange_sections(&pe);
 
 	// no imagebase
-	if (abnormal_imagebase(&pe))
+	if (!normal_imagebase(&pe))
 	{
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - %#"PRIx64, pe.imagebase);

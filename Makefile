@@ -7,7 +7,7 @@ PLATFORM_OS := $(shell uname | cut -d_ -f1)
 PREFIX=/usr
 DEST=$(DESTDIR)/$(PREFIX)/lib
 VERSION=1.0
-CFLAGS=-W -Wall -Wextra -pedantic -std=c99
+CFLAGS=-W -Wall -Wextra -pedantic -std=c99 -c
 ifneq ($(PLATFORM_OS), CYGWIN)
 	CFLAGS+=-fPIC
 endif
@@ -22,7 +22,7 @@ INSTALL=install -m 0644
 ####### Build rules
 
 all: pe.c pe.h
-	$(CC) -o $(LIBNAME).o -c $(CFLAGS) $(SRC)
+	$(CC) -o $(LIBNAME).o $(CFLAGS) $(SRC)
 ifeq ($(PLATFORM_OS), Linux)
 	$(CC) -shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o
 else ifeq ($(PLATFORM_OS), Darwin)

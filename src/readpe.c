@@ -624,7 +624,7 @@ void print_imported_functions(PE_FILE *pe, long offset)
 				if (!fread(&c, sizeof(c), 1, pe->handle))
 					return;
 			
-				if (!isprint(c)) // 0 and non-printable
+				if (!isprint((int)c)) // 0 and non-printable
 					break;
 			
 				fname[i] = c;

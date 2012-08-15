@@ -249,7 +249,7 @@ bool strisprint(const char *string)
 
 	while (*s)
 	{
-		if (!isalpha(*s))
+		if (!isalpha((int)*s))
 			return false;
 
 		s++;

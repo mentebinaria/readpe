@@ -14,6 +14,9 @@ ifeq ($(PLATFORM_OS), Darwin)
 	CFLAGS += -Wno-deprecated-declarations
 endif
 CC=gcc
+ifeq ($(PLATFORM_OS), CYGWIN)
+	CC=i686-pc-mingw-gcc.exe
+endif
 RM=rm -f
 COMMON=output.c
 PROGS=readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr

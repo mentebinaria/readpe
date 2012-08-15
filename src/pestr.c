@@ -173,7 +173,7 @@ bool ishostname(const char *s, unsigned short encoding)
 	".org",	".pro",	".tel",	".travel",	".xxx", ".edu", ".gov", ".mil",
 	};
 
-	if (!isalnum(*s))
+	if (!isalnum((int) *s))
 		return false;
 
 	for (i=0; i < sizeof(domains) / sizeof(domains[0]); i++)

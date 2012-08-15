@@ -24,7 +24,6 @@
 
 #include "common.h"
 #include <ctype.h>
-#include <string.h>
 #include <pcre.h>
 
 #define PROGRAM "pestr"

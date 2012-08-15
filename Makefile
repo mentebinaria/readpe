@@ -1,13 +1,16 @@
 ####### Platform specifics
 
-PLATFORM_OS := $(shell uname)
+PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Compiler, tools and options
 
 PREFIX=/usr
 DEST=$(DESTDIR)/$(PREFIX)/lib
 VERSION=1.0
-CFLAGS=-W -Wall -Wextra -pedantic -std=c99
+CFLAGS=-W -Wall -Wextra -pedantic -std=c99 -fPIC
+ifeq ($(PLATFORM_OS), CYGWIN)
+	CFLAGS=-W -Wall -Wextra -pedantic -std=c99
+endif
 SRC=pe.c
 RM=rm -f
 CC=gcc
@@ -18,8 +21,12 @@ INSTALL=install -m 0644
 
 ####### Build rules
 
+ifeq ($(PLATFORM_OS), CYGWIN)
+	CC=i686-pc-mingw32-gcc.exe
+endif
+
 all: pe.c pe.h
-	$(CC) -o $(LIBNAME).o -c $(CFLAGS) -fPIC $(SRC)
+	$(CC) -o $(LIBNAME).o -c $(CFLAGS) $(SRC)
 ifeq ($(PLATFORM_OS), Linux)
 	$(CC) -shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o
 else ifeq ($(PLATFORM_OS), Darwin)
@@ -27,6 +34,8 @@ else ifeq ($(PLATFORM_OS), Darwin)
 		-flat_namespace -install_name $(TARGET).$(TARGET_VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		-o $(LIBNAME).dylib $(LIBNAME).o
+else ifeq ($(PLATFORM_OS), CYGWIN)
+	$(CC) -shared -o $(LIBNAME).dll $(LIBNAME).o
 endif
 
 install:
@@ -49,4 +58,5 @@ uninstall:
 clean:
 	$(RM) $(LIBNAME).*o* \
 		$(LIBNAME).so* \
-		$(LIBNAME)*.dylib
+		$(LIBNAME)*.dylib \
+		$(LIBNAME)*.dll

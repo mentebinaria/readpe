@@ -7,9 +7,9 @@ PLATFORM_OS := $(shell uname | cut -d_ -f1)
 PREFIX=/usr
 DEST=$(DESTDIR)/$(PREFIX)/lib
 VERSION=1.0
-CFLAGS=-W -Wall -Wextra -pedantic -std=c99 -fPIC
-ifeq ($(PLATFORM_OS), CYGWIN)
-	CFLAGS=-W -Wall -Wextra -pedantic -std=c99
+CFLAGS=-W -Wall -Wextra -pedantic -std=c99
+ifneq ($(PLATFORM_OS), CYGWIN)
+	CFLAGS+=-fPIC
 endif
 SRC=pe.c
 RM=rm -f
@@ -20,10 +20,6 @@ LIBNAME=libpe
 INSTALL=install -m 0644
 
 ####### Build rules
-
-ifeq ($(PLATFORM_OS), CYGWIN)
-	CC=i686-pc-mingw32-gcc.exe
-endif
 
 all: pe.c pe.h
 	$(CC) -o $(LIBNAME).o -c $(CFLAGS) $(SRC)

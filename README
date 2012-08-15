@@ -12,7 +12,7 @@
 2. OS support
 3. Pre-requisites
 4. Building and installing
- 4.1. Installing all tools (Linux and OSX)
+ 4.1. Installing all tools (Linux and OS X)
  4.2. Building libpe only
  4.3. Building a particular tool
  4.4. Building in Windows (via Cygwin)
@@ -42,7 +42,6 @@
  libc
  gcc
  make
- sed (for configure script)
 
 4. Building and installing
 
@@ -62,7 +61,7 @@
   $ make
   # make install
 
-  Check PREFIX and DEST variables in Makefile if
+  Edit PREFIX and DEST variables in Makefile if
   you think you need.
 
  4.3. Building a particular tool
@@ -73,27 +72,26 @@
   $ cd src/
   $ make pesec
 
-  The commmand above will build only pesec binary.
+  The commmand above will build only pesec binary
+  but you need to compile libpe first.
 
  4.4. Building in Windows (via Cygwin)
 
   Under Cygwin, you'll need following packages
   in order to compile pev:
 
-  * i686-pc-mingw32-gcc.exe (32-bit system)
-  * x86_64-w64-mingw32-gcc (64-bit system)
+  * gcc
   * binutils
-  * mingw-binutils
   * make
-  * sed
+  * libpcre-dev (pestr)
+  * openssl-devel (pehash)
   * zip
 
   Compile with:
 
-  $ ./configure
   $ make
 
-  Build a zip package with libpe.dll and all tools:
+  Build a zip package with all tools and required libraries with:
 
   $ make zip
 

@@ -49,12 +49,11 @@ corretamente:
 </para>
 
 <simplelist>
-<member>gcc >= 4.5.0</member>
+<member>gcc</member>
 <member>make</member>
-<member>bash</member>
-<member>sed</member>
 <member>strip</member>
-<member>libssl >= 1.0.0 (para o pehash, somente)</member>
+<member>libssl (para o pehash, somente)</member>
+<member>libpcre (para o pestr, somente)</member>
 </simplelist>
 
 <para>Se você baixou o tarball, descompacte-o com o tar:</para>
@@ -66,14 +65,12 @@ corretamente:
 <para>Se clonou o respositório git, entre no diretório e faça:</para>
 
 <screen>
-<prompt>$ </prompt><command>chmod +x configure</command>
-<prompt>$ </prompt><command>./configure</command>
 <prompt>$ </prompt><command>make</command>
 <prompt># </prompt><command>make install</command> (com sudo ou com privilégios administrativos)
 </screen>
 
 <para>Os comandos acima vão compilar a libpe e todos os binários do pev. Para
-compilar somente a libpe, depois de rodar o configure, faça:
+compilar somente a libpe, faça:
 </para>
 
 <screen>
@@ -97,14 +94,12 @@ url="http://cygwin.com/">Cygwin</ulink>. Na instalação, os seguintes pacotes
 devem ser selecionados:</para>
 
 <simplelist>
-<member>i686-pc-mingw32-gcc.exe (para versões de 32-bits)</member>
-<member>x86_64-w64-mingw32-gcc (para versões de 64-bits)</member>
+<member>gcc (para versões de 32-bits)</member>
 <member>binutils</member>
-<member>mingw-binutils</member>
 <member>make</member>
-<member>sed</member>
 <member>zip</member>
-<member>libssl >= 1.0.0 (para o pehash, somente)</member>
+<member>openssl-devel (para o pehash, somente)</member>
+<member>libpcre-devel (para o pestr)</member>
 </simplelist>
 
 <para>Após a instalação dos pacotes, os mesmos passos de compilação no Linux
@@ -115,9 +110,10 @@ devem ser seguidos, com exceceção do make install, que é substituído por:</p
 </screen>
 
 <para>O arquivo <emphasis>pev-x.xx.zip</emphasis> será gerado no diretório atual e poderá ser
-descompactador em qualquer diretório de sua escolha. Todas as ferramentas do
-kit podem ser executadas diretamente, contanto que a libpe.dll esteja no mesmo
-diretório ou em algum diretório do %PATH% do Windows.</para>
+descompactado em qualquer diretório de sua escolha. Todas as ferramentas do
+kit podem ser executadas diretamente, contanto que a libpe.dll e as bibliotecas
+do Cygwin (cyg*.dll) estejam no mesmo diretório ou em algum diretório da
+variável %PATH% do Windows.</para>
 
 </section>
 

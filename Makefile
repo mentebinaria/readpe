@@ -1,8 +1,8 @@
-LIBPE_DIR=lib/libpe
-PEV_DIR=src
-MAKE=make
-VERSION=0.60
-ZIPFILE=pev.zip
+LIBPE_DIR = lib/libpe
+PEV_DIR = src
+MAKE = make
+VERSION = 0.60
+ZIPFILE = pev.zip
 
 # simple call each separated Makefile
 all:

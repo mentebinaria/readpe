@@ -1,23 +1,24 @@
 ####### Platform specifics
 
+# cut is necessary for Cygwin
 PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Compiler, tools and options
 
-PREFIX=/usr
-DEST=$(DESTDIR)/$(PREFIX)/lib
-VERSION=1.0
-CFLAGS=-W -Wall -Wextra -pedantic -std=c99 -c
+PREFIX = /usr
+DEST = $(DESTDIR)/$(PREFIX)/lib
+VERSION = 1.0
+override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c
 ifneq ($(PLATFORM_OS), CYGWIN)
-	CFLAGS+=-fPIC
+	override CFLAGS += -fPIC
 endif
-SRC=pe.c
-RM=rm -f
-CC=gcc
-SYMLINK=ln -sf
-STRIP=strip --strip-unneeded
-LIBNAME=libpe
-INSTALL=install -m 0644
+SRC = pe.c
+RM = rm -f
+CC = gcc
+SYMLINK = ln -sf
+STRIP = strip --strip-unneeded
+LIBNAME = libpe
+INSTALL = install -m 0644
 
 ####### Build rules
 

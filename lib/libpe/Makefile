@@ -28,7 +28,7 @@ ifeq ($(PLATFORM_OS), Linux)
 	$(CC) -shared -Wl,-soname,$(LIBNAME).so.1 -o $(LIBNAME).so $(LIBNAME).o
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(CC) -headerpad_max_install_names -dynamiclib \
-		-flat_namespace -install_name $(TARGET).$(TARGET_VERSION).dylib \
+		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		-o $(LIBNAME).dylib $(LIBNAME).o
 else ifeq ($(PLATFORM_OS), CYGWIN)

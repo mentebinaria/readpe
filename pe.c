@@ -298,6 +298,7 @@ bool pe_get_optional(PE_FILE *pe)
 			break;
 
 		default:
+			pe_deinit(pe);
 			return false;
 	}
 

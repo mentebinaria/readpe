@@ -29,6 +29,7 @@
 #define PROGRAM "pestr"
 #define BUFSIZE 4
 #define OVECCOUNT 30
+#define LINE_BUFFER 2048
 
 struct options {
    unsigned short strsize;

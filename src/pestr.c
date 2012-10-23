@@ -169,8 +169,9 @@ bool ishostname(const char *s, unsigned short encoding)
 
 	char *domains[] = {
 	".aero",	".asia",	".biz",	".com",	".cat",	".com",	".coop",
-	".info",	".int",	".jobs",	".mobi",	".museum",	".name",	".net",
+	".info",	".int",	".jobs",	".mobi",	".museum",	".name",	".net", ".br",
 	".org",	".pro",	".tel",	".travel",	".xxx", ".edu", ".gov", ".mil",
+	".jus",	
 	};
 
 	if (!isalnum((int) *s))
@@ -178,7 +179,8 @@ bool ishostname(const char *s, unsigned short encoding)
 
 	for (i=0; i < sizeof(domains) / sizeof(domains[0]); i++)
 	{
-		if (strcasestr(s, ".com"))
+		// TODO: unicode equivalent
+		if (strcasestr(s, domains[i]))
 			return true;
 	}
 
@@ -189,7 +191,7 @@ bool ishostname(const char *s, unsigned short encoding)
 		if (!re)
 			EXIT_ERROR("regex compilation failed");
 
-		rc = pcre_exec(re, NULL, s, strlen(s), 0, 0, ovector, OVECCOUNT);
+		rc = pcre_exec(re, NULL, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
 		pcre_free(re);
 
 		if (rc > 0)
@@ -260,7 +262,7 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	rewind(pe.handle);
-	buff = (unsigned char *) xmalloc(2048);
+	buff = (unsigned char *) xmalloc(LINE_BUFFER);
 	memset(buff, 0, sizeof(buff));
 
 	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle);	ofs++)

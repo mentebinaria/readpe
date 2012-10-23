@@ -34,7 +34,8 @@ void usage()
 	" -e, --entrypoint                       disassemble entrypoint\n"
 	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
 	" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
-	" -n, <number>                           number of instructions to be disassembled\n"
+	" -i, <number>                           number of instructions to be disassembled\n"
+	" -n, <number>                           number of bytes to be disassembled\n"
 	" -o, --offset <offset>                  disassemble at specified file offset\n"
 	" -r, --rva <rva>                        disassemble at specified RVA\n"
 	" -s, --section <section name>           disassemble entire section given\n"
@@ -48,7 +49,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "em:n:o:r:s:f:v";
+	static const char short_options[] = "em:i:n:o:r:s:f:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
@@ -89,8 +90,11 @@ void parse_options(int argc, char *argv[])
 			case 'm':
 				config.mode = strtol(optarg, NULL, 10); break;
 
+			case 'i':
+				config.ninstructions = strtol(optarg, NULL, 0); break;
+
 			case 'n':
-				config.length = strtol(optarg, NULL, 0); break;
+				config.nbytes = strtol(optarg, NULL, 0); break;
 
 			case 'o':
 				config.offset = strtol(optarg, NULL, 0);
@@ -166,7 +170,8 @@ bool is_ret_instruction(unsigned char opcode)
 
 void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 {
-	QWORD c = 0; // counter of disassembled instructions
+	QWORD c = 0; // counter for disassembled instructions
+	QWORD b = 0; // counter for disassembled bytes
 	
 	if (!pe || !offset)
 		return;
@@ -177,7 +182,12 @@ void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		unsigned char *opcode = ud_insn_ptr(ud_obj);
 		unsigned int mnic, op_t;
 
-		c++;
+		c++; // increment instruction counter
+		b += ud_insn_len(ud_obj);
+
+		if (config.nbytes && b >= config.nbytes)
+			return;
+
 		mnic = ud_obj->mnemonic;
 		op_t = ud_obj->operand ? ud_obj->operand[0].type : 0;
 		
@@ -202,9 +212,9 @@ void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		output(ofs, value);
 
 		// for sections, we stop at end of section
-		if (config.section && c >= config.length)
+		if (config.section && c >= config.ninstructions)
 			break;
-		else if (c >= config.length && config.length)
+		else if (c >= config.ninstructions && config.ninstructions)
 			break;
 		else if (config.entrypoint)
 		{
@@ -262,8 +272,8 @@ int main(int argc, char *argv[])
 		if (section) // section found
 		{
 			offset = section->PointerToRawData;
-			if (!config.length)
-				config.length = section->SizeOfRawData;
+			if (!config.ninstructions)
+				config.ninstructions = section->SizeOfRawData;
 		}
 		else
 			EXIT_ERROR("invalid section name");

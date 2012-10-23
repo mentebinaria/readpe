@@ -37,7 +37,8 @@ struct options {
 	char *section;
 	bool syntax;
 	QWORD offset;
-	QWORD length;           // limit the number of disassembled instructions. 0 means no limit.
+	QWORD nbytes;           // limit the number of bytes instructions. 0 means no limit.
+	QWORD ninstructions;     // limit the number of disassembled instructions. 0 means no limit.
 	bool entrypoint;
 	bool offset_is_rva;
 	WORD mode;

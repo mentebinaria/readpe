@@ -9,6 +9,7 @@ Legend:
 pev 0.60 - ?, 2012
  ! pedis: fixed address representation in calls and jump instructions.
  * pedis: -F/--function option replaced by -r/--rva.
+ + pedis: disassemble bytes number specified by -n option.
  + added basic documentation in portuguese.
  + pehash: new tool to calculate PE file hashes (Jan Seidl <janseidl *noSPAM* gmail.com>)
  + pedis: added -m/--mode option to set disassembly mode (16, 32 or 64-bit).
@@ -53,7 +54,7 @@ pev 0.31 - May 11, 2011
  + Added characteristics flags in COFF output.
  + Added human-readable machine types in COFF output.
  - Fixed warning with Linux 32-bits boxes when compiling.
- - Now pev compiles in OS X without any changes (Gustavo Roberto gustavorobertux *noSPAM* gmail.com>).
+ - Fixed compilation in OS X. (Gustavo Roberto <gustavorobertux *noSPAM* gmail.com>).
 
 pev 0.30 - February 20, 2011
  * Improved memory use.
@@ -75,4 +76,4 @@ pev 0.2 - December 26, 2011
  - Fixed bug compiling in MS-Windows platform.
 
 pev 0.1 - December 12, 2010
-   Initial release.
+   Initial release. (Eduardo Fernandes, Fernando Mercês, Francivan Bezerra and Thiago Moraes).

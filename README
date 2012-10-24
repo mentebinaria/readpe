@@ -6,7 +6,7 @@
  the PE file analysis toolkit v0.60
  
  THIS VERSION IS UNDER DEVELOPMENT. FOR STABLE RELEASES, PLEASE
- GO TO http://pev.sf.net.
+ GO TO http://pev.sf.net
 
 1. What is pev
 2. OS support
@@ -17,7 +17,7 @@
  4.3. Building a particular tool
  4.4. Building in Windows (via Cygwin)
 5. Included programs
-6. Development
+6. Contribute
 7. Bugs
 
 1. What is pev
@@ -61,8 +61,7 @@
   $ make
   # make install
 
-  Edit PREFIX and DEST variables in Makefile if
-  you think you need.
+  Set PREFIX and/or DEST if needed.
 
  4.3. Building a particular tool
 
@@ -73,7 +72,7 @@
   $ make pesec
 
   The commmand above will build only pesec binary
-  but you need to compile libpe first.
+  but *you need to compile libpe first* (section 4.2).
 
  4.4. Building in Windows (via Cygwin)
 
@@ -110,7 +109,7 @@
  * rva2ofs  - convert RVA to raw file offsets
  * ofs2rva  - convert raw file offsets to RVA
 
-6. Development
+6. Contribute
 
  The development version is available at https://github.com/merces/pev
  We are always needing some help. If you want to contribute, subscribe

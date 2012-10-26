@@ -292,6 +292,20 @@ typedef struct _IMAGE_TLS_DIRECTORY64 {
 	DWORD Characteristics;
 } IMAGE_TLS_DIRECTORY64;
 
+typedef struct _IMAGE_EXPORT_DIRECTORY {
+  DWORD Characteristics;
+  DWORD TimeDateStamp;
+  WORD MajorVersion;
+  WORD MinorVersion;
+  DWORD Name;
+  DWORD Base;
+  DWORD NumberOfFunctions;
+  DWORD NumberOfNames;
+  DWORD AddressOfFunctions;
+  DWORD AddressOfNames;
+  DWORD AddressOfNameOrdinals;
+ } IMAGE_EXPORT_DIRECTORY;
+
 typedef struct _IMAGE_IMPORT_DESCRIPTOR {
   union {
   DWORD Characteristics; // 0 for terminating null import descriptor

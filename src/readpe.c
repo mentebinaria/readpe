@@ -37,6 +37,7 @@ void usage()
 	" -d, --dirs                             show data directories\n"
 	" -h, --header <dos|coff|optional>       show sepecific header\n"
 	" -i, --imports                          show imported functions\n"
+	" -e, --exports                          show exported functions\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);
@@ -59,7 +60,7 @@ void parse_options(int argc, char *argv[])
 	int c;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "AHSh:dif:v";
+	static const char short_options[] = "AHSh:dief:v";
 
 	static const struct option long_options[] = {
 		{"help",             no_argument,       NULL,  1 },
@@ -68,6 +69,7 @@ void parse_options(int argc, char *argv[])
 		{"all-sections",     no_argument,       NULL, 'S'},
 		{"header",           required_argument, NULL, 'h'},
 		{"imports",          no_argument,       NULL, 'i'},
+		{"exports",          no_argument,       NULL, 'e'},
 		{"dirs",             no_argument,       NULL, 'd'},
 		{"format",           required_argument, NULL, 'f'},
 		{"version",          no_argument,       NULL, 'v'},
@@ -118,6 +120,10 @@ void parse_options(int argc, char *argv[])
 			case 'i':
 				config.all = false;
 				config.imports = true; break;
+
+			case 'e':
+				config.all = false;
+				config.exports = true; break;
 
 			case 'f':
 				parse_format(optarg); break;
@@ -645,6 +651,55 @@ void print_imported_functions(PE_FILE *pe, long offset)
 	fseek(pe->handle, aux, SEEK_SET);
 }
 
+void print_exports(PE_FILE *pe)
+{
+	QWORD va;
+	IMAGE_EXPORT_DIRECTORY exp;
+	DWORD rva, aux, faddr = 0;
+
+	va = pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_EXPORT] ? 
+	pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_EXPORT]->VirtualAddress : 0;
+
+	if (!va)
+		EXIT_ERROR("export directory not found");
+
+	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
+		EXIT_ERROR("unable to seek until export directory");
+
+	if (!fread(&exp, sizeof(exp), 1, pe->handle))
+		EXIT_ERROR("unable to read export directory");
+
+	if (fseek(pe->handle, rva2ofs(pe, exp.AddressOfNames), SEEK_SET))
+		EXIT_ERROR("unable to seek");
+
+	if (!fread(&rva, sizeof(rva), 1, pe->handle))
+		EXIT_ERROR("unable to read");
+
+	if (fseek(pe->handle, rva2ofs(pe, rva), SEEK_SET))
+		EXIT_ERROR("unable to seek");
+
+	output("Exported functions", NULL);
+	for (unsigned i=0; i<exp.NumberOfNames; i++)
+	{
+		char c=1, addr[30], fun[300];
+
+		aux = ftell(pe->handle);
+		fseek(pe->handle, exp.AddressOfFunctions + sizeof(DWORD) * i, SEEK_SET);
+		fread(&faddr, sizeof(faddr), 1, pe->handle);
+		fseek(pe->handle, aux, SEEK_SET);
+		memset(&fun, 0, sizeof(fun));
+		memset(&addr, 0, sizeof(addr));
+		snprintf(addr, 30, "%#x", faddr);
+
+		for (unsigned j=0; c; j++)
+		{
+			fread(&c, sizeof(c), 1, pe->handle);
+			fun[j] = c;
+		}
+		output(addr, fun);
+	}
+}
+
 void print_imports(PE_FILE *pe)
 {
 	QWORD va; // store temporary addresses
@@ -657,12 +712,16 @@ void print_imports(PE_FILE *pe)
 	va = pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_IMPORT] ? 
 	pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_IMPORT]->VirtualAddress : 0;
 
+	if (!va)
+		EXIT_ERROR("import directory not found");
+
 	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
 		EXIT_ERROR("error seeking file");
 	
 	memset(&id, 0, sizeof(id));
 	memset(&dllname, 0, sizeof(dllname));
 
+	output("Imported functions", NULL);
 	while (1)
 	{
 		if (!fread(&id, sizeof(id), 1, pe->handle))
@@ -718,7 +777,7 @@ int main(int argc, char *argv[])
 		usage();
 		exit(1);
 	}
-	
+
 	parse_options(argc, argv); // opcoes
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
@@ -772,6 +831,15 @@ int main(int argc, char *argv[])
 			print_imports(&pe);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}	
+
+	// exports
+	if (config.exports || config.all)
+	{
+		if (pe_get_directories(&pe))
+			print_exports(&pe);
+		else
+			{ EXIT_ERROR("unable to read directories from optional header"); }
+	}
 
 	// sections
 	if (config.all_sections || config.all)

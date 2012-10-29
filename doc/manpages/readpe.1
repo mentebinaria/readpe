@@ -1,0 +1,76 @@
+.TH READPE 1
+.SH NAME
+readpe - displays information about PE files
+
+.SH SYNOPSIS
+.B readpe
+[OPTIONS]...
+.IR pefile
+
+.SH DESCRIPTION
+readpe can read and display all PE file headers, fields and values.
+.PP
+\&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
+
+.SH OPTIONS
+.TP
+.BR \-A ", " \-\-all
+full output (default).
+
+.TP
+.BR \-H ", " \-\-all-headers
+print all PE headers.
+
+.TP
+.BR \-S ", " \-\-all-sections
+print all PE sections headers.
+
+.TP
+.BR \-f ", " \-\-format\ <text|csv|xml|html>
+change output format (default is text).
+
+.TP
+.BR \-d ", " \-\-dirs
+show data directories.
+
+.TP
+.BR \-h ", " \-\-header\ <dos|coff|optional>
+show sepecific header.
+
+.TP
+.BR \-i ", " \-\-imports
+show imported functions.
+
+.TP
+.BR \-e ", " \-\-exports          
+show exported functions.
+
+.TP
+.BR \-v ", " \-\-version          
+show version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Display the Optional file header of \fBputty.exe\fP:
+.IP
+$ readpe \-h optional putty.exe
+
+.PP
+Display data directories and exported functions of \fBcards.dll\fP:
+.IP
+$ readpe \-de cards.dll
+
+.PP
+Display all possible information about \fBsvchost.exe\fP file:
+.IP
+$ readpe svchost.exe
+
+.SH REPORTING BUGS
+Report bugs at https://github.com/merces/pev/issues or fernando@mentebinaria.com.br
+
+.SH COPYRIGHT
+Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

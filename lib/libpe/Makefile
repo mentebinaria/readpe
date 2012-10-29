@@ -16,7 +16,7 @@ SRC = pe.c
 RM = rm -f
 CC = gcc
 SYMLINK = ln -sf
-ifeq($(PLATFORM_OS), Darwin)
+ifeq ($(PLATFORM_OS), Darwin)
 	STRIP = strip -x
 else
 	STRIP = strip --strip-unneeded

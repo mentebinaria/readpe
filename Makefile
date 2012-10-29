@@ -16,7 +16,11 @@ SRC = pe.c
 RM = rm -f
 CC = gcc
 SYMLINK = ln -sf
-STRIP = strip --strip-unneeded
+ifeq($(PLATFORM_OS), Darwin)
+	STRIP = strip -x
+else
+	STRIP = strip --strip-unneeded
+endif
 LIBNAME = libpe
 INSTALL = install -m 0644
 

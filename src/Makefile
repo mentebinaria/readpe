@@ -20,6 +20,9 @@ RM = rm -f
 SOURCES = output.c
 PROGS = readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr
 INSTALL = install -m 0755
+SHAREDIR = /usr/share/pev
+MAN = doc/manpages
+MANDIR = /usr/share/man/man1
 
 ####### Build rules
 
@@ -48,6 +51,8 @@ install:
 	for prog in $(PROGS); do \
 		$(INSTALL) $$prog $(DEST); \
 	done
+	test -d $(SHAREDIR) || mkdir -p $(SHAREDIR)
+	test -f $(SHAREDIR)/userdb.txt || cp userdb.txt $(SHAREDIR)
 
 uninstall:
 	for prog in $(PROGS); do \

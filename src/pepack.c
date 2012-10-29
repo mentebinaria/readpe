@@ -117,6 +117,10 @@ bool loaddb(FILE **fp)
 	char *dbfile = config.dbfile ? config.dbfile : "userdb.txt";
 
 	*fp = fopen(dbfile, "r");	
+
+	if (!*fp)
+		*fp = fopen("/usr/share/pev/userdb.txt", "r");
+
 	return (*fp != NULL);
 }
 

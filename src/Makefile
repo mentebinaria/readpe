@@ -36,6 +36,8 @@ pehash: pehash.c
 pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: pedis.c $(LIBUDIS86)/libudis86/*.c
 
+pescan: LDFLAGS += -lm
+
 # Generic rule matching binary names and sources
 
 %: %.c

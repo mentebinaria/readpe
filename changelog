@@ -6,18 +6,23 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.60 - ?, 2012
- ! pedis: fixed address representation in calls and jump instructions.
+pev 0.60 - October ??, 2012
+ ! Missing full/english documentation.
+ ! Missing valid XML and HTML output formats.
+ ! pestr doesn't support --net option with unicode strings.
+ ! readpe can't show exported functions by ID.
  * pedis: -F/--function option replaced by -r/--rva.
- + pedis: disassemble bytes number specified by -n option.
  + added basic documentation in portuguese.
- + pehash: new tool to calculate PE file hashes (Jan Seidl <janseidl *noSPAM* gmail.com>)
  + pedis: added -m/--mode option to set disassembly mode (16, 32 or 64-bit).
  + pedis: added -n option to limit number of disassembled instructions.
  + pedis: added options to disassembly entrypoint and raw fille offset.
- + pepack: added PEiD signature search (Rodrigo Escobar <ipax *noSPAM* dclabs.com.br>)
+ + pedis: disassemble bytes number specified by -n option.
+ + pehash: new tool to calculate PE file hashes (Jan Seidl <janseidl *noSPAM* gmail.com>).
+ + pepack: added PEiD signature search (Rodrigo Escobar <ipax *noSPAM* dclabs.com.br>).
  + pescan: added -f/--format option to format output.
  + pescan: added section, imagebase and timestamp analysis.
+ + readpe: added --exports option to show exported functions.
+ - pedis: fixed address representation in calls and jump instructions.
 
 pev 0.50 - June 25, 2012
  ! Missing documentation.

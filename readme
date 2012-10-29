@@ -5,9 +5,6 @@
         _|
  the PE file analysis toolkit v0.60
  
- THIS VERSION IS UNDER DEVELOPMENT. FOR STABLE RELEASES, PLEASE
- GO TO http://pev.sf.net
-
 1. What is pev
 2. OS support
 3. Pre-requisites
@@ -109,7 +106,7 @@
  * rva2ofs  - convert RVA to raw file offsets
  * ofs2rva  - convert raw file offsets to RVA
 
-6. Contribute
+6. Contributing
 
  The development version is available at https://github.com/merces/pev
  We are always needing some help. If you want to contribute, subscribe

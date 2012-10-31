@@ -8,7 +8,7 @@ readpe - displays information about PE files
 .IR pefile
 
 .SH DESCRIPTION
-readpe can read and display all PE file headers, fields and values.
+readpe can read and display all PE file headers, fields and values. It's part of pev analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
@@ -19,11 +19,11 @@ full output (default).
 
 .TP
 .BR \-H ", " \-\-all-headers
-print all PE headers.
+display all PE headers.
 
 .TP
 .BR \-S ", " \-\-all-sections
-print all PE sections headers.
+display all PE sections headers.
 
 .TP
 .BR \-f ", " \-\-format\ <text|csv|xml|html>
@@ -31,23 +31,23 @@ change output format (default is text).
 
 .TP
 .BR \-d ", " \-\-dirs
-show data directories.
+display data directories.
 
 .TP
 .BR \-h ", " \-\-header\ <dos|coff|optional>
-show sepecific header.
+display sepecific header.
 
 .TP
 .BR \-i ", " \-\-imports
-show imported functions.
+display imported functions names.
 
 .TP
-.BR \-e ", " \-\-exports          
-show exported functions.
+.BR \-e ", " \-\-exports
+display exported functions names.
 
 .TP
-.BR \-v ", " \-\-version          
-show version and exit.
+.BR \-v ", " \-\-version
+show program version and exit.
 
 .TP
 .BR \-\-help
@@ -69,7 +69,7 @@ Display all possible information about \fBsvchost.exe\fP file:
 $ readpe svchost.exe
 
 .SH REPORTING BUGS
-Report bugs at https://github.com/merces/pev/issues or fernando@mentebinaria.com.br
+Please, check the latest development code and report at at https://github.com/merces/pev/issues
 
 .SH COPYRIGHT
 Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.

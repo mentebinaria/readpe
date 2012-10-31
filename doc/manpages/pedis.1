@@ -1,0 +1,81 @@
+.TH PEDIS 1
+.SH NAME
+pedis - disassemble PE sections and functions
+
+.SH SYNOPSIS
+.B pedis
+[OPTIONS]...
+.IR pefile
+
+.SH DESCRIPTION
+pedis is a PE disassembler using libudis86 library. It can disassembly entire sections, functions or any position you want.
+It's part of pev analysis toolkit.
+.PP
+\&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
+
+.SH OPTIONS
+.TP
+.BR \-\-att
+set AT&T assembly syntax (default is Intel).
+
+.TP
+.BR \-e ", " \-\-entrypoint
+disassembly at PE entrypoint (EP), until RET/LEAVE instruction appears.
+
+.TP
+.BR \-f ", " \-\-format\ <text|csv|xml|html>
+change output format (default is text).
+
+.TP
+.BR \-m ", " \-\-mode\ <16|32|64>
+set disassembly mode to 16, 32 or 64-bits (default: auto).
+
+.TP
+.BR \-i\ <number>
+number of instructions to disassemble.
+
+.TP
+.BR \-n\ <number>
+number of bytes (lenght) to disassemble.
+
+.TP
+.BR \-o ", " \-\-offset\ <offset>
+start disassembly at specified offset, in decimal or hexadecimal format (prefixed with 0x).
+
+.TP
+.BR \-r ", " \-\-rva\ <rva>
+start disassembly at specified RVA, in decimal or hexadecimal format (prefixed with 0x).
+
+.TP
+.BR \-s ", " \-\-section\ <name>
+start disassembly at specified PE section.
+
+.TP
+.BR \-v ", " \-\-version
+show program version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Disassemble at RVA 0x4c4df of \fBputty.exe\fP:
+.IP
+$ pedis -r 0x4c4df putty.exe
+
+.PP
+Disassembly the entrypoint of a 64-bit PE32+ \fBwordpad.exe\fP:
+.IP
+$ pedis -m 64 --entrypoint putty.exe
+
+.PP
+Disassembly in 16-bits mode, starting from offset 0x40, 32 bytes of code from \fBgame.exe\fP:
+.IP
+$ pedis -m 16 -o 0x40 -n 32 game.exe
+
+.SH REPORTING BUGS
+Please, check the latest development code and report at at https://github.com/merces/pev/issues
+
+.SH COPYRIGHT
+Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

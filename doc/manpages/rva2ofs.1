@@ -1,0 +1,40 @@
+.TH RVA2OFS 1
+.SH NAME
+rva2ofs - converts a PE relative virtual address to raw file offset
+
+.SH SYNOPSIS
+.B rva2ofs
+.IR rvs
+.IR pefile
+
+.SH DESCRIPTION
+rva2ofs converts a RVA (Relative Virtual Address) to raw file offset, if possible. It's part of pev analysis toolkit.
+.PP
+\&\fIrva\fR is a valid PE RVA in decimal or hexadecimal (prefixed with 0x).
+.PP
+\&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
+
+.SH OPTIONS
+
+.TP
+.BR \-v ", " \-\-version
+show program version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Get offset from RVA 0x12db of \fBcards.dll\fP:
+.IP
+$ rva2ofs 0x12db cards.dll
+
+.SH REPORTING BUGS
+Please, check the latest development code and report at at https://github.com/merces/pev/issues
+
+.SH COPYRIGHT
+Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+
+.SH SEE ALSO
+ofs2rva(1)

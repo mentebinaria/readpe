@@ -1,0 +1,46 @@
+.TH PEHASH 1
+.SH NAME
+pehash - calculate PE checksums
+
+.SH SYNOPSIS
+.B pehash
+[OPTIONS]...
+.IR pefile
+
+.SH DESCRIPTION
+pehash uses libssl to calculate PE file checksums. It's part of pev analysis toolkit.
+.PP
+\&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
+
+.SH OPTIONS
+.TP
+.BR \-A ", " \-\-all
+calculate and display all available checksums (default).
+
+.TP
+.BR \-f ", " \-\-format\ <text|csv|xml|html>
+change output format (default is text).
+
+.TP
+.BR \-h ", " \-\-hash\ <md5|sha1|sha256>
+set hash algorithm.
+
+.TP
+.BR \-v ", " \-\-version
+show program version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Check all supported checksums of \fBputty.exe\fP file:
+.IP
+$ pehash putty.exe
+
+.SH REPORTING BUGS
+Please, check the latest development code and report at at https://github.com/merces/pev/issues
+
+.SH COPYRIGHT
+Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

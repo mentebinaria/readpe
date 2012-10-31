@@ -1,0 +1,44 @@
+.TH PEPACK 1
+.SH NAME
+pepack - check if a PE file is packed
+
+.SH SYNOPSIS
+.B pepack
+[OPTIONS]...
+.IR pefile
+
+.SH DESCRIPTION
+pepack uses a pre-defined database to check packer signatures patterns in PE file.
+If no database is set, pepack tries to identify if executable is packed. It's part of pev
+analysis toolkit.
+.PP
+\&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
+
+.SH OPTIONS
+.TP
+.BR \-d ", " \-\-database\ <database>
+use another database file instead of default (/usr/share/pev/userdb.txt).
+
+.TP
+.BR \-f ", " \-\-format\ <text|csv|xml|html>
+change output format (default is text).
+
+.TP
+.BR \-v ", " \-\-version
+show program version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Check for packers in PE sample:
+.IP
+$ pepack sample.exe
+
+.SH REPORTING BUGS
+Please, check the latest development code and report at at https://github.com/merces/pev/issues
+
+.SH COPYRIGHT
+Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

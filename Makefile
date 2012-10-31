@@ -40,13 +40,14 @@ else ifeq ($(PLATFORM_OS), CYGWIN)
 endif
 
 install:
-	$(STRIP) $(LIBNAME).so
 	test -d $(DEST) || mkdir -p $(DEST)
 ifeq ($(PLATFORM_OS), Linux)
+	$(STRIP) $(LIBNAME).so
 	$(INSTALL) $(LIBNAME).so $(DEST)/$(LIBNAME).so.$(VERSION)
 	cd $(DEST); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DEST); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), Darwin)
+	$(STRIP) $(LIBNAME).dylib
 	$(INSTALL) $(LIBNAME).dylib $(DEST)/$(LIBNAME).$(VERSION).dylib
 	cd $(DEST); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
 	cd $(DEST); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).1.dylib
@@ -57,7 +58,7 @@ uninstall:
 		$(DEST)/$(LIBNAME)*.dylib
 
 clean:
-	$(RM) $(LIBNAME).*o* \
-		$(LIBNAME).so* \
+	$(RM) $(LIBNAME)*.o \
+		$(LIBNAME)*.so \
 		$(LIBNAME)*.dylib \
 		$(LIBNAME)*.dll

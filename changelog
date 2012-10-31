@@ -6,13 +6,13 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.60 - October ??, 2012
+pev 0.60 - October 31, 2012
  ! Missing full/english documentation.
  ! Missing valid XML and HTML output formats.
  ! pestr doesn't support --net option with unicode strings.
  ! readpe can't show exported functions by ID.
  * pedis: -F/--function option replaced by -r/--rva.
- + added basic documentation in portuguese.
+ + added manpages for all tools.
  + pedis: added -m/--mode option to set disassembly mode (16, 32 or 64-bit).
  + pedis: added -n option to limit number of disassembled instructions.
  + pedis: added options to disassembly entrypoint and raw fille offset.

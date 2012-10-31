@@ -1,0 +1,47 @@
+.TH PESTR 1
+.SH NAME
+pestr - search strings in PE files
+
+.SH SYNOPSIS
+.B pestr
+[OPTIONS]...
+.IR pefile
+
+.SH DESCRIPTION
+pestr search for ASCII and Unicode strings in PE files and can filter some malicious-related patterns.
+It's part of pev analysis toolkit.
+.PP
+\&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
+
+.SH OPTIONS
+.TP
+.BR \-n ", " \-\-min\-length
+set the minimun number of characteres to be read as string.
+
+.TP
+.BR \-o ", " \-\-offset
+display the raw file offset where string starts.
+
+.TP
+.BR \-\-net
+filter network-related strings (IP addresses, domains etc).
+
+.TP
+.BR \-v ", " \-\-version
+show program version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Search all strings in \fBputty.exe\fP:
+.IP
+$ pestr putty.exe
+
+.SH REPORTING BUGS
+Please, check the latest development code and report at at https://github.com/merces/pev/issues
+
+.SH COPYRIGHT
+Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

@@ -55,11 +55,6 @@ install:
 	test -d $(SHAREDIR) || mkdir -p $(SHAREDIR)
 	test -f $(SHAREDIR)/userdb.txt || cp userdb.txt $(SHAREDIR)
 
-test:
-	for prog in $(PROGS); do \
-		test -f $(MAN)/$$prog.1 && echo  $(MAN)/$$prog || echo a;\
-	done
-
 uninstall:
 	for prog in $(PROGS); do \
 		$(RM) $(DEST)/$$prog; \

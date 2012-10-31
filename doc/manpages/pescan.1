@@ -1,14 +1,15 @@
-.TH PESEC 1
+.TH PESCAN 1
 .SH NAME
-pesec - check for protections in PE files
+pescan - identify suspicious characteristcis in PE files
 
 .SH SYNOPSIS
-.B pesec
+.B pescan
 [OPTIONS]...
 .IR pefile
 
 .SH DESCRIPTION
-pesec identify if a PE file is using some protection scheme like DEP/NX or ASLR.
+pescan analyze a PE file statically to determine if it contains suspicious characteristics.
+It's part of pev analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
@@ -26,9 +27,9 @@ show program version and exit.
 show help.
 
 .SH EXAMPLES
-Search for protections in \fBputty.exe\fP:
+Search suspicious things in \fBputty.exe\fP:
 .IP
-$ pesec putty.exe
+$ pescan putty.exe
 
 .SH REPORTING BUGS
 Please, check the latest development code and report at at https://github.com/merces/pev/issues

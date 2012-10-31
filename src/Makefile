@@ -44,7 +44,7 @@ pescan: LDFLAGS += -lm
 # Generic rule matching binary names and sources
 
 %: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(CPPFLAGS) $(SOURCES) $^ -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(SOURCES) $^ -o $@ $(LDFLAGS)
 
 install:
 	test -d $(DEST) || mkdir -p $(DEST)

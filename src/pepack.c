@@ -24,7 +24,7 @@
 struct options config;
 static int ind;
 
-void usage()
+static void usage()
 {
 	printf("Usage: %s FILE\n"
 	"Search for packers in PE files\n"
@@ -37,7 +37,7 @@ void usage()
 	PROGRAM, PROGRAM);
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 
@@ -86,7 +86,7 @@ void parse_options(int argc, char *argv[])
    executable and/or writable flags)
    Windows Loader still executes the binary
 */
-bool generic_packer(PE_FILE *pe, QWORD ep)
+static bool generic_packer(PE_FILE *pe, QWORD ep)
 {
    unsigned char packer = '0';
 	IMAGE_SECTION_HEADER *sec = pe_rva2section(pe, ep);
@@ -112,7 +112,7 @@ bool generic_packer(PE_FILE *pe, QWORD ep)
    return (packer < '3');
 }
 
-bool loaddb(FILE **fp)
+static bool loaddb(FILE **fp)
 {
 	char *dbfile = config.dbfile ? config.dbfile : "userdb.txt";
 
@@ -124,7 +124,7 @@ bool loaddb(FILE **fp)
 	return (*fp != NULL);
 }
 
-bool match_peid_signature(unsigned char *data, char *sig)
+static bool match_peid_signature(unsigned char *data, char *sig)
 {
 	unsigned char byte_str[3], byte;
 	
@@ -159,7 +159,7 @@ bool match_peid_signature(unsigned char *data, char *sig)
 	return true;
 }
 
-bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile, char *packer_name)
+static bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile, char *packer_name)
 {
 	char *buff = (char *) xmalloc(MAX_SIG_SIZE);
 	size_t len;

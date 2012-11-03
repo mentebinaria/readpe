@@ -24,7 +24,7 @@
 struct options config;
 static int ind;
 
-void usage()
+static void usage()
 {
 	printf("Usage: %s OPTIONS FILE\n"
 	"Search for [encrypted] strings in PE files\n"
@@ -39,7 +39,7 @@ void usage()
 	PROGRAM, PROGRAM);
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 
@@ -101,7 +101,7 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
+static unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
 {
 	unsigned int i;
 	unsigned long sect_size, sect_offset, aux=0;
@@ -124,7 +124,7 @@ unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
 	return NULL;
 }
 
-char *ref_functions(PE_FILE *pe, unsigned long offset)
+static char *ref_functions(PE_FILE *pe, unsigned long offset)
 {
 	unsigned long buff, aux=0;
 	char *str = (char *) xmalloc(sizeof(char) * 100);
@@ -156,7 +156,7 @@ char *ref_functions(PE_FILE *pe, unsigned long offset)
 #define ASCII 0
 #define UNICODE 1
 
-bool ishostname(const char *s, unsigned short encoding)
+static bool ishostname(const char *s, unsigned short encoding)
 {
 	pcre *re;
 	const char *err;
@@ -201,7 +201,7 @@ bool ishostname(const char *s, unsigned short encoding)
 	return false;
 }
 
-void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned length, unsigned long
+static void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned length, unsigned long
 offset)
 {
 	if (config.offset)

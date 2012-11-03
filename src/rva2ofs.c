@@ -23,7 +23,7 @@
 
 static int ind;
 
-void usage()
+static void usage()
 {
 	printf("Usage: %s <rva> FILE\n"
 	"Convert RVA to raw file offset\n"
@@ -34,7 +34,7 @@ void usage()
 	PROGRAM, PROGRAM);
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 

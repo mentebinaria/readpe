@@ -28,8 +28,6 @@
 
 #define PROGRAM "pescan"
 
-void parse_options(int argc, char *argv[]);
-
 struct options {
 	bool verbose;
 };

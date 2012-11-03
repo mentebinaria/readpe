@@ -32,6 +32,4 @@ struct options {
    char *dbfile;
 };
 
-void parse_options(int argc, char *argv[]);
-
 #endif

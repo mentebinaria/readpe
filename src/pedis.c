@@ -281,6 +281,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		usage();
+		pe_deinit(&pe);
 		exit(1);
 	}
 	

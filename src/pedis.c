@@ -24,7 +24,7 @@
 extern struct options config;
 static int ind;
 
-void usage()
+static void usage()
 {
 	printf("Usage: %s OPTIONS FILE\n"
 	"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
@@ -44,7 +44,7 @@ void usage()
 	PROGRAM, PROGRAM);
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 
@@ -121,7 +121,7 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-char *insert_spaces(char *s) 
+static char *insert_spaces(const char *s) 
 {
 	size_t size;
 	char *new; 
@@ -152,7 +152,7 @@ char *insert_spaces(char *s)
 	return new;
 }
 
-bool is_ret_instruction(unsigned char opcode)
+static bool is_ret_instruction(unsigned char opcode)
 {
 	switch (opcode)
 	{
@@ -168,7 +168,7 @@ bool is_ret_instruction(unsigned char opcode)
 	}
 }
 
-void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
+static void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 {
 	QWORD c = 0; // counter for disassembled instructions
 	QWORD b = 0; // counter for disassembled bytes
@@ -281,6 +281,7 @@ int main(int argc, char *argv[])
 	else
 	{
 		usage();
+		pe_deinit(&pe);
 		exit(1);
 	}
 	

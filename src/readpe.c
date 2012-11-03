@@ -24,7 +24,7 @@
 extern struct options config;
 static int ind;
 
-void usage()
+static void usage()
 {
 	printf("Usage: %s OPTIONS FILE\n"
 	"Show PE file headers\n"
@@ -43,7 +43,7 @@ void usage()
 	PROGRAM, PROGRAM);
 }
 
-void parse_headers(const char *optarg)
+static void parse_headers(const char *optarg)
 {
 	if (! strcmp(optarg, "dos"))
 		config.dos = true;
@@ -135,7 +135,7 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-char *dec2bin(unsigned int dec, char *bin, unsigned int bits)
+static char *dec2bin(unsigned int dec, char *bin, unsigned int bits)
 {
 	unsigned int i;
 	
@@ -147,7 +147,7 @@ char *dec2bin(unsigned int dec, char *bin, unsigned int bits)
 	return bin;
 }
 
-void print_sections(PE_FILE *pe)
+static void print_sections(PE_FILE *pe)
 {
 	char s[MAX_MSG];
 	unsigned int i, j;
@@ -211,7 +211,7 @@ void print_sections(PE_FILE *pe)
 	}
 }
 
-void print_directories(PE_FILE *pe)
+static void print_directories(PE_FILE *pe)
 {
 	char s[MAX_MSG];
 	unsigned int i;
@@ -252,7 +252,7 @@ void print_directories(PE_FILE *pe)
 	}
 }
 
-void print_optional_header(PE_FILE *pe)
+static void print_optional_header(PE_FILE *pe)
 {
 	char s[MAX_MSG];
 	int subsystem;
@@ -442,7 +442,7 @@ void print_optional_header(PE_FILE *pe)
 	}
 }
 
-void print_coff_header(IMAGE_COFF_HEADER *header)
+static void print_coff_header(IMAGE_COFF_HEADER *header)
 {
 	char s[MAX_MSG];
 	char timestr[40];
@@ -531,7 +531,7 @@ void print_coff_header(IMAGE_COFF_HEADER *header)
 	}
 }
 
-void print_dos_header(IMAGE_DOS_HEADER *header)
+static void print_dos_header(IMAGE_DOS_HEADER *header)
 {
 	char s[MAX_MSG];
 
@@ -586,7 +586,7 @@ void print_dos_header(IMAGE_DOS_HEADER *header)
 	output("PE header offset", s);
 }
 
-void print_imported_functions(PE_FILE *pe, long offset)
+static void print_imported_functions(PE_FILE *pe, long offset)
 {
 	QWORD fptr = 0; // pointer to functions
 	long aux2, aux = ftell(pe->handle);
@@ -651,7 +651,7 @@ void print_imported_functions(PE_FILE *pe, long offset)
 	fseek(pe->handle, aux, SEEK_SET);
 }
 
-void print_exports(PE_FILE *pe)
+static void print_exports(PE_FILE *pe)
 {
 	QWORD va;
 	IMAGE_EXPORT_DIRECTORY exp;
@@ -700,7 +700,7 @@ void print_exports(PE_FILE *pe)
 	}
 }
 
-void print_imports(PE_FILE *pe)
+static void print_imports(PE_FILE *pe)
 {
 	QWORD va; // store temporary addresses
 	long aux;

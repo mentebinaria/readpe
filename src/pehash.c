@@ -24,7 +24,7 @@
 struct options config;
 static int ind;
 
-void usage() 
+static void usage() 
 {
 	printf("Usage: %s OPTIONS FILE\n"
 	"Show PE file cryptographic signatures\n"
@@ -39,7 +39,7 @@ PROGRAM, PROGRAM);
 
 }
 
-void parse_hash_algorithm(const char *optarg)
+static void parse_hash_algorithm(const char *optarg)
 {
 	if (! strcmp(optarg, "md5"))
 		config.md5 = true;
@@ -104,7 +104,7 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-void calc_sha1(unsigned char *data, size_t size, char *sha1sum)
+static void calc_sha1(unsigned char *data, size_t size, char *sha1sum)
 {
 	unsigned char hash[SHA_DIGEST_LENGTH];
 	SHA_CTX mdContext;
@@ -117,7 +117,7 @@ void calc_sha1(unsigned char *data, size_t size, char *sha1sum)
 		snprintf(&sha1sum[i*2], MAX_MSG, "%02x", hash[i]);
 }
 
-void calc_sha256(unsigned char *data, size_t size, char *sha256sum)
+static void calc_sha256(unsigned char *data, size_t size, char *sha256sum)
 {
 	unsigned char hash[SHA256_DIGEST_LENGTH];
 	SHA256_CTX mdContext;
@@ -130,7 +130,7 @@ void calc_sha256(unsigned char *data, size_t size, char *sha256sum)
 		sprintf(&sha256sum[i*2], "%02x", hash[i]);
 }
 
-void calc_md5(unsigned char *data, size_t size, char *md5sum)
+static void calc_md5(unsigned char *data, size_t size, char *md5sum)
 {
 	unsigned char hash[MD5_DIGEST_LENGTH];
 	MD5_CTX mdContext;

@@ -39,6 +39,4 @@ struct options {
 	bool net;
 };
 
-void parse_options(int argc, char *argv[]);
-
 #endif

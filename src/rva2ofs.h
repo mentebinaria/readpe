@@ -26,6 +26,4 @@
 
 #define PROGRAM "rva2ofs"
 
-void parse_options(int argc, char *argv[]);
-
 #endif

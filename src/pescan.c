@@ -24,7 +24,7 @@
 static int ind;
 char value[MAX_MSG];
 
-void usage()
+static void usage()
 {
 	printf("\n%s %s\n%s\n\nUsage: %s OPTIONS FILE\n"
 	"Search for suspicious things in PE files\n"
@@ -36,7 +36,7 @@ void usage()
 	PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 
@@ -78,7 +78,7 @@ void parse_options(int argc, char *argv[])
 }
 
 // check for abnormal dos stub (common in packed files)
-bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
+static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 {
    BYTE dos_stub[] =
    "\x0e"               // push cs
@@ -111,7 +111,7 @@ bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
    return false;
 }
 
-IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe, DWORD *ep)
+static IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe, DWORD *ep)
 {
 	IMAGE_SECTION_HEADER *epsec = NULL;
 
@@ -135,7 +135,7 @@ IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe, DWORD *ep)
    return NULL;
 }
 
-DWORD pe_get_tls_directory(PE_FILE *pe)
+static DWORD pe_get_tls_directory(PE_FILE *pe)
 {
 	if (!pe_get_directories(pe))
 		return 0;
@@ -156,7 +156,7 @@ DWORD pe_get_tls_directory(PE_FILE *pe)
  *  0 - no tls directory
  * >0 - number of callbacks functions found
 */
-int pe_get_tls_callbacks(PE_FILE *pe)
+static int pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
 	int ret = 0;
@@ -237,7 +237,7 @@ int pe_get_tls_callbacks(PE_FILE *pe)
 	return 0;
 }
 
-bool strisprint(const char *string)
+static bool strisprint(const char *string)
 {
 	char *s = (char *) string;
 
@@ -257,7 +257,7 @@ bool strisprint(const char *string)
 	return true;
 }
 
-void stradd(char *dest, char *src, bool *pad)
+static void stradd(char *dest, char *src, bool *pad)
 {
 	if (*pad)
 		strcat(dest, ", ");
@@ -266,7 +266,7 @@ void stradd(char *dest, char *src, bool *pad)
 	*pad = true;
 }
 
-void print_strange_sections(PE_FILE *pe)
+static void print_strange_sections(PE_FILE *pe)
 {
 	bool aux = false;
 
@@ -306,7 +306,7 @@ void print_strange_sections(PE_FILE *pe)
 	}
 }
 
-bool normal_imagebase(PE_FILE *pe)
+static bool normal_imagebase(PE_FILE *pe)
 {
 	if (!pe->imagebase)
 		pe_get_optional(pe);
@@ -316,7 +316,7 @@ bool normal_imagebase(PE_FILE *pe)
 				pe->imagebase == 0x400000);
 }
 
-void print_timestamp(DWORD *stamp)
+static void print_timestamp(DWORD *stamp)
 {
 	time_t now = time(NULL);
 	char timestr[30];

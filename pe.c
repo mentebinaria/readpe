@@ -107,7 +107,7 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 	if (!pe->addr_sections || !pe->num_sections)
 		pe_get_sections(pe);
 
-	if (!pe->num_sections || pe->num_sections > 96)
+	if (!pe->num_sections || pe->num_sections > MAX_SECTIONS)
 		return NULL;
 		
 	for (unsigned int i=0; i < pe->num_sections; i++)
@@ -189,7 +189,7 @@ bool pe_get_sections(PE_FILE *pe)
 			return false;
 	}
 
-	if (pe->num_sections > 96)
+	if (pe->num_sections > MAX_SECTIONS)
 		return false;
 
 	if (fseek(pe->handle, pe->addr_sections, SEEK_SET))

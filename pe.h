@@ -36,6 +36,8 @@ typedef uint8_t BYTE;
 typedef uint16_t WORD;
 typedef uint64_t QWORD;
 
+#define MAX_SECTIONS 96
+
 // section name size
 #define IMAGE_SIZEOF_SHORT_NAME 8
 #define IMAGE_ORDINAL_FLAG32 0x80000000

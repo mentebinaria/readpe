@@ -161,17 +161,16 @@ bool match_peid_signature(unsigned char *data, char *sig)
 
 bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile, char *packer_name)
 {
-	char *buff = (char *) xmalloc(MAX_SIG_SIZE);
-	size_t len;
-	
 	if (!dbfile || !data)
 		return false;
+
+	char *buff = xmalloc(MAX_SIG_SIZE);
 
 	//memset(buff, 0, MAX_SIG_SIZE);
 	while (fgets(buff, MAX_SIG_SIZE, dbfile))
 	{
 		// line length
-		len = strlen(buff);
+		size_t len = strlen(buff);
 		
 		// ifgore comments and blank lines
 		if (*buff == ';' || *buff == '\n' || *buff == '\r')

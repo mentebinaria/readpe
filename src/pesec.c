@@ -25,7 +25,7 @@ static int ind;
 
 
 
-void usage()
+static void usage()
 {
 	printf("Usage: %s [OPTIONS] FILE\n"
 	"Check for security features in PE files\n"
@@ -37,7 +37,7 @@ void usage()
 	PROGRAM, PROGRAM);
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_options(int argc, char *argv[])
 {
 	int c;
 
@@ -81,7 +81,7 @@ void parse_options(int argc, char *argv[])
 find stack cookies, a.k.a canary, buffer security check
 option in MVS 2010
 */
-bool stack_cookies(PE_FILE *pe)
+static bool stack_cookies(PE_FILE *pe)
 {
 	unsigned int i, found = 0;
 	unsigned char buff;

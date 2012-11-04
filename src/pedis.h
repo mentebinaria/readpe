@@ -30,8 +30,6 @@
 #define SYN_ATT 1
 #define SYN_INTEL 0
 
-void parse_options(int argc, char *argv[]);
-
 struct options {
 	bool all_sections;
 	char *section;

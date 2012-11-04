@@ -26,6 +26,4 @@
 
 #define PROGRAM "pesec"
 
-void parse_options(int argc, char *argv[]);
-
 #endif

@@ -173,7 +173,7 @@ static void print_sections(PE_FILE *pe)
 
 	output("Sections", NULL);
 
-	if (pe->num_sections > 96)
+	if (pe->num_sections > MAX_SECTIONS)
 		return;
 
 	for (i=0; i < pe->num_sections; i++)

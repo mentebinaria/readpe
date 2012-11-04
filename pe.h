@@ -406,7 +406,7 @@ static const RESOURCE_ENTRY resource_types[] =
 
 
 // wrappers
-void *xmalloc(unsigned size);
+void *xmalloc(size_t size);
 
 // basic functions
 bool ispe(PE_FILE *pe);

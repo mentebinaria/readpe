@@ -127,12 +127,13 @@ unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
 char *ref_functions(PE_FILE *pe, unsigned long offset)
 {
 	unsigned long buff, aux=0;
-	char *str = (char *) xmalloc(sizeof(char) * 100);
+	const size_t str_size = 100;
+	char *str = xmalloc(str_size);
 	FILE *fp = pe->handle;
 
 	aux = ftell(fp);
 	rewind(fp);
-	memset(str, 0, sizeof(str));
+	memset(str, 0, str_size);
 
 	while (fread(&buff, 1, sizeof(buff), fp))
 	{
@@ -146,7 +147,7 @@ char *ref_functions(PE_FILE *pe, unsigned long offset)
 		}
 
 		// slow search
-		//fseek(fp, - (sizeof(buff)-1), SEEK_CUR);
+		//fseek(fp, - (buff_size-1), SEEK_CUR);
 	}
 	fseek(fp, aux, SEEK_SET);
 
@@ -262,10 +263,11 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	rewind(pe.handle);
-	buff = (unsigned char *) xmalloc(LINE_BUFFER);
-	memset(buff, 0, sizeof(buff));
+	const size_t buff_size = LINE_BUFFER;
+	buff = xmalloc(buff_size);
+	memset(buff, 0, buff_size);
 
-	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle);	ofs++)
+	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle); ofs++)
 	{
 		if (isprint(byte))
 		{
@@ -305,7 +307,7 @@ int main(int argc, char *argv[])
 					
 			}
 			ascii = utf = pos = 0;
-			memset(buff, 0, sizeof(buff));
+			memset(buff, 0, buff_size);
 		}
 	}
 	free(buff);

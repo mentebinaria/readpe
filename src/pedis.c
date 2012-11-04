@@ -133,7 +133,7 @@ char *insert_spaces(char *s)
 
 	size = size + (size/2);
 
-	new = (char *) xmalloc(size+1);
+	new = xmalloc(size+1);
 	memset(new, 0, size+1);
 
 	for (unsigned int i=0, j=0, pos=0; i < size; i++)

@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("unable to get entrypoint offset");
 	
 	pesize = pe_get_size(&pe);
-	pe_data = (unsigned char *) xmalloc(pesize);
+	pe_data = xmalloc(pesize);
 	
 	//if (fseek(pe.handle, ep, SEEK_SET))
 		//EXIT_ERROR("unable to seek to entrypoint offset");

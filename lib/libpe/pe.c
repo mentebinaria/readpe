@@ -19,18 +19,16 @@
 
 #include "pe.h"
 
-void *xmalloc(unsigned int size)
+void *xmalloc(size_t size)
 {
-	void *new_mem;
-
 	if (size <= 0)
 		return NULL;
 
-	new_mem = malloc(size);	
+	void *new_mem = malloc(size);
 
 	if (!new_mem)
 	{
-		fprintf(stderr, "fatal: memory exhausted (xmalloc of %u bytes)\n", size);
+		fprintf(stderr, "fatal: memory exhausted (xmalloc of %zu bytes)\n", size);
 		exit(-1);
 	}
 
@@ -136,13 +134,11 @@ bool pe_get_resource_entries(PE_FILE *pe)
 	if (!pe->num_rsrc_entries)
 		return false;
 
-	pe->rsrc_entries_ptr = (IMAGE_RESOURCE_DIRECTORY_ENTRY **)
-	xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
+	pe->rsrc_entries_ptr = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
 	
 	for (unsigned int i=0; i < pe->num_rsrc_entries; i++)
 	{
-		pe->rsrc_entries_ptr[i] = (IMAGE_RESOURCE_DIRECTORY_ENTRY *) xmalloc
-		(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
+		pe->rsrc_entries_ptr[i] = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
 		
 		if (!fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
 			return false;
@@ -194,11 +190,11 @@ bool pe_get_sections(PE_FILE *pe)
 
 	if (fseek(pe->handle, pe->addr_sections, SEEK_SET))
 		return false;
-	sections = (IMAGE_SECTION_HEADER **) xmalloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
+	sections = xmalloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
 
 	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
-		sections[i] = (IMAGE_SECTION_HEADER *) xmalloc(sizeof(IMAGE_SECTION_HEADER));
+		sections[i] = xmalloc(sizeof(IMAGE_SECTION_HEADER));
 		if (!fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle))
 			return false;
 	}
@@ -234,11 +230,11 @@ bool pe_get_directories(PE_FILE *pe)
 	if (pe->num_directories > 32)
 		return false;
 
-	dirs = (IMAGE_DATA_DIRECTORY **) xmalloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
+	dirs = xmalloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
 
 	for (unsigned int i=0; i < pe->num_directories; i++)
 	{
-		dirs[i] = (IMAGE_DATA_DIRECTORY *) xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
+		dirs[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
 		if (!fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
 			return false;
 	}
@@ -273,12 +269,12 @@ bool pe_get_optional(PE_FILE *pe)
 	if (fseek(pe->handle, pe->addr_optional, SEEK_SET))
 		return false;
 
-	header = (IMAGE_OPTIONAL_HEADER *) xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
+	header = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
 
 	switch (pe->architecture)
 	{
 		case PE32:
-			header->_32 = (IMAGE_OPTIONAL_HEADER_32 *) xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
+			header->_32 = xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
 			if (!fread(header->_32, sizeof(IMAGE_OPTIONAL_HEADER_32), 1, pe->handle))
 				return false;
 			pe->num_directories = header->_32->NumberOfRvaAndSizes;
@@ -288,7 +284,7 @@ bool pe_get_optional(PE_FILE *pe)
 			break;
 
 		case PE64:
-			header->_64 = (IMAGE_OPTIONAL_HEADER_64 *) xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
+			header->_64 = xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
 			if (!fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle))
 				return false;
 			pe->num_directories = header->_64->NumberOfRvaAndSizes;

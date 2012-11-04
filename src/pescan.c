@@ -319,7 +319,7 @@ static bool normal_imagebase(PE_FILE *pe)
 static void print_timestamp(DWORD *stamp)
 {
 	time_t now = time(NULL);
-	char timestr[30];
+	char timestr[33];
 
 	if (*stamp == 0)
 		snprintf(value, MAX_MSG, "zero/invalid");

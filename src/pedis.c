@@ -32,7 +32,7 @@ static void usage()
 	"\nOptions:\n"
 	" --att                                  set AT&T syntax\n"
 	" -e, --entrypoint                       disassemble entrypoint\n"
-	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 	" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
 	" -i, <number>                           number of instructions to be disassembled\n"
 	" -n, <number>                           number of bytes to be disassembled\n"
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
 	
 	// get entrypoint and architecture
 	if (!pe_get_optional(&pe))
-		EXIT_ERROR("unable to retrieve Optional header");
+		EXIT_ERROR("unable to retrieve optional header");
 	
 	// set disassembly mode according with PE architecture
 	ud_set_mode(&ud_obj, config.mode ? config.mode : (pe.architecture == PE64 ? 64 : 32));

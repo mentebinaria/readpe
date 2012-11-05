@@ -409,10 +409,10 @@ int main(int argc, char *argv[])
 	entropy = calculate_entropy_file(&pe);
 	
 	if(entropy < 7.0)
-		snprintf(value, MAX_MSG, "Normal executable (%f)", entropy);
+		snprintf(value, MAX_MSG, "normal (%f)", entropy);
 	else
-		snprintf(value, MAX_MSG, "Packed executable (%f)", entropy);
-	output("File entropy", value);
+		snprintf(value, MAX_MSG, "packed (%f)", entropy);
+	output("file entropy", value);
         memset(&value, 0, sizeof(value));
 
 	if (!pe_get_optional(&pe))

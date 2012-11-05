@@ -25,12 +25,6 @@ Date: $now
 Arch: $arch
 Version: $version"
 
-echo -n "Configuring for $arch... "
-./configure | report
-pipe=${PIPESTATUS[0]}
-[ "$pipe" -eq 0 ] && echo ok || echo failed
-report_status $pipe
-
 echo -n "Compiling... "
 make 2>&1 | report
 pipe=${PIPESTATUS[0]}

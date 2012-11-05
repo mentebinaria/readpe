@@ -241,7 +241,7 @@ static bool strisprint(const char *string)
 {
 	char *s = (char *) string;
 
-	if (memcmp(string, ".tls", 4) == 0)
+	if (strncmp(string, ".tls", 5) == 0)
 		return false;
 
 	if (*s++ != '.')

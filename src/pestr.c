@@ -263,9 +263,8 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("not a valid PE file");
 
 	rewind(pe.handle);
-	const size_t buff_size = LINE_BUFFER;
-	buff = xmalloc(buff_size);
-	memset(buff, 0, buff_size);
+	buff = xmalloc(LINE_BUFFER);
+	memset(buff, 0, LINE_BUFFER);
 
 	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle); ofs++)
 	{
@@ -307,7 +306,7 @@ int main(int argc, char *argv[])
 					
 			}
 			ascii = utf = pos = 0;
-			memset(buff, 0, buff_size);
+			memset(buff, 0, LINE_BUFFER);
 		}
 	}
 	free(buff);

@@ -4,7 +4,7 @@ MAKE = make
 VERSION = 0.60
 ZIPFILE = pev-$(VERSION)-win32.zip
 
-# simple call each separated Makefile
+# just call each separated Makefile
 all:
 %:
 	cd $(LIBPE_DIR); $(MAKE) $@

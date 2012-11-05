@@ -33,7 +33,7 @@ static void usage()
 	" -A, --all                              full output (default)\n"
 	" -H, --all-headers                      print all PE headers\n"
 	" -S, --all-sections                     print all PE sections headers\n"
-	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 	" -d, --dirs                             show data directories\n"
 	" -h, --header <dos|coff|optional>       show sepecific header\n"
 	" -i, --imports                          show imported functions\n"

@@ -411,7 +411,7 @@ static const RESOURCE_ENTRY resource_types[] =
 void *xmalloc(unsigned size);
 
 // basic functions
-bool ispe(PE_FILE *pe);
+bool is_pe(PE_FILE *pe);
 void pe_deinit(PE_FILE *pe);
 QWORD rva2ofs(PE_FILE *pe, QWORD rva);
 DWORD ofs2rva(PE_FILE *pe, DWORD ofs);

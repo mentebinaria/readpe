@@ -31,7 +31,7 @@ static void usage()
 	"\nExample: %s --hash md5 winzip.exe\n"
 	"\nOptions:\n"
 	" -A, --all                              full output (all available hashes) (default)\n"
-	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 	" -h, --hash <md5|sha1|sha256>           hashing algorithm\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",

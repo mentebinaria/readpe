@@ -30,7 +30,7 @@ static void usage()
 	"Search for suspicious things in PE files\n"
 	"\nExample: %s putty.exe\n"
 	"\nOptions:\n"
-   " -f, --format <text|csv|xml|html>       change output format (default text)\n"
+   " -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 	" -v, --verbose                          show more info about items found\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);

@@ -373,7 +373,7 @@ QWORD pe_get_size(PE_FILE *pe)
 	return pe->size;
 }
 
-bool ispe(PE_FILE *pe)
+bool is_pe(PE_FILE *pe)
 {
 	WORD header;
 	LONG elfanew;

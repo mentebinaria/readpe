@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 
 	pe_init(&pe, fp);
 
-	if (!ispe(&pe))
+	if (!is_pe(&pe))
 		EXIT_ERROR("not a valid PE file");
 
 	// switch method

@@ -247,7 +247,7 @@ int main(int argc, char *argv[])
 	pe_init(&pe, fp);
 	ud_init(&ud_obj);
 
-	if (!ispe(&pe))
+	if (!is_pe(&pe))
 		EXIT_ERROR("not a valid PE file");
 	
 	// get entrypoint and architecture

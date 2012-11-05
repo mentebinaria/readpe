@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 
 	pe_init(&pe, fp); // inicializa o struct pe
 
-	if (!ispe(&pe))
+	if (!is_pe(&pe))
 		EXIT_ERROR("invalid PE file");
 
 	if (!pe_get_optional(&pe))

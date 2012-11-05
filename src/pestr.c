@@ -53,7 +53,7 @@ static void parse_options(int argc, char *argv[])
 		{"min-length",      required_argument,  NULL, 'n'},
 		{"help",            no_argument,        NULL,  1 },
 		{"version",         no_argument,        NULL,  3 },
-		{"net",           no_argument,          NULL,  2 },
+		{"net",             no_argument,        NULL,  2 },
 		{ NULL,             0,                  NULL,  0 }
 	};
 

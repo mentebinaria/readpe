@@ -31,7 +31,7 @@ static void usage()
 	"Check for security features in PE files\n"
 	"\nExample: %s wordpad.exe\n"
 	"\nOptions:\n"
-	" -f, --format <text|csv|xml|html>       change output format (default text)\n"
+	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 	" -v, --version                          show version and exit\n"
 	" --help                                 show this help and exit\n",
 	PROGRAM, PROGRAM);

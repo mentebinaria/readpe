@@ -152,7 +152,7 @@ static void print_sections(PE_FILE *pe)
 	char s[MAX_MSG];
 	unsigned int i, j;
 
-	char *flags[] = {
+	static const char *flags[] = {
    "contains executable code",
    "contains initialized data",
    "contains uninitialized data",

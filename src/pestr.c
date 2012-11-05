@@ -162,12 +162,12 @@ static bool ishostname(const char *s, unsigned short encoding)
 	const char *err;
 	int rc, errofs, ovector[OVECCOUNT];
 	unsigned i;
-	char *patterns[] = {
+	static const char *patterns[] = {
 		"^[a-zA-Z]{3,}://.*$", // protocol://
 		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
 	};
 
-	char *domains[] = {
+	static const char *domains[] = {
 	".aero",	".asia",	".biz",	".com",	".cat",	".com",	".coop",
 	".info",	".int",	".jobs",	".mobi",	".museum",	".name",	".net", ".br",
 	".org",	".pro",	".tel",	".travel",	".xxx", ".edu", ".gov", ".mil",

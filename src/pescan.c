@@ -345,12 +345,48 @@ static void print_timestamp(DWORD *stamp)
 
 }
 
+double calculate_entropy(const unsigned int byte_count[256], const int total_length)
+{
+	double entropy = 0.;
+	const double log_2 = 1.44269504088896340736;
+	
+	for(unsigned int i = 0; i < 256; i++)
+	{
+		double temp = (double)byte_count[i] / total_length;
+		if(temp > 0.)
+			entropy += fabs(temp * (log(temp) * log_2));
+		
+	}
+
+	return entropy;
+}
+
+double calculate_entropy_file(PE_FILE *pe)
+{
+        unsigned int byte_count[256] = {0};
+	unsigned int n, size;
+	unsigned char buffer[1024];
+
+	n = size = 0;
+
+	rewind(pe->handle);
+
+	while((n = fread(buffer, 1, 1024, pe->handle)) != 0)
+        {
+		for (unsigned int i = 0; i < n; i++)
+                	byte_count[(int) buffer[i]]++, size++;
+        }
+
+        return calculate_entropy(byte_count, size);
+}
+
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
 	DWORD ep, stub_offset;
 	int callbacks;
+	double entropy;
 //	unsigned int num_sections;
 
 	if (argc < 2)
@@ -366,13 +402,23 @@ int main(int argc, char *argv[])
 
 	pe_init(&pe, fp); // inicializa o struct pe
 
-	if (!ispe(&pe))
+	if (!is_pe(&pe))
 		EXIT_ERROR("not a valid PE file");
+
+	// File entropy
+	entropy = calculate_entropy_file(&pe);
+	
+	if(entropy < 7.0)
+		snprintf(value, MAX_MSG, "Normal executable (%f)", entropy);
+	else
+		snprintf(value, MAX_MSG, "Packed executable (%f)", entropy);
+	output("File entropy", value);
+        memset(&value, 0, sizeof(value));
 
 	if (!pe_get_optional(&pe))
 		return 1;
 
-   ep = (pe.optional_ptr->_32 ? pe.optional_ptr->_32->AddressOfEntryPoint :
+  	ep = (pe.optional_ptr->_32 ? pe.optional_ptr->_32->AddressOfEntryPoint :
 	(pe.optional_ptr->_64 ? pe.optional_ptr->_64->AddressOfEntryPoint : 0));
 
 	// fake ep
@@ -447,5 +493,6 @@ int main(int argc, char *argv[])
 	print_timestamp(&coff.TimeDateStamp);
 
 	pe_deinit(&pe);
+
 	return 0;
 }

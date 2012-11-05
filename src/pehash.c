@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 	fseek(pe.handle, 0, SEEK_END);
 	pesize = ftell(pe.handle);
 	rewind(pe.handle);
-	data = (unsigned char *) xmalloc(pesize + 1);
+	data = xmalloc(pesize + 1);
 	fread(data, pesize, 1, pe.handle);
 
 	if (config.md5 || config.all)

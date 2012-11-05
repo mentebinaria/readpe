@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 
 	rewind(pe.handle);
 	buff = (unsigned char *) xmalloc(LINE_BUFFER);
-	memset(buff, 0, sizeof(buff));
+	memset(buff, 0, LINE_BUFFER);
 
 	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle);	ofs++)
 	{
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
 					
 			}
 			ascii = utf = pos = 0;
-			memset(buff, 0, sizeof(buff));
+			memset(buff, 0, LINE_BUFFER);
 		}
 	}
 	free(buff);

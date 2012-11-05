@@ -97,8 +97,9 @@ bool ishole(unsigned char *data, int max)
 }
 
 unsigned long get_hole(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
-{	
-	unsigned char *buff = xmalloc(32);
+{
+	const size_t buff_size = 32;
+	unsigned char *buff = xmalloc(buff_size);
 	long start, end;
 	unsigned long size = 0;
 
@@ -110,17 +111,17 @@ unsigned long get_hole(PE_FILE *pe, IMAGE_SECTION_HEADER *section)
 
 	while (start++ < end)
 	{
-		if (fread(buff, sizeof(buff), 1, pe->handle) != 1)
+		if (fread(buff, buff_size, 1, pe->handle) != 1)
 			break;
 
-		if (ishole(buff, sizeof(buff)))
+		if (ishole(buff, buff_size))
 		{
-			//printf("hole at %#lx\n", ftell(pe->handle) - sizeof(buff));
-			//memset(&buff, 0, sizeof(buff));
+			//printf("hole at %#lx\n", ftell(pe->handle) - buff_size);
+			//memset(&buff, 0, buff_size);
 			if (!size)
-				fseek(pe->handle, -sizeof(buff)+1, SEEK_CUR);
+				fseek(pe->handle, -buff_size+1, SEEK_CUR);
 
-			size += sizeof(buff);
+			size += buff_size;
 		}
 	}
 
@@ -198,7 +199,7 @@ int main(int argc, char *argv[])
 
 	rewind(datafile);
 	buff = xmalloc(data_size);
-	fread(buff, sizeof(buff), 1, datafile);
+	fread(buff, sizeof(buff), 1, datafile); // TODO: misleading sizeof? sizeof(pointer_type) == 4, or 8.
 
 	//'fwrite(buff, sizeof(buff), 1, pe.handle);
 	free(buff);

@@ -135,18 +135,6 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-static char *dec2bin(unsigned int dec, char *bin, unsigned int bits)
-{
-	unsigned int i;
-	
-	for(i=0; i < bits; i++)
-		bin[bits - i - 1] = (dec & (0x1 << i)) ? '1' : '0';
-
-	bin[bits] = '\0';
-
-	return bin;
-}
-
 static void print_sections(PE_FILE *pe)
 {
 	char s[MAX_MSG];

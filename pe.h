@@ -235,23 +235,32 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY {
 	WORD NumberOfIdEntries;
 } IMAGE_RESOURCE_DIRECTORY;
 
-typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
-	union {
-		struct {
-			DWORD NameOffset:31;
-			DWORD NameIsString:1;
-		} s1;
-		DWORD Name;
-		WORD Id;
-	} u1;
-	union {
-		DWORD OffsetToData;
-		struct {
-			DWORD OffsetToDirectory:31;
-			DWORD DataIsDirectory:1;
-		} s2;
-	} u2;
+typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY
+{
+        union
+        {
+                struct
+                {
+                        DWORD NameOffset:31;
+                        DWORD NameIsString:1;
+                } name;
+                DWORD Name;
+        } DirectoryName;
+        union
+        {
+                DWORD OffsetToData;
+                struct
+                {
+                        DWORD OffsetToDirectory:31;
+                        DWORD DataIsDirectory:1;
+                } data;
+        } DirectoryData;
 } IMAGE_RESOURCE_DIRECTORY_ENTRY;
+
+typedef struct _IMAGE_RESOURCE_DATA_STRING {
+  WORD  Length;
+  WORD  String[1];
+} IMAGE_RESOURCE_DATA_STRING;
 
 typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
 	DWORD OffsetToData;

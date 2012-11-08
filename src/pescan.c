@@ -143,11 +143,13 @@ static DWORD pe_get_tls_directory(PE_FILE *pe)
 	if (pe->num_directories > 32)
 		return 0;
 
-	for (unsigned int i=0; (i < pe->num_directories && pe->directories_ptr[i]); i++)
-	{
-		if ((i == IMAGE_DIRECTORY_ENTRY_TLS) && pe->directories_ptr[i]->Size > 0)
-			return pe->directories_ptr[i]->VirtualAddress;
-	}
+	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_TLS);
+	if (!directory)
+		return false;
+
+	if (directory->Size > 0)
+		return directory->VirtualAddress;
+
 	return 0;
 }
 

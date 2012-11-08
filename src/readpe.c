@@ -225,7 +225,7 @@ static void print_directories(PE_FILE *pe)
 
 	output("Data directories", NULL);
 
-	if (! pe->directories_ptr)
+	if (!pe->directories_ptr)
 		return;
 
 	for (i=0; i < pe->num_directories && i < 16; i++)
@@ -645,9 +645,11 @@ static void print_exports(PE_FILE *pe)
 	IMAGE_EXPORT_DIRECTORY exp;
 	DWORD rva, aux, faddr = 0;
 
-	va = pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_EXPORT] ? 
-	pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_EXPORT]->VirtualAddress : 0;
+	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	if (!directory)
+		EXIT_ERROR("export directory not found")
 
+	va = directory->VirtualAddress;
 	if (!va)
 		EXIT_ERROR("export directory not found");
 
@@ -697,15 +699,17 @@ static void print_imports(PE_FILE *pe)
 	char dllname[MAX_DLL_NAME];
 	unsigned int i;
 
-	va = pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_IMPORT] ? 
-	pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_IMPORT]->VirtualAddress : 0;
+	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	if (!directory)
+		EXIT_ERROR("import directory not found")
 
+	va = directory->VirtualAddress;
 	if (!va)
 		EXIT_ERROR("import directory not found");
 
 	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
 		EXIT_ERROR("error seeking file");
-	
+
 	memset(&id, 0, sizeof(id));
 	memset(&dllname, 0, sizeof(dllname));
 

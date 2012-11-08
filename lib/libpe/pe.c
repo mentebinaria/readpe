@@ -155,9 +155,13 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 		if (!pe_get_directories(pe))
 			return false;
 
-	if (pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->Size > 0)
+	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_RESOURCE);
+	if (!directory)
+		return false;
+
+	if (directory->Size > 0)
 	{
-		pe->addr_rsrc_dir = rva2ofs(pe, pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->VirtualAddress);
+		pe->addr_rsrc_dir = rva2ofs(pe, directory->VirtualAddress);
 		if (fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET))
 			return false;
 
@@ -168,6 +172,15 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	}
 	return false;
 }
+
+IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry)
+{
+	if (!pe || !pe->directories_ptr || entry > pe->num_directories)
+		return NULL;
+
+	return pe->directories_ptr[entry];
+}
+
 
 bool pe_get_sections(PE_FILE *pe)
 {

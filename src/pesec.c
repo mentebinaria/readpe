@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	pesec.c - Check for security features in PE files
 
 	Copyright (C) 2012 pev authors
@@ -64,7 +64,7 @@ static void parse_options(int argc, char *argv[])
 
 			case 'f':
 				parse_format(optarg); break;
-				
+
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
@@ -84,10 +84,11 @@ static bool stack_cookies(PE_FILE *pe)
 {
 	unsigned int i, found = 0;
 	unsigned char buff;
-	const unsigned char mvs2010[] =
-	{0x55, 0x8b, 0xec, 0x83,
-   0x33, 0xc5, 0x33, 0xcd,
-	0xe8, 0xc3};
+	const unsigned char mvs2010[] = {
+		0x55, 0x8b, 0xec, 0x83,
+		0x33, 0xc5, 0x33, 0xcd,
+		0xe8, 0xc3
+	};
 
 	if (!pe)
 		return false;
@@ -106,7 +107,7 @@ static bool stack_cookies(PE_FILE *pe)
 				found++;
 		}
 	}
-	
+
 	return (found == sizeof(mvs2010));
 }
 
@@ -205,7 +206,7 @@ int main(int argc, char *argv[])
 	FILE *fp = NULL;
 	WORD dllchar = 0;
 	char field[MAX_MSG];
-	
+
 	if (argc < 2)
 	{
 		usage();
@@ -235,15 +236,15 @@ int main(int argc, char *argv[])
 		return 1;
 
 	// aslr
-	snprintf(field, MAX_MSG, "ASLR");	
+	snprintf(field, MAX_MSG, "ASLR");
 	output(field, (dllchar & 0x40) ? "yes" : "no");
 
 	// dep/nx
-	snprintf(field, MAX_MSG, "DEP/NX");	
+	snprintf(field, MAX_MSG, "DEP/NX");
 	output(field, (dllchar & 0x100) ? "yes" : "no");
 
 	// seh
-	snprintf(field, MAX_MSG, "SEH");	
+	snprintf(field, MAX_MSG, "SEH");
 	output(field, (dllchar & 0x400) ? "no" : "yes");
 
 	// stack cookies
@@ -255,6 +256,6 @@ int main(int argc, char *argv[])
 
 	// libera a memoria
 	pe_deinit(&pe);
-	
+
 	return 0;
 }

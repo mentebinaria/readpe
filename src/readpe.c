@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	readpe.c - show PE file headers
 
 	Copyright (C) 2012 pev authors
@@ -116,7 +116,7 @@ void parse_options(int argc, char *argv[])
 			case 'h':
 				config.all = false;
 				parse_headers(optarg); break;
-				
+
 			case 'i':
 				config.all = false;
 				config.imports = true; break;
@@ -583,18 +583,18 @@ static void print_imported_functions(PE_FILE *pe, long offset)
 	char fname[MAX_FUNCTION_NAME];
 	char hintstr[16];
 	unsigned int i;
-	
+
 	if (fseek(pe->handle, offset, SEEK_SET))
 		return;
 
 	memset(&fname, 0, sizeof(fname));
 	memset(&hintstr, 0, sizeof(hintstr));
-	
+
 	while (1)
 	{
 		if (!fread(&fptr, (pe->architecture == PE64) ? sizeof(QWORD) : sizeof(DWORD), 1, pe->handle))
 			return;
-		
+
 		if (!fptr)
 			break;
 
@@ -605,26 +605,26 @@ static void print_imported_functions(PE_FILE *pe, long offset)
 		{
 			// save file pointer in functions array
 			aux2 = ftell(pe->handle);
-		
+
 			if (fseek(pe->handle, rva2ofs(pe, fptr), SEEK_SET))
 				return;
 
 			// follow function pointer
 			if (!fread(&hint, sizeof(hint), 1, pe->handle))
 				return;
-		
+
 			for (i=0; i<MAX_FUNCTION_NAME; i++)
 			{
 				if (!fread(&c, sizeof(c), 1, pe->handle))
 					return;
-			
+
 				if (!isprint((int)c)) // 0 and non-printable
 					break;
-			
+
 				fname[i] = c;
 			}
 			snprintf(hintstr, 15, "%d", hint);
-		
+
 			// restore file pointer to functions array
 			if (fseek(pe->handle, aux2, SEEK_SET))
 				return;
@@ -635,7 +635,7 @@ static void print_imported_functions(PE_FILE *pe, long offset)
 		memset(&fname, 0, sizeof(fname));
 		memset(&hintstr, 0, sizeof(hintstr));
 	}
-		
+
 	fseek(pe->handle, aux, SEEK_SET);
 }
 
@@ -724,7 +724,7 @@ static void print_imports(PE_FILE *pe)
 
 		aux = ftell(pe->handle);
 		va = rva2ofs(pe, id.Name);
-		
+
 		if (!va)
 			return;
 
@@ -736,16 +736,16 @@ static void print_imports(PE_FILE *pe)
 		for (i=0; i < MAX_DLL_NAME; i++)
 		{
 			fread(&c, sizeof(c), 1, pe->handle);
-			
+
 			if (!c)
 				break;
-			
+
 			dllname[i] = c;
 		}
-		
+
 		output(dllname, NULL);
 		memset(&dllname, 0, sizeof(dllname));
-		
+
 		if (fseek(pe->handle, aux, SEEK_SET)) // restore file pointer
 			return;
 
@@ -763,7 +763,7 @@ int main(int argc, char *argv[])
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
-	
+
 	if (argc < 2)
 	{
 		usage();
@@ -815,14 +815,14 @@ int main(int argc, char *argv[])
 			print_directories(&pe);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
-	
+
 	// imports
 	if (config.imports || config.all)
 	{
 		if (pe_get_directories(&pe))
 			print_imports(&pe);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
-	}	
+	}
 
 	// exports
 	if (config.exports || config.all)

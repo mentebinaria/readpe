@@ -34,7 +34,7 @@ void *xmalloc(size_t size)
 
 	return new_mem;
 }
- 
+
 // return a rva of given offset
 DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
 {
@@ -48,7 +48,7 @@ DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
 		ofs < (pe->sections_ptr[i]->PointerToRawData + pe->sections_ptr[i]->SizeOfRawData))
 			return ofs + pe->sections_ptr[i]->VirtualAddress;
 	}
-	return 0;	
+	return 0;
 }
 
 QWORD rva2ofs(PE_FILE *pe, QWORD rva)
@@ -57,7 +57,7 @@ QWORD rva2ofs(PE_FILE *pe, QWORD rva)
 		return 0;
 
 	for (unsigned int i=0; i < pe->num_sections; i++)
-	{   
+	{
 		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
 		rva < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
 			return rva - pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData;
@@ -107,7 +107,7 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 
 	if (!pe->num_sections || pe->num_sections > MAX_SECTIONS)
 		return NULL;
-		
+
 	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
@@ -122,10 +122,10 @@ bool pe_get_resource_entries(PE_FILE *pe)
 
 	if (!pe)
 		return false;
-	
+
 	if (pe->rsrc_entries_ptr)
 		return pe->rsrc_entries_ptr;
-	
+
 	if (!pe_get_resource_directory(pe, &dir))
 		return false;
 
@@ -135,11 +135,11 @@ bool pe_get_resource_entries(PE_FILE *pe)
 		return false;
 
 	pe->rsrc_entries_ptr = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
-	
+
 	for (unsigned int i=0; i < pe->num_rsrc_entries; i++)
 	{
 		pe->rsrc_entries_ptr[i] = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
-		
+
 		if (!fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
 			return false;
 	}
@@ -368,7 +368,7 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 {
 	if (!pe)
 		return false;
-	
+
 	if (!pe->handle)
 		return false;
 
@@ -386,10 +386,10 @@ QWORD pe_get_size(PE_FILE *pe)
 {
 	if (pe->size)
 		return pe->size;
-	
+
 	if (fseek(pe->handle, 0, SEEK_END))
 		return 0;
-	
+
 	pe->size = ftell(pe->handle);
 	rewind(pe->handle);
 	return pe->size;
@@ -427,9 +427,9 @@ bool is_pe(PE_FILE *pe)
 		return false;
 
 	if (pesig != 0x4550) // "PE\0\0"
-		return false;	
+		return false;
 
-	rewind(pe->handle);	
+	rewind(pe->handle);
 	return true;
 }
 

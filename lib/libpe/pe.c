@@ -384,6 +384,7 @@ bool is_pe(PE_FILE *pe)
 	if (pe->handle == NULL)
 		return false;
 
+	rewind(pe->handle);	
 	if (!fread(&header, sizeof(WORD), 1, pe->handle))
 		return false;
 

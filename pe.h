@@ -291,29 +291,29 @@ typedef struct _IMAGE_TLS_DIRECTORY64 {
 } IMAGE_TLS_DIRECTORY64;
 
 typedef struct _IMAGE_EXPORT_DIRECTORY {
-  DWORD Characteristics;
-  DWORD TimeDateStamp;
-  WORD MajorVersion;
-  WORD MinorVersion;
-  DWORD Name;
-  DWORD Base;
-  DWORD NumberOfFunctions;
-  DWORD NumberOfNames;
-  DWORD AddressOfFunctions;
-  DWORD AddressOfNames;
-  DWORD AddressOfNameOrdinals;
- } IMAGE_EXPORT_DIRECTORY;
+	DWORD Characteristics;
+	DWORD TimeDateStamp;
+	WORD MajorVersion;
+	WORD MinorVersion;
+	DWORD Name;
+	DWORD Base;
+	DWORD NumberOfFunctions;
+	DWORD NumberOfNames;
+	DWORD AddressOfFunctions;
+	DWORD AddressOfNames;
+	DWORD AddressOfNameOrdinals;
+} IMAGE_EXPORT_DIRECTORY;
 
 typedef struct _IMAGE_IMPORT_DESCRIPTOR {
-  union {
-  DWORD Characteristics; // 0 for terminating null import descriptor
-  DWORD OriginalFirstThunk; // RVA to original unbound IAT
-  } u1;
-  DWORD TimeDateStamp;
-  DWORD ForwarderChain; // -1 if no forwarders
-  DWORD Name;
-  // RVA to IAT (if bound this IAT has actual addresses)
-  DWORD FirstThunk;
+	union {
+		DWORD Characteristics; // 0 for terminating null import descriptor
+		DWORD OriginalFirstThunk; // RVA to original unbound IAT
+	} u1;
+	DWORD TimeDateStamp;
+	DWORD ForwarderChain; // -1 if no forwarders
+	DWORD Name;
+	// RVA to IAT (if bound this IAT has actual addresses)
+	DWORD FirstThunk;
 } IMAGE_IMPORT_DESCRIPTOR;
 
 // import name entry
@@ -343,18 +343,18 @@ typedef struct _IMAGE_THUNK_DATA32 {
 typedef struct _PE_FILE
 {
 	FILE *handle;
-	
+
 	bool isdll;
 	WORD e_lfanew;
 	WORD architecture;
 	QWORD entrypoint;
 	QWORD imagebase;
 	QWORD size;
-	
+
 	WORD num_sections;
 	WORD num_directories;
 	WORD num_rsrc_entries;
-	
+
 	WORD addr_sections;
 	WORD addr_directories;
 	WORD addr_dos;
@@ -362,7 +362,7 @@ typedef struct _PE_FILE
 	WORD addr_coff;
 	WORD addr_rsrc_sec;
 	WORD addr_rsrc_dir;
-	
+
 	// pointers (will be freed if needed)
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
 	IMAGE_SECTION_HEADER **sections_ptr;
@@ -370,12 +370,12 @@ typedef struct _PE_FILE
 	//IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
-	
+
 } PE_FILE;
 
 #pragma pack(pop)
 
-static const RESOURCE_ENTRY resource_types[] = 
+static const RESOURCE_ENTRY resource_types[] =
 {
 	{"RT_CURSOR", 1},
 	{"RT_BITMAP", 2},

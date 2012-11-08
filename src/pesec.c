@@ -20,10 +20,9 @@
 */
 
 #include "pesec.h"
+#include <assert.h>
 
 static int ind;
-
-
 
 static void usage()
 {
@@ -111,6 +110,95 @@ static bool stack_cookies(PE_FILE *pe)
 	return (found == sizeof(mvs2010));
 }
 
+static int roundUp(int numToRound, int multiple)
+{
+	if (multiple == 0)
+		return 0;
+	return (numToRound + multiple - 1) / multiple * multiple;
+}
+
+static int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob) {
+	int result = 0;
+	return result;
+}
+
+static void print_certificates(PE_FILE *pe)
+{
+	if (!pe_get_directories(pe))
+		EXIT_ERROR("unable to read the Directories entry from Optional header");
+
+	const IMAGE_DATA_DIRECTORY * const directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_SECURITY);
+	if (directory == NULL) {
+		printf("security directory not found\n");
+		// TODO: Should we exit using EXIT_ERROR?
+		return;
+	}
+
+	if (directory->VirtualAddress == 0 || directory->Size == 0)
+		return;
+
+	DWORD fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
+
+	printf("Certificates:\n");
+	while (fileOffset - directory->VirtualAddress < directory->Size)
+	{
+		// Read the whole size of this WIN_CERTIFICATE
+		if (fseek(pe->handle, fileOffset, SEEK_SET))
+			EXIT_ERROR("unable to seek");
+
+		DWORD dwCertLen = 0;
+
+		if (!fread(&dwCertLen, sizeof(DWORD), 1, pe->handle))
+			EXIT_ERROR("unable to read");
+
+		// Read the whole WIN_CERTIFICATE
+		if (fseek(pe->handle, fileOffset, SEEK_SET))
+			EXIT_ERROR("unable to seek");
+
+		WIN_CERTIFICATE *cert = xmalloc(dwCertLen);
+
+		if (!fread(cert, dwCertLen, 1, pe->handle)) {
+			free(cert);
+			EXIT_ERROR("unable to read");
+		}
+
+		printf("  length    %d bytes\n", cert->dwLength);
+		printf("  revision  %s\n", cert->wRevision == WIN_CERT_REVISION_1_0 ? "1" :
+									cert->wRevision == WIN_CERT_REVISION_2_0 ? "2" : "unknown");
+		printf("  type      %x", cert->wCertificateType);
+		switch (cert->wCertificateType)
+		{
+			case WIN_CERT_TYPE_X509: printf(" (X509)"); break;
+			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: printf(" (PKCS_SIGNED_DATA)"); break;
+			case WIN_CERT_TYPE_TS_STACK_SIGNED: printf(" (TS_STACK_SIGNED)"); break;
+		}
+		printf("\n");
+
+		fileOffset += roundUp(cert->dwLength, 8); // Offset to next certificate.
+
+		if (fileOffset - directory->VirtualAddress > directory->Size)
+			EXIT_ERROR("Either the attribute certificate table or the Size field is corrupted");
+
+		switch (cert->wCertificateType) {
+			case WIN_CERT_TYPE_X509:
+				EXIT_ERROR("WIN_CERT_TYPE_X509 is not implemented");
+			case WIN_CERT_TYPE_PKCS_SIGNED_DATA:
+			{
+				CRYPT_DATA_BLOB p7data;
+				p7data.cbData = cert->dwLength - (3 * sizeof(DWORD));
+				p7data.pbData = cert->bCertificate;
+				parse_pkcs7_data(&p7data);
+				break;
+			}
+			case WIN_CERT_TYPE_TS_STACK_SIGNED:
+				EXIT_ERROR("WIN_CERT_TYPE_TS_STACK_SIGNED is not implemented");
+		}
+
+		free(cert);
+	}
+	printf("\n");
+}
+
 int main(int argc, char *argv[])
 {
 	PE_FILE pe;
@@ -125,8 +213,10 @@ int main(int argc, char *argv[])
 	}
 
 	parse_options(argc, argv); // opcoes
-	
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
+
+	const char *path = argv[argc-1];
+
+	if ((fp = fopen(path, "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
 
 	pe_init(&pe, fp); // inicializa o struct pe
@@ -159,7 +249,10 @@ int main(int argc, char *argv[])
 	// stack cookies
 	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
 	output(field, stack_cookies(&pe) ? "yes" : "no");
-	
+
+	// certificates
+	print_certificates(&pe);
+
 	// libera a memoria
 	pe_deinit(&pe);
 	

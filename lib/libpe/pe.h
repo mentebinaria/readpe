@@ -20,21 +20,15 @@
 #ifndef LIBPE_H
 #define LIBPE_H
 
-#include <inttypes.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "types.h"
+#include "dir_entry_security.h"
 
 #define PE32 0x10b
 #define PE64 0x20b
 #define MZ 0x5a4d
-
-typedef uint32_t DWORD;
-typedef int32_t LONG;
-typedef uint8_t BYTE;
-typedef uint16_t WORD;
-typedef uint64_t QWORD;
 
 #define MAX_SECTIONS 96
 

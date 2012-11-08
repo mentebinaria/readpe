@@ -210,8 +210,6 @@ bool pe_get_sections(PE_FILE *pe)
 
 bool pe_get_directories(PE_FILE *pe)
 {
-	IMAGE_DATA_DIRECTORY **dirs;
-
 	if (!pe)
 		return false;
 
@@ -230,19 +228,27 @@ bool pe_get_directories(PE_FILE *pe)
 	if (pe->num_directories > 32)
 		return false;
 
-	dirs = xmalloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
+	const size_t directories_size = sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories;
+
+	pe->directories_ptr = xmalloc(directories_size);
+	if (!pe->directories_ptr)
+		return false;
+
+	// Zero out the entire block, otherwise if one allocation fails for dirs[i],
+	// pe_deinit() will try to free wild pointers. This of course does not take
+	// into consideration that an allocation failure will make the process die.
+	memset(pe->directories_ptr, 0, directories_size);
 
 	for (unsigned int i=0; i < pe->num_directories; i++)
 	{
-		dirs[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
-		if (!fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
+		pe->directories_ptr[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
+		if (!fread(pe->directories_ptr[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
 			return false;
 	}
 
 	pe->addr_sections = ftell(pe->handle);
-	pe->directories_ptr = dirs;
 
-	if (!pe->addr_sections || !pe->directories_ptr)
+	if (!pe->addr_sections)
 		return false;
 
 	return true;
@@ -269,7 +275,11 @@ bool pe_get_optional(PE_FILE *pe)
 	if (fseek(pe->handle, pe->addr_optional, SEEK_SET))
 		return false;
 
-	header = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
+	pe->optional_ptr = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
+	if (!pe->optional_ptr)
+		return false;
+
+	header = pe->optional_ptr;
 
 	switch (pe->architecture)
 	{
@@ -298,10 +308,9 @@ bool pe_get_optional(PE_FILE *pe)
 			return false;
 	}
 
-	pe->optional_ptr = header;
 	pe->addr_directories = ftell(pe->handle);
 
-	if (!pe->optional_ptr || !pe->addr_directories)
+	if (!pe->addr_directories)
 		return false;
 
 	return true;

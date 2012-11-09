@@ -143,32 +143,34 @@ static void print_certificates(PE_FILE *pe)
 	printf("Certificates:\n");
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
-		// Read the whole size of this WIN_CERTIFICATE
 		if (fseek(pe->handle, fileOffset, SEEK_SET))
 			EXIT_ERROR("unable to seek");
 
 		DWORD dwCertLen = 0;
 
+		// Read the size of this WIN_CERTIFICATE
 		if (!fread(&dwCertLen, sizeof(DWORD), 1, pe->handle))
 			EXIT_ERROR("unable to read");
 
-		// Read the whole WIN_CERTIFICATE
 		if (fseek(pe->handle, fileOffset, SEEK_SET))
 			EXIT_ERROR("unable to seek");
 
 		WIN_CERTIFICATE *cert = xmalloc(dwCertLen);
 
+		// Read the whole WIN_CERTIFICATE based on the previously read size
 		if (!fread(cert, dwCertLen, 1, pe->handle)) {
 			free(cert);
 			EXIT_ERROR("unable to read");
 		}
 
-		printf("  length    %d bytes\n", cert->dwLength);
-		printf("  revision  %s\n", cert->wRevision == WIN_CERT_REVISION_1_0 ? "1" :
-									cert->wRevision == WIN_CERT_REVISION_2_0 ? "2" : "unknown");
-		printf("  type      %x", cert->wCertificateType);
+		printf("  length    %u bytes\n", cert->dwLength);
+		printf("  revision  0x%x (%s)\n", cert->wRevision,
+			cert->wRevision == WIN_CERT_REVISION_1_0 ? "1" :
+			cert->wRevision == WIN_CERT_REVISION_2_0 ? "2" : "unknown");
+		printf("  type      0x%x", cert->wCertificateType);
 		switch (cert->wCertificateType)
 		{
+			default: printf(" (UNKNOWN)"); break;
 			case WIN_CERT_TYPE_X509: printf(" (X509)"); break;
 			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: printf(" (PKCS_SIGNED_DATA)"); break;
 			case WIN_CERT_TYPE_TS_STACK_SIGNED: printf(" (TS_STACK_SIGNED)"); break;
@@ -180,9 +182,20 @@ static void print_certificates(PE_FILE *pe)
 		if (fileOffset - directory->VirtualAddress > directory->Size)
 			EXIT_ERROR("Either the attribute certificate table or the Size field is corrupted");
 
+		switch (cert->wRevision) {
+			default:
+				EXIT_ERROR("Unknown wRevision");
+			case WIN_CERT_REVISION_1_0:
+				EXIT_ERROR("WIN_CERT_REVISION_1_0 is not supported");
+			case WIN_CERT_REVISION_2_0:
+				break;
+		}
+
 		switch (cert->wCertificateType) {
+			default:
+				EXIT_ERROR("Unknown wCertificateType");
 			case WIN_CERT_TYPE_X509:
-				EXIT_ERROR("WIN_CERT_TYPE_X509 is not implemented");
+				EXIT_ERROR("WIN_CERT_TYPE_X509 is not supported");
 			case WIN_CERT_TYPE_PKCS_SIGNED_DATA:
 			{
 				CRYPT_DATA_BLOB p7data;
@@ -192,7 +205,11 @@ static void print_certificates(PE_FILE *pe)
 				break;
 			}
 			case WIN_CERT_TYPE_TS_STACK_SIGNED:
-				EXIT_ERROR("WIN_CERT_TYPE_TS_STACK_SIGNED is not implemented");
+				EXIT_ERROR("WIN_CERT_TYPE_TS_STACK_SIGNED is not supported");
+			case WIN_CERT_TYPE_EFI_PKCS115:
+				EXIT_ERROR("WIN_CERT_TYPE_EFI_PKCS115 is not supported");
+			case WIN_CERT_TYPE_EFI_GUID:
+				EXIT_ERROR("WIN_CERT_TYPE_EFI_GUID is not supported");
 		}
 
 		free(cert);

@@ -175,7 +175,7 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 
 IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry)
 {
-	if (!pe || !pe->directories_ptr || entry > pe->num_directories)
+	if (!pe || !pe->directories_ptr || entry > pe->num_directories - 1)
 		return NULL;
 
 	return pe->directories_ptr[entry];

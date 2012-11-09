@@ -22,11 +22,15 @@ typedef enum {
 	WIN_CERT_TYPE_X509				= 0x0001, // bCertificate contains an X.509 (Certificate)
 	WIN_CERT_TYPE_PKCS_SIGNED_DATA	= 0x0002, // bCertificate contains a PKCS#7 (SignedData structure)
 	WIN_CERT_TYPE_RESERVED_1		= 0x0003, // Reserved
-	WIN_CERT_TYPE_TS_STACK_SIGNED	= 0x0004  // Terminal Server Protocol Stack (Certificate signing)
+	WIN_CERT_TYPE_TS_STACK_SIGNED	= 0x0004, // Terminal Server Protocol Stack (Certificate signing)
+	WIN_CERT_TYPE_EFI_PKCS115		= 0x0EF0,
+	WIN_CERT_TYPE_EFI_GUID			= 0x0EF1
 } CertType;
 
+#pragma pack(4)
+
 // Originally declared in Wintrust.h
-typedef struct _WIN_CERTIFICATE {
+typedef struct {
 	// Specified the size, in bytes, of the WIN_CERTIFICATE structure,
 	// including the data in bCertificate.
 	DWORD dwLength;
@@ -45,10 +49,11 @@ typedef struct _WIN_CERTIFICATE {
 	BYTE bCertificate[ANYSIZE_ARRAY];
 } WIN_CERTIFICATE;
 
-typedef struct _CRYPTOAPI_BLOB {
+typedef struct {
 	DWORD cbData;
 	BYTE *pbData;
 } CRYPT_DATA_BLOB;
 
+#pragma pack()
 
 #endif

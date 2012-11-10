@@ -258,15 +258,15 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY
 } IMAGE_RESOURCE_DIRECTORY_ENTRY;
 
 typedef struct _IMAGE_RESOURCE_DATA_STRING {
-  WORD  Length;
-  WORD  String[1];
+  WORD  length;
+  WORD  string[1];
 } IMAGE_RESOURCE_DATA_STRING;
 
 typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
-	DWORD OffsetToData;
-	DWORD Size;
-	DWORD CodePage;
-	DWORD Reserved;
+	DWORD offsetToData;
+	DWORD size;
+	DWORD codePage;
+	DWORD reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
 
 typedef struct tagVS_FIXEDFILEINFO {

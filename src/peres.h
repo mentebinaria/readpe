@@ -25,8 +25,13 @@
 #include "common.h"
 
 #define PROGRAM "peres"
-#define BUFSIZE 4
-#define OVECCOUNT 30
+
+struct options {
+	bool exportAll;
+	bool infoAll;
+	bool exportType;
+	bool infoType;
+};
 
 typedef struct _NODE_PERES
 {
@@ -38,5 +43,7 @@ typedef struct _NODE_PERES
 		IMAGE_RESOURCE_DATA_ENTRY dataEntry;
 	} node;
 } NODE_PERES;
+
+struct options config;
 
 #endif

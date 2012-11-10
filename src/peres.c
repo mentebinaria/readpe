@@ -24,6 +24,37 @@
 #include "common.h"
 #include "../lib/libudis86/udis86.h"
 
+void showResourceDirectory(IMAGE_RESOURCE_DIRECTORY resourceDirectory)
+{
+	printf("Characteristics: %d\n", resourceDirectory.Characteristics);
+	printf("Timestamp: %d\n", resourceDirectory.TimeDateStamp);
+	printf("Major Version: %d\n", resourceDirectory.MajorVersion);
+	printf("Minor Version: %d\n", resourceDirectory.MinorVersion);
+	printf("Named entries: %d\n", resourceDirectory.NumberOfNamedEntries);
+	printf("Id entries: %d\n", resourceDirectory.NumberOfIdEntries);
+}
+
+void showDirectoryEntry(IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry)
+{
+	printf("Name offset: %d\n", directoryEntry.DirectoryName.name.NameOffset);
+	printf("Name is string: %d\n", directoryEntry.DirectoryName.name.NameIsString);
+	printf("Offset to directory: %x\n", directoryEntry.DirectoryData.data.OffsetToDirectory);
+	printf("Data is directory: %d\n", directoryEntry.DirectoryData.data.DataIsDirectory);
+}
+
+void showDataString(IMAGE_RESOURCE_DATA_STRING dataString)
+{
+	printf("String len: %d\n", dataString.length);
+	printf("String: %s\n\n", dataString.string);
+}
+
+void showDataEntry(IMAGE_RESOURCE_DATA_ENTRY dataEntry)
+{
+	printf("OffsetToData: %x\n", dataEntry.offsetToData);
+	printf("Size: %d\n", dataEntry.size);
+	printf("CodePage: %d\n", dataEntry.codePage);
+	printf("Reserved: %d\n", dataEntry.reserved);
+}
 
 void discovery(PE_FILE *pe)
 {
@@ -70,20 +101,15 @@ void discovery(PE_FILE *pe)
 	IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry1;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry2;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry3;
-	IMAGE_RESOURCE_DATA_STRING DataString;
-	IMAGE_RESOURCE_DATA_ENTRY DataEntry;
+	IMAGE_RESOURCE_DATA_STRING dataString;
+	IMAGE_RESOURCE_DATA_ENTRY dataEntry;
 
 	printf("Current Position: %x\n", ftell(pe->handle));
 	fseek(pe->handle, raiz, SEEK_SET); // posiciona em 0x72
 	printf("Current Position: %x\n\n", ftell(pe->handle));
 	fread(&resourceDirectory1, sizeof(resourceDirectory1), 1, pe->handle);
 
-	printf("Characteristics: %d\n", resourceDirectory1.Characteristics);
-	printf("Timestamp: %d\n", resourceDirectory1.TimeDateStamp);
-	printf("Major Version: %d\n", resourceDirectory1.MajorVersion);
-	printf("Minor Version: %d\n", resourceDirectory1.MinorVersion);
-	printf("Named entries: %d\n", resourceDirectory1.NumberOfNamedEntries);
-	printf("Id entries: %d\n", resourceDirectory1.NumberOfIdEntries);
+	showResourceDirectory(resourceDirectory1);
 
 	printf("Current Position: %x\n\n", ftell(pe->handle));
 
@@ -111,10 +137,7 @@ void discovery(PE_FILE *pe)
 		fread(&directoryEntry1, sizeof(directoryEntry1), 1, pe->handle);
 		printf("\tCurrent Position: %x\n", ftell(pe->handle));
 
-		printf("\tName offset: %d\n", directoryEntry1.DirectoryName.name.NameOffset);
-		printf("\tName is string: %d\n", directoryEntry1.DirectoryName.name.NameIsString);
-		printf("\tOffset to directory: %x\n", directoryEntry1.DirectoryData.data.OffsetToDirectory);
-		printf("\tData is directory: %d\n", directoryEntry1.DirectoryData.data.DataIsDirectory);
+		showDirectoryEntry(directoryEntry1);
 
         if (directoryEntry1.DirectoryData.data.DataIsDirectory)
         {
@@ -123,12 +146,8 @@ void discovery(PE_FILE *pe)
 
         	printf("\n\t%d - Resource Directory:\n", i);
         	printf("\tCurrent Position: %x\n", ftell(pe->handle));
-        	printf("\Characteristics: %d\n", resourceDirectory2.Characteristics);
-        	printf("\tTimestamp: %d\n", resourceDirectory2.TimeDateStamp);
-        	printf("\tMajor Version: %d\n", resourceDirectory2.MajorVersion);
-        	printf("\tMinor Version: %d\n", resourceDirectory2.MinorVersion);
-        	printf("\tNamed Entries: %d\n", resourceDirectory2.NumberOfNamedEntries);
-        	printf("\tId Entries: %d\n", resourceDirectory2.NumberOfIdEntries);
+
+        	showResourceDirectory(resourceDirectory2);
 
         	for(j = 1, offsetDirectory2 = 0; j <= (resourceDirectory2.NumberOfNamedEntries+resourceDirectory2.NumberOfIdEntries); j++)
         	{
@@ -146,61 +165,50 @@ void discovery(PE_FILE *pe)
 				printf("\n\t\t%d/%d - Resource directory entry:\n", i, j);
 				fread(&directoryEntry2, sizeof(directoryEntry2), 1, pe->handle);
 				printf("\t\tPosição atual: %x\n", ftell(pe->handle));
-				printf("\t\tName offset: %d\n", directoryEntry2.DirectoryName.name.NameOffset);
-				printf("\t\tName is string: %d\n", directoryEntry2.DirectoryName.name.NameIsString);
-				printf("\t\tOffset to directory: %x\n", directoryEntry2.DirectoryData.data.OffsetToDirectory);
-				printf("\t\tData is directory: %d\n", directoryEntry2.DirectoryData.data.DataIsDirectory);
+
+				showDirectoryEntry(directoryEntry2);
 
 				fseek(pe->handle, (raiz + directoryEntry2.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
 				fread(&resourceDirectory3, sizeof(resourceDirectory3), 1, pe->handle);
 
 				printf("\n\t\t%d/%d - Resource Directory:\n", i, j);
 				printf("\t\tCurrent Position: %x\n", ftell(pe->handle));
-				printf("\t\Characteristics: %d\n", resourceDirectory3.Characteristics);
-				printf("\t\tTimestamp: %d\n", resourceDirectory3.TimeDateStamp);
-				printf("\t\tMajor Version: %d\n", resourceDirectory3.MajorVersion);
-				printf("\t\tMinor Version: %d\n", resourceDirectory3.MinorVersion);
-				printf("\t\tNamed Entries: %d\n", resourceDirectory3.NumberOfNamedEntries);
-				printf("\t\tId Entries: %d\n", resourceDirectory3.NumberOfIdEntries);
+
+				showResourceDirectory(resourceDirectory3);
 
 				for(y = 1; y <= (resourceDirectory3.NumberOfNamedEntries+resourceDirectory3.NumberOfIdEntries); y++)
 				{
 					printf("\n\t\t\t%d/%d/%d - Resource Directory Entry:\n", i, j, y);
 					fread(&directoryEntry3, sizeof(directoryEntry3), 1, pe->handle);
 					printf("\t\t\tCurrent Position: %x\n", ftell(pe->handle));
-					printf("\t\t\tName offset: %d\n", directoryEntry3.DirectoryName.name.NameOffset);
-					printf("\t\t\tName is string: %d\n", directoryEntry3.DirectoryName.name.NameIsString);
-					printf("\t\t\tOffset to directory: %x\n", directoryEntry3.DirectoryData.data.OffsetToDirectory);
-					printf("\t\t\tData is directory: %d\n", directoryEntry3.DirectoryData.data.DataIsDirectory);
+
+					showDirectoryEntry(directoryEntry3);
 
 					fseek(pe->handle, (raiz + directoryEntry3.DirectoryName.name.NameOffset), SEEK_SET);
-					fread(&DataString, sizeof(DataString), 1, pe->handle);
+					fread(&dataString, sizeof(dataString), 1, pe->handle);
 
 					fseek(pe->handle, (raiz + directoryEntry3.DirectoryData.data.OffsetToDirectory), SEEK_SET);
-					fread(&DataEntry, sizeof(DataEntry), 1, pe->handle);
+					fread(&dataEntry, sizeof(dataEntry), 1, pe->handle);
 
 					printf("\n\t\t\t%d/%d/%d - Read entry/string:\n", i, j, y);
 					printf("\t\t\tPosition: %x\n", ftell(pe->handle));
-					printf("\t\t\tString len: %d\n", DataString.Length);
-					printf("\t\t\tString: %s\n\n", DataString.String);
 
-					printf("\t\t\tOffsetToData: %x\n", DataEntry.OffsetToData);
-					printf("\t\t\tSize: %d\n", DataEntry.Size);
-					printf("\t\t\tCodePage: %d\n", DataEntry.CodePage);
-					printf("\t\t\tReserved: %d\n", DataEntry.Reserved);
+					showDataString(dataString);
 
-					buffer = xmalloc(DataEntry.Size);
-					memset(buffer, 0, DataEntry.Size);
+					showDataEntry(dataEntry);
+
+					buffer = xmalloc(dataEntry.size);
+					memset(buffer, 0, dataEntry.size);
 					printf("\n\t\t\tPosição: %x\n", ftell(pe->handle));
-					offsetData = rva2ofs(pe, DataEntry.OffsetToData);
+					offsetData = rva2ofs(pe, dataEntry.offsetToData);
 					fseek(pe->handle, offsetData, SEEK_SET);
-					printf("\t\t\tRVA: %x, OFFSET: %x, POSITION: %x", DataEntry.OffsetToData, offsetData, ftell(pe->handle));
+					printf("\t\t\tRVA: %x, OFFSET: %x, POSITION: %x", dataEntry.offsetToData, offsetData, ftell(pe->handle));
 					memset(&nomeArquivo, 0, 100);
-					if(fread(buffer, DataEntry.Size+1, 1, pe->handle))
+					if(fread(buffer, dataEntry.size+1, 1, pe->handle))
 					{
 						snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d.bin", i, j, y);
 						fpSave = fopen(&nomeArquivo, "wb+");
-						fwrite(buffer, DataEntry.Size, 1, fpSave);
+						fwrite(buffer, dataEntry.size, 1, fpSave);
 						fclose(fpSave);
 						printf("\n\t\t\tSave on: %s\n", nomeArquivo);
 					}

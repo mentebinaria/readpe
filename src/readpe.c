@@ -649,7 +649,10 @@ static void print_exports(PE_FILE *pe)
 	pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_EXPORT]->VirtualAddress : 0;
 
 	if (!va)
-		EXIT_ERROR("export directory not found");
+	{
+		fprintf(stderr, "export directory not found\n");
+		return;
+	}
 
 	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
 		EXIT_ERROR("unable to seek until export directory");

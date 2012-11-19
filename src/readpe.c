@@ -651,7 +651,10 @@ static void print_exports(PE_FILE *pe)
 
 	va = directory->VirtualAddress;
 	if (!va)
-		EXIT_ERROR("export directory not found");
+	{
+		fprintf(stderr, "export directory not found\n");
+		return;
+	}
 
 	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
 		EXIT_ERROR("unable to seek until export directory");

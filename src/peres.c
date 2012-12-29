@@ -107,6 +107,7 @@ NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 	((NODE_PERES *) currentNode->nextNode)->lastNode = currentNode;
 	currentNode = currentNode->nextNode;
 	currentNode->nodeType = typeOfNextNode;
+	currentNode->nextNode = NULL;
 	return currentNode;
 }
 
@@ -155,6 +156,23 @@ NODE_PERES * getNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES node
 	}
 
 	return NULL;
+}
+
+void freeNodes(NODE_PERES *currentNode)
+{
+	while(currentNode->nextNode != NULL)
+	{
+		currentNode = currentNode->nextNode;
+	}
+
+	while(currentNode->lastNode != NULL)
+	{
+		currentNode = currentNode->lastNode;
+		//printf("\nfree");
+		free(currentNode->nextNode);
+	}
+	//printf("\nfree");
+	free(currentNode);
 }
 
 void discovery(PE_FILE *pe)
@@ -302,6 +320,8 @@ void discovery(PE_FILE *pe)
 			}
         }
 	}
+
+	freeNodes(nodePeres);
 }
 
 int main(int argc, char **argv)

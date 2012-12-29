@@ -103,7 +103,7 @@ void showNode(NODE_PERES *nodePeres)
 
 NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
-	currentNode->nextNode = malloc(sizeof(NODE_PERES));
+	currentNode->nextNode = xmalloc(sizeof(NODE_PERES));
 	((NODE_PERES *) currentNode->nextNode)->lastNode = currentNode;
 	currentNode = currentNode->nextNode;
 	currentNode->nodeType = typeOfNextNode;
@@ -178,7 +178,7 @@ void freeNodes(NODE_PERES *currentNode)
 void discovery(PE_FILE *pe)
 {
 	NODE_PERES *nodePeres;
-	nodePeres = malloc(sizeof(NODE_PERES));
+	nodePeres = xmalloc(sizeof(NODE_PERES));
 	nodePeres->lastNode = NULL; // root
 
 	static const char *directory_names[] =

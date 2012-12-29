@@ -23,8 +23,6 @@
 #include "output.h"
 #include "common.h"
 
-extern format_e format;
-
 void parse_format(const char *optarg)
 {
 	if (! strcmp(optarg, "text"))
@@ -37,6 +35,18 @@ void parse_format(const char *optarg)
 		format = FORMAT_HTML;
 	else
 		EXIT_ERROR("invalid format option");
+}
+
+void parse_cert_format(const char *optarg)
+{
+	if (! strcmp(optarg, "text"))
+		cert_format = CERT_FORMAT_TEXT;
+	else if (! strcmp(optarg, "pem"))
+		cert_format = CERT_FORMAT_PEM;
+	else if (! strcmp(optarg, "der"))
+		cert_format = CERT_FORMAT_DER;
+	else
+		EXIT_ERROR("invalid cert_format option");
 }
 
 void to_text(char *field, char *value)

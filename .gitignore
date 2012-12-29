@@ -12,6 +12,7 @@ Debug
 *.dylib
 *.dll
 *.o
+*.dSYM
 *.log
 src/ofs2rva
 src/pedis

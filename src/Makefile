@@ -29,6 +29,8 @@ MANDIR = /usr/share/man/man1
 # 'make' will compile all binaries
 all: $(PROGS)
 
+pesec: LDFLAGS += -lcrypto
+
 pestr: CPPFLAGS += -D_GNU_SOURCE=1
 pestr: LDFLAGS += -lpcre
 pestr: pestr.c

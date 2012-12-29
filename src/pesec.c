@@ -20,34 +20,38 @@
 */
 
 #include "pesec.h"
-#include <assert.h>
-
-static int ind;
+#include <stddef.h>
+#include <string.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
 
 static void usage()
 {
 	printf("Usage: %s [OPTIONS] FILE\n"
-	"Check for security features in PE files\n"
-	"\nExample: %s wordpad.exe\n"
-	"\nOptions:\n"
-	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Check for security features in PE files\n"
+		"\nExample: %s wordpad.exe\n"
+		"\nOptions:\n"
+		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -c, --certformat <text|pem>            change certificate output format (default: text)\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_options(int argc, char *argv[])
 {
-	int c;
+	int c, ind;
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "f:v";
+	static const char short_options[] = "f:c:v";
 
 	static const struct option long_options[] = {
-		{"format",           required_argument, NULL, 'f'},
-		{"help",             no_argument,       NULL,  1 },
-		{"version",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{"format",		required_argument,	NULL,	'f'},
+		{"certformat",	required_argument,	NULL,	'c'},
+		{"help",		no_argument,		NULL,	 1 },
+		{"version",		no_argument,		NULL,	'v'},
+		{ NULL,			0,					NULL, 	 0 }
 	};
 
 	while ((c = getopt_long(argc, argv, short_options,
@@ -61,14 +65,15 @@ static void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-
 			case 'f':
-				parse_format(optarg); break;
-
+				parse_format(optarg);
+				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-
+			case 'c':
+				parse_cert_format(optarg);
+				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
@@ -111,26 +116,116 @@ static bool stack_cookies(PE_FILE *pe)
 	return (found == sizeof(mvs2010));
 }
 
-static int roundUp(int numToRound, int multiple)
+static int round_up(int numToRound, int multiple)
 {
 	if (multiple == 0)
 		return 0;
 	return (numToRound + multiple - 1) / multiple * multiple;
 }
 
-static int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob) {
+void print_certificate(BIO *out, X509* cert)
+{
+	switch (cert_format) {
+		default:
+		case CERT_FORMAT_TEXT:
+			X509_print(out, cert);
+			break;
+		case CERT_FORMAT_PEM:
+			PEM_write_bio_X509(out, cert);
+			break;
+		case CERT_FORMAT_DER:
+			EXIT_ERROR("DER format is not yet supported for output");
+			break;
+	}
+}
+
+int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob)
+{
 	int result = 0;
+	const cert_format_e input_fmt = CERT_FORMAT_DER;
+	PKCS7 *p7 = NULL;
+	BIO *in = NULL;
+	BIO *out = NULL;
+
+	CRYPTO_malloc_init();
+	ERR_load_crypto_strings();
+	OpenSSL_add_all_algorithms();
+
+	out = BIO_new(BIO_s_file());
+	if (out == NULL) {
+		result = -1;
+		goto error;
+	}
+	BIO_set_fp(out, stdout, BIO_NOCLOSE);
+
+	in = BIO_new_mem_buf(blob->pbData, blob->cbData);
+	if (in == NULL) {
+		result = -2;
+		goto error;
+	}
+
+	switch (input_fmt) {
+		default: EXIT_ERROR("unhandled input format for certificate");
+		case CERT_FORMAT_DER:
+			p7 = d2i_PKCS7_bio(in, NULL);
+			break;
+		case CERT_FORMAT_PEM:
+			p7 = PEM_read_bio_PKCS7(in, NULL, NULL, NULL);
+			break;
+	}
+	if (p7 == NULL) {
+		ERR_print_errors_fp(stderr);
+		result = -3;
+		goto error;
+	}
+
+//	// Check if it's an Authenticode (PKCS#7 Signed Data)
+// 	if (!PKCS7_type_is_signed(p7)) {
+// 		result = -4;
+// 		goto error;
+// 	}
+
+	STACK_OF(X509) *certs = NULL;
+
+	int type = OBJ_obj2nid(p7->type);
+	switch (type) {
+		default: break;
+		case NID_pkcs7_signed:
+			certs = p7->d.sign->cert;
+			break;
+		case NID_pkcs7_signedAndEnveloped:
+			certs = p7->d.signed_and_enveloped->cert;
+			break;
+	}
+
+	for (int i = 0; certs != NULL && i < sk_X509_num(certs); i++) {
+		X509 *cert = sk_X509_value(certs, i);
+		print_certificate(out, cert);
+		// NOTE: Calling X509_free(cert) is unnecessary.
+	}
+
+error:
+	if (p7 != NULL)
+		PKCS7_free(p7);
+	if (in != NULL)
+		BIO_free(in);
+	if (out != NULL)
+		BIO_free(out);
+
+	EVP_cleanup(); // Deallocate everything from OpenSSL_add_all_algorithms
+	ERR_free_strings(); // Deallocate everything from ERR_load_crypto_strings
+
 	return result;
 }
 
-static void print_certificates(PE_FILE *pe)
+static void parse_certificates(PE_FILE *pe)
 {
 	if (!pe_get_directories(pe))
 		EXIT_ERROR("unable to read the Directories entry from Optional header");
 
 	const IMAGE_DATA_DIRECTORY * const directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_SECURITY);
 	if (directory == NULL) {
-		printf("security directory not found\n");
+		fprintf(stderr, "security directory not found\n");
 		// TODO: Should we exit using EXIT_ERROR?
 		return;
 	}
@@ -140,7 +235,7 @@ static void print_certificates(PE_FILE *pe)
 
 	DWORD fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
 
-	printf("Certificates:\n");
+	output("Certificates", NULL);
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
 		if (fseek(pe->handle, fileOffset, SEEK_SET))
@@ -163,28 +258,33 @@ static void print_certificates(PE_FILE *pe)
 			EXIT_ERROR("unable to read");
 		}
 
-		printf("  length    %u bytes\n", cert->dwLength);
-		printf("  revision  0x%x (%s)\n", cert->wRevision,
+		static char value[MAX_MSG];
+
+		snprintf(value, MAX_MSG, "%u bytes", cert->dwLength);
+		output("length", value);
+
+		snprintf(value, MAX_MSG, "0x%x (%s)", cert->wRevision,
 			cert->wRevision == WIN_CERT_REVISION_1_0 ? "1" :
 			cert->wRevision == WIN_CERT_REVISION_2_0 ? "2" : "unknown");
-		printf("  type      0x%x", cert->wCertificateType);
-		switch (cert->wCertificateType)
-		{
-			default: printf(" (UNKNOWN)"); break;
-			case WIN_CERT_TYPE_X509: printf(" (X509)"); break;
-			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: printf(" (PKCS_SIGNED_DATA)"); break;
-			case WIN_CERT_TYPE_TS_STACK_SIGNED: printf(" (TS_STACK_SIGNED)"); break;
-		}
-		printf("\n");
+		output("revision", value);
 
-		fileOffset += roundUp(cert->dwLength, 8); // Offset to next certificate.
+		snprintf(value, MAX_MSG, "0x%x", cert->wCertificateType);
+		switch (cert->wCertificateType) {
+			default: strlcat(value, " (UNKNOWN)", MAX_MSG); break;
+			case WIN_CERT_TYPE_X509: strlcat(value, " (X509)", MAX_MSG); break;
+			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: strlcat(value, " (PKCS_SIGNED_DATA)", MAX_MSG); break;
+			case WIN_CERT_TYPE_TS_STACK_SIGNED: strlcat(value, " (TS_STACK_SIGNED)", MAX_MSG); break;
+		}
+		output("type", value);
+
+		fileOffset += round_up(cert->dwLength, 8); // Offset to the next certificate.
 
 		if (fileOffset - directory->VirtualAddress > directory->Size)
-			EXIT_ERROR("Either the attribute certificate table or the Size field is corrupted");
+			EXIT_ERROR("either the attribute certificate table or the Size field is corrupted");
 
 		switch (cert->wRevision) {
 			default:
-				EXIT_ERROR("Unknown wRevision");
+				EXIT_ERROR("unknown wRevision");
 			case WIN_CERT_REVISION_1_0:
 				EXIT_ERROR("WIN_CERT_REVISION_1_0 is not supported");
 			case WIN_CERT_REVISION_2_0:
@@ -193,13 +293,13 @@ static void print_certificates(PE_FILE *pe)
 
 		switch (cert->wCertificateType) {
 			default:
-				EXIT_ERROR("Unknown wCertificateType");
+				EXIT_ERROR("unknown wCertificateType");
 			case WIN_CERT_TYPE_X509:
 				EXIT_ERROR("WIN_CERT_TYPE_X509 is not supported");
 			case WIN_CERT_TYPE_PKCS_SIGNED_DATA:
 			{
 				CRYPT_DATA_BLOB p7data;
-				p7data.cbData = cert->dwLength - (3 * sizeof(DWORD));
+				p7data.cbData = cert->dwLength - offsetof(WIN_CERTIFICATE, bCertificate);
 				p7data.pbData = cert->bCertificate;
 				parse_pkcs7_data(&p7data);
 				break;
@@ -214,7 +314,6 @@ static void print_certificates(PE_FILE *pe)
 
 		free(cert);
 	}
-	printf("\n");
 }
 
 int main(int argc, char *argv[])
@@ -224,8 +323,7 @@ int main(int argc, char *argv[])
 	WORD dllchar = 0;
 	char field[MAX_MSG];
 
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
 		exit(1);
 	}
@@ -268,8 +366,8 @@ int main(int argc, char *argv[])
 	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
 	output(field, stack_cookies(&pe) ? "yes" : "no");
 
-	// certificates
-	print_certificates(&pe);
+	// certificados
+	parse_certificates(&pe);
 
 	// libera a memoria
 	pe_deinit(&pe);

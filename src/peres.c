@@ -24,79 +24,81 @@
 #include "common.h"
 #include "../lib/libudis86/udis86.h"
 
-void showResourceDirectory(IMAGE_RESOURCE_DIRECTORY *resourceDirectory)
+void showNode(NODE_PERES *nodePeres)
 {
 	char value[MAX_MSG];
 
-	output("\nNode", "Resource Directory");
+	switch(nodePeres->nodeType)
+	{
+		case RDT_RESOURCE_DIRECTORY:
+			snprintf(value, MAX_MSG, "Resource Directory / %lu", nodePeres->nodeLevel);
+			output("\nNode Type / Level", value);
 
-	snprintf(value, MAX_MSG, "%d", resourceDirectory->Characteristics);
-	output("Characteristics", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.Characteristics);
+			output("Characteristics", value);
 
-	snprintf(value, MAX_MSG, "%d", resourceDirectory->TimeDateStamp);
-	output("Timestamp", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.TimeDateStamp);
+			output("Timestamp", value);
 
-	snprintf(value, MAX_MSG, "%d", resourceDirectory->MajorVersion);
-	output("Major Version", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.MajorVersion);
+			output("Major Version", value);
 
-	snprintf(value, MAX_MSG, "%d", resourceDirectory->MinorVersion);
-	output("Minor Version", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.MinorVersion);
+			output("Minor Version", value);
 
-	snprintf(value, MAX_MSG, "%d", resourceDirectory->NumberOfNamedEntries);
-	output("Named entries", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.NumberOfNamedEntries);
+			output("Named entries", value);
 
-	snprintf(value, MAX_MSG, "%d", resourceDirectory->NumberOfIdEntries);
-	output("Id entries", value);
-}
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.NumberOfIdEntries);
+			output("Id entries", value);
+			break;
+		case RDT_DIRECTORY_ENTRY:
+			snprintf(value, MAX_MSG, "Directory Entry / %lu", nodePeres->nodeLevel);
+			output("\nNode Type / Level", value);
 
-void showDirectoryEntry(IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry)
-{
-	char value[MAX_MSG];
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.directoryEntry.DirectoryName.name.NameOffset);
+			output("Name offset", value);
 
-	output("\nNode", "Directory Entry");
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.directoryEntry.DirectoryName.name.NameIsString);
+			output("Name is string", value);
 
-	snprintf(value, MAX_MSG, "%d", directoryEntry->DirectoryName.name.NameOffset);
-	output("Name offset", value);
+			snprintf(value, MAX_MSG, "%x", nodePeres->node.directoryEntry.DirectoryData.data.OffsetToDirectory);
+			output("Offset to directory", value);
 
-	snprintf(value, MAX_MSG, "%d", directoryEntry->DirectoryName.name.NameIsString);
-	output("Name is string", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.directoryEntry.DirectoryData.data.DataIsDirectory);
+			output("Data is directory", value);
+			break;
+		case RDT_DATA_STRING:
+			snprintf(value, MAX_MSG, "Data String / %lu", nodePeres->nodeLevel);
+			output("\nNode Type / Level", value);
 
-	snprintf(value, MAX_MSG, "%x", directoryEntry->DirectoryData.data.OffsetToDirectory);
-	output("Offset to directory", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.dataString.length);
+			output("String len", value);
 
-	snprintf(value, MAX_MSG, "%d", directoryEntry->DirectoryData.data.DataIsDirectory);
-	output("Data is directory", value);
-}
+			output("String", nodePeres->node.dataString.string);
 
-void showDataString(IMAGE_RESOURCE_DATA_STRING *dataString)
-{
-	char value[MAX_MSG];
+			break;
+		case RDT_DATA_ENTRY:
+			snprintf(value, MAX_MSG, "Data Entry / %lu", nodePeres->nodeLevel);
+			output("\nNode Type / Level", value);
 
-	output("\nNode", "Data String");
+			snprintf(value, MAX_MSG, "%x", nodePeres->node.dataEntry.offsetToData);
+			output("OffsetToData", value);
 
-	snprintf(value, MAX_MSG, "%d", dataString->length);
-	output("String len", value);
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.dataEntry.size);
+			output("Size", value);
 
-	output("String", dataString->string);
-}
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.dataEntry.codePage);
+			output("CodePage", value);
 
-void showDataEntry(IMAGE_RESOURCE_DATA_ENTRY *dataEntry)
-{
-	char value[MAX_MSG];
+			snprintf(value, MAX_MSG, "%d", nodePeres->node.dataEntry.reserved);
+			output("Reserved", value);
+			break;
+		default:
+			output("ShowNode", "ERROR - Invalid Node Type");
+			break;
+	}
 
-	output("\nNode", "Data Entry");
-
-	snprintf(value, MAX_MSG, "%x", dataEntry->offsetToData);
-	output("OffsetToData", value);
-
-	snprintf(value, MAX_MSG, "%d", dataEntry->size);
-	output("Size", value);
-
-	snprintf(value, MAX_MSG, "%d", dataEntry->codePage);
-	output("CodePage", value);
-
-	snprintf(value, MAX_MSG, "%d", dataEntry->reserved);
-	output("Reserved", value);
 }
 
 NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
@@ -201,7 +203,7 @@ void discovery(PE_FILE *pe)
 	nodePeres->nodeType = RDT_RESOURCE_DIRECTORY;
 	nodePeres->nodeLevel = RDT_LEVEL1;
 	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-	showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
+	showNode(nodePeres);
 
 	int i, j, y;
 	int offsetDirectory1 = 0, offsetDirectory2 = 0;
@@ -227,7 +229,7 @@ void discovery(PE_FILE *pe)
 		nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 		nodePeres->nodeLevel = RDT_LEVEL1;
 		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
-		showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
+		showNode(nodePeres);
 
         if (getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
         {
@@ -235,7 +237,7 @@ void discovery(PE_FILE *pe)
         	nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
         	nodePeres->nodeLevel = RDT_LEVEL2;
         	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-        	showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
+        	showNode(nodePeres);
 
         	for(j = 1, offsetDirectory2 = 0; j <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
         												getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
@@ -254,13 +256,13 @@ void discovery(PE_FILE *pe)
 				nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 				nodePeres->nodeLevel = RDT_LEVEL2;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
-				showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
+				showNode(nodePeres);
 
 				fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
 				nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
 				nodePeres->nodeLevel = RDT_LEVEL3;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-				showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
+				showNode(nodePeres);
 
 				for(y = 1; y <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfNamedEntries +
 									getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfIdEntries); y++)
@@ -268,19 +270,19 @@ void discovery(PE_FILE *pe)
 					nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
-					showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
+					showNode(nodePeres);
 
 					fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryName.name.NameOffset), SEEK_SET);
 					nodePeres = createNode(nodePeres, RDT_DATA_STRING);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_STRING), 1, pe->handle);
-					showDataString((IMAGE_RESOURCE_DATA_STRING *) &nodePeres->node);
+					showNode(nodePeres);
 
 					fseek(pe->handle, (raiz + ((NODE_PERES *)nodePeres->lastNode)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
 					nodePeres = createNode(nodePeres, RDT_DATA_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, pe->handle);
-					showDataEntry((IMAGE_RESOURCE_DATA_ENTRY *) &nodePeres->node);
+					showNode(nodePeres);
 
 					buffer = xmalloc(lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
 					memset(buffer, 0, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);

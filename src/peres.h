@@ -62,6 +62,7 @@ typedef struct _NODE_PERES
 	} node;
 	struct NODE_PERES *nextNode;
 	struct NODE_PERES *lastNode;
+	struct NODE_PERES *rootNode;
 } NODE_PERES;
 
 static const RESOURCE_ENTRY resourceTypes[] =

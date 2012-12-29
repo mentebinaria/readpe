@@ -190,11 +190,76 @@ RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
 	return NULL;
 }
 
-void discovery(PE_FILE *pe)
+void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
+{
+	FILE *fpSave;
+	unsigned char *buffer;
+	char dirName[100];
+	char fileName[100];
+	DWORD nameOffset;
+	QWORD offsetData;
+	struct stat statDir = {0};
+
+	buffer = xmalloc(lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
+	memset(buffer, 0, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
+	offsetData = rva2ofs(pe, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.offsetToData);
+	fseek(pe->handle, offsetData, SEEK_SET);
+	memset(&fileName, 0, 100);
+	memset(&dirName, 0, 100);
+	nameOffset = ((NODE_PERES *)nodePeres->rootNode)->node.directoryEntry.DirectoryName.name.NameOffset;
+	if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
+	{
+		if (stat(RESOURCE_DIR, &statDir) == -1)
+			mkdir(RESOURCE_DIR, 0700);
+
+		snprintf(&dirName, 100, "%s/%s", RESOURCE_DIR, getResourceEntryByNameOffset(nameOffset)->dirName);
+
+		if (stat(dirName, &statDir) == -1)
+			mkdir(dirName, 0700);
+
+		if(getResourceEntryByNameOffset(nameOffset) != NULL)
+			snprintf(&fileName, 100, "%s/%d%s", dirName, count, getResourceEntryByNameOffset(nameOffset)->extension);
+		else
+			snprintf(&fileName, 100, "%s/%d.bin", dirName, count);
+
+		fpSave = fopen(&fileName, "wb+");
+		fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
+		fclose(fpSave);
+		printf("Save on: %s\n", fileName);
+		count++;
+	}
+	free(buffer);
+
+}
+
+void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
+{
+	int count = 1;
+
+	while(nodePeres->lastNode != NULL)
+	{
+		nodePeres = nodePeres->lastNode;
+	}
+
+	while(nodePeres->nextNode != NULL)
+	{
+		if(nodePeres->nodeType != RDT_DATA_ENTRY)
+		{
+			nodePeres = nodePeres->nextNode;
+			continue;
+		}
+		saveResource(pe, nodePeres, count);
+		nodePeres = nodePeres->nextNode;
+		count++;
+	}
+
+	saveResource(pe, nodePeres, count); // save last
+}
+
+NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 {
 	NODE_PERES *nodePeres;
-	nodePeres = xmalloc(sizeof(NODE_PERES));
-	nodePeres->lastNode = NULL; // root
+	NODE_PERES *rootNodePeres;
 
 	static const char *directory_names[] =
 	{
@@ -216,11 +281,10 @@ void discovery(PE_FILE *pe)
 	};
 
 	if (!pe->directories_ptr)
-		return;
+		return NULL;
 
 	char s[MAX_MSG];
 	QWORD raiz = rva2ofs(pe, pe->directories_ptr[2]->VirtualAddress);
-	DWORD nameOffset;
 
 	if (pe->directories_ptr[2]->Size)
 	{
@@ -234,6 +298,8 @@ void discovery(PE_FILE *pe)
 
 	fseek(pe->handle, raiz, SEEK_SET); // posiciona em 0x72
 
+	nodePeres = xmalloc(sizeof(NODE_PERES));
+	nodePeres->lastNode = NULL; // root
 	nodePeres->nodeType = RDT_RESOURCE_DIRECTORY;
 	nodePeres->nodeLevel = RDT_LEVEL1;
 	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
@@ -241,13 +307,6 @@ void discovery(PE_FILE *pe)
 
 	int i, j, y;
 	int offsetDirectory1 = 0, offsetDirectory2 = 0;
-	unsigned char *buffer;
-	QWORD offsetData;
-	char dirName[100];
-	char fileName[100];
-	FILE *fpSave;
-	struct stat statDir = {0};
-
 	for(i = 1, offsetDirectory1 = 0; i <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfNamedEntries +
 												lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfIdEntries); i++)
 	{
@@ -263,15 +322,18 @@ void discovery(PE_FILE *pe)
 		}
 
 		nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
+		rootNodePeres = nodePeres;
 		nodePeres->nodeLevel = RDT_LEVEL1;
+		nodePeres->rootNode = rootNodePeres;
 		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
+
 		showNode(nodePeres);
-		nameOffset = nodePeres->node.directoryEntry.DirectoryName.name.NameOffset;
         if (lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
         {
         	fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
         	nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
         	nodePeres->nodeLevel = RDT_LEVEL2;
+        	nodePeres->rootNode = lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1);
         	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
         	showNode(nodePeres);
 
@@ -291,12 +353,14 @@ void discovery(PE_FILE *pe)
 
 				nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 				nodePeres->nodeLevel = RDT_LEVEL2;
+				nodePeres->rootNode = rootNodePeres;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 				showNode(nodePeres);
 
 				fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
 				nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
 				nodePeres->nodeLevel = RDT_LEVEL3;
+				nodePeres->rootNode = rootNodePeres;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
 				showNode(nodePeres);
 
@@ -305,61 +369,35 @@ void discovery(PE_FILE *pe)
 				{
 					nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
+					nodePeres->rootNode = rootNodePeres;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 					showNode(nodePeres);
 
 					fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryName.name.NameOffset), SEEK_SET);
 					nodePeres = createNode(nodePeres, RDT_DATA_STRING);
 					nodePeres->nodeLevel = RDT_LEVEL3;
+					nodePeres->rootNode = rootNodePeres;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_STRING), 1, pe->handle);
 					showNode(nodePeres);
 
 					fseek(pe->handle, (raiz + ((NODE_PERES *)nodePeres->lastNode)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
 					nodePeres = createNode(nodePeres, RDT_DATA_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
+					nodePeres->rootNode = rootNodePeres;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, pe->handle);
 					showNode(nodePeres);
-
-					buffer = xmalloc(lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
-					memset(buffer, 0, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
-					offsetData = rva2ofs(pe, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.offsetToData);
-					fseek(pe->handle, offsetData, SEEK_SET);
-					memset(&fileName, 0, 100);
-					memset(&dirName, 0, 100);
-					if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
-					{
-						if (stat(RESOURCE_DIR, &statDir) == -1)
-							mkdir(RESOURCE_DIR, 0700);
-
-						snprintf(&dirName, 100, "%s/%s", RESOURCE_DIR, getResourceEntryByNameOffset(nameOffset)->dirName);
-
-						if (stat(dirName, &statDir) == -1)
-							mkdir(dirName, 0700);
-
-						if(getResourceEntryByNameOffset(nameOffset) != NULL)
-							snprintf(&fileName, 100, "%s/%d-%d-%d%s", dirName, i, j, y, getResourceEntryByNameOffset(nameOffset)->extension);
-						else
-							snprintf(&fileName, 100, "%s/%d-%d-%d.bin", dirName, i, j, y);
-
-						fpSave = fopen(&fileName, "wb+");
-						fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
-						fclose(fpSave);
-						printf("Save on: %s\n", fileName);
-
-					}
-					free(buffer);
 				}
 			}
         }
 	}
-
-	freeNodes(nodePeres);
+	return nodePeres;
 }
 
 int main(int argc, char **argv)
 {
 	PE_FILE pe;
 	FILE *fp = NULL;
+	NODE_PERES *nodePeres;
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
@@ -373,7 +411,9 @@ int main(int argc, char **argv)
 
 	pe_get_directories(&pe);
 
-	discovery(&pe);
+	nodePeres = discoveryNodesPeres(&pe);
+	extractResources(&pe, nodePeres);
+	freeNodes(nodePeres);
 
 	pe_deinit(&pe);
 	

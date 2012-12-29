@@ -143,7 +143,7 @@ NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSe
 	return firstNode;
 }
 
-NODE_PERES * getNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
+NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
 {
 	if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
 		return currentNode;
@@ -173,6 +173,18 @@ void freeNodes(NODE_PERES *currentNode)
 	}
 	//printf("\nfree");
 	free(currentNode);
+}
+
+RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
+{
+	int i;
+	for(i = 0; i < (sizeof(resourceTypes)/sizeof(RESOURCE_ENTRY)); i++)
+	{
+		if(resourceTypes[i].nameOffset == nameOffset)
+			return &resourceTypes[i];
+	}
+
+	return NULL;
 }
 
 void discovery(PE_FILE *pe)
@@ -205,6 +217,7 @@ void discovery(PE_FILE *pe)
 
 	char s[MAX_MSG];
 	QWORD raiz = rva2ofs(pe, pe->directories_ptr[2]->VirtualAddress);
+	DWORD nameOffset;
 
 	if (pe->directories_ptr[2]->Size)
 	{
@@ -230,8 +243,8 @@ void discovery(PE_FILE *pe)
 	char nomeArquivo[100];
 	FILE *fpSave;
 
-	for(i = 1, offsetDirectory1 = 0; i <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfNamedEntries +
-												getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfIdEntries); i++)
+	for(i = 1, offsetDirectory1 = 0; i <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfNamedEntries +
+												lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfIdEntries); i++)
 	{
 		if(i == 1)
 		{
@@ -248,27 +261,27 @@ void discovery(PE_FILE *pe)
 		nodePeres->nodeLevel = RDT_LEVEL1;
 		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 		showNode(nodePeres);
-
-        if (getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
+		nameOffset = nodePeres->node.directoryEntry.DirectoryName.name.NameOffset;
+        if (lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
         {
-        	fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
+        	fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
         	nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
         	nodePeres->nodeLevel = RDT_LEVEL2;
         	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
         	showNode(nodePeres);
 
-        	for(j = 1, offsetDirectory2 = 0; j <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
-        												getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
+        	for(j = 1, offsetDirectory2 = 0; j <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
+        			lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
         	{
 				if(j == 1)
 				{
 					offsetDirectory2 += 16;
-					fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
+					fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
 				}
 				else
 				{
 					offsetDirectory2 += 8;
-					fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
+					fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
 				}
 
 				nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
@@ -282,8 +295,8 @@ void discovery(PE_FILE *pe)
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
 				showNode(nodePeres);
 
-				for(y = 1; y <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfNamedEntries +
-									getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfIdEntries); y++)
+				for(y = 1; y <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfNamedEntries +
+									lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfIdEntries); y++)
 				{
 					nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
@@ -309,11 +322,17 @@ void discovery(PE_FILE *pe)
 					memset(&nomeArquivo, 0, 100);
 					if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
 					{
-						snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d.bin", i, j, y);
+						//printf("\n\t\t\t%s - %d - %s\n", getResourceEntryByNameOffset(nameOffset)->name, getResourceEntryByNameOffset(nameOffset)->nameOffset, getResourceEntryByNameOffset(nameOffset)->extension);
+						if(getResourceEntryByNameOffset(nameOffset) != NULL)
+							snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d%s", i, j, y, getResourceEntryByNameOffset(nameOffset)->extension);
+						else
+							snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d.bin", i, j, y);
+
 						fpSave = fopen(&nomeArquivo, "wb+");
 						fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
 						fclose(fpSave);
 						printf("\n\t\t\tSave on: %s\n", nomeArquivo);
+
 					}
 					free(buffer);
 				}

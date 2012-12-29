@@ -91,7 +91,7 @@ typedef uint64_t QWORD;
 typedef struct _RESOURCE_ENTRY
 {
 	char name[20];
-	unsigned int code;
+	DWORD nameOffset;
 	char extension[20];
 } RESOURCE_ENTRY;
 
@@ -393,7 +393,7 @@ static const RESOURCE_ENTRY resourceTypes[] =
 {
 	{"RT_CURSOR", 1, ".cur"},
 	{"RT_BITMAP", 2, ".bmp"},
-	{"RT_ICON", 3, ".ico"},
+	{"RT_ICON", 3, ".icon"},
 	{"RT_MENU", 4, ".menu"},
 	{"RT_DIALOG", 5, ".dialog"},
 	{"RT_STRING", 6, ".txt"},
@@ -411,7 +411,7 @@ static const RESOURCE_ENTRY resourceTypes[] =
 	{"RT_ANICURSOR", 21, ".anicursor"},
 	{"RT_ANIICON", 22, ".aniicon"},
 	{"RT_HTML", 23, ".html"},
-	{"RT_MANIFEST", 24, ".manifest"},
+	{"RT_MANIFEST", 24, ".xml"},
 	{"RT_DLGINIT", 240, ".dlginit"},
 	{"RT_TOOLBAR", 241, ".toolbar"}
 };

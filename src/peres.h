@@ -23,6 +23,7 @@
 #define PERES_H
 
 #include "common.h"
+#include <string.h>
 
 #define PROGRAM "peres"
 
@@ -33,15 +34,32 @@ struct options {
 	bool infoType;
 };
 
+typedef enum {
+        RDT_LEVEL1 = 1,
+        RDT_LEVEL2 = 2,
+        RDT_LEVEL3 = 3
+} NODE_LEVEL_PERES;
+
+typedef enum {
+        RDT_RESOURCE_DIRECTORY = 1,
+        RDT_DIRECTORY_ENTRY = 2,
+        RDT_DATA_STRING = 3,
+        RDT_DATA_ENTRY = 4
+} NODE_TYPE_PERES;
+
 typedef struct _NODE_PERES
 {
+	NODE_TYPE_PERES nodeType;
+	NODE_LEVEL_PERES nodeLevel;
 	union
 	{
-		IMAGE_RESOURCE_DIRECTORY resourceDirectory;
-		IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry;
-		IMAGE_RESOURCE_DATA_STRING dataString;
-		IMAGE_RESOURCE_DATA_ENTRY dataEntry;
+		IMAGE_RESOURCE_DIRECTORY resourceDirectory; // nodeType == 1
+		IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry; // nodeType == 2
+		IMAGE_RESOURCE_DATA_STRING dataString; // nodeType == 3
+		IMAGE_RESOURCE_DATA_ENTRY dataEntry; // nodeType == 4
 	} node;
+	struct NODE_PERES *nextNode;
+	struct NODE_PERES *lastNode;
 } NODE_PERES;
 
 struct options config;

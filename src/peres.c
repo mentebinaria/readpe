@@ -24,40 +24,143 @@
 #include "common.h"
 #include "../lib/libudis86/udis86.h"
 
-void showResourceDirectory(IMAGE_RESOURCE_DIRECTORY resourceDirectory)
+void showResourceDirectory(IMAGE_RESOURCE_DIRECTORY *resourceDirectory)
 {
-	printf("Characteristics: %d\n", resourceDirectory.Characteristics);
-	printf("Timestamp: %d\n", resourceDirectory.TimeDateStamp);
-	printf("Major Version: %d\n", resourceDirectory.MajorVersion);
-	printf("Minor Version: %d\n", resourceDirectory.MinorVersion);
-	printf("Named entries: %d\n", resourceDirectory.NumberOfNamedEntries);
-	printf("Id entries: %d\n", resourceDirectory.NumberOfIdEntries);
+	char value[MAX_MSG];
+
+	output("\nNode", "Resource Directory");
+
+	snprintf(value, MAX_MSG, "%d", resourceDirectory->Characteristics);
+	output("Characteristics", value);
+
+	snprintf(value, MAX_MSG, "%d", resourceDirectory->TimeDateStamp);
+	output("Timestamp", value);
+
+	snprintf(value, MAX_MSG, "%d", resourceDirectory->MajorVersion);
+	output("Major Version", value);
+
+	snprintf(value, MAX_MSG, "%d", resourceDirectory->MinorVersion);
+	output("Minor Version", value);
+
+	snprintf(value, MAX_MSG, "%d", resourceDirectory->NumberOfNamedEntries);
+	output("Named entries", value);
+
+	snprintf(value, MAX_MSG, "%d", resourceDirectory->NumberOfIdEntries);
+	output("Id entries", value);
 }
 
-void showDirectoryEntry(IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry)
+void showDirectoryEntry(IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry)
 {
-	printf("Name offset: %d\n", directoryEntry.DirectoryName.name.NameOffset);
-	printf("Name is string: %d\n", directoryEntry.DirectoryName.name.NameIsString);
-	printf("Offset to directory: %x\n", directoryEntry.DirectoryData.data.OffsetToDirectory);
-	printf("Data is directory: %d\n", directoryEntry.DirectoryData.data.DataIsDirectory);
+	char value[MAX_MSG];
+
+	output("\nNode", "Directory Entry");
+
+	snprintf(value, MAX_MSG, "%d", directoryEntry->DirectoryName.name.NameOffset);
+	output("Name offset", value);
+
+	snprintf(value, MAX_MSG, "%d", directoryEntry->DirectoryName.name.NameIsString);
+	output("Name is string", value);
+
+	snprintf(value, MAX_MSG, "%x", directoryEntry->DirectoryData.data.OffsetToDirectory);
+	output("Offset to directory", value);
+
+	snprintf(value, MAX_MSG, "%d", directoryEntry->DirectoryData.data.DataIsDirectory);
+	output("Data is directory", value);
 }
 
-void showDataString(IMAGE_RESOURCE_DATA_STRING dataString)
+void showDataString(IMAGE_RESOURCE_DATA_STRING *dataString)
 {
-	printf("String len: %d\n", dataString.length);
-	printf("String: %s\n\n", dataString.string);
+	char value[MAX_MSG];
+
+	output("\nNode", "Data String");
+
+	snprintf(value, MAX_MSG, "%d", dataString->length);
+	output("String len", value);
+
+	output("String", dataString->string);
 }
 
-void showDataEntry(IMAGE_RESOURCE_DATA_ENTRY dataEntry)
+void showDataEntry(IMAGE_RESOURCE_DATA_ENTRY *dataEntry)
 {
-	printf("OffsetToData: %x\n", dataEntry.offsetToData);
-	printf("Size: %d\n", dataEntry.size);
-	printf("CodePage: %d\n", dataEntry.codePage);
-	printf("Reserved: %d\n", dataEntry.reserved);
+	char value[MAX_MSG];
+
+	output("\nNode", "Data Entry");
+
+	snprintf(value, MAX_MSG, "%x", dataEntry->offsetToData);
+	output("OffsetToData", value);
+
+	snprintf(value, MAX_MSG, "%d", dataEntry->size);
+	output("Size", value);
+
+	snprintf(value, MAX_MSG, "%d", dataEntry->codePage);
+	output("CodePage", value);
+
+	snprintf(value, MAX_MSG, "%d", dataEntry->reserved);
+	output("Reserved", value);
+}
+
+NODE_PERES * changeNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
+{
+	currentNode->nextNode = malloc(sizeof(NODE_PERES));
+	((NODE_PERES *) currentNode->nextNode)->lastNode = currentNode;
+	currentNode = currentNode->nextNode;
+	currentNode->nodeType = typeOfNextNode;
+	return currentNode;
+}
+
+NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
+{
+	if(currentNode->nodeType == nodeTypeSearch)
+		return currentNode;
+
+	while(currentNode->lastNode != NULL)
+	{
+		currentNode = currentNode->lastNode;
+		if(currentNode->nodeType == nodeTypeSearch)
+			return currentNode;
+	}
+
+	return NULL;
+}
+
+NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
+{
+	NODE_PERES *firstNode = NULL;
+
+	if(currentNode->nodeType == nodeTypeSearch)
+		firstNode = currentNode;
+
+	while(currentNode->lastNode != NULL)
+	{
+		currentNode = currentNode->lastNode;
+		if(currentNode->nodeType == nodeTypeSearch)
+			firstNode = currentNode;
+	}
+
+	return firstNode;
+}
+
+NODE_PERES * getNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
+{
+	if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
+		return currentNode;
+
+	while(currentNode->lastNode != NULL)
+	{
+		currentNode = currentNode->lastNode;
+		if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
+			return currentNode;
+	}
+
+	return NULL;
 }
 
 void discovery(PE_FILE *pe)
 {
+	NODE_PERES *nodePeres;
+	nodePeres = malloc(sizeof(NODE_PERES));
+	nodePeres->lastNode = NULL; // root
+
 	static const char *directory_names[] =
 	{
 		"Export Table", // 0
@@ -77,8 +180,6 @@ void discovery(PE_FILE *pe)
 		"CLR Runtime Header", "" // 14
 	};
 
-	output("Data directories", NULL);
-
 	if (!pe->directories_ptr)
 		return;
 
@@ -92,26 +193,15 @@ void discovery(PE_FILE *pe)
 				pe->directories_ptr[2]->Size);
 
 		output((char *) directory_names[2], s); // Resource table
-		printf("Offset by RVA: 0x%x\n\n", raiz);
+		//printf("Offset by RVA: 0x%x\n\n", raiz);
 	}
 
-	IMAGE_RESOURCE_DIRECTORY resourceDirectory1;
-	IMAGE_RESOURCE_DIRECTORY resourceDirectory2;
-	IMAGE_RESOURCE_DIRECTORY resourceDirectory3;
-	IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry1;
-	IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry2;
-	IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry3;
-	IMAGE_RESOURCE_DATA_STRING dataString;
-	IMAGE_RESOURCE_DATA_ENTRY dataEntry;
-
-	printf("Current Position: %x\n", ftell(pe->handle));
 	fseek(pe->handle, raiz, SEEK_SET); // posiciona em 0x72
-	printf("Current Position: %x\n\n", ftell(pe->handle));
-	fread(&resourceDirectory1, sizeof(resourceDirectory1), 1, pe->handle);
 
-	showResourceDirectory(resourceDirectory1);
-
-	printf("Current Position: %x\n\n", ftell(pe->handle));
+	nodePeres->nodeType = RDT_RESOURCE_DIRECTORY;
+	nodePeres->nodeLevel = RDT_LEVEL1;
+	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
+	showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
 
 	int i, j, y;
 	int offsetDirectory1 = 0, offsetDirectory2 = 0;
@@ -120,95 +210,88 @@ void discovery(PE_FILE *pe)
 	char nomeArquivo[100];
 	FILE *fpSave;
 
-	for(i = 1, offsetDirectory1 = 0; i <= (resourceDirectory1.NumberOfNamedEntries+resourceDirectory1.NumberOfIdEntries); i++)
+	for(i = 1, offsetDirectory1 = 0; i <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfNamedEntries +
+												getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfIdEntries); i++)
 	{
 		if(i == 1)
 		{
 			offsetDirectory1 += 16;
-			fseek(pe->handle, raiz+offsetDirectory1, SEEK_SET); // posiciona em 0x72
+			fseek(pe->handle, raiz+offsetDirectory1, SEEK_SET);
 		}
 		else
 		{
 			offsetDirectory1 += 8;
-			fseek(pe->handle, raiz+offsetDirectory1, SEEK_SET); // posiciona em 0x72
+			fseek(pe->handle, raiz+offsetDirectory1, SEEK_SET);
 		}
 
-		printf("\n\t%d - Resource Directory Entry:\n", i);
-		fread(&directoryEntry1, sizeof(directoryEntry1), 1, pe->handle);
-		printf("\tCurrent Position: %x\n", ftell(pe->handle));
+		nodePeres = changeNode(nodePeres, RDT_DIRECTORY_ENTRY);
+		nodePeres->nodeLevel = RDT_LEVEL1;
+		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
+		showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
 
-		showDirectoryEntry(directoryEntry1);
-
-        if (directoryEntry1.DirectoryData.data.DataIsDirectory)
+        if (getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
         {
-        	fseek(pe->handle, (raiz + directoryEntry1.DirectoryData.data.OffsetToDirectory), SEEK_SET);
-        	fread(&resourceDirectory2, sizeof(resourceDirectory2), 1, pe->handle);
+        	fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
+        	nodePeres = changeNode(nodePeres, RDT_RESOURCE_DIRECTORY);
+        	nodePeres->nodeLevel = RDT_LEVEL2;
+        	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
+        	showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
 
-        	printf("\n\t%d - Resource Directory:\n", i);
-        	printf("\tCurrent Position: %x\n", ftell(pe->handle));
-
-        	showResourceDirectory(resourceDirectory2);
-
-        	for(j = 1, offsetDirectory2 = 0; j <= (resourceDirectory2.NumberOfNamedEntries+resourceDirectory2.NumberOfIdEntries); j++)
+        	for(j = 1, offsetDirectory2 = 0; j <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
+        												getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
         	{
 				if(j == 1)
 				{
 					offsetDirectory2 += 16;
-					fseek(pe->handle, (raiz + directoryEntry1.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
+					fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
 				}
 				else
 				{
 					offsetDirectory2 += 8;
-					fseek(pe->handle, (raiz + directoryEntry1.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
+					fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
 				}
 
-				printf("\n\t\t%d/%d - Resource directory entry:\n", i, j);
-				fread(&directoryEntry2, sizeof(directoryEntry2), 1, pe->handle);
-				printf("\t\tPosição atual: %x\n", ftell(pe->handle));
+				nodePeres = changeNode(nodePeres, RDT_DIRECTORY_ENTRY);
+				nodePeres->nodeLevel = RDT_LEVEL2;
+				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
+				showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
 
-				showDirectoryEntry(directoryEntry2);
+				fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
+				nodePeres = changeNode(nodePeres, RDT_RESOURCE_DIRECTORY);
+				nodePeres->nodeLevel = RDT_LEVEL3;
+				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
+				showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
 
-				fseek(pe->handle, (raiz + directoryEntry2.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
-				fread(&resourceDirectory3, sizeof(resourceDirectory3), 1, pe->handle);
-
-				printf("\n\t\t%d/%d - Resource Directory:\n", i, j);
-				printf("\t\tCurrent Position: %x\n", ftell(pe->handle));
-
-				showResourceDirectory(resourceDirectory3);
-
-				for(y = 1; y <= (resourceDirectory3.NumberOfNamedEntries+resourceDirectory3.NumberOfIdEntries); y++)
+				for(y = 1; y <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfNamedEntries +
+									getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfIdEntries); y++)
 				{
-					printf("\n\t\t\t%d/%d/%d - Resource Directory Entry:\n", i, j, y);
-					fread(&directoryEntry3, sizeof(directoryEntry3), 1, pe->handle);
-					printf("\t\t\tCurrent Position: %x\n", ftell(pe->handle));
+					nodePeres = changeNode(nodePeres, RDT_DIRECTORY_ENTRY);
+					nodePeres->nodeLevel = RDT_LEVEL3;
+					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
+					showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
 
-					showDirectoryEntry(directoryEntry3);
+					fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryName.name.NameOffset), SEEK_SET);
+					nodePeres = changeNode(nodePeres, RDT_DATA_STRING);
+					nodePeres->nodeLevel = RDT_LEVEL3;
+					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_STRING), 1, pe->handle);
+					showDataString((IMAGE_RESOURCE_DATA_STRING *) &nodePeres->node);
 
-					fseek(pe->handle, (raiz + directoryEntry3.DirectoryName.name.NameOffset), SEEK_SET);
-					fread(&dataString, sizeof(dataString), 1, pe->handle);
+					fseek(pe->handle, (raiz + ((NODE_PERES *)nodePeres->lastNode)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
+					nodePeres = changeNode(nodePeres, RDT_DATA_ENTRY);
+					nodePeres->nodeLevel = RDT_LEVEL3;
+					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, pe->handle);
+					showDataEntry((IMAGE_RESOURCE_DATA_ENTRY *) &nodePeres->node);
 
-					fseek(pe->handle, (raiz + directoryEntry3.DirectoryData.data.OffsetToDirectory), SEEK_SET);
-					fread(&dataEntry, sizeof(dataEntry), 1, pe->handle);
-
-					printf("\n\t\t\t%d/%d/%d - Read entry/string:\n", i, j, y);
-					printf("\t\t\tPosition: %x\n", ftell(pe->handle));
-
-					showDataString(dataString);
-
-					showDataEntry(dataEntry);
-
-					buffer = xmalloc(dataEntry.size);
-					memset(buffer, 0, dataEntry.size);
-					printf("\n\t\t\tPosição: %x\n", ftell(pe->handle));
-					offsetData = rva2ofs(pe, dataEntry.offsetToData);
+					buffer = xmalloc(lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
+					memset(buffer, 0, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
+					offsetData = rva2ofs(pe, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.offsetToData);
 					fseek(pe->handle, offsetData, SEEK_SET);
-					printf("\t\t\tRVA: %x, OFFSET: %x, POSITION: %x", dataEntry.offsetToData, offsetData, ftell(pe->handle));
 					memset(&nomeArquivo, 0, 100);
-					if(fread(buffer, dataEntry.size+1, 1, pe->handle))
+					if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
 					{
 						snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d.bin", i, j, y);
 						fpSave = fopen(&nomeArquivo, "wb+");
-						fwrite(buffer, dataEntry.size, 1, fpSave);
+						fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
 						fclose(fpSave);
 						printf("\n\t\t\tSave on: %s\n", nomeArquivo);
 					}
@@ -219,9 +302,7 @@ void discovery(PE_FILE *pe)
 	}
 }
 
-
-
-int main(int argc, char *argv[])
+int main(int argc, char **argv)
 {
 	PE_FILE pe;
 	FILE *fp = NULL;

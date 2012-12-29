@@ -92,6 +92,7 @@ typedef struct _RESOURCE_ENTRY
 {
 	char name[20];
 	unsigned int code;
+	char extension[20];
 } RESOURCE_ENTRY;
 
 typedef struct _MACHINE_ENTRY
@@ -388,31 +389,31 @@ typedef struct _PE_FILE
 
 #pragma pack(pop)
 
-static const RESOURCE_ENTRY resource_types[] = 
+static const RESOURCE_ENTRY resourceTypes[] =
 {
-	{"RT_CURSOR", 1},
-	{"RT_BITMAP", 2},
-	{"RT_ICON", 3},
-	{"RT_MENU", 4},
-	{"RT_DIALOG", 5},
-	{"RT_STRING", 6},
-	{"RT_FONTDIR", 7},
-	{"RT_FONT", 8},
-	{"RT_ACCELERATOR", 9},
-	{"RT_RCDATA", 10},
-	{"RT_MESSAGETABLE", 11},
-	{"RT_GROUP_CURSOR", 12},
-	{"RT_GROUP_ICON", 14},
-	{"RT_VERSION", 16},
-	{"RT_DLGINCLUDE", 17},
-	{"RT_PLUGPLAY", 19},
-	{"RT_VXD", 20},
-	{"RT_ANICURSOR", 21},
-	{"RT_ANIICON", 22},
-	{"RT_HTML", 23},
-	{"RT_MANIFEST", 24},
-	{"RT_DLGINIT", 240},
-	{"RT_TOOLBAR", 241}
+	{"RT_CURSOR", 1, ".cur"},
+	{"RT_BITMAP", 2, ".bmp"},
+	{"RT_ICON", 3, ".ico"},
+	{"RT_MENU", 4, ".menu"},
+	{"RT_DIALOG", 5, ".dialog"},
+	{"RT_STRING", 6, ".txt"},
+	{"RT_FONTDIR", 7, ".fontdir"},
+	{"RT_FONT", 8, ".font"},
+	{"RT_ACCELERATOR", 9, ".accelerator"},
+	{"RT_RCDATA", 10, ".rcdata"},
+	{"RT_MESSAGETABLE", 11, ".messagetable"},
+	{"RT_GROUP_CURSOR", 12, ".groupcursor"},
+	{"RT_GROUP_ICON", 14, ".groupicon"},
+	{"RT_VERSION", 16, ".version"},
+	{"RT_DLGINCLUDE", 17, ".dlginclude"},
+	{"RT_PLUGPLAY", 19, ".plugplay"},
+	{"RT_VXD", 20, ".vxd"},
+	{"RT_ANICURSOR", 21, ".anicursor"},
+	{"RT_ANIICON", 22, ".aniicon"},
+	{"RT_HTML", 23, ".html"},
+	{"RT_MANIFEST", 24, ".manifest"},
+	{"RT_DLGINIT", 240, ".dlginit"},
+	{"RT_TOOLBAR", 241, ".toolbar"}
 };
 
 

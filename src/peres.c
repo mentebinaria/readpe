@@ -99,7 +99,7 @@ void showDataEntry(IMAGE_RESOURCE_DATA_ENTRY *dataEntry)
 	output("Reserved", value);
 }
 
-NODE_PERES * changeNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
+NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
 	currentNode->nextNode = malloc(sizeof(NODE_PERES));
 	((NODE_PERES *) currentNode->nextNode)->lastNode = currentNode;
@@ -224,7 +224,7 @@ void discovery(PE_FILE *pe)
 			fseek(pe->handle, raiz+offsetDirectory1, SEEK_SET);
 		}
 
-		nodePeres = changeNode(nodePeres, RDT_DIRECTORY_ENTRY);
+		nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 		nodePeres->nodeLevel = RDT_LEVEL1;
 		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 		showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
@@ -232,7 +232,7 @@ void discovery(PE_FILE *pe)
         if (getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
         {
         	fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
-        	nodePeres = changeNode(nodePeres, RDT_RESOURCE_DIRECTORY);
+        	nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
         	nodePeres->nodeLevel = RDT_LEVEL2;
         	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
         	showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
@@ -251,13 +251,13 @@ void discovery(PE_FILE *pe)
 					fseek(pe->handle, (raiz + getNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory)+offsetDirectory2, SEEK_SET);
 				}
 
-				nodePeres = changeNode(nodePeres, RDT_DIRECTORY_ENTRY);
+				nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 				nodePeres->nodeLevel = RDT_LEVEL2;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 				showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
 
 				fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
-				nodePeres = changeNode(nodePeres, RDT_RESOURCE_DIRECTORY);
+				nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
 				nodePeres->nodeLevel = RDT_LEVEL3;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
 				showResourceDirectory((IMAGE_RESOURCE_DIRECTORY *) &nodePeres->node);
@@ -265,19 +265,19 @@ void discovery(PE_FILE *pe)
 				for(y = 1; y <= (getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfNamedEntries +
 									getNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfIdEntries); y++)
 				{
-					nodePeres = changeNode(nodePeres, RDT_DIRECTORY_ENTRY);
+					nodePeres = createNode(nodePeres, RDT_DIRECTORY_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 					showDirectoryEntry((IMAGE_RESOURCE_DIRECTORY_ENTRY *) &nodePeres->node);
 
 					fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryName.name.NameOffset), SEEK_SET);
-					nodePeres = changeNode(nodePeres, RDT_DATA_STRING);
+					nodePeres = createNode(nodePeres, RDT_DATA_STRING);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_STRING), 1, pe->handle);
 					showDataString((IMAGE_RESOURCE_DATA_STRING *) &nodePeres->node);
 
 					fseek(pe->handle, (raiz + ((NODE_PERES *)nodePeres->lastNode)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
-					nodePeres = changeNode(nodePeres, RDT_DATA_ENTRY);
+					nodePeres = createNode(nodePeres, RDT_DATA_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, pe->handle);
 					showDataEntry((IMAGE_RESOURCE_DATA_ENTRY *) &nodePeres->node);

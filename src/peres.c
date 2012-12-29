@@ -23,6 +23,9 @@
 
 #include "common.h"
 #include "../lib/libudis86/udis86.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 void showNode(NODE_PERES *nodePeres)
 {
@@ -240,8 +243,10 @@ void discovery(PE_FILE *pe)
 	int offsetDirectory1 = 0, offsetDirectory2 = 0;
 	unsigned char *buffer;
 	QWORD offsetData;
-	char nomeArquivo[100];
+	char dirName[100];
+	char fileName[100];
 	FILE *fpSave;
+	struct stat statDir = {0};
 
 	for(i = 1, offsetDirectory1 = 0; i <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfNamedEntries +
 												lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->node.resourceDirectory.NumberOfIdEntries); i++)
@@ -319,19 +324,27 @@ void discovery(PE_FILE *pe)
 					memset(buffer, 0, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
 					offsetData = rva2ofs(pe, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.offsetToData);
 					fseek(pe->handle, offsetData, SEEK_SET);
-					memset(&nomeArquivo, 0, 100);
+					memset(&fileName, 0, 100);
+					memset(&dirName, 0, 100);
 					if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
 					{
-						//printf("\n\t\t\t%s - %d - %s\n", getResourceEntryByNameOffset(nameOffset)->name, getResourceEntryByNameOffset(nameOffset)->nameOffset, getResourceEntryByNameOffset(nameOffset)->extension);
-						if(getResourceEntryByNameOffset(nameOffset) != NULL)
-							snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d%s", i, j, y, getResourceEntryByNameOffset(nameOffset)->extension);
-						else
-							snprintf(&nomeArquivo, 100, "../tests/%d-%d-%d.bin", i, j, y);
+						if (stat(RESOURCE_DIR, &statDir) == -1)
+							mkdir(RESOURCE_DIR, 0700);
 
-						fpSave = fopen(&nomeArquivo, "wb+");
+						snprintf(&dirName, 100, "%s/%s", RESOURCE_DIR, getResourceEntryByNameOffset(nameOffset)->dirName);
+
+						if (stat(dirName, &statDir) == -1)
+							mkdir(dirName, 0700);
+
+						if(getResourceEntryByNameOffset(nameOffset) != NULL)
+							snprintf(&fileName, 100, "%s/%d-%d-%d%s", dirName, i, j, y, getResourceEntryByNameOffset(nameOffset)->extension);
+						else
+							snprintf(&fileName, 100, "%s/%d-%d-%d.bin", dirName, i, j, y);
+
+						fpSave = fopen(&fileName, "wb+");
 						fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
 						fclose(fpSave);
-						printf("\n\t\t\tSave on: %s\n", nomeArquivo);
+						printf("Save on: %s\n", fileName);
 
 					}
 					free(buffer);

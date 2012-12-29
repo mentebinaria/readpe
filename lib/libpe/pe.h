@@ -88,13 +88,6 @@ typedef uint64_t QWORD;
 
 #pragma pack(push, 1)
 
-typedef struct _RESOURCE_ENTRY
-{
-	char name[20];
-	DWORD nameOffset;
-	char extension[20];
-} RESOURCE_ENTRY;
-
 typedef struct _MACHINE_ENTRY
 {
 	char name[40];
@@ -270,6 +263,14 @@ typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
 	DWORD reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
 
+typedef struct _RESOURCE_ENTRY
+{
+	char name[20];
+	DWORD nameOffset;
+	char extension[20];
+	char dirName[20];
+} RESOURCE_ENTRY;
+
 typedef struct tagVS_FIXEDFILEINFO {
 	DWORD dwSignature;
 	DWORD dwStrucVersion;
@@ -388,34 +389,6 @@ typedef struct _PE_FILE
 } PE_FILE;
 
 #pragma pack(pop)
-
-static const RESOURCE_ENTRY resourceTypes[] =
-{
-	{"RT_CURSOR", 1, ".cur"},
-	{"RT_BITMAP", 2, ".bmp"},
-	{"RT_ICON", 3, ".icon"},
-	{"RT_MENU", 4, ".menu"},
-	{"RT_DIALOG", 5, ".dialog"},
-	{"RT_STRING", 6, ".txt"},
-	{"RT_FONTDIR", 7, ".fontdir"},
-	{"RT_FONT", 8, ".font"},
-	{"RT_ACCELERATOR", 9, ".accelerator"},
-	{"RT_RCDATA", 10, ".rcdata"},
-	{"RT_MESSAGETABLE", 11, ".messagetable"},
-	{"RT_GROUP_CURSOR", 12, ".groupcursor"},
-	{"RT_GROUP_ICON", 14, ".groupicon"},
-	{"RT_VERSION", 16, ".version"},
-	{"RT_DLGINCLUDE", 17, ".dlginclude"},
-	{"RT_PLUGPLAY", 19, ".plugplay"},
-	{"RT_VXD", 20, ".vxd"},
-	{"RT_ANICURSOR", 21, ".anicursor"},
-	{"RT_ANIICON", 22, ".aniicon"},
-	{"RT_HTML", 23, ".html"},
-	{"RT_MANIFEST", 24, ".xml"},
-	{"RT_DLGINIT", 240, ".dlginit"},
-	{"RT_TOOLBAR", 241, ".toolbar"}
-};
-
 
 // wrappers
 void *xmalloc(size_t size);

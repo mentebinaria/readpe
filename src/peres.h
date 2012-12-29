@@ -27,6 +27,8 @@
 
 #define PROGRAM "peres"
 
+#define RESOURCE_DIR "resources"
+
 struct options {
 	bool exportAll;
 	bool infoAll;
@@ -61,6 +63,33 @@ typedef struct _NODE_PERES
 	struct NODE_PERES *nextNode;
 	struct NODE_PERES *lastNode;
 } NODE_PERES;
+
+static const RESOURCE_ENTRY resourceTypes[] =
+{
+	{"RT_CURSOR", 1, ".cur", "cursors"},
+	{"RT_BITMAP", 2, ".bmp", "bitmaps"},
+	{"RT_ICON", 3, ".ico", "icons"},
+	{"RT_MENU", 4, ".rc", "menus"},
+	{"RT_DIALOG", 5, ".dlg", "dialogs"},
+	{"RT_STRING", 6, ".rc", "strings"},
+	{"RT_FONTDIR", 7, ".fnt", "fontdirs"},
+	{"RT_FONT", 8, ".fnt", "fonts"},
+	{"RT_ACCELERATOR", 9, ".rc", "accelerators"},
+	{"RT_RCDATA", 10, ".rc", "rcdatas"},
+	{"RT_MESSAGETABLE", 11, ".mc", "messagetables"},
+	{"RT_GROUP_CURSOR", 12, ".cur", "groupcursors"},
+	{"RT_GROUP_ICON", 14, ".ico", "groupicons"},
+	{"RT_VERSION", 16, ".rc", "versions"},
+	{"RT_DLGINCLUDE", 17, ".rc", "dlgincludes"},
+	{"RT_PLUGPLAY", 19, ".rc", "plugplays"},
+	{"RT_VXD", 20, ".rc", "xvds"},
+	{"RT_ANICURSOR", 21, ".rc", "anicursors"},
+	{"RT_ANIICON", 22, ".rc", "aniicons"},
+	{"RT_HTML", 23, ".html", "htmls"},
+	{"RT_MANIFEST", 24, ".xml", "manifests"},
+	{"RT_DLGINIT", 240, ".rc", "dlginits"},
+	{"RT_TOOLBAR", 241, ".rc", "toolbars"}
+};
 
 struct options config;
 

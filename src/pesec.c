@@ -123,7 +123,7 @@ static int round_up(int numToRound, int multiple)
 	return (numToRound + multiple - 1) / multiple * multiple;
 }
 
-void print_certificate(BIO *out, X509* cert)
+static void print_certificate(BIO *out, X509* cert)
 {
 	switch (cert_format) {
 		default:
@@ -139,7 +139,7 @@ void print_certificate(BIO *out, X509* cert)
 	}
 }
 
-int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob)
+static int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob)
 {
 	int result = 0;
 	const cert_format_e input_fmt = CERT_FORMAT_DER;

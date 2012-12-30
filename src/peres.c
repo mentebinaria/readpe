@@ -186,7 +186,7 @@ NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSea
 	if(currentNode->nodeType == nodeTypeSearch)
 		return currentNode;
 
-	while(currentNode->lastNode != NULL)
+	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
 		if(currentNode->nodeType == nodeTypeSearch)
@@ -203,7 +203,7 @@ NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSe
 	if(currentNode->nodeType == nodeTypeSearch)
 		firstNode = currentNode;
 
-	while(currentNode->lastNode != NULL)
+	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
 		if(currentNode->nodeType == nodeTypeSearch)
@@ -218,7 +218,7 @@ NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nod
 	if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
 		return currentNode;
 
-	while(currentNode->lastNode != NULL)
+	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
 		if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
@@ -238,14 +238,19 @@ void freeNodes(NODE_PERES *currentNode)
 		currentNode = currentNode->nextNode;
 	}
 
-	while(currentNode->lastNode != NULL)
+	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
-		//printf("\nfree");
-		free(currentNode->nextNode);
+
+		if(currentNode == NULL)
+		{
+			free(currentNode);
+			break;
+		}
+
+		if(currentNode->nextNode != NULL)
+			free(currentNode->nextNode);
 	}
-	//printf("\nfree");
-	free(currentNode);
 }
 
 RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
@@ -304,7 +309,7 @@ void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 
 void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 {
-	int count = 1;
+	int count = 0;
 
 	while(nodePeres->lastNode != NULL)
 	{
@@ -313,25 +318,21 @@ void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 
 	output("!SAVE RESOURCES!", NULL);
 
-	while(nodePeres->nextNode != NULL)
+	while(nodePeres != NULL)
 	{
 		if(nodePeres->nodeType != RDT_DATA_ENTRY)
 		{
 			nodePeres = nodePeres->nextNode;
 			continue;
 		}
+		count++;
 		saveResource(pe, nodePeres, count);
 		nodePeres = nodePeres->nextNode;
-		count++;
 	}
-
-	saveResource(pe, nodePeres, count); // save last
 }
 
 void showInformations(NODE_PERES *nodePeres)
 {
-	int count = 1;
-
 	while(nodePeres->lastNode != NULL)
 	{
 		nodePeres = nodePeres->lastNode;
@@ -339,14 +340,11 @@ void showInformations(NODE_PERES *nodePeres)
 
 	output("!SHOW INFORMATIONS!", NULL);
 
-	while(nodePeres->nextNode != NULL)
+	while(nodePeres != NULL)
 	{
 		showNode(nodePeres);
 		nodePeres = nodePeres->nextNode;
-		count++;
 	}
-
-	showNode(nodePeres);
 }
 
 void showStatistics(NODE_PERES *nodePeres)

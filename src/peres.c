@@ -27,6 +27,73 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static int ind;
+
+static void usage()
+{
+	printf("Usage: %s OPTIONS FILE\n"
+	"Show information about resource section and extract it\n"
+	"\nExample: %s -a putty.exe\n"
+	"\nOptions:\n"
+	" -a, --all					Show all information, statistics and extract resources\n"
+	" -x, --extract					Extract resources\n"
+	" -i, --info					Show informations\n"
+	" -s, --statistics				Show statistics\n"
+	" -v, --version					Show version and exit\n"
+	" --help						Show this help and exit\n",
+	PROGRAM, PROGRAM);
+}
+
+static void parse_options(int argc, char **argv)
+{
+	int c;
+	static const char short_options[] = "a:x:i:s:v";
+
+	static const struct option long_options[] = {
+
+		{"all",              required_argument, NULL, 'a'},
+		{"extract",       	 no_argument,       NULL, 'x'},
+		{"info",             no_argument, 		NULL, 'i'},
+		{"statistics",       no_argument, 		NULL, 's'},
+		{"version",          no_argument,       NULL, 'v'},
+		{"help",             no_argument,       NULL,  1 },
+		{ NULL,              0,                 NULL,  0 }
+	};
+
+	//memset(&config, false, sizeof(config));
+
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
+	{
+		if (c < 0)
+			break;
+
+		switch (c)
+		{
+			case 'a':
+				config.all = true;
+				break;
+			case 'x':
+				config.extract = true;
+				break;
+			case 'i':
+				config.info = true;
+				break;
+			case 's':
+				config.statistics = true;
+				break;
+			case 'v':
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
+				exit(EXIT_SUCCESS);
+			case 1:
+				usage();
+				exit(EXIT_SUCCESS);
+			default:
+				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
+				exit(EXIT_FAILURE);
+		}
+	}
+}
+
 void showNode(NODE_PERES *nodePeres)
 {
 	char value[MAX_MSG];
@@ -34,7 +101,7 @@ void showNode(NODE_PERES *nodePeres)
 	switch(nodePeres->nodeType)
 	{
 		case RDT_RESOURCE_DIRECTORY:
-			snprintf(value, MAX_MSG, "Resource Directory / %lu", nodePeres->nodeLevel);
+			snprintf(value, MAX_MSG, "Resource Directory / %d", nodePeres->nodeLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%d", nodePeres->node.resourceDirectory.Characteristics);
@@ -56,7 +123,7 @@ void showNode(NODE_PERES *nodePeres)
 			output("Id entries", value);
 			break;
 		case RDT_DIRECTORY_ENTRY:
-			snprintf(value, MAX_MSG, "Directory Entry / %lu", nodePeres->nodeLevel);
+			snprintf(value, MAX_MSG, "Directory Entry / %d", nodePeres->nodeLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%d", nodePeres->node.directoryEntry.DirectoryName.name.NameOffset);
@@ -72,17 +139,18 @@ void showNode(NODE_PERES *nodePeres)
 			output("Data is directory", value);
 			break;
 		case RDT_DATA_STRING:
-			snprintf(value, MAX_MSG, "Data String / %lu", nodePeres->nodeLevel);
+			snprintf(value, MAX_MSG, "Data String / %d", nodePeres->nodeLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%d", nodePeres->node.dataString.length);
 			output("String len", value);
 
-			output("String", nodePeres->node.dataString.string);
+			snprintf(value, MAX_MSG, "%d", (int) nodePeres->node.dataString.string);
+			output("String", value);
 
 			break;
 		case RDT_DATA_ENTRY:
-			snprintf(value, MAX_MSG, "Data Entry / %lu", nodePeres->nodeLevel);
+			snprintf(value, MAX_MSG, "Data Entry / %d", nodePeres->nodeLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%x", nodePeres->node.dataEntry.offsetToData);
@@ -101,14 +169,13 @@ void showNode(NODE_PERES *nodePeres)
 			output("ShowNode", "ERROR - Invalid Node Type");
 			break;
 	}
-
 }
 
 NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
 	currentNode->nextNode = xmalloc(sizeof(NODE_PERES));
 	((NODE_PERES *) currentNode->nextNode)->lastNode = currentNode;
-	currentNode = currentNode->nextNode;
+	currentNode = (NODE_PERES *) currentNode->nextNode;
 	currentNode->nodeType = typeOfNextNode;
 	currentNode->nextNode = NULL;
 	return currentNode;
@@ -163,6 +230,9 @@ NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nod
 
 void freeNodes(NODE_PERES *currentNode)
 {
+	if(currentNode == NULL)
+		return;
+
 	while(currentNode->nextNode != NULL)
 	{
 		currentNode = currentNode->nextNode;
@@ -180,11 +250,11 @@ void freeNodes(NODE_PERES *currentNode)
 
 RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
 {
-	int i;
+	unsigned int i;
 	for(i = 0; i < (sizeof(resourceTypes)/sizeof(RESOURCE_ENTRY)); i++)
 	{
 		if(resourceTypes[i].nameOffset == nameOffset)
-			return &resourceTypes[i];
+			return (RESOURCE_ENTRY *)&resourceTypes[i];
 	}
 
 	return NULL;
@@ -209,10 +279,10 @@ void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 	nameOffset = ((NODE_PERES *)nodePeres->rootNode)->node.directoryEntry.DirectoryName.name.NameOffset;
 	if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
 	{
-		if (stat(RESOURCE_DIR, &statDir) == -1)
-			mkdir(RESOURCE_DIR, 0700);
+		if (stat(resourceDir, &statDir) == -1)
+			mkdir(resourceDir, 0700);
 
-		snprintf(&dirName, 100, "%s/%s", RESOURCE_DIR, getResourceEntryByNameOffset(nameOffset)->dirName);
+		snprintf(&dirName, 100, "%s/%s", resourceDir, getResourceEntryByNameOffset(nameOffset)->dirName);
 
 		if (stat(dirName, &statDir) == -1)
 			mkdir(dirName, 0700);
@@ -225,7 +295,7 @@ void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 		fpSave = fopen(&fileName, "wb+");
 		fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
 		fclose(fpSave);
-		printf("Save on: %s\n", fileName);
+		output("Save On", fileName);
 		count++;
 	}
 	free(buffer);
@@ -241,6 +311,8 @@ void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 		nodePeres = nodePeres->lastNode;
 	}
 
+	output("!SAVE RESOURCES!", NULL);
+
 	while(nodePeres->nextNode != NULL)
 	{
 		if(nodePeres->nodeType != RDT_DATA_ENTRY)
@@ -254,6 +326,80 @@ void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 	}
 
 	saveResource(pe, nodePeres, count); // save last
+}
+
+void showInformations(NODE_PERES *nodePeres)
+{
+	int count = 1;
+
+	while(nodePeres->lastNode != NULL)
+	{
+		nodePeres = nodePeres->lastNode;
+	}
+
+	output("!SHOW INFORMATIONS!", NULL);
+
+	while(nodePeres->nextNode != NULL)
+	{
+		showNode(nodePeres);
+		nodePeres = nodePeres->nextNode;
+		count++;
+	}
+
+	showNode(nodePeres);
+}
+
+void showStatistics(NODE_PERES *nodePeres)
+{
+	char value[MAX_MSG];
+	int totalCount = 0;
+	int totalResourceDirectory = 0;
+	int totalDirectoryEntry = 0;
+	int totalDataString = 0;
+	int totalDataEntry = 0;
+
+	while(nodePeres->lastNode != NULL)
+	{
+		nodePeres = nodePeres->lastNode;
+	}
+
+	output("!SHOW STATISTICS!", NULL);
+
+	while(nodePeres != NULL)
+	{
+		totalCount++;
+		switch(nodePeres->nodeType)
+		{
+			case RDT_RESOURCE_DIRECTORY:
+				totalResourceDirectory++;
+				break;
+			case RDT_DIRECTORY_ENTRY:
+				totalDirectoryEntry++;
+				break;
+			case RDT_DATA_STRING:
+				totalDataString++;
+				break;
+			case RDT_DATA_ENTRY:
+				totalDataEntry++;
+				break;
+		}
+		nodePeres = nodePeres->nextNode;
+	}
+
+	snprintf(value, MAX_MSG, "%d", totalCount);
+	output("Total Structs", value);
+
+	snprintf(value, MAX_MSG, "%d", totalResourceDirectory);
+	output("Total Resource Directory", value);
+
+	snprintf(value, MAX_MSG, "%d", totalDirectoryEntry);
+	output("Total Directory Entry", value);
+
+	snprintf(value, MAX_MSG, "%d", totalDataString);
+	output("Total Data String", value);
+
+	snprintf(value, MAX_MSG, "%d", totalDataEntry);
+	output("Total Data Entry", value);
 }
 
 NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
@@ -303,7 +449,7 @@ NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 	nodePeres->nodeType = RDT_RESOURCE_DIRECTORY;
 	nodePeres->nodeLevel = RDT_LEVEL1;
 	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-	showNode(nodePeres);
+	//showNode(nodePeres);
 
 	int i, j, y;
 	int offsetDirectory1 = 0, offsetDirectory2 = 0;
@@ -327,7 +473,7 @@ NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 		nodePeres->rootNode = rootNodePeres;
 		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 
-		showNode(nodePeres);
+		//showNode(nodePeres);
         if (lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
         {
         	fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
@@ -335,7 +481,7 @@ NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
         	nodePeres->nodeLevel = RDT_LEVEL2;
         	nodePeres->rootNode = lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1);
         	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-        	showNode(nodePeres);
+        	//showNode(nodePeres);
 
         	for(j = 1, offsetDirectory2 = 0; j <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
         			lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
@@ -355,14 +501,14 @@ NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 				nodePeres->nodeLevel = RDT_LEVEL2;
 				nodePeres->rootNode = rootNodePeres;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
-				showNode(nodePeres);
+				//showNode(nodePeres);
 
 				fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET); // posiciona em 0x72
 				nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
 				nodePeres->nodeLevel = RDT_LEVEL3;
 				nodePeres->rootNode = rootNodePeres;
 				fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-				showNode(nodePeres);
+				//showNode(nodePeres);
 
 				for(y = 1; y <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfNamedEntries +
 									lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->node.resourceDirectory.NumberOfIdEntries); y++)
@@ -371,21 +517,21 @@ NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					nodePeres->rootNode = rootNodePeres;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
-					showNode(nodePeres);
+					//showNode(nodePeres);
 
 					fseek(pe->handle, (raiz + nodePeres->node.directoryEntry.DirectoryName.name.NameOffset), SEEK_SET);
 					nodePeres = createNode(nodePeres, RDT_DATA_STRING);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					nodePeres->rootNode = rootNodePeres;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_STRING), 1, pe->handle);
-					showNode(nodePeres);
+					//showNode(nodePeres);
 
 					fseek(pe->handle, (raiz + ((NODE_PERES *)nodePeres->lastNode)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
 					nodePeres = createNode(nodePeres, RDT_DATA_ENTRY);
 					nodePeres->nodeLevel = RDT_LEVEL3;
 					nodePeres->rootNode = rootNodePeres;
 					fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, pe->handle);
-					showNode(nodePeres);
+					//showNode(nodePeres);
 				}
 			}
         }
@@ -398,6 +544,14 @@ int main(int argc, char **argv)
 	PE_FILE pe;
 	FILE *fp = NULL;
 	NODE_PERES *nodePeres;
+
+	if (argc < 3)
+	{
+		usage();
+		exit(EXIT_FAILURE);
+	}
+
+	parse_options(argc, argv); // opcoes
 
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
@@ -412,10 +566,26 @@ int main(int argc, char **argv)
 	pe_get_directories(&pe);
 
 	nodePeres = discoveryNodesPeres(&pe);
-	extractResources(&pe, nodePeres);
-	freeNodes(nodePeres);
 
+	if(config.all)
+	{
+		showInformations(nodePeres);
+		showStatistics(nodePeres);
+		extractResources(&pe, nodePeres);
+	}
+	else
+	{
+		if(config.extract)
+			extractResources(&pe, nodePeres);
+
+		if(config.info)
+			showInformations(nodePeres);
+
+		if(config.statistics)
+			showStatistics(nodePeres);
+	}
+
+	freeNodes(nodePeres);
 	pe_deinit(&pe);
-	
 	return 0;
 }

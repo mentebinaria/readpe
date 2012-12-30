@@ -27,13 +27,13 @@
 
 #define PROGRAM "peres"
 
-#define RESOURCE_DIR "resources"
-
 struct options {
-	bool exportAll;
-	bool infoAll;
-	bool exportType;
-	bool infoType;
+	bool all;
+	bool extract;
+	bool info;
+	bool statistics;
+	bool version;
+	bool help;
 };
 
 typedef enum {
@@ -64,6 +64,8 @@ typedef struct _NODE_PERES
 	struct NODE_PERES *lastNode;
 	struct NODE_PERES *rootNode;
 } NODE_PERES;
+
+char *resourceDir = "resources";
 
 static const RESOURCE_ENTRY resourceTypes[] =
 {

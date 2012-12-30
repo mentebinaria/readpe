@@ -94,7 +94,7 @@ static void parse_options(int argc, char **argv)
 	}
 }
 
-void showNode(NODE_PERES *nodePeres)
+static void showNode(NODE_PERES *nodePeres)
 {
 	char value[MAX_MSG];
 
@@ -171,7 +171,7 @@ void showNode(NODE_PERES *nodePeres)
 	}
 }
 
-NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
+static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
 	currentNode->nextNode = xmalloc(sizeof(NODE_PERES));
 	((NODE_PERES *) currentNode->nextNode)->lastNode = currentNode;
@@ -181,7 +181,7 @@ NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 	return currentNode;
 }
 
-NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
+static NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
 {
 	if(currentNode->nodeType == nodeTypeSearch)
 		return currentNode;
@@ -196,7 +196,7 @@ NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSea
 	return NULL;
 }
 
-NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
+static NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
 {
 	NODE_PERES *firstNode = NULL;
 
@@ -213,7 +213,7 @@ NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSe
 	return firstNode;
 }
 
-NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
+static NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
 {
 	if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
 		return currentNode;
@@ -228,7 +228,7 @@ NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nod
 	return NULL;
 }
 
-void freeNodes(NODE_PERES *currentNode)
+static void freeNodes(NODE_PERES *currentNode)
 {
 	if(currentNode == NULL)
 		return;
@@ -254,7 +254,7 @@ void freeNodes(NODE_PERES *currentNode)
 	}
 }
 
-RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
+static RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
 {
 	unsigned int i;
 	for(i = 0; i < (sizeof(resourceTypes)/sizeof(RESOURCE_ENTRY)); i++)
@@ -266,7 +266,7 @@ RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
 	return NULL;
 }
 
-void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
+static void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 {
 	FILE *fpSave;
 	unsigned char *buffer;
@@ -308,7 +308,7 @@ void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 
 }
 
-void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
+static void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 {
 	int count = 0;
 
@@ -332,7 +332,7 @@ void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 	}
 }
 
-void showInformations(NODE_PERES *nodePeres)
+static void showInformations(NODE_PERES *nodePeres)
 {
 	while(nodePeres->lastNode != NULL)
 	{
@@ -348,7 +348,7 @@ void showInformations(NODE_PERES *nodePeres)
 	}
 }
 
-void showStatistics(NODE_PERES *nodePeres)
+static void showStatistics(NODE_PERES *nodePeres)
 {
 	char value[MAX_MSG];
 	int totalCount = 0;
@@ -401,7 +401,7 @@ void showStatistics(NODE_PERES *nodePeres)
 	output("Total Data Entry", value);
 }
 
-NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
+static NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 {
 	NODE_PERES *nodePeres;
 	NODE_PERES *rootNodePeres;

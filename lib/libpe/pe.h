@@ -88,12 +88,6 @@ typedef uint64_t QWORD;
 
 #pragma pack(push, 1)
 
-typedef struct _RESOURCE_ENTRY
-{
-	char name[20];
-	unsigned int code;
-} RESOURCE_ENTRY;
-
 typedef struct _MACHINE_ENTRY
 {
 	char name[40];
@@ -235,30 +229,47 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY {
 	WORD NumberOfIdEntries;
 } IMAGE_RESOURCE_DIRECTORY;
 
-typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
-	union {
-		struct {
-			DWORD NameOffset:31;
-			DWORD NameIsString:1;
-		} s1;
-		DWORD Name;
-		WORD Id;
-	} u1;
-	union {
-		DWORD OffsetToData;
-		struct {
-			DWORD OffsetToDirectory:31;
-			DWORD DataIsDirectory:1;
-		} s2;
-	} u2;
+typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY
+{
+        union
+        {
+                struct
+                {
+                        DWORD NameOffset:31;
+                        DWORD NameIsString:1;
+                } name;
+                DWORD Name;
+        } DirectoryName;
+        union
+        {
+                DWORD OffsetToData;
+                struct
+                {
+                        DWORD OffsetToDirectory:31;
+                        DWORD DataIsDirectory:1;
+                } data;
+        } DirectoryData;
 } IMAGE_RESOURCE_DIRECTORY_ENTRY;
 
+typedef struct _IMAGE_RESOURCE_DATA_STRING {
+  WORD  length;
+  WORD  string[1];
+} IMAGE_RESOURCE_DATA_STRING;
+
 typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
-	DWORD OffsetToData;
-	DWORD Size;
-	DWORD CodePage;
-	DWORD Reserved;
+	DWORD offsetToData;
+	DWORD size;
+	DWORD codePage;
+	DWORD reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
+
+typedef struct _RESOURCE_ENTRY
+{
+	char name[20];
+	DWORD nameOffset;
+	char extension[20];
+	char dirName[20];
+} RESOURCE_ENTRY;
 
 typedef struct tagVS_FIXEDFILEINFO {
 	DWORD dwSignature;
@@ -378,34 +389,6 @@ typedef struct _PE_FILE
 } PE_FILE;
 
 #pragma pack(pop)
-
-static const RESOURCE_ENTRY resource_types[] = 
-{
-	{"RT_CURSOR", 1},
-	{"RT_BITMAP", 2},
-	{"RT_ICON", 3},
-	{"RT_MENU", 4},
-	{"RT_DIALOG", 5},
-	{"RT_STRING", 6},
-	{"RT_FONTDIR", 7},
-	{"RT_FONT", 8},
-	{"RT_ACCELERATOR", 9},
-	{"RT_RCDATA", 10},
-	{"RT_MESSAGETABLE", 11},
-	{"RT_GROUP_CURSOR", 12},
-	{"RT_GROUP_ICON", 14},
-	{"RT_VERSION", 16},
-	{"RT_DLGINCLUDE", 17},
-	{"RT_PLUGPLAY", 19},
-	{"RT_VXD", 20},
-	{"RT_ANICURSOR", 21},
-	{"RT_ANIICON", 22},
-	{"RT_HTML", 23},
-	{"RT_MANIFEST", 24},
-	{"RT_DLGINIT", 240},
-	{"RT_TOOLBAR", 241}
-};
-
 
 // wrappers
 void *xmalloc(size_t size);

@@ -240,16 +240,17 @@ void freeNodes(NODE_PERES *currentNode)
 
 	while(currentNode != NULL)
 	{
-		currentNode = currentNode->lastNode;
-
-		if(currentNode == NULL)
+		if(currentNode->lastNode == NULL)
 		{
 			free(currentNode);
 			break;
 		}
-
-		if(currentNode->nextNode != NULL)
-			free(currentNode->nextNode);
+		else
+		{
+			currentNode = currentNode->lastNode;
+			if(currentNode->nextNode != NULL)
+				free(currentNode->nextNode);
+		}
 	}
 }
 

@@ -250,21 +250,15 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 		goto error;
 	}
 
-//	// Check if it's an Authenticode (PKCS#7 Signed Data)
-// 	if (!PKCS7_type_is_signed(p7)) {
-// 		result = -4;
-// 		goto error;
-// 	}
-
 	STACK_OF(X509) *certs = NULL;
 
 	int type = OBJ_obj2nid(p7->type);
 	switch (type) {
 		default: break;
-		case NID_pkcs7_signed:
+		case NID_pkcs7_signed: // PKCS7_type_is_signed(p7)
 			certs = p7->d.sign->cert;
 			break;
-		case NID_pkcs7_signedAndEnveloped:
+		case NID_pkcs7_signedAndEnveloped: // PKCS7_type_is_signedAndEnveloped(p7)
 			certs = p7->d.signed_and_enveloped->cert;
 			break;
 	}
@@ -325,7 +319,6 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 
 		// Read the whole WIN_CERTIFICATE based on the previously read size
 		if (!fread(cert, dwCertLen, 1, pe->handle)) {
-			free(cert);
 			EXIT_ERROR("unable to read");
 		}
 
@@ -389,11 +382,6 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
-	WORD dllchar = 0;
-	char field[MAX_MSG];
-
 	if (argc < 2) {
 		usage();
 		exit(1);
@@ -403,9 +391,11 @@ int main(int argc, char *argv[])
 
 	const char *path = argv[argc-1];
 
+	FILE *fp = NULL;
 	if ((fp = fopen(path, "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
 
+	PE_FILE pe;
 	pe_init(&pe, fp); // inicializa o struct pe
 
 	if (!is_pe(&pe))
@@ -414,12 +404,15 @@ int main(int argc, char *argv[])
 	if (!pe_get_optional(&pe))
 		return 1;
 
+	WORD dllchar = 0;
 	if (pe.architecture == PE32)
 		dllchar = pe.optional_ptr->_32->DllCharacteristics;
 	else if (pe.architecture == PE64)
 		dllchar = pe.optional_ptr->_64->DllCharacteristics;
 	else
 		return 1;
+
+	char field[MAX_MSG];
 
 	// aslr
 	snprintf(field, MAX_MSG, "ASLR");

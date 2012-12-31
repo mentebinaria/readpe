@@ -416,7 +416,7 @@ QWORD pe_get_size(PE_FILE *pe);
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);
 bool pe_get_sections(PE_FILE *pe);
-IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char* section_name);
+IMAGE_SECTION_HEADER *pe_get_section(PE_FILE *pe, const char *section_name);
 bool pe_get_directories(PE_FILE *pe);
 bool pe_get_optional(PE_FILE *pe);
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header);
@@ -427,6 +427,6 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);
 bool pe_get_resource_entries(PE_FILE *pe);
 IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry);
 
-IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva);
+IMAGE_SECTION_HEADER *pe_rva2section(PE_FILE *pe, QWORD rva);
 
 #endif

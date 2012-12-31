@@ -51,7 +51,7 @@ static void usage()
 		PROGRAM, PROGRAM);
 }
 
-cert_format_e parse_certoutform(const char *optarg)
+static cert_format_e parse_certoutform(const char *optarg)
 {
 	cert_format_e result;
 	if (strcmp(optarg, "text") == 0)
@@ -65,7 +65,7 @@ cert_format_e parse_certoutform(const char *optarg)
 	return result;
 }
 
-BIO *parse_certout(const char *optarg)
+static BIO *parse_certout(const char *optarg)
 {
 	BIO *bio = BIO_new(BIO_s_file());
 	if (bio == NULL) {
@@ -94,7 +94,7 @@ static void free_options(options_t *options)
 
 	if (options->certout != NULL)
 		BIO_free(options->certout);
-	
+
 	free(options);
 }
 

@@ -216,18 +216,10 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 	const cert_format_e input_fmt = CERT_FORMAT_DER;
 	PKCS7 *p7 = NULL;
 	BIO *in = NULL;
-	BIO *out = NULL;
 
 	CRYPTO_malloc_init();
 	ERR_load_crypto_strings();
 	OpenSSL_add_all_algorithms();
-
-	out = BIO_new(BIO_s_file());
-	if (out == NULL) {
-		result = -1;
-		goto error;
-	}
-	BIO_set_fp(out, stdout, BIO_NOCLOSE);
 
 	in = BIO_new_mem_buf(blob->pbData, blob->cbData);
 	if (in == NULL) {
@@ -274,8 +266,6 @@ error:
 		PKCS7_free(p7);
 	if (in != NULL)
 		BIO_free(in);
-	if (out != NULL)
-		BIO_free(out);
 
 	EVP_cleanup(); // Deallocate everything from OpenSSL_add_all_algorithms
 	ERR_free_strings(); // Deallocate everything from ERR_load_crypto_strings

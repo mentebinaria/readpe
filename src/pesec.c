@@ -26,6 +26,17 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 
+typedef enum {
+	CERT_FORMAT_TEXT = 1,
+	CERT_FORMAT_PEM = 2,
+	CERT_FORMAT_DER = 3
+} cert_format_e;
+
+typedef struct {
+	cert_format_e certoutform;
+	BIO *certout;
+} options_t;
+
 static void usage()
 {
 	printf("Usage: %s [OPTIONS] FILE\n"
@@ -33,29 +44,80 @@ static void usage()
 		"\nExample: %s wordpad.exe\n"
 		"\nOptions:\n"
 		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-		" -c, --certformat <text|pem>            change certificate output format (default: text)\n"
+		" -c, --certoutform <text|pem>           specifies the certificate output format (default: text)\n"
+		" -o, --certout filename                 specifies the output filename to write certificates to (default: stdout)\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
 }
 
-static void parse_options(int argc, char *argv[])
+cert_format_e parse_certoutform(const char *optarg)
 {
-	int c, ind;
+	cert_format_e result;
+	if (strcmp(optarg, "text") == 0)
+		result = CERT_FORMAT_TEXT;
+	else if (strcmp(optarg, "pem") == 0)
+		result = CERT_FORMAT_PEM;
+	else if (strcmp(optarg, "der") == 0)
+		result = CERT_FORMAT_DER;
+	else
+		EXIT_ERROR("invalid cert_format option");
+	return result;
+}
+
+BIO *parse_certout(const char *optarg)
+{
+	BIO *bio = BIO_new(BIO_s_file());
+	if (bio == NULL) {
+		EXIT_ERROR("could not allocate BIO");
+	}
+
+	if (strcmp(optarg, "stdout") == 0) {
+		BIO_set_fp(bio, stdout, BIO_NOCLOSE);
+	} else if (strcmp(optarg, "stderr") == 0) {
+		BIO_set_fp(bio, stderr, BIO_NOCLOSE);
+	} else {
+		int ret = BIO_write_filename(bio, (char *)optarg);
+		if (ret == 0) {
+			BIO_free(bio);
+			EXIT_ERROR("failed to open file");
+		}
+	}
+
+	return bio;
+}
+
+static void free_options(options_t *options)
+{
+	if (options == NULL)
+		return;
+
+	if (options->certout != NULL)
+		BIO_free(options->certout);
+	
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "f:c:v";
+	static const char short_options[] = "f:c:o:v";
 
 	static const struct option long_options[] = {
 		{"format",		required_argument,	NULL,	'f'},
-		{"certformat",	required_argument,	NULL,	'c'},
+		{"certoutform",	required_argument,	NULL,	'c'},
+		{"certout",		required_argument,	NULL,	'o'},
 		{"help",		no_argument,		NULL,	 1 },
 		{"version",		no_argument,		NULL,	'v'},
 		{ NULL,			0,					NULL, 	 0 }
 	};
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	int c, ind;
+
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
@@ -72,13 +134,22 @@ static void parse_options(int argc, char *argv[])
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'c':
-				parse_cert_format(optarg);
+				options->certoutform = parse_certoutform(optarg);
+				break;
+			case 'o':
+				options->certout = parse_certout(optarg);
 				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
 		}
 	}
+	
+	// If the --certout option was not passed, we manually setup it.
+	if (options->certout == NULL)
+		options->certout = parse_certout("stdout");
+
+	return options;
 }
 
 /*
@@ -123,9 +194,9 @@ static int round_up(int numToRound, int multiple)
 	return (numToRound + multiple - 1) / multiple * multiple;
 }
 
-static void print_certificate(BIO *out, X509* cert)
+static void print_certificate(BIO *out, cert_format_e format, X509 *cert)
 {
-	switch (cert_format) {
+	switch (format) {
 		default:
 		case CERT_FORMAT_TEXT:
 			X509_print(out, cert);
@@ -139,7 +210,7 @@ static void print_certificate(BIO *out, X509* cert)
 	}
 }
 
-static int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob)
+static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blob)
 {
 	int result = 0;
 	const cert_format_e input_fmt = CERT_FORMAT_DER;
@@ -200,7 +271,7 @@ static int parse_pkcs7_data(const CRYPT_DATA_BLOB *blob)
 
 	for (int i = 0; certs != NULL && i < sk_X509_num(certs); i++) {
 		X509 *cert = sk_X509_value(certs, i);
-		print_certificate(out, cert);
+		print_certificate(options->certout, options->certoutform, cert);
 		// NOTE: Calling X509_free(cert) is unnecessary.
 	}
 
@@ -218,7 +289,7 @@ error:
 	return result;
 }
 
-static void parse_certificates(PE_FILE *pe)
+static void parse_certificates(const options_t *options, PE_FILE *pe)
 {
 	if (!pe_get_directories(pe))
 		EXIT_ERROR("unable to read the Directories entry from Optional header");
@@ -301,7 +372,7 @@ static void parse_certificates(PE_FILE *pe)
 				CRYPT_DATA_BLOB p7data;
 				p7data.cbData = cert->dwLength - offsetof(WIN_CERTIFICATE, bCertificate);
 				p7data.pbData = cert->bCertificate;
-				parse_pkcs7_data(&p7data);
+				parse_pkcs7_data(options, &p7data);
 				break;
 			}
 			case WIN_CERT_TYPE_TS_STACK_SIGNED:
@@ -328,7 +399,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	parse_options(argc, argv); // opcoes
+	options_t *options = parse_options(argc, argv); // opcoes
 
 	const char *path = argv[argc-1];
 
@@ -367,10 +438,12 @@ int main(int argc, char *argv[])
 	output(field, stack_cookies(&pe) ? "yes" : "no");
 
 	// certificados
-	parse_certificates(&pe);
+	parse_certificates(options, &pe);
 
 	// libera a memoria
 	pe_deinit(&pe);
+
+	free_options(options);
 
 	return 0;
 }

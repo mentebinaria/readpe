@@ -23,7 +23,6 @@
 #define OUTPUT_H
 
 void parse_format(const char *optarg);
-void parse_cert_format(const char *optarg);
 void output(char *field, char *value);
 
 typedef enum {
@@ -33,13 +32,6 @@ typedef enum {
 	FORMAT_CSV = 4
 } format_e;
 
-typedef enum {
-	CERT_FORMAT_TEXT = 1,
-	CERT_FORMAT_PEM = 2,
-	CERT_FORMAT_DER = 3
-} cert_format_e;
-
-format_e format;
-cert_format_e cert_format;
+extern format_e format;
 
 #endif

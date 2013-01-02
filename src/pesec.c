@@ -253,10 +253,34 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 			break;
 	}
 
-	for (int i = 0; certs != NULL && i < sk_X509_num(certs); i++) {
+	const int numcerts = certs != NULL ? sk_X509_num(certs) : 0;
+	for (int i = 0; i < numcerts; i++) {
 		X509 *cert = sk_X509_value(certs, i);
 		print_certificate(options->certout, options->certoutform, cert);
 		// NOTE: Calling X509_free(cert) is unnecessary.
+	}
+
+	// Print whether certificate signature is valid
+	if (numcerts > 0) {
+		X509 *subject = sk_X509_value(certs, 0);
+		X509 *issuer = sk_X509_value(certs, numcerts - 1);
+		int valid_sig = X509_verify(subject, X509_get_pubkey(issuer));
+		output("Signature", valid_sig == 1 ? "valid" : "invalid");
+	}
+
+	// Print signers
+	if (numcerts > 0)
+		output("Signers", NULL);
+	for (int i = 0; i < numcerts; i++) {
+		X509 *cert = sk_X509_value(certs, i);
+		X509_NAME *name = X509_get_subject_name(cert);
+
+		int issuer_name_len = X509_NAME_get_text_by_NID(name, NID_commonName, NULL, 0);
+		if (issuer_name_len > 0) {
+			char issuer_name[issuer_name_len + 1];
+			X509_NAME_get_text_by_NID(name, NID_commonName, issuer_name, issuer_name_len + 1);
+			output(NULL, issuer_name);
+		}
 	}
 
 error:
@@ -265,8 +289,10 @@ error:
 	if (in != NULL)
 		BIO_free(in);
 
-	EVP_cleanup(); // Deallocate everything from OpenSSL_add_all_algorithms
-	ERR_free_strings(); // Deallocate everything from ERR_load_crypto_strings
+	// Deallocate everything from OpenSSL_add_all_algorithms
+	EVP_cleanup();
+	// Deallocate everything from ERR_load_crypto_strings
+	ERR_free_strings();
 
 	return result;
 }

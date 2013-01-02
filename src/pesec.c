@@ -144,10 +144,6 @@ static options_t *parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
-	
-	// If the --certout option was not passed, we manually setup it.
-	if (options->certout == NULL)
-		options->certout = parse_certout("stdout");
 
 	return options;
 }
@@ -196,6 +192,8 @@ static int round_up(int numToRound, int multiple)
 
 static void print_certificate(BIO *out, cert_format_e format, X509 *cert)
 {
+	if (out == NULL)
+		return;
 	switch (format) {
 		default:
 		case CERT_FORMAT_TEXT:
@@ -279,11 +277,8 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 		EXIT_ERROR("unable to read the Directories entry from Optional header");
 
 	const IMAGE_DATA_DIRECTORY * const directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_SECURITY);
-	if (directory == NULL) {
-		fprintf(stderr, "security directory not found\n");
-		// TODO: Should we exit using EXIT_ERROR?
+	if (directory == NULL)
 		return;
-	}
 
 	if (directory->VirtualAddress == 0 || directory->Size == 0)
 		return;
@@ -308,19 +303,18 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 		WIN_CERTIFICATE *cert = xmalloc(dwCertLen);
 
 		// Read the whole WIN_CERTIFICATE based on the previously read size
-		if (!fread(cert, dwCertLen, 1, pe->handle)) {
+		if (!fread(cert, dwCertLen, 1, pe->handle))
 			EXIT_ERROR("unable to read");
-		}
 
 		static char value[MAX_MSG];
 
 		snprintf(value, MAX_MSG, "%u bytes", cert->dwLength);
-		output("length", value);
+		output("Length", value);
 
 		snprintf(value, MAX_MSG, "0x%x (%s)", cert->wRevision,
 			cert->wRevision == WIN_CERT_REVISION_1_0 ? "1" :
 			cert->wRevision == WIN_CERT_REVISION_2_0 ? "2" : "unknown");
-		output("revision", value);
+		output("Revision", value);
 
 		snprintf(value, MAX_MSG, "0x%x", cert->wCertificateType);
 		switch (cert->wCertificateType) {
@@ -329,7 +323,7 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: strlcat(value, " (PKCS_SIGNED_DATA)", MAX_MSG); break;
 			case WIN_CERT_TYPE_TS_STACK_SIGNED: strlcat(value, " (TS_STACK_SIGNED)", MAX_MSG); break;
 		}
-		output("type", value);
+		output("Type", value);
 
 		fileOffset += round_up(cert->dwLength, 8); // Offset to the next certificate.
 

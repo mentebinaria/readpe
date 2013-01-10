@@ -64,6 +64,7 @@
 
 // directory Entries
 typedef enum {
+	// FIXME: Quoting pecoff_v8.docx: "Entries in the section table are numbered starting from one (1)".
 	IMAGE_DIRECTORY_ENTRY_EXPORT			= 0, // Export Directory
 	IMAGE_DIRECTORY_ENTRY_IMPORT			= 1, // Import Directory
 	IMAGE_DIRECTORY_ENTRY_RESOURCE			= 2, // Resource Directory

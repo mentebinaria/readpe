@@ -13,6 +13,7 @@ Debug
 *.dll
 *.o
 *.log
+.settings
 src/ofs2rva
 src/pedis
 src/pehash
@@ -22,5 +23,7 @@ src/pesec
 src/pestr
 src/readpe
 src/rva2ofs
+src/peres
 tests/samples
 tests/*.exe
+tests/*.bin

@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	peres.c - retrive informations and binary data of resources
 
 	Copyright (C) 2012 pev authors
@@ -51,13 +51,13 @@ static void parse_options(int argc, char **argv)
 
 	static const struct option long_options[] = {
 
-		{"all",              required_argument, NULL, 'a'},
-		{"extract",       	 no_argument,       NULL, 'x'},
-		{"info",             no_argument, 		NULL, 'i'},
-		{"statistics",       no_argument, 		NULL, 's'},
-		{"version",          no_argument,       NULL, 'v'},
-		{"help",             no_argument,       NULL,  1 },
-		{ NULL,              0,                 NULL,  0 }
+		{"all",			required_argument,	NULL, 'a'},
+		{"extract",		no_argument,		NULL, 'x'},
+		{"info",		no_argument,		NULL, 'i'},
+		{"statistics",	no_argument,		NULL, 's'},
+		{"version",		no_argument,		NULL, 'v'},
+		{"help",		no_argument,		NULL,  1 },
+		{ NULL,			0,					NULL,  0 }
 	};
 
 	//memset(&config, false, sizeof(config));
@@ -256,11 +256,10 @@ static void freeNodes(NODE_PERES *currentNode)
 
 static RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
 {
-	unsigned int i;
-	for(i = 0; i < (sizeof(resourceTypes)/sizeof(RESOURCE_ENTRY)); i++)
+	for (size_t i = 0; i < (sizeof(resource_types) / sizeof(RESOURCE_ENTRY)); i++)
 	{
-		if(resourceTypes[i].nameOffset == nameOffset)
-			return (RESOURCE_ENTRY *)&resourceTypes[i];
+		if (resource_types[i].nameOffset == nameOffset)
+			return &resource_types[i];
 	}
 
 	return NULL;
@@ -473,18 +472,18 @@ static NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 		fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle);
 
 		//showNode(nodePeres);
-        if (lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
-        {
-        	fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
-        	nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
-        	nodePeres->nodeLevel = RDT_LEVEL2;
-        	nodePeres->rootNode = lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1);
-        	fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
-        	//showNode(nodePeres);
+		if (lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.DataIsDirectory)
+		{
+			fseek(pe->handle, (raiz + lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->node.directoryEntry.DirectoryData.data.OffsetToDirectory), SEEK_SET);
+			nodePeres = createNode(nodePeres, RDT_RESOURCE_DIRECTORY);
+			nodePeres->nodeLevel = RDT_LEVEL2;
+			nodePeres->rootNode = lastNodeByTypeAndLevel(nodePeres, RDT_DIRECTORY_ENTRY, RDT_LEVEL1);
+			fread(&nodePeres->node, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, pe->handle);
+			//showNode(nodePeres);
 
-        	for(j = 1, offsetDirectory2 = 0; j <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
-        			lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
-        	{
+			for(j = 1, offsetDirectory2 = 0; j <= (lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfNamedEntries +
+					lastNodeByTypeAndLevel(nodePeres, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->node.resourceDirectory.NumberOfIdEntries); j++)
+			{
 				if(j == 1)
 				{
 					offsetDirectory2 += 16;
@@ -533,7 +532,7 @@ static NODE_PERES * discoveryNodesPeres(PE_FILE *pe)
 					//showNode(nodePeres);
 				}
 			}
-        }
+		}
 	}
 	return nodePeres;
 }

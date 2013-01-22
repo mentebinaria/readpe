@@ -33,6 +33,8 @@ pestr: CPPFLAGS += -D_GNU_SOURCE=1
 pestr: LDFLAGS += -lpcre
 pestr: pestr.c
 
+peres: peres.c
+
 pehash: LDFLAGS += -lssl -lcrypto
 pehash: pehash.c
 

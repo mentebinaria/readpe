@@ -89,7 +89,7 @@ static const RESOURCE_ENTRY resource_types[] = {
 	{ "RT_TOOLBAR",			241, ".rc",		"toolbars"		}
 };
 
-char *resourceDir = "resources";
+const char *resourceDir = "resources";
 
 struct options config;
 

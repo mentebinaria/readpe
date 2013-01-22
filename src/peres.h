@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	peres.h - definitions for peres.c
 
 	Copyright (C) 2012 pev authors
@@ -37,62 +37,59 @@ struct options {
 };
 
 typedef enum {
-        RDT_LEVEL1 = 1,
-        RDT_LEVEL2 = 2,
-        RDT_LEVEL3 = 3
+    RDT_LEVEL1 = 1,
+    RDT_LEVEL2 = 2,
+    RDT_LEVEL3 = 3
 } NODE_LEVEL_PERES;
 
 typedef enum {
-        RDT_RESOURCE_DIRECTORY = 1,
-        RDT_DIRECTORY_ENTRY = 2,
-        RDT_DATA_STRING = 3,
-        RDT_DATA_ENTRY = 4
+    RDT_RESOURCE_DIRECTORY = 1,
+    RDT_DIRECTORY_ENTRY = 2,
+    RDT_DATA_STRING = 3,
+    RDT_DATA_ENTRY = 4
 } NODE_TYPE_PERES;
 
-typedef struct _NODE_PERES
-{
+typedef struct _NODE_PERES {
 	NODE_TYPE_PERES nodeType;
 	NODE_LEVEL_PERES nodeLevel;
-	union
-	{
+	union {
 		IMAGE_RESOURCE_DIRECTORY resourceDirectory; // nodeType == 1
 		IMAGE_RESOURCE_DIRECTORY_ENTRY directoryEntry; // nodeType == 2
 		IMAGE_RESOURCE_DATA_STRING dataString; // nodeType == 3
 		IMAGE_RESOURCE_DATA_ENTRY dataEntry; // nodeType == 4
 	} node;
-	struct NODE_PERES *nextNode;
-	struct NODE_PERES *lastNode;
-	struct NODE_PERES *rootNode;
+	struct _NODE_PERES *nextNode;
+	struct _NODE_PERES *lastNode;
+	struct _NODE_PERES *rootNode;
 } NODE_PERES;
 
-char *resourceDir = "resources";
-
-static const RESOURCE_ENTRY resourceTypes[] =
-{
-	{"RT_CURSOR", 1, ".cur", "cursors"},
-	{"RT_BITMAP", 2, ".bmp", "bitmaps"},
-	{"RT_ICON", 3, ".ico", "icons"},
-	{"RT_MENU", 4, ".rc", "menus"},
-	{"RT_DIALOG", 5, ".dlg", "dialogs"},
-	{"RT_STRING", 6, ".rc", "strings"},
-	{"RT_FONTDIR", 7, ".fnt", "fontdirs"},
-	{"RT_FONT", 8, ".fnt", "fonts"},
-	{"RT_ACCELERATOR", 9, ".rc", "accelerators"},
-	{"RT_RCDATA", 10, ".rc", "rcdatas"},
-	{"RT_MESSAGETABLE", 11, ".mc", "messagetables"},
-	{"RT_GROUP_CURSOR", 12, ".cur", "groupcursors"},
-	{"RT_GROUP_ICON", 14, ".ico", "groupicons"},
-	{"RT_VERSION", 16, ".rc", "versions"},
-	{"RT_DLGINCLUDE", 17, ".rc", "dlgincludes"},
-	{"RT_PLUGPLAY", 19, ".rc", "plugplays"},
-	{"RT_VXD", 20, ".rc", "xvds"},
-	{"RT_ANICURSOR", 21, ".rc", "anicursors"},
-	{"RT_ANIICON", 22, ".rc", "aniicons"},
-	{"RT_HTML", 23, ".html", "htmls"},
-	{"RT_MANIFEST", 24, ".xml", "manifests"},
-	{"RT_DLGINIT", 240, ".rc", "dlginits"},
-	{"RT_TOOLBAR", 241, ".rc", "toolbars"}
+static const RESOURCE_ENTRY resource_types[] = {
+	{ "RT_CURSOR",			1, ".cur",		"cursors"		},
+	{ "RT_BITMAP",			2, ".bmp",		"bitmaps"		},
+	{ "RT_ICON",			3, ".ico",		"icons"			},
+	{ "RT_MENU",			4, ".rc",		"menus"			},
+	{ "RT_DIALOG",			5, ".dlg",		"dialogs"		},
+	{ "RT_STRING",			6, ".rc",		"strings"		},
+	{ "RT_FONTDIR",			7, ".fnt",		"fontdirs"		},
+	{ "RT_FONT",			8, ".fnt",		"fonts"			},
+	{ "RT_ACCELERATOR",		9, ".rc",		"accelerators"	},
+	{ "RT_RCDATA",			10, ".rc",		"rcdatas"		},
+	{ "RT_MESSAGETABLE",	11, ".mc",		"messagetables"	},
+	{ "RT_GROUP_CURSOR",	12, ".cur",		"groupcursors"	},
+	{ "RT_GROUP_ICON",		14, ".ico",		"groupicons"	},
+	{ "RT_VERSION",			16, ".rc",		"versions"		},
+	{ "RT_DLGINCLUDE",		17, ".rc",		"dlgincludes"	},
+	{ "RT_PLUGPLAY",		19, ".rc",		"plugplays"		},
+	{ "RT_VXD",				20, ".rc",		"xvds"			},
+	{ "RT_ANICURSOR",		21, ".rc",		"anicursors"	},
+	{ "RT_ANIICON",			22, ".rc",		"aniicons"		},
+	{ "RT_HTML",			23, ".html",	"htmls"			},
+	{ "RT_MANIFEST",		24, ".xml",		"manifests"		},
+	{ "RT_DLGINIT",			240, ".rc",		"dlginits"		},
+	{ "RT_TOOLBAR",			241, ".rc",		"toolbars"		}
 };
+
+const char *resourceDir = "resources";
 
 struct options config;
 

@@ -34,7 +34,7 @@ void *xmalloc(size_t size)
 
 	return new_mem;
 }
- 
+
 // return a rva of given offset
 DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
 {
@@ -48,7 +48,7 @@ DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
 		ofs < (pe->sections_ptr[i]->PointerToRawData + pe->sections_ptr[i]->SizeOfRawData))
 			return ofs + pe->sections_ptr[i]->VirtualAddress;
 	}
-	return 0;	
+	return 0;
 }
 
 QWORD rva2ofs(PE_FILE *pe, QWORD rva)
@@ -57,7 +57,7 @@ QWORD rva2ofs(PE_FILE *pe, QWORD rva)
 		return 0;
 
 	for (unsigned int i=0; i < pe->num_sections; i++)
-	{   
+	{
 		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
 		rva < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
 			return rva - pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData;
@@ -107,7 +107,7 @@ IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
 
 	if (!pe->num_sections || pe->num_sections > MAX_SECTIONS)
 		return NULL;
-		
+
 	for (unsigned int i=0; i < pe->num_sections; i++)
 	{
 		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
@@ -122,10 +122,10 @@ bool pe_get_resource_entries(PE_FILE *pe)
 
 	if (!pe)
 		return false;
-	
+
 	if (pe->rsrc_entries_ptr)
 		return pe->rsrc_entries_ptr;
-	
+
 	if (!pe_get_resource_directory(pe, &dir))
 		return false;
 
@@ -135,11 +135,11 @@ bool pe_get_resource_entries(PE_FILE *pe)
 		return false;
 
 	pe->rsrc_entries_ptr = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
-	
+
 	for (unsigned int i=0; i < pe->num_rsrc_entries; i++)
 	{
 		pe->rsrc_entries_ptr[i] = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
-		
+
 		if (!fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
 			return false;
 	}
@@ -155,9 +155,13 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 		if (!pe_get_directories(pe))
 			return false;
 
-	if (pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->Size > 0)
+	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_RESOURCE);
+	if (!directory)
+		return false;
+
+	if (directory->Size > 0)
 	{
-		pe->addr_rsrc_dir = rva2ofs(pe, pe->directories_ptr[IMAGE_DIRECTORY_ENTRY_RESOURCE]->VirtualAddress);
+		pe->addr_rsrc_dir = rva2ofs(pe, directory->VirtualAddress);
 		if (fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET))
 			return false;
 
@@ -168,6 +172,15 @@ bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
 	}
 	return false;
 }
+
+IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry)
+{
+	if (!pe || !pe->directories_ptr || entry > (WORD)(pe->num_directories - 1))
+		return NULL;
+
+	return pe->directories_ptr[entry];
+}
+
 
 bool pe_get_sections(PE_FILE *pe)
 {
@@ -210,8 +223,6 @@ bool pe_get_sections(PE_FILE *pe)
 
 bool pe_get_directories(PE_FILE *pe)
 {
-	IMAGE_DATA_DIRECTORY **dirs;
-
 	if (!pe)
 		return false;
 
@@ -230,19 +241,27 @@ bool pe_get_directories(PE_FILE *pe)
 	if (pe->num_directories > 32)
 		return false;
 
-	dirs = xmalloc(sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories);
+	const size_t directories_size = sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories;
+
+	pe->directories_ptr = xmalloc(directories_size);
+	if (!pe->directories_ptr)
+		return false;
+
+	// Zero out the entire block, otherwise if one allocation fails for dirs[i],
+	// pe_deinit() will try to free wild pointers. This of course does not take
+	// into consideration that an allocation failure will make the process die.
+	memset(pe->directories_ptr, 0, directories_size);
 
 	for (unsigned int i=0; i < pe->num_directories; i++)
 	{
-		dirs[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
-		if (!fread(dirs[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
+		pe->directories_ptr[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
+		if (!fread(pe->directories_ptr[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
 			return false;
 	}
 
 	pe->addr_sections = ftell(pe->handle);
-	pe->directories_ptr = dirs;
 
-	if (!pe->addr_sections || !pe->directories_ptr)
+	if (!pe->addr_sections)
 		return false;
 
 	return true;
@@ -269,7 +288,11 @@ bool pe_get_optional(PE_FILE *pe)
 	if (fseek(pe->handle, pe->addr_optional, SEEK_SET))
 		return false;
 
-	header = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
+	pe->optional_ptr = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
+	if (!pe->optional_ptr)
+		return false;
+
+	header = pe->optional_ptr;
 
 	switch (pe->architecture)
 	{
@@ -298,10 +321,9 @@ bool pe_get_optional(PE_FILE *pe)
 			return false;
 	}
 
-	pe->optional_ptr = header;
 	pe->addr_directories = ftell(pe->handle);
 
-	if (!pe->optional_ptr || !pe->addr_directories)
+	if (!pe->addr_directories)
 		return false;
 
 	return true;
@@ -346,7 +368,7 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
 {
 	if (!pe)
 		return false;
-	
+
 	if (!pe->handle)
 		return false;
 
@@ -364,10 +386,10 @@ QWORD pe_get_size(PE_FILE *pe)
 {
 	if (pe->size)
 		return pe->size;
-	
+
 	if (fseek(pe->handle, 0, SEEK_END))
 		return 0;
-	
+
 	pe->size = ftell(pe->handle);
 	rewind(pe->handle);
 	return pe->size;
@@ -406,9 +428,9 @@ bool is_pe(PE_FILE *pe)
 		return false;
 
 	if (pesig != 0x4550) // "PE\0\0"
-		return false;	
+		return false;
 
-	rewind(pe->handle);	
+	rewind(pe->handle);
 	return true;
 }
 

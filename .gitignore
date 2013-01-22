@@ -14,6 +14,7 @@ Debug
 *.o
 *.dSYM
 *.log
+.settings
 src/ofs2rva
 src/output
 src/pedis
@@ -24,5 +25,7 @@ src/pesec
 src/pestr
 src/readpe
 src/rva2ofs
+src/peres
 tests/samples
 tests/*.exe
+tests/*.bin

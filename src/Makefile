@@ -18,7 +18,7 @@ endif
 CC = gcc
 RM = rm -f
 SOURCES = output.c
-PROGS = readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr
+PROGS = readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr peres
 INSTALL = install -m 0755
 SHAREDIR = /usr/share/pev
 MAN = ../doc/manpages
@@ -34,6 +34,8 @@ pesec: LDFLAGS += -lcrypto
 pestr: CPPFLAGS += -D_GNU_SOURCE=1
 pestr: LDFLAGS += -lpcre
 pestr: pestr.c
+
+peres: peres.c
 
 pehash: LDFLAGS += -lssl -lcrypto
 pehash: pehash.c

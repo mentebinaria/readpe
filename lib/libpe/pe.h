@@ -38,29 +38,29 @@
 #define IMAGE_ORDINAL_FLAG64 0x8000000000000000ULL
 
 // resources types
-#define RT_CURSOR         1    // cursor image
-#define RT_BITMAP         2    // bitmap (.bmp)
-#define RT_ICON           3    // icon
-#define RT_MENU           4    // menu
-#define RT_DIALOG         5    // dialog window
-#define RT_STRING         6    // unicode string
-#define RT_FONTDIR        7    // font directory
-#define RT_FONT           8    // font
-#define RT_ACCELERATOR    9    // hot keys
-#define RT_RCDATA         10   // data
-#define RT_MESSAGETABLE   11   // string table
-#define RT_GROUP_CURSOR   12   // cursor group
-#define RT_GROUP_ICON     14   // icon group
-#define RT_VERSION        16   // version information
-#define RT_DLGINCLUDE     17   // names of header files for dialogs (*.h) used by compiler
-#define RT_PLUGPLAY       19   // data determined by application
-#define RT_VXD            20   // vxd info
-#define RT_ANICURSOR      21   // animated cursor
-#define RT_ANIICON        22   // animated icon
-#define RT_HTML           23   // html page
-#define RT_MANIFEST       24   // manifest of Windows XP build
-#define RT_DLGINIT        240  // strings used for initiating some controls in dialogs
-#define RT_TOOLBAR        241  // configuration of toolbars
+#define RT_CURSOR				1 // cursor image
+#define RT_BITMAP				2 // bitmap (.bmp)
+#define RT_ICON					3 // icon
+#define RT_MENU					4 // menu
+#define RT_DIALOG				5 // dialog window
+#define RT_STRING				6 // unicode string
+#define RT_FONTDIR				7 // font directory
+#define RT_FONT					8 // font
+#define RT_ACCELERATOR			9 // hot keys
+#define RT_RCDATA				10 // data
+#define RT_MESSAGETABLE			11 // string table
+#define RT_GROUP_CURSOR			12 // cursor group
+#define RT_GROUP_ICON			14 // icon group
+#define RT_VERSION				16 // version information
+#define RT_DLGINCLUDE			17 // names of header files for dialogs (*.h) used by compiler
+#define RT_PLUGPLAY				19 // data determined by application
+#define RT_VXD					20 // vxd info
+#define RT_ANICURSOR			21 // animated cursor
+#define RT_ANIICON				22 // animated icon
+#define RT_HTML					23 // html page
+#define RT_MANIFEST				24 // manifest of Windows XP build
+#define RT_DLGINIT				240 // strings used for initiating some controls in dialogs
+#define RT_TOOLBAR				241 // configuration of toolbars
 
 // directory Entries
 typedef enum {
@@ -85,14 +85,7 @@ typedef enum {
 
 #pragma pack(push, 1)
 
-typedef struct _RESOURCE_ENTRY
-{
-	char name[20];
-	unsigned int code;
-} RESOURCE_ENTRY;
-
-typedef struct _MACHINE_ENTRY
-{
+typedef struct _MACHINE_ENTRY {
 	char name[40];
 	WORD code;
 } MACHINE_ENTRY;
@@ -237,25 +230,36 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
 		struct {
 			DWORD NameOffset:31;
 			DWORD NameIsString:1;
-		} s1;
+		} name;
 		DWORD Name;
-		WORD Id;
-	} u1;
+	} DirectoryName;
 	union {
 		DWORD OffsetToData;
 		struct {
 			DWORD OffsetToDirectory:31;
 			DWORD DataIsDirectory:1;
-		} s2;
-	} u2;
+		} data;
+	} DirectoryData;
 } IMAGE_RESOURCE_DIRECTORY_ENTRY;
 
+typedef struct _IMAGE_RESOURCE_DATA_STRING {
+	WORD  length;
+	WORD  string[1];
+} IMAGE_RESOURCE_DATA_STRING;
+
 typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
-	DWORD OffsetToData;
-	DWORD Size;
-	DWORD CodePage;
-	DWORD Reserved;
+	DWORD offsetToData;
+	DWORD size;
+	DWORD codePage;
+	DWORD reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
+
+typedef struct _RESOURCE_ENTRY {
+	char name[20];
+	DWORD nameOffset;
+	char extension[20];
+	char dirName[20];
+} RESOURCE_ENTRY;
 
 typedef struct tagVS_FIXEDFILEINFO {
 	DWORD dwSignature;
@@ -341,8 +345,7 @@ typedef struct _IMAGE_THUNK_DATA32 {
 	} u1;
 } IMAGE_THUNK_DATA32;
 
-typedef struct _PE_FILE
-{
+typedef struct _PE_FILE {
 	FILE *handle;
 
 	bool isdll;
@@ -371,38 +374,9 @@ typedef struct _PE_FILE
 	//IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
-
 } PE_FILE;
 
 #pragma pack(pop)
-
-static const RESOURCE_ENTRY resource_types[] =
-{
-	{"RT_CURSOR", 1},
-	{"RT_BITMAP", 2},
-	{"RT_ICON", 3},
-	{"RT_MENU", 4},
-	{"RT_DIALOG", 5},
-	{"RT_STRING", 6},
-	{"RT_FONTDIR", 7},
-	{"RT_FONT", 8},
-	{"RT_ACCELERATOR", 9},
-	{"RT_RCDATA", 10},
-	{"RT_MESSAGETABLE", 11},
-	{"RT_GROUP_CURSOR", 12},
-	{"RT_GROUP_ICON", 14},
-	{"RT_VERSION", 16},
-	{"RT_DLGINCLUDE", 17},
-	{"RT_PLUGPLAY", 19},
-	{"RT_VXD", 20},
-	{"RT_ANICURSOR", 21},
-	{"RT_ANIICON", 22},
-	{"RT_HTML", 23},
-	{"RT_MANIFEST", 24},
-	{"RT_DLGINIT", 240},
-	{"RT_TOOLBAR", 241}
-};
-
 
 // wrappers
 void *xmalloc(size_t size);

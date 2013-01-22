@@ -58,9 +58,9 @@ typedef struct _NODE_PERES {
 		IMAGE_RESOURCE_DATA_STRING dataString; // nodeType == 3
 		IMAGE_RESOURCE_DATA_ENTRY dataEntry; // nodeType == 4
 	} node;
-	struct NODE_PERES *nextNode;
-	struct NODE_PERES *lastNode;
-	struct NODE_PERES *rootNode;
+	struct _NODE_PERES *nextNode;
+	struct _NODE_PERES *lastNode;
+	struct _NODE_PERES *rootNode;
 } NODE_PERES;
 
 static const RESOURCE_ENTRY resource_types[] = {

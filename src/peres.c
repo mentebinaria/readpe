@@ -23,6 +23,7 @@
 
 #include "common.h"
 #include "../lib/libudis86/udis86.h"
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -173,6 +174,7 @@ static void showNode(NODE_PERES *nodePeres)
 
 static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
+	assert(currentNode != NULL);
 	currentNode->nextNode = xmalloc(sizeof(NODE_PERES));
 	currentNode->nextNode->lastNode = currentNode;
 	currentNode = currentNode->nextNode;
@@ -183,13 +185,14 @@ static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNe
 
 static NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
 {
+	assert(currentNode != NULL);
 	if(currentNode->nodeType == nodeTypeSearch)
 		return currentNode;
 
 	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
-		if(currentNode->nodeType == nodeTypeSearch)
+		if(currentNode != NULL && currentNode->nodeType == nodeTypeSearch)
 			return currentNode;
 	}
 
@@ -198,6 +201,7 @@ static NODE_PERES * lastNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES node
 
 static NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
 {
+	assert(currentNode != NULL);
 	NODE_PERES *firstNode = NULL;
 
 	if(currentNode->nodeType == nodeTypeSearch)
@@ -206,7 +210,7 @@ static NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nod
 	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
-		if(currentNode->nodeType == nodeTypeSearch)
+		if(currentNode != NULL && currentNode->nodeType == nodeTypeSearch)
 			firstNode = currentNode;
 	}
 
@@ -215,13 +219,14 @@ static NODE_PERES * firstNodeByType(NODE_PERES *currentNode, NODE_TYPE_PERES nod
 
 static NODE_PERES * lastNodeByTypeAndLevel(NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
 {
+	assert(currentNode != NULL);
 	if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
 		return currentNode;
 
 	while(currentNode != NULL)
 	{
 		currentNode = currentNode->lastNode;
-		if(currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
+		if(currentNode != NULL && currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
 			return currentNode;
 	}
 
@@ -267,25 +272,29 @@ static const RESOURCE_ENTRY * getResourceEntryByNameOffset(DWORD nameOffset)
 
 static void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 {
-	FILE *fpSave;
-	unsigned char *buffer;
-	char dirName[100];
-	char fileName[100];
-	DWORD nameOffset;
-	QWORD offsetData;
+	assert(nodePeres != NULL);
+	NODE_PERES *dataEntryNode = lastNodeByType(nodePeres, RDT_DATA_ENTRY);
+	if(dataEntryNode == NULL)
+		return;
 
-	buffer = xmalloc(lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
-	memset(buffer, 0, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size);
-	offsetData = rva2ofs(pe, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.offsetToData);
+	unsigned char *buffer = xmalloc(dataEntryNode->node.dataEntry.size + 1);
+	memset(buffer, 0, dataEntryNode->node.dataEntry.size + 1);
+
+	DWORD nameOffset = nodePeres->rootNode->node.directoryEntry.DirectoryName.name.NameOffset;
+	QWORD offsetData = rva2ofs(pe, dataEntryNode->node.dataEntry.offsetToData);
 	fseek(pe->handle, offsetData, SEEK_SET);
-	memset(&fileName, 0, 100);
-	memset(&dirName, 0, 100);
-	nameOffset = nodePeres->rootNode->node.directoryEntry.DirectoryName.name.NameOffset;
-	if(fread(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size + 1, 1, pe->handle))
+
+	if(fread(buffer, dataEntryNode->node.dataEntry.size + 1, 1, pe->handle))
 	{
 		struct stat statDir;
 		if (stat(resourceDir, &statDir) == -1)
 			mkdir(resourceDir, 0700);
+
+		char dirName[100];
+		char fileName[100];
+
+		memset(fileName, 0, sizeof(fileName));
+		memset(dirName, 0, sizeof(dirName));
 
 		snprintf(dirName, sizeof(dirName), "%s/%s", resourceDir, getResourceEntryByNameOffset(nameOffset)->dirName);
 
@@ -297,18 +306,23 @@ static void saveResource(PE_FILE *pe, NODE_PERES *nodePeres, int count)
 		else
 			snprintf(fileName, sizeof(fileName), "%s/%d.bin", dirName, count);
 
-		fpSave = fopen(fileName, "wb+");
-		fwrite(buffer, lastNodeByType(nodePeres, RDT_DATA_ENTRY)->node.dataEntry.size, 1, fpSave);
+		FILE *fpSave = fopen(fileName, "wb+");
+		if(fpSave == NULL)
+			goto error;
+		fwrite(buffer, dataEntryNode->node.dataEntry.size, 1, fpSave);
 		fclose(fpSave);
 		output("Save On", fileName);
 		count++;
 	}
-	free(buffer);
 
+error:
+	free(buffer);
+	return;
 }
 
 static void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 {
+	assert(nodePeres != NULL);
 	int count = 0;
 
 	while(nodePeres->lastNode != NULL)
@@ -333,6 +347,8 @@ static void extractResources(PE_FILE *pe, NODE_PERES *nodePeres)
 
 static void showInformations(NODE_PERES *nodePeres)
 {
+	assert(nodePeres != NULL);
+
 	while(nodePeres->lastNode != NULL)
 	{
 		nodePeres = nodePeres->lastNode;

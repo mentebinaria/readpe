@@ -23,7 +23,7 @@
 #include "output.h"
 #include "common.h"
 
-extern format_e format;
+format_e format;
 
 void parse_format(const char *optarg)
 {

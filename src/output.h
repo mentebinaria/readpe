@@ -32,6 +32,6 @@ typedef enum {
 	FORMAT_CSV = 4
 } format_e;
 
-format_e format;
+extern format_e format;
 
 #endif

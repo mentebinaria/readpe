@@ -20,21 +20,15 @@
 #ifndef LIBPE_H
 #define LIBPE_H
 
-#include <inttypes.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "types.h"
+#include "dir_entry_security.h"
 
 #define PE32 0x10b
 #define PE64 0x20b
 #define MZ 0x5a4d
-
-typedef uint32_t DWORD;
-typedef int32_t LONG;
-typedef uint8_t BYTE;
-typedef uint16_t WORD;
-typedef uint64_t QWORD;
 
 #define MAX_SECTIONS 96
 
@@ -44,52 +38,54 @@ typedef uint64_t QWORD;
 #define IMAGE_ORDINAL_FLAG64 0x8000000000000000ULL
 
 // resources types
-#define RT_CURSOR         1    // cursor image
-#define RT_BITMAP         2    // bitmap (.bmp)
-#define RT_ICON           3    // icon
-#define RT_MENU           4    // menu
-#define RT_DIALOG         5    // dialog window
-#define RT_STRING         6    // unicode string
-#define RT_FONTDIR        7    // font directory
-#define RT_FONT           8    // font
-#define RT_ACCELERATOR    9    // hot keys
-#define RT_RCDATA         10   // data
-#define RT_MESSAGETABLE   11   // string table
-#define RT_GROUP_CURSOR   12   // cursor group
-#define RT_GROUP_ICON     14   // icon group
-#define RT_VERSION        16   // version information
-#define RT_DLGINCLUDE     17   // names of header files for dialogs (*.h) used by compiler
-#define RT_PLUGPLAY       19   // data determined by application
-#define RT_VXD            20   // vxd info
-#define RT_ANICURSOR      21   // animated cursor
-#define RT_ANIICON        22   // animated icon
-#define RT_HTML           23   // html page
-#define RT_MANIFEST       24   // manifest of Windows XP build
-#define RT_DLGINIT        240  // strings used for initiating some controls in dialogs
-#define RT_TOOLBAR        241  // configuration of toolbars
+#define RT_CURSOR				1 // cursor image
+#define RT_BITMAP				2 // bitmap (.bmp)
+#define RT_ICON					3 // icon
+#define RT_MENU					4 // menu
+#define RT_DIALOG				5 // dialog window
+#define RT_STRING				6 // unicode string
+#define RT_FONTDIR				7 // font directory
+#define RT_FONT					8 // font
+#define RT_ACCELERATOR			9 // hot keys
+#define RT_RCDATA				10 // data
+#define RT_MESSAGETABLE			11 // string table
+#define RT_GROUP_CURSOR			12 // cursor group
+#define RT_GROUP_ICON			14 // icon group
+#define RT_VERSION				16 // version information
+#define RT_DLGINCLUDE			17 // names of header files for dialogs (*.h) used by compiler
+#define RT_PLUGPLAY				19 // data determined by application
+#define RT_VXD					20 // vxd info
+#define RT_ANICURSOR			21 // animated cursor
+#define RT_ANIICON				22 // animated icon
+#define RT_HTML					23 // html page
+#define RT_MANIFEST				24 // manifest of Windows XP build
+#define RT_DLGINIT				240 // strings used for initiating some controls in dialogs
+#define RT_TOOLBAR				241 // configuration of toolbars
 
 // directory Entries
-#define IMAGE_DIRECTORY_ENTRY_EXPORT          0   // Export Directory
-#define IMAGE_DIRECTORY_ENTRY_IMPORT          1   // Import Directory
-#define IMAGE_DIRECTORY_ENTRY_RESOURCE        2   // Resource Directory
-#define IMAGE_DIRECTORY_ENTRY_EXCEPTION       3   // Exception Directory
-#define IMAGE_DIRECTORY_ENTRY_SECURITY        4   // Security Directory
-#define IMAGE_DIRECTORY_ENTRY_BASERELOC       5   // Base Relocation Table
-#define IMAGE_DIRECTORY_ENTRY_DEBUG           6   // Debug Directory
-//      IMAGE_DIRECTORY_ENTRY_COPYRIGHT       7   // (X86 usage)
-#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE    7   // Architecture Specific Data
-#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR       8   // RVA of GP
-#define IMAGE_DIRECTORY_ENTRY_TLS             9   // TLS Directory
-#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG    10   // Load Configuration Directory
-#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT   11   // Bound Import Directory in headers
-#define IMAGE_DIRECTORY_ENTRY_IAT            12   // Import Address Table
-#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT   13   // Delay Load Import Descriptors
-#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14   // COM Runtime descriptor
+typedef enum {
+	// FIXME: Quoting pecoff_v8.docx: "Entries in the section table are numbered starting from one (1)".
+	IMAGE_DIRECTORY_ENTRY_EXPORT			= 0, // Export Directory
+	IMAGE_DIRECTORY_ENTRY_IMPORT			= 1, // Import Directory
+	IMAGE_DIRECTORY_ENTRY_RESOURCE			= 2, // Resource Directory
+	IMAGE_DIRECTORY_ENTRY_EXCEPTION			= 3, // Exception Directory
+	IMAGE_DIRECTORY_ENTRY_SECURITY			= 4, // Security Directory
+	IMAGE_DIRECTORY_ENTRY_BASERELOC			= 5, // Base Relocation Table
+	IMAGE_DIRECTORY_ENTRY_DEBUG				= 6, // Debug Directory
+	//IMAGE_DIRECTORY_ENTRY_COPYRIGHT			= 7, // (X86 usage)
+	IMAGE_DIRECTORY_ENTRY_ARCHITECTURE		= 7, // Architecture Specific Data
+	IMAGE_DIRECTORY_ENTRY_GLOBALPTR			= 8, // RVA of GP
+	IMAGE_DIRECTORY_ENTRY_TLS				= 9, // TLS Directory
+	IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG		= 10, // Load Configuration Directory
+	IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT		= 11, // Bound Import Directory in headers
+	IMAGE_DIRECTORY_ENTRY_IAT				= 12, // Import Address Table
+	IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT		= 13, // Delay Load Import Descriptors
+	IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR	= 14  // COM Runtime descriptor
+} ImageDirectoryEntry;
 
 #pragma pack(push, 1)
 
-typedef struct _MACHINE_ENTRY
-{
+typedef struct _MACHINE_ENTRY {
 	char name[40];
 	WORD code;
 } MACHINE_ENTRY;
@@ -229,31 +225,26 @@ typedef struct _IMAGE_RESOURCE_DIRECTORY {
 	WORD NumberOfIdEntries;
 } IMAGE_RESOURCE_DIRECTORY;
 
-typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY
-{
-        union
-        {
-                struct
-                {
-                        DWORD NameOffset:31;
-                        DWORD NameIsString:1;
-                } name;
-                DWORD Name;
-        } DirectoryName;
-        union
-        {
-                DWORD OffsetToData;
-                struct
-                {
-                        DWORD OffsetToDirectory:31;
-                        DWORD DataIsDirectory:1;
-                } data;
-        } DirectoryData;
+typedef struct _IMAGE_RESOURCE_DIRECTORY_ENTRY {
+	union {
+		struct {
+			DWORD NameOffset:31;
+			DWORD NameIsString:1;
+		} name;
+		DWORD Name;
+	} DirectoryName;
+	union {
+		DWORD OffsetToData;
+		struct {
+			DWORD OffsetToDirectory:31;
+			DWORD DataIsDirectory:1;
+		} data;
+	} DirectoryData;
 } IMAGE_RESOURCE_DIRECTORY_ENTRY;
 
 typedef struct _IMAGE_RESOURCE_DATA_STRING {
-  WORD  length;
-  WORD  string[1];
+	WORD  length;
+	WORD  string[1];
 } IMAGE_RESOURCE_DATA_STRING;
 
 typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
@@ -263,8 +254,7 @@ typedef struct _IMAGE_RESOURCE_DATA_ENTRY {
 	DWORD reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
 
-typedef struct _RESOURCE_ENTRY
-{
+typedef struct _RESOURCE_ENTRY {
 	char name[20];
 	DWORD nameOffset;
 	char extension[20];
@@ -306,29 +296,29 @@ typedef struct _IMAGE_TLS_DIRECTORY64 {
 } IMAGE_TLS_DIRECTORY64;
 
 typedef struct _IMAGE_EXPORT_DIRECTORY {
-  DWORD Characteristics;
-  DWORD TimeDateStamp;
-  WORD MajorVersion;
-  WORD MinorVersion;
-  DWORD Name;
-  DWORD Base;
-  DWORD NumberOfFunctions;
-  DWORD NumberOfNames;
-  DWORD AddressOfFunctions;
-  DWORD AddressOfNames;
-  DWORD AddressOfNameOrdinals;
- } IMAGE_EXPORT_DIRECTORY;
+	DWORD Characteristics;
+	DWORD TimeDateStamp;
+	WORD MajorVersion;
+	WORD MinorVersion;
+	DWORD Name;
+	DWORD Base;
+	DWORD NumberOfFunctions;
+	DWORD NumberOfNames;
+	DWORD AddressOfFunctions;
+	DWORD AddressOfNames;
+	DWORD AddressOfNameOrdinals;
+} IMAGE_EXPORT_DIRECTORY;
 
 typedef struct _IMAGE_IMPORT_DESCRIPTOR {
-  union {
-  DWORD Characteristics; // 0 for terminating null import descriptor
-  DWORD OriginalFirstThunk; // RVA to original unbound IAT
-  } u1;
-  DWORD TimeDateStamp;
-  DWORD ForwarderChain; // -1 if no forwarders
-  DWORD Name;
-  // RVA to IAT (if bound this IAT has actual addresses)
-  DWORD FirstThunk;
+	union {
+		DWORD Characteristics; // 0 for terminating null import descriptor
+		DWORD OriginalFirstThunk; // RVA to original unbound IAT
+	} u1;
+	DWORD TimeDateStamp;
+	DWORD ForwarderChain; // -1 if no forwarders
+	DWORD Name;
+	// RVA to IAT (if bound this IAT has actual addresses)
+	DWORD FirstThunk;
 } IMAGE_IMPORT_DESCRIPTOR;
 
 // import name entry
@@ -355,21 +345,20 @@ typedef struct _IMAGE_THUNK_DATA32 {
 	} u1;
 } IMAGE_THUNK_DATA32;
 
-typedef struct _PE_FILE
-{
+typedef struct _PE_FILE {
 	FILE *handle;
-	
+
 	bool isdll;
 	WORD e_lfanew;
 	WORD architecture;
 	QWORD entrypoint;
 	QWORD imagebase;
 	QWORD size;
-	
+
 	WORD num_sections;
 	WORD num_directories;
 	WORD num_rsrc_entries;
-	
+
 	WORD addr_sections;
 	WORD addr_directories;
 	WORD addr_dos;
@@ -377,7 +366,7 @@ typedef struct _PE_FILE
 	WORD addr_coff;
 	WORD addr_rsrc_sec;
 	WORD addr_rsrc_dir;
-	
+
 	// pointers (will be freed if needed)
 	IMAGE_OPTIONAL_HEADER *optional_ptr;
 	IMAGE_SECTION_HEADER **sections_ptr;
@@ -385,7 +374,6 @@ typedef struct _PE_FILE
 	//IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
-	
 } PE_FILE;
 
 #pragma pack(pop)
@@ -403,7 +391,7 @@ QWORD pe_get_size(PE_FILE *pe);
 // header functions
 bool pe_init(PE_FILE *pe, FILE *handle);
 bool pe_get_sections(PE_FILE *pe);
-IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char* section_name);
+IMAGE_SECTION_HEADER *pe_get_section(PE_FILE *pe, const char *section_name);
 bool pe_get_directories(PE_FILE *pe);
 bool pe_get_optional(PE_FILE *pe);
 bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header);
@@ -412,7 +400,8 @@ bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header);
 //bool pe_get_tls_callbacks(PE_FILE *pe);
 bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir);
 bool pe_get_resource_entries(PE_FILE *pe);
+IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry);
 
-IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva);
+IMAGE_SECTION_HEADER *pe_rva2section(PE_FILE *pe, QWORD rva);
 
 #endif

@@ -73,7 +73,7 @@
 
  4.4. Building in Windows (via Cygwin)
 
-  Under Cygwin, you'll need following packages
+  Under Cygwin, you'll need to install the following packages
   in order to compile pev:
 
   * gcc
@@ -93,6 +93,32 @@
 
   You can't call another targets (like make install)
   in Cygwin environment.
+
+ 4.5. Building in Mac OS X
+
+  Under Mac OS X, you'll need to install the following packages
+  in order to compile pev:
+
+  * libpcre
+
+  We recommend using one of the following package managers to
+  install this package:
+
+  * MacPorts - http://www.macports.org
+  * Homebrew - http://mxcl.github.com/homebrew
+
+  For MacPorts, install the dependency and compile pev with:
+
+  $ sudo port install pcre
+  $ make CFLAGS="-I/opt/local/include"
+
+  For Homebrew, install the dependency and compile pev with:
+
+  $ sudo brew install pcre
+  $ make CFLAGS="-I/usr/local/include"
+
+  NOTE: The paths above may change depending on how you installed the
+        package manager.
 
 5. Included tools
 

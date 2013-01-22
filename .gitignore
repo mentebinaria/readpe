@@ -12,9 +12,11 @@ Debug
 *.dylib
 *.dll
 *.o
+*.dSYM
 *.log
 .settings
 src/ofs2rva
+src/output
 src/pedis
 src/pehash
 src/pepack

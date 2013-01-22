@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	pescan.c - search for suspicious things in PE files
 
 	Copyright (C) 2012 pev authors
@@ -49,7 +49,7 @@ static void parse_options(int argc, char *argv[])
 		{"verbose",          no_argument,       NULL, 'v'},
 		{ NULL,              0,                 NULL,  0 }
 	};
-	
+
 	memset(&config, 0, sizeof(config));
 
 	while ((c = getopt_long(argc, argv, short_options,
@@ -63,13 +63,13 @@ static void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-				
+
 			case 'f':
 				parse_format(optarg); break;
-				
+
 			case 'v':
 				config.verbose = true; break;
-				
+
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
@@ -104,7 +104,7 @@ static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 
    if (!fread(&data, sizeof(data), 1, pe->handle))
       EXIT_ERROR("unable to read DOS stub");
-	
+
    if (memcmp(dos_stub, data, sizeof(data))==0)
       return true;
 
@@ -143,11 +143,13 @@ static DWORD pe_get_tls_directory(PE_FILE *pe)
 	if (pe->num_directories > 32)
 		return 0;
 
-	for (unsigned int i=0; (i < pe->num_directories && pe->directories_ptr[i]); i++)
-	{
-		if ((i == IMAGE_DIRECTORY_ENTRY_TLS) && pe->directories_ptr[i]->Size > 0)
-			return pe->directories_ptr[i]->VirtualAddress;
-	}
+	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_TLS);
+	if (!directory)
+		return false;
+
+	if (directory->Size > 0)
+		return directory->VirtualAddress;
+
 	return 0;
 }
 
@@ -160,12 +162,12 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
 	int ret = 0;
-	
+
 	if (!pe)
 		return 0;
 
 	tls_addr = pe_get_tls_directory(pe);
-		
+
 	if (!tls_addr || !pe_get_sections(pe))
 		return 0;
 
@@ -187,7 +189,7 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 				IMAGE_TLS_DIRECTORY32 tlsdir32;
 
 				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, pe->handle))
-					return 0;	
+					return 0;
 
 				if (! (tlsdir32.AddressOfCallBacks & pe->optional_ptr->_32->ImageBase))
 					break;
@@ -201,7 +203,7 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 				IMAGE_TLS_DIRECTORY64 tlsdir64;
 
 				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, pe->handle))
-					return 0;	
+					return 0;
 
 				if (! (tlsdir64.AddressOfCallBacks & pe->optional_ptr->_64->ImageBase))
 					break;
@@ -215,14 +217,14 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 
 			ret = -1; // tls directory and section exists
 			do
-			{ 
+			{
 				fread(&funcaddr, sizeof(int), 1, pe->handle);
 				if (funcaddr)
 				{
 					char value[MAX_MSG];
 
 					ret = ++j; // function found
-					
+
 					if (config.verbose)
 					{
 						snprintf(value, MAX_MSG, "%#x", funcaddr);
@@ -284,7 +286,7 @@ static void print_strange_sections(PE_FILE *pe)
 	for (unsigned i=0; i < pe->num_sections && i <= 65535; i++, aux=false)
 	{
 		memset(&value, 0, sizeof(value));
-		
+
 		if (!strisprint((const char *)pe->sections_ptr[i]->Name))
 			stradd(value, "suspicious name", &aux);
 
@@ -311,7 +313,7 @@ static bool normal_imagebase(PE_FILE *pe)
 	if (!pe->imagebase)
 		pe_get_optional(pe);
 
-	return  (pe->imagebase == 0x100000000 || 
+	return  (pe->imagebase == 0x100000000 ||
 				pe->imagebase == 0x1000000 ||
 				pe->imagebase == 0x400000);
 }
@@ -349,13 +351,13 @@ double calculate_entropy(const unsigned int byte_count[256], const int total_len
 {
 	double entropy = 0.;
 	const double log_2 = 1.44269504088896340736;
-	
+
 	for(unsigned int i = 0; i < 256; i++)
 	{
 		double temp = (double)byte_count[i] / total_length;
 		if(temp > 0.)
 			entropy += fabs(temp * (log(temp) * log_2));
-		
+
 	}
 
 	return entropy;
@@ -407,7 +409,7 @@ int main(int argc, char *argv[])
 
 	// File entropy
 	entropy = calculate_entropy_file(&pe);
-	
+
 	if(entropy < 7.0)
 		snprintf(value, MAX_MSG, "normal (%f)", entropy);
 	else
@@ -434,7 +436,7 @@ int main(int argc, char *argv[])
 			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "normal");
-		
+
 	output("entrypoint", value);
 
 	// dos stub
@@ -448,19 +450,19 @@ int main(int argc, char *argv[])
 	}
 	else
 		snprintf(value, MAX_MSG, "normal");
-	
+
 	output("DOS stub", value);
 
 	// tls callbacks
 	callbacks = pe_get_tls_callbacks(&pe);
-	
+
 	if (callbacks == 0)
 		snprintf(value, MAX_MSG, "not found");
 	else if (callbacks == -1)
 		snprintf(value, MAX_MSG, "found - no functions");
 	else if (callbacks >0)
 		snprintf(value, MAX_MSG, "found - %d function(s)", callbacks);
-		
+
 	output("TLS directory", value);
 	memset(&value, 0, sizeof(value));
 

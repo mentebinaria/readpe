@@ -30,18 +30,15 @@ MANDIR = /usr/share/man/man1
 all: $(PROGS)
 
 pesec: LDFLAGS += -lcrypto
+pesec: compat/strlcat.c
 
 pestr: CPPFLAGS += -D_GNU_SOURCE=1
 pestr: LDFLAGS += -lpcre
-pestr: pestr.c
-
-peres: peres.c
 
 pehash: LDFLAGS += -lssl -lcrypto
-pehash: pehash.c
 
 pedis: CFLAGS += -I$(LIBUDIS86)
-pedis: pedis.c $(LIBUDIS86)/libudis86/*.c
+pedis: $(LIBUDIS86)/libudis86/*.c
 
 pescan: LDFLAGS += -lm
 

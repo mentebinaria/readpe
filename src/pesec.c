@@ -20,11 +20,11 @@
 */
 
 #include "pesec.h"
-#include <stddef.h>
 #include <string.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
+#include "compat/strlcat.h"
 
 typedef enum {
 	CERT_FORMAT_TEXT = 1,
@@ -344,10 +344,10 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 
 		snprintf(value, MAX_MSG, "0x%x", cert->wCertificateType);
 		switch (cert->wCertificateType) {
-			default: strlcat(value, " (UNKNOWN)", MAX_MSG); break;
-			case WIN_CERT_TYPE_X509: strlcat(value, " (X509)", MAX_MSG); break;
-			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: strlcat(value, " (PKCS_SIGNED_DATA)", MAX_MSG); break;
-			case WIN_CERT_TYPE_TS_STACK_SIGNED: strlcat(value, " (TS_STACK_SIGNED)", MAX_MSG); break;
+			default: bsd_strlcat(value, " (UNKNOWN)", MAX_MSG); break;
+			case WIN_CERT_TYPE_X509: bsd_strlcat(value, " (X509)", MAX_MSG); break;
+			case WIN_CERT_TYPE_PKCS_SIGNED_DATA: bsd_strlcat(value, " (PKCS_SIGNED_DATA)", MAX_MSG); break;
+			case WIN_CERT_TYPE_TS_STACK_SIGNED: bsd_strlcat(value, " (TS_STACK_SIGNED)", MAX_MSG); break;
 		}
 		output("Type", value);
 

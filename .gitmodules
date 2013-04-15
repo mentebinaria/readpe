@@ -1,0 +1,3 @@
+[submodule "lib/libpe"]
+	path = lib/libpe
+	url = https://github.com/merces/libpe.git

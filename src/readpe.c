@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2012 - 2013 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,32 +24,32 @@
 extern struct options config;
 static int ind;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s OPTIONS FILE\n"
-	"Show PE file headers\n"
-	"\nExample: %s --header optional winzip.exe\n"
-	"\nOptions:\n"
-	" -A, --all                              full output (default)\n"
-	" -H, --all-headers                      print all PE headers\n"
-	" -S, --all-sections                     print all PE sections headers\n"
-	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-	" -d, --dirs                             show data directories\n"
-	" -h, --header <dos|coff|optional>       show sepecific header\n"
-	" -i, --imports                          show imported functions\n"
-	" -e, --exports                          show exported functions\n"
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Show PE file headers\n"
+		"\nExample: %s --header optional winzip.exe\n"
+		"\nOptions:\n"
+		" -A, --all                              full output (default)\n"
+		" -H, --all-headers                      print all PE headers\n"
+		" -S, --all-sections                     print all PE sections headers\n"
+		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -d, --dirs                             show data directories\n"
+		" -h, --header <dos|coff|optional>       show sepecific header\n"
+		" -i, --imports                          show imported functions\n"
+		" -e, --exports                          show exported functions\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_headers(const char *optarg)
 {
-	if (! strcmp(optarg, "dos"))
+	if (strcmp(optarg, "dos"))
 		config.dos = true;
-	else if (! strcmp(optarg, "coff"))
+	else if (strcmp(optarg, "coff") == 0)
 		config.coff = true;
-	else if (! strcmp(optarg, "optional"))
+	else if (strcmp(optarg, "optional") == 0)
 		config.opt = true;
 	else
 		EXIT_ERROR("invalid header option");
@@ -141,23 +141,25 @@ static void print_sections(PE_FILE *pe)
 	unsigned int i, j;
 
 	char *flags[] = {
-   "contains executable code",
-   "contains initialized data",
-   "contains uninitialized data",
-   "contains data referenced through the GP",
-   "contains extended relocations",
-   "can be discarded as needed",
-   "cannot be cached",
-   "is not pageable",
-   "can be shared in memory",
-   "is executable",
-   "is readable",
-   "is writable" };
+		"contains executable code",
+		"contains initialized data",
+		"contains uninitialized data",
+		"contains data referenced through the GP",
+		"contains extended relocations",
+		"can be discarded as needed",
+		"cannot be cached",
+		"is not pageable",
+		"can be shared in memory",
+		"is executable",
+		"is readable",
+		"is writable"
+	};
 
-   // valid flags only for executables referenced in pecoffv8
-   unsigned int valid_flags[] =
-   { 0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
-     0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000 };
+	// valid flags only for executables referenced in pecoffv8
+	unsigned int valid_flags[] = {
+		0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
+		0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000
+	};
 
 	output("Sections", NULL);
 
@@ -166,36 +168,37 @@ static void print_sections(PE_FILE *pe)
 
 	for (i=0; i < pe->num_sections; i++)
 	{
-		snprintf(s, MAX_MSG, "%s", pe->sections_ptr[i]->Name);
+		snprintf(s, MAX_MSG, "%s", pe->sections[i]->Name);
 		output("Name", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->VirtualAddress);
+		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->VirtualAddress);
 		output("Virtual Address", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Misc.PhysicalAddress);
+		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->Misc.PhysicalAddress);
 		output("Physical Address", s);
 
-		snprintf(s, MAX_MSG, "%#x (%d bytes)", pe->sections_ptr[i]->SizeOfRawData,
-		pe->sections_ptr[i]->SizeOfRawData);
+		snprintf(s, MAX_MSG, "%#x (%d bytes)", pe->sections[i]->SizeOfRawData,
+		pe->sections[i]->SizeOfRawData);
 		output("Size", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->PointerToRawData);
+		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->PointerToRawData);
 		output("Pointer To Data", s);
-
-		snprintf(s, MAX_MSG, "%d", pe->sections_ptr[i]->NumberOfRelocations);
+#if 0
+		snprintf(s, MAX_MSG, "%d", pe->sections[i]->NumberOfRelocations);
 		output("Relocations", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Characteristics);
+		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->Characteristics);
 		output("Characteristics", s);
 
 		for (j=0; j < sizeof(valid_flags) / sizeof(unsigned int); j++)
 		{
-			if (pe->sections_ptr[i]->Characteristics & valid_flags[j])
+			if (pe->sections[i]->Characteristics & valid_flags[j])
 			{
 					snprintf(s, MAX_MSG, "%s", flags[j]);
 					output(NULL, s);
 			}
 		}
+#endif
 	}
 }
 
@@ -204,8 +207,7 @@ static void print_directories(PE_FILE *pe)
 	char s[MAX_MSG];
 	unsigned int i;
 
-	static const char *directory_names[] =
-	{
+	static const char *directory_names[] = {
 		"Export Table", // 0
 		"Import Table",
 		"Resource Table",
@@ -230,202 +232,203 @@ static void print_directories(PE_FILE *pe)
 
 	for (i=0; i < pe->num_directories && i < 16; i++)
 	{
-		if (pe->directories_ptr[i]->Size)
+		if (pe->directories[i]->Size)
 		{
 			snprintf(s, MAX_MSG, "%#x (%d bytes)",
-					pe->directories_ptr[i]->VirtualAddress,
-					pe->directories_ptr[i]->Size);
+					pe->directories[i]->VirtualAddress,
+					pe->directories[i]->Size);
 			output((char *) directory_names[i], s);
 		}
 	}
 }
 
-static void print_optional_header(PE_FILE *pe)
+static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 {
 	char s[MAX_MSG];
 	int subsystem;
 
 	static const char *subs_desc[] = {
-	"Unknown subsystem",
-	"System native",
-	"Windows GUI",
-	"Windows CLI",
-	"Posix CLI",
-	"Windows CE GUI",
-	"EFI application",
-	"EFI driver with boot",
-	"EFI run-time driver",
-	"EFI ROM",
-	"XBOX"};
+		"Unknown subsystem",
+		"System native",
+		"Windows GUI",
+		"Windows CLI",
+		"Posix CLI",
+		"Windows CE GUI",
+		"EFI application",
+		"EFI driver with boot",
+		"EFI run-time driver",
+		"EFI ROM",
+		"XBOX"
+	};
 
-	if (!pe->optional_ptr)
+	if (!header)
 		return;
 
 	output("Optional/Image header", NULL);
 
-	if (pe->optional_ptr->_32)
+	if (header->_32)
 	{
-		snprintf(s, MAX_MSG, "%#x (%s)", pe->optional_ptr->_32->Magic, "PE32");
+		snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, "PE32");
 		output("Magic number", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorLinkerVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MajorLinkerVersion);
 		output("Linker major version", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorLinkerVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MinorLinkerVersion);
 		output("Linker minor version", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfCode);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfCode);
 		output("Size of .text section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfInitializedData);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfInitializedData);
 		output("Size of .data section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfUninitializedData);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfUninitializedData);
 		output("Size of .bss section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->AddressOfEntryPoint);
+		snprintf(s, MAX_MSG, "%#x", header->_32->AddressOfEntryPoint);
 		output("Entrypoint", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->BaseOfCode);
+		snprintf(s, MAX_MSG, "%#x", header->_32->BaseOfCode);
 		output("Address of .text section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->BaseOfData);
+		snprintf(s, MAX_MSG, "%#x", header->_32->BaseOfData);
 		output("Address of .data section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->ImageBase);
+		snprintf(s, MAX_MSG, "%#x", header->_32->ImageBase);
 		output("ImageBase", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SectionAlignment);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SectionAlignment);
 		output("Alignment of sections", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->FileAlignment);
+		snprintf(s, MAX_MSG, "%#x", header->_32->FileAlignment);
 		output("Alignment factor", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorOperatingSystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MajorOperatingSystemVersion);
 		output("Major version of required OS", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorOperatingSystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MinorOperatingSystemVersion);
 		output("Minor version of required OS", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorImageVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MajorImageVersion);
 		output("Major version of image", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorImageVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MinorImageVersion);
 		output("Minor version of image", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MajorSubsystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MajorSubsystemVersion);
 		output("Major version of subsystem", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_32->MinorSubsystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_32->MinorSubsystemVersion);
 		output("Minor version of subsystem", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfImage);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfImage);
 		output("Size of image", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfHeaders);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfHeaders);
 		output("Size of headers", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->CheckSum);
+		snprintf(s, MAX_MSG, "%#x", header->_32->CheckSum);
 		output("Checksum", s);
 
-		subsystem = pe->optional_ptr->_32->Subsystem;
+		subsystem = header->_32->Subsystem;
 		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->DllCharacteristics);
+		snprintf(s, MAX_MSG, "%#x", header->_32->DllCharacteristics);
 		output("DLL characteristics", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfStackReserve);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfStackReserve);
 		output("Size of stack to reserve", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfStackCommit);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfStackCommit);
 		output("Size of stack to commit", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfHeapReserve);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfHeapReserve);
 		output("Size of heap space to reserve", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->SizeOfHeapCommit);
+		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfHeapCommit);
 		output("Size of heap space to commit", s);
 	}
-	else if (pe->optional_ptr->_64)
+	else if (header->_64)
 	{
-		snprintf(s, MAX_MSG, "%#x (%s)", pe->optional_ptr->_64->Magic, "PE32+");
+		snprintf(s, MAX_MSG, "%#x (%s)", header->_64->Magic, "PE32+");
 		output("Magic number", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorLinkerVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MajorLinkerVersion);
 		output("Linker major version", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorLinkerVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MinorLinkerVersion);
 		output("Linker minor version", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfCode);
+		snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfCode);
 		output("Size of .text section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfInitializedData);
+		snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfInitializedData);
 		output("Size of .data section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfUninitializedData);
+		snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfUninitializedData);
 		output("Size of .bss section", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->AddressOfEntryPoint);
+		snprintf(s, MAX_MSG, "%#x", header->_64->AddressOfEntryPoint);
 		output("Entrypoint", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->BaseOfCode);
+		snprintf(s, MAX_MSG, "%#x", header->_64->BaseOfCode);
 		output("Address of .text section", s);
 
-		snprintf(s, MAX_MSG, "%#"PRIx64, pe->optional_ptr->_64->ImageBase);
+		snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->ImageBase);
 		output("ImageBase", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SectionAlignment);
+		snprintf(s, MAX_MSG, "%#x", header->_64->SectionAlignment);
 		output("Alignment of sections", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->FileAlignment);
+		snprintf(s, MAX_MSG, "%#x", header->_64->FileAlignment);
 		output("Alignment factor", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorOperatingSystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MajorOperatingSystemVersion);
 		output("Major version of required OS", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorOperatingSystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MinorOperatingSystemVersion);
 		output("Minor version of required OS", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorImageVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MajorImageVersion);
 		output("Major version of image", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorImageVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MinorImageVersion);
 		output("Minor version of image", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MajorSubsystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MajorSubsystemVersion);
 		output("Major version of subsystem", s);
 
-		snprintf(s, MAX_MSG, "%d", pe->optional_ptr->_64->MinorSubsystemVersion);
+		snprintf(s, MAX_MSG, "%d", header->_64->MinorSubsystemVersion);
 		output("Minor version of subsystem", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfImage);
+		snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfImage);
 		output("Size of image", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->SizeOfHeaders);
+		snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfHeaders);
 		output("Size of headers", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->CheckSum);
+		snprintf(s, MAX_MSG, "%#x", header->_64->CheckSum);
 		output("Checksum", s);
 
-		subsystem = pe->optional_ptr->_64->Subsystem;
+		subsystem = header->_64->Subsystem;
 		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->DllCharacteristics);
+		snprintf(s, MAX_MSG, "%#x", header->_64->DllCharacteristics);
 		output("DLL characteristics", s);
 
-		snprintf(s, MAX_MSG, "%#"PRIx64, pe->optional_ptr->_64->SizeOfStackReserve);
+		snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfStackReserve);
 		output("Size of stack to reserve", s);
 
-		snprintf(s, MAX_MSG, "%#"PRIx64, pe->optional_ptr->_64->SizeOfStackCommit);
+		snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfStackCommit);
 		output("Size of stack to commit", s);
 
-		snprintf(s, MAX_MSG, "%#"PRIx64, pe->optional_ptr->_64->SizeOfHeapReserve);
+		snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfHeapReserve);
 		output("Size of heap space to reserve", s);
 
-		snprintf(s, MAX_MSG, "%#"PRIx64, pe->optional_ptr->_64->SizeOfHeapCommit);
+		snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfHeapCommit);
 		output("Size of heap space to commit", s);
 	}
 }
@@ -576,9 +579,10 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 
 static void print_imported_functions(PE_FILE *pe, long offset)
 {
-	QWORD fptr = 0; // pointer to functions
+#if 0
+	uint32_t fptr = 0; // pointer to functions
 	long aux2, aux = ftell(pe->handle);
-	WORD hint = 0; // function number
+	uint16_t hint = 0; // function number
 	char c;
 	char fname[MAX_FUNCTION_NAME];
 	char hintstr[16];
@@ -592,7 +596,9 @@ static void print_imported_functions(PE_FILE *pe, long offset)
 
 	while (1)
 	{
-		if (!fread(&fptr, (pe->architecture == PE64) ? sizeof(QWORD) : sizeof(DWORD), 1, pe->handle))
+		if (!fread(&fptr, (pe->architecture == PE64)
+				? sizeof(uint64_t)
+				: sizeof(uint32_t), 1, pe->handle))
 			return;
 
 		if (!fptr)
@@ -637,13 +643,15 @@ static void print_imported_functions(PE_FILE *pe, long offset)
 	}
 
 	fseek(pe->handle, aux, SEEK_SET);
+#endif
 }
 
 static void print_exports(PE_FILE *pe)
 {
-	QWORD va;
+#if 0
+	uint64_t va;
 	IMAGE_EXPORT_DIRECTORY exp;
-	DWORD rva, aux, faddr = 0;
+	uint32_t rva, aux, faddr = 0;
 
 	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (!directory)
@@ -677,7 +685,7 @@ static void print_exports(PE_FILE *pe)
 		char c=1, addr[30], fun[300];
 
 		aux = ftell(pe->handle);
-		fseek(pe->handle, exp.AddressOfFunctions + sizeof(DWORD) * i, SEEK_SET);
+		fseek(pe->handle, exp.AddressOfFunctions + sizeof(uint32_t) * i, SEEK_SET);
 		fread(&faddr, sizeof(faddr), 1, pe->handle);
 		fseek(pe->handle, aux, SEEK_SET);
 		memset(&fun, 0, sizeof(fun));
@@ -691,11 +699,13 @@ static void print_exports(PE_FILE *pe)
 		}
 		output(addr, fun);
 	}
+#endif
 }
 
 static void print_imports(PE_FILE *pe)
 {
-	QWORD va; // store temporary addresses
+#if 0
+	uint64_t va; // store temporary addresses
 	long aux;
 	IMAGE_IMPORT_DESCRIPTOR id;
 	char c = 0;
@@ -760,12 +770,12 @@ static void print_imports(PE_FILE *pe)
 
 		print_imported_functions(pe, va);
 	}
+#endif
 }
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
+	pe_ctx_t ctx;
 
 	if (argc < 2)
 	{
@@ -775,63 +785,62 @@ int main(int argc, char *argv[])
 
 	parse_options(argc, argv); // opcoes
 
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
+	int ret = pe_load(&ctx, argv[argc-1]);
+	if (ret < 0)
+		return 1;
 
-	pe_init(&pe, fp); // inicializa o struct pe
+	ret = pe_parse(&ctx);
+	if (ret < 0)
+		return 1;
 
-	if (!is_pe(&pe))
+	if (!is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
 	// dos header
 	if (config.dos || config.all_headers || config.all)
 	{
-		IMAGE_DOS_HEADER dos;
-
-		if (pe_get_dos(&pe, &dos))
-			print_dos_header(&dos);
+		if (ctx.pe.dos_hdr)
+			print_dos_header(ctx.pe.dos_hdr);
 		else { EXIT_ERROR("unable to read DOS header"); }
 	}
 
 	// coff/file header
 	if (config.coff || config.all_headers || config.all)
 	{
-		IMAGE_COFF_HEADER coff;
-
-		if (pe_get_coff(&pe, &coff))
-			print_coff_header(&coff);
+		if (ctx.pe.coff_hdr)
+			print_coff_header(ctx.pe.coff_hdr);
 		else { EXIT_ERROR("unable to read COFF file header"); }
 	}
 
 	// optional header
 	if (config.opt || config.all_headers || config.all)
 	{
-		if (pe_get_optional(&pe))
-			print_optional_header(&pe);
+		if (ctx.pe.optional_hdr)
+			print_optional_header(ctx.pe.optional_hdr);
 		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
 	}
 
 	// directories
 	if (config.dirs || config.all)
 	{
-		if (pe_get_directories(&pe))
-			print_directories(&pe);
+		if (ctx.pe.directories != NULL)
+			print_directories(&ctx.pe);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// imports
 	if (config.imports || config.all)
 	{
-		if (pe_get_directories(&pe))
-			print_imports(&pe);
+		if (ctx.pe.directories != NULL)
+			print_imports(&ctx.pe);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// exports
 	if (config.exports || config.all)
 	{
-		if (pe_get_directories(&pe))
-			print_exports(&pe);
+		if (ctx.pe.directories != NULL)
+			print_exports(&ctx.pe);
 		else
 			{ EXIT_ERROR("unable to read directories from optional header"); }
 	}
@@ -839,12 +848,15 @@ int main(int argc, char *argv[])
 	// sections
 	if (config.all_sections || config.all)
 	{
-		if (pe_get_sections(&pe))
-			print_sections(&pe);
+		if (ctx.pe.sections != NULL)
+			print_sections(&ctx.pe);
 		else { EXIT_ERROR("unable to read sections"); }
 	}
 
 	// free
-	pe_deinit(&pe);
+	ret = pe_unload(&ctx);
+	if (ret < 0)
+		return 1;
+
 	return 0;
 }

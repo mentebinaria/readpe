@@ -1,7 +1,7 @@
 /*
 	libpe - the PE library
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2010 - 2013 libpe authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,471 +19,161 @@
 
 #include "pe.h"
 
-void *xmalloc(size_t size)
-{
-	if (size <= 0)
-		return NULL;
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
 
-	void *new_mem = malloc(size);
+#define PTR_ADD(p, o)	((void *)((char *)p + o))
+#define sizeof_member(type, member) sizeof(((type *)0)->member)
 
-	if (!new_mem)
-	{
-		fprintf(stderr, "fatal: memory exhausted (xmalloc of %zu bytes)\n", size);
-		exit(-1);
+int pe_load(pe_ctx_t *ctx, const char *path) {
+	int ret = 0;
+
+	ctx->path = strdup(path);
+	if (ctx->path == NULL) {
+		perror("strdup");
+		return -1;
 	}
 
-	return new_mem;
-}
-
-// return a rva of given offset
-DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
-{
-	if (!ofs || !pe || !pe_get_sections(pe))
-		return 0;
-
-	for (unsigned int i=0; i <  pe->num_sections; i++)
-	{
-		// if offset is inside section, return your VA in section
-		if (ofs >= pe->sections_ptr[i]->PointerToRawData &&
-		ofs < (pe->sections_ptr[i]->PointerToRawData + pe->sections_ptr[i]->SizeOfRawData))
-			return ofs + pe->sections_ptr[i]->VirtualAddress;
+	// Open the file.
+	const int fd = open(ctx->path, O_RDWR);
+	if (fd == -1) {
+		perror("open");
+		return -2;
 	}
+
+	// Stat the fd to retrieve the file informations.
+	// If file is a symlink, fstat will stat the pointed file, not the link.
+	ret = fstat(fd, &ctx->stat);
+	if (ret == -1) {
+		perror("fstat");
+		return -3;
+	}
+
+	// Check if we're dealing with a regular file.
+	if (!S_ISREG(ctx->stat.st_mode)) {
+		fprintf(stderr, "%s is not a file\n", ctx->path);
+		return -4;
+	}
+
+	// Create the virtual memory mapping.
+	ctx->map_addr = mmap(NULL, ctx->stat.st_size, PROT_READ|PROT_WRITE,
+		MAP_SHARED, fd, 0);
+	if (ctx->map_addr == MAP_FAILED) {
+		perror("mmap");
+		return -5; 
+	}
+
+	// We can now close the fd.
+	ret = close(fd);
+	if (ret == -1) {
+		perror("close");
+		return -6;
+	}
+
+	// Give advice about how we'll use our memory mapping.
+	ret = madvise(ctx->map_addr, ctx->stat.st_size, MADV_SEQUENTIAL);
+	if (ret < 0) {
+		perror("madvise");
+		// NOTE: This is a recoverable error. Do not abort.
+	}
+
 	return 0;
 }
 
-QWORD rva2ofs(PE_FILE *pe, QWORD rva)
-{
-	if (!rva || !pe || !pe_get_sections(pe))
-		return 0;
+int pe_unload(pe_ctx_t *ctx) {
+	int ret = 0;
 
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
-		rva < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
-			return rva - pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData;
+	if (ctx->path != NULL) {
+		free(ctx->path);
+		ctx->path = NULL;
 	}
+
+	const off_t st_size = ctx->stat.st_size;
+	memset(&ctx->stat, 0, sizeof(struct stat));
+
+	if (ctx->map_addr != NULL) {
+		ret = munmap(ctx->map_addr, st_size);
+		if (ret != 0) {
+			perror("munmap");
+			return -1;
+		}
+		ctx->map_addr = NULL;
+	}
+
 	return 0;
 }
 
-// the first function you need to call
-bool pe_init(PE_FILE *pe, FILE *handle)
-{
-	if (!pe || !handle)
-		return false;
+int pe_parse(pe_ctx_t *ctx) {
+	//int ret = 0;
 
-	memset(pe, 0, sizeof(PE_FILE));
-	pe->handle = handle;
+	ctx->pe.dos_hdr = ctx->map_addr;
+	const uint32_t *signature_ptr = PTR_ADD(ctx->pe.dos_hdr, ctx->pe.dos_hdr->e_lfanew);
+	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
+	ctx->pe.signature = *signature_ptr;
 
-	return true;
-}
-
-// return the section of given rva
-IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva)
-{
-	if (!pe || !rva)
-		return NULL;
-
-	if (!pe->num_sections || !pe->sections_ptr)
-		pe_get_sections(pe);
-
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
-		rva <= pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->Misc.VirtualSize)
-			return pe->sections_ptr[i];
-	}
-
-	return NULL;
-}
-
-// return a section by name
-IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
-{
-	if (!pe || !section_name)
-		return NULL;
-
-	if (!pe->addr_sections || !pe->num_sections)
-		pe_get_sections(pe);
-
-	if (!pe->num_sections || pe->num_sections > MAX_SECTIONS)
-		return NULL;
-
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
-			return pe->sections_ptr[i];
-	}
-	return NULL;
-}
-
-bool pe_get_resource_entries(PE_FILE *pe)
-{
-	IMAGE_RESOURCE_DIRECTORY dir;
-
-	if (!pe)
-		return false;
-
-	if (pe->rsrc_entries_ptr)
-		return pe->rsrc_entries_ptr;
-
-	if (!pe_get_resource_directory(pe, &dir))
-		return false;
-
-	pe->num_rsrc_entries = dir.NumberOfIdEntries + dir.NumberOfNamedEntries;
-
-	if (!pe->num_rsrc_entries)
-		return false;
-
-	pe->rsrc_entries_ptr = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
-
-	for (unsigned int i=0; i < pe->num_rsrc_entries; i++)
-	{
-		pe->rsrc_entries_ptr[i] = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
-
-		if (!fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
-			return false;
-	}
-	return true;
-}
-
-bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
-{
-	if (!pe)
-		return false;
-
-	if (!pe->directories_ptr)
-		if (!pe_get_directories(pe))
-			return false;
-
-	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-	if (!directory)
-		return false;
-
-	if (directory->Size > 0)
-	{
-		pe->addr_rsrc_dir = rva2ofs(pe, directory->VirtualAddress);
-		if (fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET))
-			return false;
-
-		if (!fread(dir, sizeof(dir), 1, pe->handle))
-			return false;
-
-		return true;
-	}
-	return false;
-}
-
-IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry)
-{
-	if (!pe || !pe->directories_ptr || entry > (WORD)(pe->num_directories - 1))
-		return NULL;
-
-	return pe->directories_ptr[entry];
-}
-
-
-bool pe_get_sections(PE_FILE *pe)
-{
-	IMAGE_SECTION_HEADER **sections;
-
-	if (!pe)
-		return false;
-
-	if (pe->sections_ptr)
-		return true;
-
-	if (!pe->addr_sections || !pe->num_sections)
-	{
-		if (!pe_get_directories(pe))
-			return false;
-	}
-
-	if (pe->num_sections > MAX_SECTIONS)
-		return false;
-
-	if (fseek(pe->handle, pe->addr_sections, SEEK_SET))
-		return false;
-	sections = xmalloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
-
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		sections[i] = xmalloc(sizeof(IMAGE_SECTION_HEADER));
-		if (!fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle))
-			return false;
-	}
-
-	pe->sections_ptr = sections;
-	rewind(pe->handle);
-
-	if (!pe->sections_ptr)
-		return false;
-
-	return true;
-}
-
-bool pe_get_directories(PE_FILE *pe)
-{
-	if (!pe)
-		return false;
-
-	if (pe->directories_ptr)
-		return true;
-
-	if (!pe->addr_directories)
-	{
-		if (!pe_get_optional(pe))
-			return false;
-	}
-
-	if (fseek(pe->handle, pe->addr_directories, SEEK_SET))
-		return false;
-
-	if (pe->num_directories > 32)
-		return false;
-
-	const size_t directories_size = sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories;
-
-	pe->directories_ptr = xmalloc(directories_size);
-	if (!pe->directories_ptr)
-		return false;
-
-	// Zero out the entire block, otherwise if one allocation fails for dirs[i],
-	// pe_deinit() will try to free wild pointers. This of course does not take
-	// into consideration that an allocation failure will make the process die.
-	memset(pe->directories_ptr, 0, directories_size);
-
-	for (unsigned int i=0; i < pe->num_directories; i++)
-	{
-		pe->directories_ptr[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
-		if (!fread(pe->directories_ptr[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
-			return false;
-	}
-
-	pe->addr_sections = ftell(pe->handle);
-
-	if (!pe->addr_sections)
-		return false;
-
-	return true;
-}
-
-bool pe_get_optional(PE_FILE *pe)
-{
-	IMAGE_OPTIONAL_HEADER *header;
-
-	if (!pe)
-		return false;
-
-	if (pe->optional_ptr)
-		return true;
-
-	if (!pe->addr_optional)
-	{
-		IMAGE_COFF_HEADER coff;
-
-		if (!pe_get_coff(pe, &coff))
-			return false;
-	}
-
-	if (fseek(pe->handle, pe->addr_optional, SEEK_SET))
-		return false;
-
-	pe->optional_ptr = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
-	if (!pe->optional_ptr)
-		return false;
-
-	header = pe->optional_ptr;
-
-	switch (pe->architecture)
-	{
-		case PE32:
-			header->_32 = xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
-			if (!fread(header->_32, sizeof(IMAGE_OPTIONAL_HEADER_32), 1, pe->handle))
-				return false;
-			pe->num_directories = header->_32->NumberOfRvaAndSizes;
-			pe->entrypoint = header->_32->AddressOfEntryPoint;
-			pe->imagebase = header->_32->ImageBase;
-			header->_64 = NULL;
-			break;
-
-		case PE64:
-			header->_64 = xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
-			if (!fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle))
-				return false;
-			pe->num_directories = header->_64->NumberOfRvaAndSizes;
-			pe->entrypoint = header->_64->AddressOfEntryPoint;
-			pe->imagebase = header->_64->ImageBase;
-			header->_32 = NULL;
-			break;
-
+	switch (ctx->pe.signature) {
 		default:
-			pe_deinit(pe);
-			return false;
+			fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
+			return -1;
+		case SIGNATURE_NE:
+		case SIGNATURE_PE:
+			break;
+	}
+	
+	ctx->pe.coff_hdr = PTR_ADD(signature_ptr, sizeof_member(PE_FILE, signature));
+	ctx->pe.optional_hdr = PTR_ADD(ctx->pe.coff_hdr, sizeof(IMAGE_COFF_HEADER));
+	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
+
+	switch (ctx->pe.optional_hdr->type) {
+		default:
+		case MAGIC_ROM:
+			// TODO: Oh boy! Abort!
+			break;
+		case MAGIC_PE32:
+			ctx->pe.optional_hdr->_32 = (IMAGE_OPTIONAL_HEADER_32 *)ctx->pe.optional_hdr;
+			ctx->pe.optional_hdr->length = sizeof(IMAGE_OPTIONAL_HEADER_32);
+			ctx->pe.num_directories = ctx->pe.optional_hdr->_32->NumberOfRvaAndSizes;
+			break;
+		case MAGIC_PE64:
+			ctx->pe.optional_hdr->_64 = (IMAGE_OPTIONAL_HEADER_64 *)ctx->pe.optional_hdr;
+			ctx->pe.optional_hdr->length = sizeof(IMAGE_OPTIONAL_HEADER_64);
+			ctx->pe.num_directories = ctx->pe.optional_hdr->_64->NumberOfRvaAndSizes;
+			break;
 	}
 
-	pe->addr_directories = ftell(pe->handle);
+	// TODO: Validate ctx->pe.num_directories and ctx->pe.num_sections
 
-	if (!pe->addr_directories)
-		return false;
+	ctx->pe.directories = malloc(ctx->pe.num_directories * sizeof(IMAGE_DATA_DIRECTORY *));
+	ctx->pe.sections = malloc(ctx->pe.num_sections * sizeof(IMAGE_SECTION_HEADER *));
+	// TODO: Check allocation failures
 
-	return true;
-}
+	ctx->pe.directories_ptr = PTR_ADD(ctx->pe.optional_hdr, ctx->pe.optional_hdr->length);
+	ctx->pe.sections_ptr = ctx->pe.directories_ptr;
 
-bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header)
-{
-	if (!pe)
-		return false;
-
-	if (!pe->addr_coff)
-	{
-		IMAGE_DOS_HEADER dos;
-
-		if (!pe_get_dos(pe, &dos))
-			return false;
+	for (uint32_t i = 0; i < ctx->pe.num_directories; i++) {
+		ctx->pe.directories[i] = PTR_ADD(ctx->pe.directories_ptr, i * sizeof(IMAGE_DATA_DIRECTORY));
+		ctx->pe.sections_ptr = PTR_ADD(ctx->pe.sections_ptr, sizeof(IMAGE_DATA_DIRECTORY));
 	}
 
-	if (!pe->handle)
-		return false;
+	for (uint16_t i = 0; i < ctx->pe.num_sections; i++) {
+		ctx->pe.sections[i] = PTR_ADD(ctx->pe.sections_ptr, i * sizeof(IMAGE_SECTION_HEADER));
+	}
 
-	if (fseek(pe->handle, pe->addr_coff, SEEK_SET))
-		return false;
-
-	if (!fread(header, sizeof(IMAGE_COFF_HEADER), 1, pe->handle))
-		return false;
-
-	pe->num_sections = header->NumberOfSections;
-	pe->addr_optional = ftell(pe->handle);
-	pe->isdll = header->Characteristics & (1<<13) ? true : false;
-
-	if (!fread(&pe->architecture, sizeof(WORD), 1, pe->handle))
-		return false;
-
-	if(!pe->addr_optional)
-		return false;
-
-	return true;
+	return 0;
 }
 
-bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
-{
-	if (!pe)
-		return false;
-
-	if (!pe->handle)
-		return false;
-
-	rewind(pe->handle);
-
-	if (!fread(header, sizeof(IMAGE_DOS_HEADER), 1, pe->handle))
-		return false;
-
-	pe->addr_coff = header->e_lfanew + 4; // NT signature (PE\0\0)
-
-	return true;
-}
-
-QWORD pe_get_size(PE_FILE *pe)
-{
-	if (pe->size)
-		return pe->size;
-
-	if (fseek(pe->handle, 0, SEEK_END))
-		return 0;
-
-	pe->size = ftell(pe->handle);
-	rewind(pe->handle);
-	return pe->size;
-}
-
-bool is_pe(PE_FILE *pe)
-{
-	WORD header;
-	LONG elfanew;
-	DWORD pesig;
-
-	header = elfanew = pesig = 0;
-
-	if (pe->handle == NULL)
-		return false;
-
-	rewind(pe->handle);	
-	if (!fread(&header, sizeof(WORD), 1, pe->handle))
-		return false;
-
+bool is_pe(pe_ctx_t *ctx) {
 	// check MZ header
-	if (header != MZ)
+	if (ctx->pe.dos_hdr == NULL || ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
 		return false;
 
 	// check PE signature
-	if (fseek(pe->handle, sizeof(IMAGE_DOS_HEADER) - sizeof(LONG), SEEK_SET))
+	if (ctx->pe.signature != SIGNATURE_PE)
 		return false;
 
-	if (!fread(&elfanew, sizeof(LONG), 1, pe->handle))
-		return false;
-
-	if (fseek(pe->handle, elfanew, SEEK_SET))
-		return false;
-
-	if (!fread(&pesig, sizeof(DWORD), 1, pe->handle))
-		return false;
-
-	if (pesig != 0x4550) // "PE\0\0"
-		return false;
-
-	rewind(pe->handle);
 	return true;
-}
-
-// free pointers
-void pe_deinit(PE_FILE *pe)
-{
-	unsigned int i;
-
-	if (pe->handle)
-		fclose(pe->handle);
-
-	if (pe->optional_ptr)
-	{
-		if (pe->optional_ptr->_32)
-			free(pe->optional_ptr->_32);
-
-		if (pe->optional_ptr->_64)
-			free(pe->optional_ptr->_64);
-
-		free(pe->optional_ptr);
-	}
-
-	if (pe->directories_ptr)
-	{
-		for (i=0; i < pe->num_directories; i++)
-		{
-			if (pe->directories_ptr[i])
-				free(pe->directories_ptr[i]);
-		}
-		free(pe->directories_ptr);
-	}
-
-	if (pe->sections_ptr)
-	{
-		for (i=0; i < pe->num_sections; i++)
-		{
-			if (pe->sections_ptr[i])
-				free(pe->sections_ptr[i]);
-		}
-		free(pe->sections_ptr);
-	}
-
-	if (pe->rsrc_entries_ptr)
-	{
-		for (i=0; i < pe->num_rsrc_entries; i++)
-		{
-			if (pe->rsrc_entries_ptr[i])
-				free(pe->rsrc_entries_ptr[i]);
-		}
-
-		free(pe->rsrc_entries_ptr);
-	}
-
-	if (pe->rsrc_ptr)
-			free(pe->rsrc_ptr);
 }

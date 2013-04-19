@@ -1,5 +1,5 @@
 /*
-	pev - libpe the PE library
+	libpe - the PE library
 
 	Copyright (C) 2010 - 2013 libpe authors
 
@@ -22,7 +22,8 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
-#include <sys/stat.h>
+#include <stdio.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #define MAGIC_MZ 0x5a4d
@@ -167,6 +168,11 @@ typedef struct {
 	uint32_t VirtualAddress;
 	uint32_t SizeOfRawData;
 	uint32_t PointerToRawData;
+	uint32_t PointerToRelocations; // always zero in executables
+	uint32_t PointerToLinenumbers; // deprecated
+	uint16_t NumberOfRelocations;
+	uint16_t NumberOfLinenumbers; // deprecated
+	uint32_t Characteristics;
 } IMAGE_SECTION_HEADER;
 
 typedef struct {
@@ -176,7 +182,7 @@ typedef struct {
 	uint32_t signature;
 	// COFF header
 	IMAGE_COFF_HEADER *coff_hdr;
-	// Optional headers
+	// Optional header
 	IMAGE_OPTIONAL_HEADER *optional_hdr;
 	// Directories
 	uint32_t num_directories;
@@ -221,14 +227,55 @@ typedef struct {
 
 typedef struct {
 	char *path;
-	struct stat stat;
 	void *map_addr;
+	off_t map_size;
+	uintptr_t map_end;
 	PE_FILE pe;
 } pe_ctx_t;
 
-int pe_load(pe_ctx_t *ctx, const char *path);
-int pe_unload(pe_ctx_t *ctx);
-int pe_parse(pe_ctx_t *ctx);
-bool is_pe(pe_ctx_t *ctx);
+typedef enum {
+	LIBPE_E_OK = 0,
+	LIBPE_E_ALLOCATION_FAILURE = -15,
+	LIBPE_E_OPEN_FAILED,
+	LIBPE_E_FSTAT_FAILED,
+	LIBPE_E_NOT_A_FILE,
+	LIBPE_E_NOT_A_PE_FILE,
+	LIBPE_E_INVALID_LFANEW,
+	LIBPE_E_MISSING_COFF_HEADER,
+	LIBPE_E_MISSING_OPTIONAL_HEADER,
+	LIBPE_E_INVALID_SIGNATURE,
+	LIBPE_E_UNSUPPORTED_IMAGE,
+	LIBPE_E_MMAP_FAILED,
+	LIBPE_E_MUNMAP_FAILED,
+	LIBPE_E_CLOSE_FAILED,
+	LIBPE_E_TOO_MANY_DIRECTORIES,
+	LIBPE_E_TOO_MANY_SECTIONS,
+} pe_err_e;
+
+// General functions
+const char *pe_error_msg(pe_err_e error);
+void pe_error_print(FILE *stream, pe_err_e error);
+pe_err_e pe_load(pe_ctx_t *ctx, const char *path);
+pe_err_e pe_unload(pe_ctx_t *ctx);
+pe_err_e pe_parse(pe_ctx_t *ctx);
+bool pe_is_pe(pe_ctx_t *ctx);
+uint64_t pe_filesize(pe_ctx_t *ctx);
+IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);
+uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva);
+uint32_t pe_ofs2rva(pe_ctx_t *ctx, uint32_t ofs);
+
+// Header functions
+IMAGE_DOS_HEADER *pe_dos(pe_ctx_t *ctx);
+IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx);
+IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx);
+uint32_t pe_directories_count(pe_ctx_t *ctx);
+IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx);
+uint32_t pe_sections_count(pe_ctx_t *ctx);
+IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx);
+IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name);
+
+// bool pe_resource_directory(pe_ctx_t *ctx, IMAGE_RESOURCE_DIRECTORY *dir);
+// bool pe_resource_entries(pe_ctx_t *ctx);
+// IMAGE_DATA_DIRECTORY *pe_data_directory(pe_ctx_t *ctx, ImageDirectoryEntry entry);
 
 #endif

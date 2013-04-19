@@ -39,7 +39,7 @@ void parse_format(const char *optarg)
 		EXIT_ERROR("invalid format option");
 }
 
-void to_text(char *field, char *value)
+void to_text(const char *field, const char *value)
 {
 	size_t field_size = field ? strlen(field) : 0;
 	
@@ -51,7 +51,7 @@ void to_text(char *field, char *value)
 		printf("%*c%s\n", (int) (SPACES-field_size+1), ' ', value);
 }
 
-void to_csv(const char *field, char *value)
+void to_csv(const char *field, const char *value)
 {
 	if (field && value)
 		printf("%s,%s\n", field, value);
@@ -61,7 +61,7 @@ void to_csv(const char *field, char *value)
 		printf(",%s\n", value);
 }
 
-void to_xml(char *field, char *value)
+void to_xml(const char *field, const char *value)
 {
 	// TODO output a valid xml
 	if (value && field)
@@ -70,7 +70,7 @@ void to_xml(char *field, char *value)
 		printf("<%s>\n", field);
 }
 
-void to_html(char *field, char *value)
+void to_html(const char *field, const char *value)
 {
 	// TODO output a valid html
 	if (field && value)
@@ -81,22 +81,18 @@ void to_html(char *field, char *value)
 		printf("<span>%s</span><br />\n", value);
 }
 
-void output(char *field, char *value)
+void output(const char *field, const char *value)
 {
-	switch (format)
-	{
+	switch (format) {
 		case FORMAT_CSV:
 			to_csv(field, value);
 			break;
-			
 		case FORMAT_XML:
 			to_xml(field, value);
 			break;
-			
 		case FORMAT_HTML:
 			to_html(field, value);
 			break;
-			
 		case FORMAT_TEXT:
 		default:
 			to_text(field, value);

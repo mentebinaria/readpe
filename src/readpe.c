@@ -57,23 +57,21 @@ static void parse_headers(const char *optarg)
 
 void parse_options(int argc, char *argv[])
 {
-	int c;
-
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "AHSh:dief:v";
 
 	static const struct option long_options[] = {
-		{"help",             no_argument,       NULL,  1 },
-		{"all",              no_argument,       NULL, 'A'},
-		{"all-headers",      no_argument,       NULL, 'H'},
-		{"all-sections",     no_argument,       NULL, 'S'},
-		{"header",           required_argument, NULL, 'h'},
-		{"imports",          no_argument,       NULL, 'i'},
-		{"exports",          no_argument,       NULL, 'e'},
-		{"dirs",             no_argument,       NULL, 'd'},
-		{"format",           required_argument, NULL, 'f'},
-		{"version",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{ "help",             no_argument,       NULL,  1  },
+		{ "all",              no_argument,       NULL, 'A' },
+		{ "all-headers",      no_argument,       NULL, 'H' },
+		{ "all-sections",     no_argument,       NULL, 'S' },
+		{ "header",           required_argument, NULL, 'h' },
+		{ "imports",          no_argument,       NULL, 'i' },
+		{ "exports",          no_argument,       NULL, 'e' },
+		{ "dirs",             no_argument,       NULL, 'd' },
+		{ "format",           required_argument, NULL, 'f' },
+		{ "version",          no_argument,       NULL, 'v' },
+		{  NULL,              0,                 NULL,  0  }
 	};
 
 	// setting all fields to false
@@ -81,53 +79,51 @@ void parse_options(int argc, char *argv[])
 
 	config.all = true;
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	int c;
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
 
-
 		switch (c)
 		{
-			case 1:		// --help option
+			case 1: // --help option
 				usage();
 				exit(EXIT_SUCCESS);
-
 			case 'A':
-				config.all = true; break;
-
+				config.all = true;
+				break;
 			case 'H':
 				config.all = false;
-				config.all_headers = true; break;
-
+				config.all_headers = true;
+				break;
 			case 'd':
 				config.all = false;
-				config.dirs = true; break;
-
+				config.dirs = true;
+				break;
 			case 'S':
 				config.all = false;
-				config.all_sections = true; break;
-
+				config.all_sections = true;
+				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-
+				break;
 			case 'h':
 				config.all = false;
-				parse_headers(optarg); break;
-
+				parse_headers(optarg);
+				break;
 			case 'i':
 				config.all = false;
-				config.imports = true; break;
-
+				config.imports = true;
+				break;
 			case 'e':
 				config.all = false;
-				config.exports = true; break;
-
+				config.exports = true;
+				break;
 			case 'f':
-				parse_format(optarg); break;
-
+				parse_format(optarg);
+				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
@@ -135,12 +131,9 @@ void parse_options(int argc, char *argv[])
 	}
 }
 
-static void print_sections(PE_FILE *pe)
+static void print_sections(pe_ctx_t *ctx)
 {
-	char s[MAX_MSG];
-	unsigned int i, j;
-
-	char *flags[] = {
+	static const char * const flags[] = {
 		"contains executable code",
 		"contains initialized data",
 		"contains uninitialized data",
@@ -156,58 +149,60 @@ static void print_sections(PE_FILE *pe)
 	};
 
 	// valid flags only for executables referenced in pecoffv8
-	unsigned int valid_flags[] = {
+	static const unsigned int valid_flags[]  = {
 		0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
 		0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000
 	};
+	static const size_t flags_count = sizeof(valid_flags) / sizeof(unsigned int);
 
 	output("Sections", NULL);
 
-	if (pe->num_sections > MAX_SECTIONS)
+	const uint32_t num_sections = pe_sections_count(ctx);
+	if (num_sections == 0 || num_sections > MAX_SECTIONS)
 		return;
 
-	for (i=0; i < pe->num_sections; i++)
+	IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
+	if (sections == NULL)
+		return;
+
+	char s[MAX_MSG];
+
+	for (uint32_t i=0; i < num_sections; i++)
 	{
-		snprintf(s, MAX_MSG, "%s", pe->sections[i]->Name);
+		snprintf(s, MAX_MSG, "%s", sections[i]->Name);
 		output("Name", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->VirtualAddress);
+		snprintf(s, MAX_MSG, "%#x", sections[i]->VirtualAddress);
 		output("Virtual Address", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->Misc.PhysicalAddress);
+		snprintf(s, MAX_MSG, "%#x", sections[i]->Misc.PhysicalAddress);
 		output("Physical Address", s);
 
-		snprintf(s, MAX_MSG, "%#x (%d bytes)", pe->sections[i]->SizeOfRawData,
-		pe->sections[i]->SizeOfRawData);
+		snprintf(s, MAX_MSG, "%#x (%d bytes)", sections[i]->SizeOfRawData,
+			sections[i]->SizeOfRawData);
 		output("Size", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->PointerToRawData);
+		snprintf(s, MAX_MSG, "%#x", sections[i]->PointerToRawData);
 		output("Pointer To Data", s);
-#if 0
-		snprintf(s, MAX_MSG, "%d", pe->sections[i]->NumberOfRelocations);
+
+		snprintf(s, MAX_MSG, "%d", sections[i]->NumberOfRelocations);
 		output("Relocations", s);
 
-		snprintf(s, MAX_MSG, "%#x", pe->sections[i]->Characteristics);
+		snprintf(s, MAX_MSG, "%#x", sections[i]->Characteristics);
 		output("Characteristics", s);
 
-		for (j=0; j < sizeof(valid_flags) / sizeof(unsigned int); j++)
-		{
-			if (pe->sections[i]->Characteristics & valid_flags[j])
-			{
-					snprintf(s, MAX_MSG, "%s", flags[j]);
-					output(NULL, s);
+		for (size_t j=0; j < flags_count; j++) {
+			if (sections[i]->Characteristics & valid_flags[j]) {
+				snprintf(s, MAX_MSG, "%s", flags[j]);
+				output(NULL, s);
 			}
 		}
-#endif
 	}
 }
 
-static void print_directories(PE_FILE *pe)
+static void print_directories(pe_ctx_t *ctx)
 {
-	char s[MAX_MSG];
-	unsigned int i;
-
-	static const char *directory_names[] = {
+	static const char * const directory_names[] = {
 		"Export Table", // 0
 		"Import Table",
 		"Resource Table",
@@ -227,27 +222,29 @@ static void print_directories(PE_FILE *pe)
 
 	output("Data directories", NULL);
 
-	if (!pe->directories_ptr)
+	const uint32_t num_directories = pe_directories_count(ctx);
+	if (num_directories == 0 || num_directories > MAX_DIRECTORIES)
 		return;
 
-	for (i=0; i < pe->num_directories && i < 16; i++)
-	{
-		if (pe->directories[i]->Size)
-		{
+	IMAGE_DATA_DIRECTORY **directories = pe_directories(ctx);
+	if (directories == NULL)
+		return;
+
+	char s[MAX_MSG];
+
+	for (uint32_t i=0; i < num_directories && i < 16; i++) {
+		if (directories[i]->Size) {
 			snprintf(s, MAX_MSG, "%#x (%d bytes)",
-					pe->directories[i]->VirtualAddress,
-					pe->directories[i]->Size);
-			output((char *) directory_names[i], s);
+					directories[i]->VirtualAddress,
+					directories[i]->Size);
+			output((char *)directory_names[i], s);
 		}
 	}
 }
 
 static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 {
-	char s[MAX_MSG];
-	int subsystem;
-
-	static const char *subs_desc[] = {
+	static const char * const subs_desc[] = {
 		"Unknown subsystem",
 		"System native",
 		"Windows GUI",
@@ -266,8 +263,9 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 	output("Optional/Image header", NULL);
 
-	if (header->_32)
-	{
+	char s[MAX_MSG];
+
+	if (header->_32) {
 		snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, "PE32");
 		output("Magic number", s);
 
@@ -331,7 +329,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		snprintf(s, MAX_MSG, "%#x", header->_32->CheckSum);
 		output("Checksum", s);
 
-		subsystem = header->_32->Subsystem;
+		uint16_t subsystem = header->_32->Subsystem;
 		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 
@@ -349,9 +347,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 		snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfHeapCommit);
 		output("Size of heap space to commit", s);
-	}
-	else if (header->_64)
-	{
+	} else if (header->_64) {
 		snprintf(s, MAX_MSG, "%#x (%s)", header->_64->Magic, "PE32+");
 		output("Magic number", s);
 
@@ -412,7 +408,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		snprintf(s, MAX_MSG, "%#x", header->_64->CheckSum);
 		output("Checksum", s);
 
-		subsystem = header->_64->Subsystem;
+		uint16_t subsystem = header->_64->Subsystem;
 		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 
@@ -435,13 +431,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 static void print_coff_header(IMAGE_COFF_HEADER *header)
 {
-	char s[MAX_MSG];
-	char timestr[40];
-	register unsigned int i, j;
-	char *machine = "Unknown machine type";
-
-	static const char *flags[] =
-	{
+	static const char * const flags[] = {
 		"base relocations stripped",
 		"executable image",
 		"line numbers removed (deprecated)",
@@ -459,38 +449,40 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 		"big-endian (deprecated)"
 	};
 
-	static const MACHINE_ENTRY arch[] =
-	{
-		{"Any machine type", 0x0},
-		{"Matsushita AM33", 0x1d3},
-		{"x86-64 (64-bits)", 0x8664},
-		{"ARM little endian", 0x1c0},
-		{"ARMv7 (or higher) Thumb mode only", 0x1c4},
-		{"EFI byte code", 0xebc},
-		{"Intel 386 and compatible (32-bits)", 0x14c},
-		{"Intel Itanium", 0x200},
-		{"Mitsubishi M32R little endian", 0x9041},
-		{"MIPS16", 0x266},
-		{"MIPS with FPU", 0x366},
-		{"MIPS16 with FPU", 0x466},
-		{"Power PC little endian", 0x1f0},
-		{"Power PC with floating point support", 0x1f1},
-		{"MIPS little endian", 0x166},
-		{"Hitachi SH3", 0x1a2},
-		{"Hitachi SH3 DSP", 0x1a3},
-		{"Hitachi SH4", 0x1a6},
-		{"Hitachi SH5",  0x1a8},
-		{"ARM or Thumb (\"interworking\")", 0x1c2},
-		{"MIPS little-endian WCE v2", 0x169}
+	static const MACHINE_ENTRY arch[] = {
+		{ "Any machine type", 0x0 },
+		{ "Matsushita AM33", 0x1d3 },
+		{ "x86-64 (64-bits)", 0x8664 },
+		{ "ARM little endian", 0x1c0 },
+		{ "ARMv7 (or higher) Thumb mode only", 0x1c4 },
+		{ "EFI byte code", 0xebc },
+		{ "Intel 386 and compatible (32-bits)", 0x14c },
+		{ "Intel Itanium", 0x200 },
+		{ "Mitsubishi M32R little endian", 0x9041 },
+		{ "MIPS16", 0x266 },
+		{ "MIPS with FPU", 0x366 },
+		{ "MIPS16 with FPU", 0x466 },
+		{ "Power PC little endian", 0x1f0 },
+		{ "Power PC with floating point support", 0x1f1 },
+		{ "MIPS little endian", 0x166 },
+		{ "Hitachi SH3", 0x1a2 },
+		{ "Hitachi SH3 DSP", 0x1a3 },
+		{ "Hitachi SH4", 0x1a6 },
+		{ "Hitachi SH5",  0x1a8 },
+		{ "ARM or Thumb (\"interworking\")", 0x1c2 },
+		{ "MIPS little-endian WCE v2", 0x169 }
 	};
+	static const size_t archs_count = sizeof(arch) / sizeof(MACHINE_ENTRY);
 
 	output("COFF/File header", NULL);
 
-	for(i=0; i<(sizeof(arch)/sizeof(MACHINE_ENTRY)); i++)
-	{
-		if(header->Machine == arch[i].code)
-			machine = (char*)arch[i].name;
+	const char *machine = "Unknown machine type";
+	for (size_t i=0; i < archs_count; i++) {
+		if (header->Machine == arch[i].code)
+			machine = arch[i].name;
 	}
+
+	char s[MAX_MSG];
 
 	snprintf(s, MAX_MSG, "%#x %s", header->Machine, machine);
 	output("Machine", s);
@@ -498,6 +490,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 
+	char timestr[40];
 	strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC",
 		gmtime((time_t *) &header->TimeDateStamp));
 	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
@@ -515,10 +508,9 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%#x", header->Characteristics);
 	output("Characteristics", s);
 
-	for (i=1, j=0; i<0x8000; i<<=1, j++)
-	{
+	for (uint16_t i=1, j=0; i<0x8000; i <<= 1, j++) {
 		if (header->Characteristics & i)
-			output(NULL, (char*) flags[j]);
+			output(NULL, flags[j]);
 	}
 }
 
@@ -577,7 +569,7 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 	output("PE header offset", s);
 }
 
-static void print_imported_functions(PE_FILE *pe, long offset)
+static void print_imported_functions(pe_ctx_t *ctx, long offset)
 {
 #if 0
 	uint32_t fptr = 0; // pointer to functions
@@ -646,7 +638,7 @@ static void print_imported_functions(PE_FILE *pe, long offset)
 #endif
 }
 
-static void print_exports(PE_FILE *pe)
+static void print_exports(pe_ctx_t *ctx)
 {
 #if 0
 	uint64_t va;
@@ -702,7 +694,7 @@ static void print_exports(PE_FILE *pe)
 #endif
 }
 
-static void print_imports(PE_FILE *pe)
+static void print_imports(pe_ctx_t *ctx)
 {
 #if 0
 	uint64_t va; // store temporary addresses
@@ -775,88 +767,85 @@ static void print_imports(PE_FILE *pe)
 
 int main(int argc, char *argv[])
 {
-	pe_ctx_t ctx;
-
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
 		exit(1);
 	}
 
-	parse_options(argc, argv); // opcoes
+	parse_options(argc, argv); // Opcoes
 
-	int ret = pe_load(&ctx, argv[argc-1]);
-	if (ret < 0)
-		return 1;
+	pe_ctx_t ctx;
 
-	ret = pe_parse(&ctx);
-	if (ret < 0)
-		return 1;
+	pe_err_e err = pe_load(&ctx, argv[argc-1]);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	if (!is_pe(&ctx))
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
 	// dos header
-	if (config.dos || config.all_headers || config.all)
-	{
+	if (config.dos || config.all_headers || config.all) {
 		if (ctx.pe.dos_hdr)
 			print_dos_header(ctx.pe.dos_hdr);
 		else { EXIT_ERROR("unable to read DOS header"); }
 	}
 
 	// coff/file header
-	if (config.coff || config.all_headers || config.all)
-	{
+	if (config.coff || config.all_headers || config.all) {
 		if (ctx.pe.coff_hdr)
 			print_coff_header(ctx.pe.coff_hdr);
 		else { EXIT_ERROR("unable to read COFF file header"); }
 	}
 
 	// optional header
-	if (config.opt || config.all_headers || config.all)
-	{
+	if (config.opt || config.all_headers || config.all) {
 		if (ctx.pe.optional_hdr)
 			print_optional_header(ctx.pe.optional_hdr);
 		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
 	}
 
 	// directories
-	if (config.dirs || config.all)
-	{
+	if (config.dirs || config.all) {
 		if (ctx.pe.directories != NULL)
-			print_directories(&ctx.pe);
+			print_directories(&ctx);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// imports
-	if (config.imports || config.all)
-	{
+	if (config.imports || config.all) {
 		if (ctx.pe.directories != NULL)
-			print_imports(&ctx.pe);
+			print_imports(&ctx);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// exports
-	if (config.exports || config.all)
-	{
+	if (config.exports || config.all) {
 		if (ctx.pe.directories != NULL)
-			print_exports(&ctx.pe);
-		else
-			{ EXIT_ERROR("unable to read directories from optional header"); }
+			print_exports(&ctx);
+		else { EXIT_ERROR("unable to read directories from optional header"); }
 	}
 
 	// sections
-	if (config.all_sections || config.all)
-	{
+	if (config.all_sections || config.all) {
 		if (ctx.pe.sections != NULL)
-			print_sections(&ctx.pe);
+			print_sections(&ctx);
 		else { EXIT_ERROR("unable to read sections"); }
 	}
 
 	// free
-	ret = pe_unload(&ctx);
-	if (ret < 0)
-		return 1;
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }

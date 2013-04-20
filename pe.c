@@ -28,11 +28,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-#define LIBPE_PTR_ADD(p, o)						((void *)((char *)p + o))
-#define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
-#define LIBPE_IS_PAST_THE_END(ctx, ptr, type)	\
-	((uintptr_t)((ptr) + sizeof(type)) > (ctx)->map_end)
-
 const char *pe_error_msg(pe_err_e error) {
 	static const char * const errors[] = {
 		"no error", // LIBPE_E_OK,
@@ -52,7 +47,7 @@ const char *pe_error_msg(pe_err_e error) {
 		"too many directories", // LIBPE_E_TOO_MANY_DIRECTORIES,
 		"too many sections", // LIBPE_E_TOO_MANY_SECTIONS,
 	};
-	static const size_t index_max = sizeof(errors) / sizeof(errors[0]);
+	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
 	size_t index = index_max + error;
 	return (index < index_max)
 		? errors[index]
@@ -275,6 +270,12 @@ bool pe_is_pe(pe_ctx_t *ctx) {
 	return true;
 }
 
+bool pe_is_dll(pe_ctx_t *ctx) {
+	if (ctx->pe.coff_hdr == NULL)
+		return false;
+	return ctx->pe.coff_hdr->Characteristics & IMAGE_FILE_DLL ? true : false;
+}
+
 uint64_t pe_filesize(pe_ctx_t *ctx) {
 	return ctx->map_size;
 }
@@ -342,6 +343,13 @@ IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx) {
 	return ctx->pe.directories;
 }
 
+IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry) {
+	if (ctx->pe.directories == NULL || entry > (uint32_t)(ctx->pe.num_directories - 1))
+		return NULL;
+
+	return ctx->pe.directories[entry];
+}
+
 uint32_t pe_sections_count(pe_ctx_t *ctx) {
 	return ctx->pe.num_sections;
 }
@@ -358,6 +366,147 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
 		if (memcmp(ctx->pe.sections[i]->Name, name, name_len) == 0)
 			return ctx->pe.sections[i];
+	}
+	return NULL;
+}
+
+const char *pe_machine_type_name(MachineType type) {
+	typedef struct {
+		MachineType type;
+		const char * const name;
+	} MachineEntry;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const MachineEntry names[] = {
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_UNKNOWN),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_AM33),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_AMD64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARM),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARMV7),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_CEE),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_EBC),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_I386),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_IA64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_M32R),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPS16),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPSFPU),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPSFPU16),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPC),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPCFP),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_R4000),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3DSP),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH4),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH5),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_THUMB),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_WCEMIPSV2)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (type == names[i].type)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
+	typedef struct {
+		ImageCharacteristics characteristic;
+		const char * const name;
+	} ImageCharacteristicsName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const ImageCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_FILE_RELOCS_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_EXECUTABLE_IMAGE),
+		LIBPE_ENTRY(IMAGE_FILE_LINE_NUMS_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_LOCAL_SYMS_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_AGGRESSIVE_WS_TRIM),
+		LIBPE_ENTRY(IMAGE_FILE_LARGE_ADDRESS_AWARE),
+		LIBPE_ENTRY(IMAGE_FILE_RESERVED),
+		LIBPE_ENTRY(IMAGE_FILE_BYTES_REVERSED_LO),
+		LIBPE_ENTRY(IMAGE_FILE_32BIT_MACHINE),
+		LIBPE_ENTRY(IMAGE_FILE_DEBUG_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP),
+		LIBPE_ENTRY(IMAGE_FILE_NET_RUN_FROM_SWAP),
+		LIBPE_ENTRY(IMAGE_FILE_SYSTEM),
+		LIBPE_ENTRY(IMAGE_FILE_DLL),
+		LIBPE_ENTRY(IMAGE_FILE_UP_SYSTEM_ONLY),
+		LIBPE_ENTRY(IMAGE_FILE_BYTES_REVERSED_HI)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
+	typedef struct {
+		WindowsSubsystem subsystem;
+		const char * const name;
+	} WindowsSubsystemName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const WindowsSubsystemName names[] = {
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_UNKNOWN),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_NATIVE),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_GUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_POSIX_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_CE_GUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_APPLICATION),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_ROM),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_XBOX),
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (subsystem == names[i].subsystem)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_directory_name(ImageDirectoryEntry entry) {
+	typedef struct {
+		ImageDirectoryEntry entry;
+		const char * const name;
+	} ImageDirectoryEntryName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const ImageDirectoryEntryName names[] = {
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_EXPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_IMPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_RESOURCE),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_EXCEPTION),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_SECURITY),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_BASERELOC),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_DEBUG),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_ARCHITECTURE),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_GLOBALPTR),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_TLS),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_IAT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_RESERVED)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (entry == names[i].entry)
+			return names[i].name;
 	}
 	return NULL;
 }

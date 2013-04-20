@@ -26,154 +26,26 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define MAGIC_MZ 0x5a4d
-#define MAX_DIRECTORIES 32
+#include "hdr_dos.h"
+#include "hdr_coff.h"
+#include "hdr_optional.h"
+#include "directories.h"
+#include "sections.h"
+
+#define LIBPE_PTR_ADD(p, o)						((void *)((char *)p + o))
+#define LIBPE_SIZEOF_ARRAY(array)				(sizeof(array) / sizeof(array[0]))
+#define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
+#define LIBPE_IS_PAST_THE_END(ctx, ptr, type)	\
+	((uintptr_t)((ptr) + sizeof(type)) > (ctx)->map_end)
+
+#define MAGIC_MZ 0x5a4d // Belongs to the DOS header
+#define MAX_DIRECTORIES 16
 #define MAX_SECTIONS 96
 
 #define SIGNATURE_NE 0x454E // NE\0\0 in little-endian
 #define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
 
 #pragma pack(push, 1)
-
-typedef struct {
-	char name[40];
-	uint16_t code;
-} MACHINE_ENTRY;
-
-typedef struct {
-	uint16_t e_magic;
-	uint16_t e_cblp;
-	uint16_t e_cp;
-	uint16_t e_crlc;
-	uint16_t e_cparhdr;
-	uint16_t e_minalloc;
-	uint16_t e_maxalloc;
-	uint16_t e_ss;
-	uint16_t e_sp;
-	uint16_t e_csum;
-	uint16_t e_ip;
-	uint16_t e_cs;
-	uint16_t e_lfarlc;
-	uint16_t e_ovno;
-	uint16_t e_res[4];
-	uint16_t e_oemid;
-	uint16_t e_oeminfo;
-	uint16_t e_res2[10];
-	int32_t e_lfanew;
-} IMAGE_DOS_HEADER;
-
-typedef struct {
-	uint16_t Machine;
-	uint16_t NumberOfSections;
-	uint32_t TimeDateStamp;
-	uint32_t PointerToSymbolTable;
-	uint32_t NumberOfSymbols;
-	uint16_t SizeOfOptionalHeader;
-	uint16_t Characteristics;
-} IMAGE_FILE_HEADER, IMAGE_COFF_HEADER;
-
-typedef struct {
-	uint16_t Magic; 
-	uint8_t MajorLinkerVersion;
-	uint8_t MinorLinkerVersion;
-	uint32_t SizeOfCode;
-	uint32_t SizeOfInitializedData;
-	uint32_t SizeOfUninitializedData;
-	uint32_t AddressOfEntryPoint;
-	uint32_t BaseOfCode;
-	uint32_t BaseOfData; // only in PE32
-	uint32_t ImageBase;
-	uint32_t SectionAlignment;
-	uint32_t FileAlignment;
-	uint16_t MajorOperatingSystemVersion;
-	uint16_t MinorOperatingSystemVersion;
-	uint16_t MajorImageVersion;
-	uint16_t MinorImageVersion;
-	uint16_t MajorSubsystemVersion;
-	uint16_t MinorSubsystemVersion;
-	uint32_t Reserved1;
-	uint32_t SizeOfImage;
-	uint32_t SizeOfHeaders;
-	uint32_t CheckSum;
-	uint16_t Subsystem;
-	uint16_t DllCharacteristics;
-	uint32_t SizeOfStackReserve;
-	uint32_t SizeOfStackCommit;
-	uint32_t SizeOfHeapReserve;
-	uint32_t SizeOfHeapCommit;
-	uint32_t LoaderFlags;
-	uint32_t NumberOfRvaAndSizes;
-	// IMAGE_DATA_DIRECTORY DataDirectory[];
-} IMAGE_OPTIONAL_HEADER_32;
-
-typedef struct {
-	uint16_t Magic;
-	uint8_t MajorLinkerVersion;
-	uint8_t MinorLinkerVersion;
-	uint32_t SizeOfCode;
-	uint32_t SizeOfInitializedData;
-	uint32_t SizeOfUninitializedData;
-	uint32_t AddressOfEntryPoint;
-	uint32_t BaseOfCode;
-	uint64_t ImageBase;
-	uint32_t SectionAlignment;
-	uint32_t FileAlignment;
-	uint16_t MajorOperatingSystemVersion;
-	uint16_t MinorOperatingSystemVersion;
-	uint16_t MajorImageVersion;
-	uint16_t MinorImageVersion;
-	uint16_t MajorSubsystemVersion;
-	uint16_t MinorSubsystemVersion;
-	uint32_t Reserved1;
-	uint32_t SizeOfImage;
-	uint32_t SizeOfHeaders;
-	uint32_t CheckSum;
-	uint16_t Subsystem;
-	uint16_t DllCharacteristics;
-	uint64_t SizeOfStackReserve;
-	uint64_t SizeOfStackCommit;
-	uint64_t SizeOfHeapReserve;
-	uint64_t SizeOfHeapCommit;
-	uint32_t LoaderFlags; /* must be zero */
-	uint32_t NumberOfRvaAndSizes;
-	// IMAGE_DATA_DIRECTORY DataDirectory[];
-} IMAGE_OPTIONAL_HEADER_64;
-
-typedef enum {
-	MAGIC_ROM	= 0x107,
-	MAGIC_PE32	= 0x10b,
-	MAGIC_PE64	= 0x20b
-} opt_type_e;
-
-typedef struct {
-	uint16_t type; // opt_type_e
-	size_t length;
-	IMAGE_OPTIONAL_HEADER_32 *_32;
-	IMAGE_OPTIONAL_HEADER_64 *_64;
-} IMAGE_OPTIONAL_HEADER;
-
-typedef struct {
-	uint32_t VirtualAddress;
-	uint32_t Size;
-} IMAGE_DATA_DIRECTORY;
-
-#define SECTION_NAME_SIZE	8
-
-typedef struct {
-	uint8_t Name[SECTION_NAME_SIZE]; // TODO: Should we use char instead?
-	union {
-		uint32_t PhysicalAddress; // same value as next field
-		uint32_t VirtualSize;
-	} Misc;
-	uint32_t VirtualAddress;
-	uint32_t SizeOfRawData;
-	uint32_t PointerToRawData;
-	uint32_t PointerToRelocations; // always zero in executables
-	uint32_t PointerToLinenumbers; // deprecated
-	uint16_t NumberOfRelocations;
-	uint16_t NumberOfLinenumbers; // deprecated
-	uint32_t Characteristics;
-} IMAGE_SECTION_HEADER;
 
 typedef struct {
 	// DOS header
@@ -194,29 +66,17 @@ typedef struct {
 	IMAGE_SECTION_HEADER **sections; // array up to MAX_SECTIONS
 
 #if 0
-	bool is_dll;
 	uint16_t e_lfanew;
 	uint16_t architecture;
 	uint64_t entrypoint;
 	uint64_t imagebase;
 	uint64_t size;
 
-	uint16_t num_sections;
-	uint16_t num_directories;
 	uint16_t num_rsrc_entries;
-
-	uint16_t addr_sections;
-	uint16_t addr_directories;
-	uint16_t addr_dos;
-	uint16_t addr_optional;
-	uint16_t addr_coff;
 	uint16_t addr_rsrc_sec;
 	uint16_t addr_rsrc_dir;
 
 	// pointers (will be freed if needed)
-	IMAGE_OPTIONAL_HEADER *optional_ptr;
-	IMAGE_SECTION_HEADER **sections_ptr;
-	IMAGE_DATA_DIRECTORY **directories_ptr;
 	//IMAGE_TLS_DIRECTORY32 *tls_ptr;
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
@@ -259,6 +119,7 @@ pe_err_e pe_load(pe_ctx_t *ctx, const char *path);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
 bool pe_is_pe(pe_ctx_t *ctx);
+bool pe_is_dll(pe_ctx_t *ctx);
 uint64_t pe_filesize(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);
 uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva);
@@ -270,12 +131,14 @@ IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx);
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx);
 uint32_t pe_directories_count(pe_ctx_t *ctx);
 IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx);
+IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry);
 uint32_t pe_sections_count(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name);
 
-// bool pe_resource_directory(pe_ctx_t *ctx, IMAGE_RESOURCE_DIRECTORY *dir);
-// bool pe_resource_entries(pe_ctx_t *ctx);
-// IMAGE_DATA_DIRECTORY *pe_data_directory(pe_ctx_t *ctx, ImageDirectoryEntry entry);
+const char *pe_machine_type_name(MachineType type);
+const char *pe_image_characteristic_name(ImageCharacteristics characteristic);
+const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
+const char *pe_directory_name(ImageDirectoryEntry entry);
 
 #endif

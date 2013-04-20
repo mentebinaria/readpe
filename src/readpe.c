@@ -153,7 +153,7 @@ static void print_sections(pe_ctx_t *ctx)
 		0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
 		0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000
 	};
-	static const size_t flags_count = sizeof(valid_flags) / sizeof(unsigned int);
+	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
 
 	output("Sections", NULL);
 
@@ -191,7 +191,7 @@ static void print_sections(pe_ctx_t *ctx)
 		snprintf(s, MAX_MSG, "%#x", sections[i]->Characteristics);
 		output("Characteristics", s);
 
-		for (size_t j=0; j < flags_count; j++) {
+		for (size_t j=0; j < max_flags; j++) {
 			if (sections[i]->Characteristics & valid_flags[j]) {
 				snprintf(s, MAX_MSG, "%s", flags[j]);
 				output(NULL, s);
@@ -202,24 +202,31 @@ static void print_sections(pe_ctx_t *ctx)
 
 static void print_directories(pe_ctx_t *ctx)
 {
-	static const char * const directory_names[] = {
-		"Export Table", // 0
-		"Import Table",
-		"Resource Table",
-		"Exception Table",
-		"Certificate Table",
-		"Base Relocation Table",
-		"Debug",
-		"Architecture",
-		"Global Ptr",
-		"Thread Local Storage (TLS)", // 9
-		"Load Config Table",
-		"Bound Import",
-		"Import Address Table (IAT)",
-		"Delay Import Descriptor",
-		"CLR Runtime Header", "" // 14
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+	typedef struct {
+		ImageDirectoryEntry entry;
+		const char * const name;
+	} ImageDirectoryEntryName;
+	static const ImageDirectoryEntryName directoryEntryNames[] = {
+		{ IMAGE_DIRECTORY_ENTRY_EXPORT,			"Export Table"				}, // "Export directory",
+		{ IMAGE_DIRECTORY_ENTRY_IMPORT,			"Import Table"				}, // "Import directory",
+		{ IMAGE_DIRECTORY_ENTRY_RESOURCE,		"Resource Table"			}, // "Resource directory",
+		{ IMAGE_DIRECTORY_ENTRY_EXCEPTION,		"Exception Table"			}, // "Exception directory",
+		{ IMAGE_DIRECTORY_ENTRY_SECURITY,		"Certificate Table"			}, // "Security directory",
+		{ IMAGE_DIRECTORY_ENTRY_BASERELOC,		"Base Relocation Table"		}, // "Base relocation table",
+		{ IMAGE_DIRECTORY_ENTRY_DEBUG,			"Debug"						}, // "Debug directory",
+		{ IMAGE_DIRECTORY_ENTRY_ARCHITECTURE,	"Architecture"				}, // "Architecture-specific data",
+		{ IMAGE_DIRECTORY_ENTRY_GLOBALPTR,		"Global Ptr"				}, // "Global pointer",
+		{ IMAGE_DIRECTORY_ENTRY_TLS,			"Thread Local Storage (TLS)"}, // "Thread local storage (TLS) directory",
+		{ IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG,	"Load Config Table"			}, // "Load configuration directory",
+		{ IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT,	"Bound Import"				}, // "Bound import directory",
+		{ IMAGE_DIRECTORY_ENTRY_IAT,			"Import Address Table (IAT)"}, // "Import address table (IAT)",
+		{ IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT,	"Delay Import Descriptor"	}, // "Delay import table",
+		{ IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR,	"CLR Runtime Header"		}, // "COM descriptor table"
+		{ IMAGE_DIRECTORY_RESERVED,				""							}  // "Reserved"
 	};
-
+	//static const size_t max_directory_entry = LIBPE_SIZEOF_ARRAY(names);
+#endif
 	output("Data directories", NULL);
 
 	const uint32_t num_directories = pe_directories_count(ctx);
@@ -232,31 +239,42 @@ static void print_directories(pe_ctx_t *ctx)
 
 	char s[MAX_MSG];
 
-	for (uint32_t i=0; i < num_directories && i < 16; i++) {
+	for (uint32_t i=0; i < num_directories; i++) {
 		if (directories[i]->Size) {
 			snprintf(s, MAX_MSG, "%#x (%d bytes)",
 					directories[i]->VirtualAddress,
 					directories[i]->Size);
-			output((char *)directory_names[i], s);
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			output(directoryEntryNames[i].name, s);
+#else
+			output(pe_directory_name(i), s);
+#endif
 		}
 	}
 }
 
 static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 {
-	static const char * const subs_desc[] = {
-		"Unknown subsystem",
-		"System native",
-		"Windows GUI",
-		"Windows CLI",
-		"Posix CLI",
-		"Windows CE GUI",
-		"EFI application",
-		"EFI driver with boot",
-		"EFI run-time driver",
-		"EFI ROM",
-		"XBOX"
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+	typedef struct {
+		WindowsSubsystem subsystem;
+		const char * const name;
+	} WindowsSubsystemName;
+	static const WindowsSubsystemName subsystemNames[] = {
+		{ IMAGE_SUBSYSTEM_UNKNOWN,					"Unknown subsystem"		},
+		{ IMAGE_SUBSYSTEM_NATIVE,					"System native"			},
+		{ IMAGE_SUBSYSTEM_WINDOWS_GUI,				"Windows GUI"			},
+		{ IMAGE_SUBSYSTEM_WINDOWS_CUI,				"Windows CLI"			},
+		{ IMAGE_SUBSYSTEM_POSIX_CUI,				"Posix CLI"				},
+		{ IMAGE_SUBSYSTEM_WINDOWS_CE_GUI,			"Windows CE GUI"		},
+		{ IMAGE_SUBSYSTEM_EFI_APPLICATION, 			"EFI application"		},
+		{ IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,	"EFI driver with boot"	},
+		{ IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER,		"EFI run-time driver"	},
+		{ IMAGE_SUBSYSTEM_EFI_ROM, 					"EFI ROM"				},
+		{ IMAGE_SUBSYSTEM_XBOX,			 			"XBOX"					},
 	};
+	static const size_t max_subsystem = LIBPE_SIZEOF_ARRAY(subsystemNames);
+#endif
 
 	if (!header)
 		return;
@@ -330,7 +348,18 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		output("Checksum", s);
 
 		uint16_t subsystem = header->_32->Subsystem;
-		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+		const char *subsystem_name = "Unknown";
+		for (size_t i=0; i < max_subsystem; i++) {
+			if (subsystem == subsystemNames[i].subsystem)
+				subsystem_name = subsystemNames[i].name;
+		}
+#else
+		const char *subsystem_name = pe_windows_subsystem_name(subsystem);
+		if (subsystem_name == NULL)
+			subsystem_name = "Unknown";
+#endif
+		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem_name);
 		output("Subsystem required", s);
 
 		snprintf(s, MAX_MSG, "%#x", header->_32->DllCharacteristics);
@@ -408,8 +437,19 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		snprintf(s, MAX_MSG, "%#x", header->_64->CheckSum);
 		output("Checksum", s);
 
-		uint16_t subsystem = header->_64->Subsystem;
-		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
+		uint16_t subsystem = header->_32->Subsystem;
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+		const char *subsystem_name = "Unknown";
+		for (size_t i=0; i < max_subsystem; i++) {
+			if (subsystem == subsystemNames[i].subsystem)
+				subsystem_name = subsystemNames[i].name;
+		}
+#else
+		const char *subsystem_name = pe_windows_subsystem_name(subsystem);
+		if (subsystem_name == NULL)
+			subsystem_name = "Unknown";
+#endif
+		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem_name);
 		output("Subsystem required", s);
 
 		snprintf(s, MAX_MSG, "%#x", header->_64->DllCharacteristics);
@@ -431,56 +471,74 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 static void print_coff_header(IMAGE_COFF_HEADER *header)
 {
-	static const char * const flags[] = {
-		"base relocations stripped",
-		"executable image",
-		"line numbers removed (deprecated)",
-		"local symbols removed (deprecated)",
-		"aggressively trim (deprecated for Windows 2000 and later)",
-		"can handle more than 2 GB addresses", "",
-		"little-endian (deprecated)",
-		"32-bit machine",
-		"debugging information removed",
-		"copy to swap if it's on removable media",
-		"copy to swap if it's on network media",
-		"system file",
-		"DLL image",
-		"uniprocessor machine",
-		"big-endian (deprecated)"
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+	typedef struct {
+		ImageCharacteristics characteristic;
+		const char * const name;
+	} ImageCharacteristicsName;
+	static const ImageCharacteristicsName characteristicsTable[] = {
+		{ IMAGE_FILE_RELOCS_STRIPPED,			"base relocations stripped"					},
+		{ IMAGE_FILE_EXECUTABLE_IMAGE,			"executable image"							},
+		{ IMAGE_FILE_LINE_NUMS_STRIPPED,		"line numbers removed (deprecated)"			},
+		{ IMAGE_FILE_LOCAL_SYMS_STRIPPED,		"local symbols removed (deprecated)"		},
+		{ IMAGE_FILE_AGGRESSIVE_WS_TRIM,		"aggressively trim (deprecated for Windows 2000 and later)" },
+		{ IMAGE_FILE_LARGE_ADDRESS_AWARE,		"can handle more than 2 GB addresses"		},
+		{ IMAGE_FILE_RESERVED,					""											},
+		{ IMAGE_FILE_BYTES_REVERSED_LO,			"little-endian (deprecated)"				},
+		{ IMAGE_FILE_32BIT_MACHINE,				"32-bit machine"							},
+		{ IMAGE_FILE_DEBUG_STRIPPED,			"debugging information removed"				},
+		{ IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP,	"copy to swap if it's on removable media"	},
+		{ IMAGE_FILE_NET_RUN_FROM_SWAP,			"copy to swap if it's on network media"		},
+		{ IMAGE_FILE_SYSTEM,					"system file"								},
+		{ IMAGE_FILE_DLL,						"DLL image"									},
+		{ IMAGE_FILE_UP_SYSTEM_ONLY,			"uniprocessor machine"						},
+		{ IMAGE_FILE_BYTES_REVERSED_HI,			"big-endian (deprecated)"					}
 	};
 
-	static const MACHINE_ENTRY arch[] = {
-		{ "Any machine type", 0x0 },
-		{ "Matsushita AM33", 0x1d3 },
-		{ "x86-64 (64-bits)", 0x8664 },
-		{ "ARM little endian", 0x1c0 },
-		{ "ARMv7 (or higher) Thumb mode only", 0x1c4 },
-		{ "EFI byte code", 0xebc },
-		{ "Intel 386 and compatible (32-bits)", 0x14c },
-		{ "Intel Itanium", 0x200 },
-		{ "Mitsubishi M32R little endian", 0x9041 },
-		{ "MIPS16", 0x266 },
-		{ "MIPS with FPU", 0x366 },
-		{ "MIPS16 with FPU", 0x466 },
-		{ "Power PC little endian", 0x1f0 },
-		{ "Power PC with floating point support", 0x1f1 },
-		{ "MIPS little endian", 0x166 },
-		{ "Hitachi SH3", 0x1a2 },
-		{ "Hitachi SH3 DSP", 0x1a3 },
-		{ "Hitachi SH4", 0x1a6 },
-		{ "Hitachi SH5",  0x1a8 },
-		{ "ARM or Thumb (\"interworking\")", 0x1c2 },
-		{ "MIPS little-endian WCE v2", 0x169 }
+	typedef struct {
+		MachineType type;
+		const char * const name;
+	} MachineTypeName;
+	static const MachineTypeName machineTypeTable[] = {
+		{ IMAGE_FILE_MACHINE_UNKNOWN,	"Any machine type"					},
+		{ IMAGE_FILE_MACHINE_AM33,		"Matsushita AM33"					},
+		{ IMAGE_FILE_MACHINE_AMD64,		"x86-64 (64-bits)"					},
+		{ IMAGE_FILE_MACHINE_ARM,		"ARM little endian"					},
+		{ IMAGE_FILE_MACHINE_ARMV7,		"ARMv7 (or higher) Thumb mode only" },
+		{ IMAGE_FILE_MACHINE_CEE,		"clr pure MSIL (object only)"		},
+		{ IMAGE_FILE_MACHINE_EBC,		"EFI byte code"						},
+		{ IMAGE_FILE_MACHINE_I386,		"Intel 386 and compatible (32-bits)"},
+		{ IMAGE_FILE_MACHINE_IA64,		"Intel Itanium"						},
+		{ IMAGE_FILE_MACHINE_M32R,		"Mitsubishi M32R little endian"		},
+		{ IMAGE_FILE_MACHINE_MIPS16,	"MIPS16"							},
+		{ IMAGE_FILE_MACHINE_MIPSFPU,	"MIPS with FPU"						},
+		{ IMAGE_FILE_MACHINE_MIPSFPU16,	"MIPS16 with FPU"					},
+		{ IMAGE_FILE_MACHINE_POWERPC,	"Power PC little endian"			},
+		{ IMAGE_FILE_MACHINE_POWERPCFP,	"Power PC with floating point support" },
+		{ IMAGE_FILE_MACHINE_R4000,		"MIPS little endian"				},
+		{ IMAGE_FILE_MACHINE_SH3,		"Hitachi SH3"						},
+		{ IMAGE_FILE_MACHINE_SH3DSP,	"Hitachi SH3 DSP"					},
+		{ IMAGE_FILE_MACHINE_SH4,		"Hitachi SH4"						},
+		{ IMAGE_FILE_MACHINE_SH5,		"Hitachi SH5"						},
+		{ IMAGE_FILE_MACHINE_THUMB,		"ARM or Thumb (\"interworking\")"	},
+		{ IMAGE_FILE_MACHINE_WCEMIPSV2,	"MIPS little-endian WCE v2"			}
 	};
-	static const size_t archs_count = sizeof(arch) / sizeof(MACHINE_ENTRY);
+	static const size_t max_machine_type = LIBPE_SIZEOF_ARRAY(machineTypeTable);
+#endif
 
 	output("COFF/File header", NULL);
 
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	const char *machine = "Unknown machine type";
-	for (size_t i=0; i < archs_count; i++) {
-		if (header->Machine == arch[i].code)
-			machine = arch[i].name;
+	for (size_t i=0; i < max_machine_type; i++) {
+		if (header->Machine == machineTypeTable[i].type)
+			machine = machineTypeTable[i].name;
 	}
+#else
+	const char *machine = pe_machine_type_name(header->Machine);
+	if (machine == NULL)
+		machine = "Unknown machine type";
+#endif
 
 	char s[MAX_MSG];
 
@@ -510,7 +568,11 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 
 	for (uint16_t i=1, j=0; i<0x8000; i <<= 1, j++) {
 		if (header->Characteristics & i)
-			output(NULL, flags[j]);
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			output(NULL, characteristicsTable[j].name);
+#else
+			output(NULL, pe_image_characteristic_name(j));
+#endif
 	}
 }
 
@@ -640,58 +702,62 @@ static void print_imported_functions(pe_ctx_t *ctx, long offset)
 
 static void print_exports(pe_ctx_t *ctx)
 {
-#if 0
-	uint64_t va;
-	IMAGE_EXPORT_DIRECTORY exp;
-	uint32_t rva, aux, faddr = 0;
-
-	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (!directory)
+	IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	if (dir == NULL)
 		EXIT_ERROR("export directory not found")
 
-	va = directory->VirtualAddress;
-	if (!va)
-	{
+	uint64_t va = dir->VirtualAddress;
+	if (va == 0) {
 		fprintf(stderr, "export directory not found\n");
 		return;
 	}
 
-	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
-		EXIT_ERROR("unable to seek until export directory");
+	uint64_t ofs;
 
-	if (!fread(&exp, sizeof(exp), 1, pe->handle))
-		EXIT_ERROR("unable to read export directory");
+	ofs = pe_rva2ofs(ctx, va);
+	IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (LIBPE_IS_PAST_THE_END(ctx, exp, IMAGE_EXPORT_DIRECTORY)) {
+		// TODO: Should we report something?
+		printf("DEBUGME\n");
+		return;
+	}
 
-	if (fseek(pe->handle, rva2ofs(pe, exp.AddressOfNames), SEEK_SET))
-		EXIT_ERROR("unable to seek");
+	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
+	uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (LIBPE_IS_PAST_THE_END(ctx, rva_ptr, uint32_t)) {
+		// TODO: Should we report something?
+		return;
+	}
+	uint32_t rva = *rva_ptr;
 
-	if (!fread(&rva, sizeof(rva), 1, pe->handle))
-		EXIT_ERROR("unable to read");
-
-	if (fseek(pe->handle, rva2ofs(pe, rva), SEEK_SET))
-		EXIT_ERROR("unable to seek");
+	ofs = pe_rva2ofs(ctx, rva);
 
 	output("Exported functions", NULL);
-	for (unsigned i=0; i<exp.NumberOfNames; i++)
-	{
-		char c=1, addr[30], fun[300];
+	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
+		uint64_t aux = ofs; // Store current ofs
 
-		aux = ftell(pe->handle);
-		fseek(pe->handle, exp.AddressOfFunctions + sizeof(uint32_t) * i, SEEK_SET);
-		fread(&faddr, sizeof(faddr), 1, pe->handle);
-		fseek(pe->handle, aux, SEEK_SET);
-		memset(&fun, 0, sizeof(fun));
-		memset(&addr, 0, sizeof(addr));
+		ofs = exp->AddressOfFunctions + sizeof(uint32_t) * i;
+		uint32_t *faddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		if (LIBPE_IS_PAST_THE_END(ctx, faddr_ptr, uint32_t)) {
+			// TODO: Should we report something?
+			break;
+		}
+		uint32_t faddr = *faddr_ptr;
+
+		ofs = aux; // Restore previous ofs
+
+		char addr[30];
 		snprintf(addr, 30, "%#x", faddr);
 
-		for (unsigned j=0; c; j++)
-		{
-			fread(&c, sizeof(c), 1, pe->handle);
-			fun[j] = c;
-		}
+		const char *fname = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		// TODO: Validate if it's ok to read fname+N
+		// TODO: How can we guarantee we're reading a string from a
+		// valid range of ctx->map?
+		char fun[300];
+		strncpy(fun, fname, sizeof(fun)-1);
+
 		output(addr, fun);
 	}
-#endif
 }
 
 static void print_imports(pe_ctx_t *ctx)

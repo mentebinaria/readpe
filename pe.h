@@ -36,7 +36,7 @@
 #define LIBPE_SIZEOF_ARRAY(array)				(sizeof(array) / sizeof(array[0]))
 #define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
 #define LIBPE_IS_PAST_THE_END(ctx, ptr, type)	\
-	((uintptr_t)((ptr) + sizeof(type)) > (ctx)->map_end)
+	((uintptr_t)(LIBPE_PTR_ADD((ptr), sizeof(type))) > (ctx)->map_end)
 
 #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
@@ -55,7 +55,8 @@ typedef struct {
 	// COFF header
 	IMAGE_COFF_HEADER *coff_hdr;
 	// Optional header
-	IMAGE_OPTIONAL_HEADER *optional_hdr;
+	void *optional_hdr_ptr;
+	IMAGE_OPTIONAL_HEADER optional_hdr;
 	// Directories
 	uint32_t num_directories;
 	void *directories_ptr;

@@ -49,6 +49,8 @@ typedef enum {
 	RT_TOOLBAR			= 241 // configuration of toolbars
 } ResourceType;
 
+#pragma pack(push, 1)
+
 typedef struct {
 	uint32_t Characteristics;
 	uint32_t TimeDateStamp;
@@ -93,5 +95,7 @@ typedef struct {
 	char extension[20];
 	char dirName[20];
 } RESOURCE_ENTRY;
+
+#pragma pack(pop)
 
 #endif

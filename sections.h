@@ -24,6 +24,8 @@
 
 #define SECTION_NAME_SIZE 8
 
+#pragma pack(push, 1)
+
 // Quoting pecoff_v8.docx: "Entries in the section table are numbered starting from one (1)".
 typedef struct {
 	uint8_t Name[SECTION_NAME_SIZE]; // TODO: Should we use char instead?
@@ -40,5 +42,7 @@ typedef struct {
 	uint16_t NumberOfLinenumbers; // deprecated
 	uint32_t Characteristics;
 } IMAGE_SECTION_HEADER;
+
+#pragma pack(pop)
 
 #endif

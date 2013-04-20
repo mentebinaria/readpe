@@ -181,32 +181,43 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.coff_hdr, IMAGE_COFF_HEADER))
 		return LIBPE_E_MISSING_COFF_HEADER;
 
-	ctx->pe.optional_hdr = LIBPE_PTR_ADD(ctx->pe.coff_hdr,
-		sizeof(IMAGE_COFF_HEADER));
-	if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr, IMAGE_COFF_HEADER))
-		return LIBPE_E_MISSING_OPTIONAL_HEADER;
-
 	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
 
-	switch (ctx->pe.optional_hdr->type) {
+	// Optional header points right after the COFF header.
+	ctx->pe.optional_hdr_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr,
+		sizeof(IMAGE_COFF_HEADER));
+
+	// Figure out whether it's a PE32 or PE32+.
+	uint16_t *opt_type_ptr = ctx->pe.optional_hdr_ptr;
+	if (LIBPE_IS_PAST_THE_END(ctx, opt_type_ptr,
+		LIBPE_SIZEOF_MEMBER(IMAGE_OPTIONAL_HEADER, type)))
+		return LIBPE_E_MISSING_OPTIONAL_HEADER;
+
+	ctx->pe.optional_hdr.type = *opt_type_ptr;
+
+	switch (ctx->pe.optional_hdr.type) {
 		default:
 		case MAGIC_ROM:
 			// Oh boy! We do not support ROM. Abort!
 			//fprintf(stderr, "ROM image is not supported\n");
 			return LIBPE_E_UNSUPPORTED_IMAGE;
 		case MAGIC_PE32:
-			ctx->pe.optional_hdr->_32 =
-				(IMAGE_OPTIONAL_HEADER_32 *)ctx->pe.optional_hdr;
-			ctx->pe.optional_hdr->length = sizeof(IMAGE_OPTIONAL_HEADER_32);
+			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
+				IMAGE_OPTIONAL_HEADER_32))
+				return LIBPE_E_MISSING_OPTIONAL_HEADER;
+			ctx->pe.optional_hdr._32 = ctx->pe.optional_hdr_ptr;
+			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_32);
 			ctx->pe.num_directories =
-				ctx->pe.optional_hdr->_32->NumberOfRvaAndSizes;
+				ctx->pe.optional_hdr._32->NumberOfRvaAndSizes;
 			break;
 		case MAGIC_PE64:
-			ctx->pe.optional_hdr->_64 =
-				(IMAGE_OPTIONAL_HEADER_64 *)ctx->pe.optional_hdr;
-			ctx->pe.optional_hdr->length = sizeof(IMAGE_OPTIONAL_HEADER_64);
+			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
+				IMAGE_OPTIONAL_HEADER_64))
+				return LIBPE_E_MISSING_OPTIONAL_HEADER;
+			ctx->pe.optional_hdr._64 = ctx->pe.optional_hdr_ptr;
+			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_64);
 			ctx->pe.num_directories =
-				ctx->pe.optional_hdr->_64->NumberOfRvaAndSizes;
+				ctx->pe.optional_hdr._64->NumberOfRvaAndSizes;
 			break;
 	}
 
@@ -220,10 +231,10 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 		return LIBPE_E_TOO_MANY_SECTIONS;
 	}
 
-	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr,
-		ctx->pe.optional_hdr->length);
+	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
+		ctx->pe.optional_hdr.length);
 	// If there are no directories, sections_ptr must point right
-	// after the optional header.
+	// after the OPTIONAL header.
 	ctx->pe.sections_ptr = ctx->pe.directories_ptr;
 
 	if (ctx->pe.num_directories > 0) {
@@ -332,7 +343,7 @@ IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx) {
 }
 
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx) {
-	return ctx->pe.optional_hdr;
+	return &ctx->pe.optional_hdr;
 }
 
 uint32_t pe_directories_count(pe_ctx_t *ctx) {

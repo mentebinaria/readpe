@@ -437,7 +437,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		snprintf(s, MAX_MSG, "%#x", header->_64->CheckSum);
 		output("Checksum", s);
 
-		uint16_t subsystem = header->_32->Subsystem;
+		uint16_t subsystem = header->_64->Subsystem;
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 		const char *subsystem_name = "Unknown";
 		for (size_t i=0; i < max_subsystem; i++) {

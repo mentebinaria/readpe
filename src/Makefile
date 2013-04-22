@@ -15,7 +15,7 @@ ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations
 endif
-CC = gcc
+CC ?= gcc
 RM = rm -f
 SOURCES = output.c
 PROGS = readpe pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr peres

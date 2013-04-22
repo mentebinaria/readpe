@@ -43,7 +43,7 @@ typedef struct {
 	uint16_t e_oemid;
 	uint16_t e_oeminfo;
 	uint16_t e_res2[10];
-	int32_t e_lfanew;
+	int32_t e_lfanew; // sizeof(IMAGE_DOS_HEADER) + size of MS-DOS stub
 } IMAGE_DOS_HEADER;
 
 #pragma pack(pop)

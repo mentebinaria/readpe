@@ -138,6 +138,15 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 		free(ctx->path);
 	}
 
+	// Dealloc internal pointers.
+	if (ctx->pe.directories != NULL) {
+		free(ctx->pe.directories);
+	}
+	if (ctx->pe.sections != NULL) {
+		free(ctx->pe.sections);
+	}
+
+	// Dealloc the virtual mapping.
 	if (ctx->map_addr != NULL) {
 		ret = munmap(ctx->map_addr, ctx->map_size);
 		if (ret != 0) {
@@ -145,8 +154,6 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 			return LIBPE_E_MUNMAP_FAILED;
 		}
 	}
-
-	// TODO: Dealloc ctx->pe internal pointers.
 
 	// Cleanup the whole struct.
 	memset(ctx, 0, sizeof(pe_ctx_t));
@@ -161,7 +168,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
 		ctx->pe.dos_hdr->e_lfanew);
-	if (LIBPE_IS_PAST_THE_END(ctx, signature_ptr, uint32_t))
+	if (LIBPE_IS_PAST_THE_END(ctx, signature_ptr, sizeof(uint32_t)))
 		return LIBPE_E_INVALID_LFANEW;
 
 	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
@@ -177,8 +184,9 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	}
 
 	ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
-		LIBPE_SIZEOF_MEMBER(PE_FILE, signature));
-	if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.coff_hdr, IMAGE_COFF_HEADER))
+		LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
+	if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.coff_hdr,
+		sizeof(IMAGE_COFF_HEADER)))
 		return LIBPE_E_MISSING_COFF_HEADER;
 
 	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
@@ -203,7 +211,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			return LIBPE_E_UNSUPPORTED_IMAGE;
 		case MAGIC_PE32:
 			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
-				IMAGE_OPTIONAL_HEADER_32))
+				sizeof(IMAGE_OPTIONAL_HEADER_32)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
 			ctx->pe.optional_hdr._32 = ctx->pe.optional_hdr_ptr;
 			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_32);
@@ -212,7 +220,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			break;
 		case MAGIC_PE64:
 			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
-				IMAGE_OPTIONAL_HEADER_64))
+				sizeof(IMAGE_OPTIONAL_HEADER_64)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
 			ctx->pe.optional_hdr._64 = ctx->pe.optional_hdr_ptr;
 			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_64);
@@ -233,7 +241,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
 		ctx->pe.optional_hdr.length);
-	// If there are no directories, sections_ptr must point right
+	// If there are no directories, sections_ptr will point right
 	// after the OPTIONAL header.
 	ctx->pe.sections_ptr = ctx->pe.directories_ptr;
 
@@ -319,13 +327,13 @@ uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva) {
 	return 0;
 }
 
-// return a rva of given offset
+// Returns the RVA for a given offset
 uint32_t pe_ofs2rva(pe_ctx_t *ctx, uint32_t ofs) {
 	if (ofs == 0 || ctx->pe.sections == NULL)
 		return 0;
 
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		// if offset is inside section, return your VA in section
+		// If offset points within this section, return its VA
 		if (ofs >= ctx->pe.sections[i]->PointerToRawData &&
 			ofs < (ctx->pe.sections[i]->PointerToRawData
 				+ ctx->pe.sections[i]->SizeOfRawData))
@@ -355,7 +363,7 @@ IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx) {
 }
 
 IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry) {
-	if (ctx->pe.directories == NULL || entry > (uint32_t)(ctx->pe.num_directories - 1))
+	if (ctx->pe.directories == NULL || entry > ctx->pe.num_directories - 1)
 		return NULL;
 
 	return ctx->pe.directories[entry];

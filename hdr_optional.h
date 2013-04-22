@@ -64,6 +64,22 @@ typedef struct {
 	uint32_t SizeOfUninitializedData;
 	uint32_t AddressOfEntryPoint;
 	uint32_t BaseOfCode;
+	uint32_t BaseOfData;
+	uint32_t BaseOfBss;
+	uint32_t GprMask;
+	uint32_t CprMask[4];
+	uint32_t GpValue;
+} IMAGE_ROM_OPTIONAL_HEADER;
+
+typedef struct {
+	uint16_t Magic;
+	uint8_t MajorLinkerVersion;
+	uint8_t MinorLinkerVersion;
+	uint32_t SizeOfCode;
+	uint32_t SizeOfInitializedData;
+	uint32_t SizeOfUninitializedData;
+	uint32_t AddressOfEntryPoint;
+	uint32_t BaseOfCode;
 	uint32_t BaseOfData; // only in PE32
 	uint32_t ImageBase;
 	uint32_t SectionAlignment;
@@ -86,7 +102,7 @@ typedef struct {
 	uint32_t SizeOfHeapCommit;
 	uint32_t LoaderFlags;
 	uint32_t NumberOfRvaAndSizes;
-	// IMAGE_DATA_DIRECTORY DataDirectory[];
+	// IMAGE_DATA_DIRECTORY DataDirectory[MAX_DIRECTORIES];
 } IMAGE_OPTIONAL_HEADER_32;
 
 typedef struct {
@@ -119,7 +135,7 @@ typedef struct {
 	uint64_t SizeOfHeapCommit;
 	uint32_t LoaderFlags; /* must be zero */
 	uint32_t NumberOfRvaAndSizes;
-	// IMAGE_DATA_DIRECTORY DataDirectory[];
+	// IMAGE_DATA_DIRECTORY DataDirectory[MAX_DIRECTORIES];
 } IMAGE_OPTIONAL_HEADER_64;
 
 typedef struct {

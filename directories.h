@@ -21,6 +21,7 @@
 #define LIBPE_DIRECTORIES_H
 
 #include <inttypes.h>
+#include "dir_import.h"
 #include "dir_resources.h"
 #include "dir_security.h"
 
@@ -60,24 +61,6 @@ typedef struct {
 } IMAGE_EXPORT_DIRECTORY;
 
 typedef struct {
-	union {
-		uint32_t Characteristics; // 0 for terminating null import descriptor
-		uint32_t OriginalFirstThunk; // RVA to original unbound IAT
-	} u1;
-	uint32_t TimeDateStamp;
-	uint32_t ForwarderChain; // -1 if no forwarders
-	uint32_t Name;
-	// RVA to IAT (if bound this IAT has actual addresses)
-	uint32_t FirstThunk;
-} IMAGE_IMPORT_DESCRIPTOR;
-
-// import name entry
-typedef struct {
-	uint16_t Hint;
-	uint8_t Name;
-} IMAGE_IMPORT_BY_NAME;
-
-typedef struct {
 	uint32_t StartAddressOfRawData;
 	uint32_t EndAddressOfRawData;
 	uint32_t AddressOfIndex;
@@ -99,7 +82,5 @@ typedef struct {
 	uint32_t VirtualAddress;
 	uint32_t Size;
 } IMAGE_DATA_DIRECTORY;
-
-const char *pe_directory_name(uint32_t dir_index);
 
 #endif

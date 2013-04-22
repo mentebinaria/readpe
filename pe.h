@@ -35,17 +35,18 @@
 #define LIBPE_PTR_ADD(p, o)						((void *)((char *)p + o))
 #define LIBPE_SIZEOF_ARRAY(array)				(sizeof(array) / sizeof(array[0]))
 #define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
-#define LIBPE_IS_PAST_THE_END(ctx, ptr, type)	\
-	((uintptr_t)(LIBPE_PTR_ADD((ptr), sizeof(type))) > (ctx)->map_end)
+#define LIBPE_IS_PAST_THE_END(ctx, ptr, size)	\
+	((uintptr_t)(LIBPE_PTR_ADD((ptr), (size))) > (ctx)->map_end)
 
 #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
 #define MAX_SECTIONS 96
 
+#define IMAGE_ORDINAL_FLAG32 0x80000000
+#define IMAGE_ORDINAL_FLAG64 0x8000000000000000ULL
+
 #define SIGNATURE_NE 0x454E // NE\0\0 in little-endian
 #define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
-
-#pragma pack(push, 1)
 
 typedef struct {
 	// DOS header
@@ -82,16 +83,14 @@ typedef struct {
 	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
 	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
 #endif
-} PE_FILE;
-
-#pragma pack(pop)
+} pe_file_t;
 
 typedef struct {
 	char *path;
 	void *map_addr;
 	off_t map_size;
 	uintptr_t map_end;
-	PE_FILE pe;
+	pe_file_t pe;
 } pe_ctx_t;
 
 typedef enum {

@@ -46,7 +46,7 @@ typedef enum {
 	WIN_CERT_TYPE_EFI_GUID			= 0x0EF1
 } CertType;
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 // Originally declared in Wintrust.h
 typedef struct {
@@ -73,6 +73,6 @@ typedef struct {
 	uint8_t *pbData;
 } CRYPT_DATA_BLOB;
 
-#pragma pack()
+#pragma pack(pop)
 
 #endif

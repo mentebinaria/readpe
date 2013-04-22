@@ -133,7 +133,8 @@ void parse_options(int argc, char *argv[])
 
 static void print_sections(pe_ctx_t *ctx)
 {
-	static const char * const flags[] = {
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+	static const char * const flags_name[] = {
 		"contains executable code",
 		"contains initialized data",
 		"contains uninitialized data",
@@ -147,11 +148,21 @@ static void print_sections(pe_ctx_t *ctx)
 		"is readable",
 		"is writable"
 	};
-
+#endif
 	// valid flags only for executables referenced in pecoffv8
-	static const unsigned int valid_flags[]  = {
-		0x20, 0x40, 0x80, 0x8000, 0x1000000, 0x2000000, 0x4000000,
-		0x8000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000
+	static const unsigned int valid_flags[] = {
+		IMAGE_SCN_CNT_CODE,
+		IMAGE_SCN_CNT_INITIALIZED_DATA,
+		IMAGE_SCN_CNT_UNINITIALIZED_DATA,
+		IMAGE_SCN_GPREL,
+		IMAGE_SCN_LNK_NRELOC_OVFL,
+		IMAGE_SCN_MEM_DISCARDABLE,
+		IMAGE_SCN_MEM_NOT_CACHED,
+		IMAGE_SCN_MEM_NOT_PAGED,
+		IMAGE_SCN_MEM_SHARED,
+		IMAGE_SCN_MEM_EXECUTE,
+		IMAGE_SCN_MEM_READ,
+		IMAGE_SCN_MEM_WRITE
 	};
 	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
 
@@ -193,10 +204,15 @@ static void print_sections(pe_ctx_t *ctx)
 
 		for (size_t j=0; j < max_flags; j++) {
 			if (sections[i]->Characteristics & valid_flags[j]) {
-				snprintf(s, MAX_MSG, "%s", flags[j]);
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+				snprintf(s, MAX_MSG, "%s", flags_name[j]);
 				output(NULL, s);
+#else
+				output(NULL, pe_section_characteristic_name(valid_flags[j]));
+#endif
 			}
 		}
+
 	}
 }
 

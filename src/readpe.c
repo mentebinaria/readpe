@@ -639,73 +639,87 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 	output("PE header offset", s);
 }
 
-static void print_imported_functions(pe_ctx_t *ctx, long offset)
+static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 {
-#if 0
-	uint32_t fptr = 0; // pointer to functions
-	long aux2, aux = ftell(pe->handle);
-	uint16_t hint = 0; // function number
-	char c;
+	uint64_t ofs = offset;
+
+	char hint_str[16];
 	char fname[MAX_FUNCTION_NAME];
-	char hintstr[16];
-	unsigned int i;
 
-	if (fseek(pe->handle, offset, SEEK_SET))
-		return;
-
-	memset(&fname, 0, sizeof(fname));
-	memset(&hintstr, 0, sizeof(hintstr));
-
-	while (1)
-	{
-		if (!fread(&fptr, (pe->architecture == PE64)
-				? sizeof(uint64_t)
-				: sizeof(uint32_t), 1, pe->handle))
-			return;
-
-		if (!fptr)
-			break;
-
-		// function without name (test msb)
-		if (fptr & ((pe->architecture == PE64) ? IMAGE_ORDINAL_FLAG64 : IMAGE_ORDINAL_FLAG32))
-			snprintf(hintstr, 15, "%"PRIu64, fptr & 0x0fffffff);
-		else
-		{
-			// save file pointer in functions array
-			aux2 = ftell(pe->handle);
-
-			if (fseek(pe->handle, rva2ofs(pe, fptr), SEEK_SET))
-				return;
-
-			// follow function pointer
-			if (!fread(&hint, sizeof(hint), 1, pe->handle))
-				return;
-
-			for (i=0; i<MAX_FUNCTION_NAME; i++)
+	while (1) {
+		switch (ctx->pe.optional_hdr.type) {
+			case MAGIC_PE32:
 			{
-				if (!fread(&c, sizeof(c), 1, pe->handle))
+				IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				if (LIBPE_IS_PAST_THE_END(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+					// TODO: Should we report something?
+					return;
+				}
+
+				// Type punning
+				uint32_t thunk_type = *(uint32_t *)thunk;
+				if (thunk_type == 0)
 					return;
 
-				if (!isprint((int)c)) // 0 and non-printable
-					break;
+				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
-				fname[i] = c;
+				if (is_ordinal) {
+					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
+						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+					ofs += sizeof(IMAGE_THUNK_DATA32);
+				} else {
+					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (LIBPE_IS_PAST_THE_END(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+						// TODO: Should we report something?
+						return;
+					}
+
+					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
+					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+					//size_t fname_len = strlen(fname);
+					ofs += sizeof(IMAGE_THUNK_DATA32);
+				}
+				break;
 			}
-			snprintf(hintstr, 15, "%d", hint);
+			case MAGIC_PE64:
+			{
+				IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				if (LIBPE_IS_PAST_THE_END(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+					// TODO: Should we report something?
+					return;
+				}
 
-			// restore file pointer to functions array
-			if (fseek(pe->handle, aux2, SEEK_SET))
-				return;
+				// Type punning
+				uint64_t thunk_type = *(uint64_t *)thunk;
+				if (thunk_type == 0)
+					return;
+
+				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+
+				if (is_ordinal) {
+					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu64,
+						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+					ofs += sizeof(IMAGE_THUNK_DATA64);
+				} else {
+					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (LIBPE_IS_PAST_THE_END(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+						// TODO: Should we report something?
+						return;
+					}
+
+					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
+					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+					//size_t fname_len = strlen(fname);
+					ofs += sizeof(IMAGE_THUNK_DATA64);
+				}
+				break;
+			}
 		}
 
-		// print things
-		output(hintstr, fname);
-		memset(&fname, 0, sizeof(fname));
-		memset(&hintstr, 0, sizeof(hintstr));
+		output(hint_str, fname);
 	}
-
-	fseek(pe->handle, aux, SEEK_SET);
-#endif
 }
 
 static void print_exports(pe_ctx_t *ctx)
@@ -724,15 +738,14 @@ static void print_exports(pe_ctx_t *ctx)
 
 	ofs = pe_rva2ofs(ctx, va);
 	IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	if (LIBPE_IS_PAST_THE_END(ctx, exp, IMAGE_EXPORT_DIRECTORY)) {
+	if (LIBPE_IS_PAST_THE_END(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
 		// TODO: Should we report something?
-		printf("DEBUGME\n");
 		return;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	if (LIBPE_IS_PAST_THE_END(ctx, rva_ptr, uint32_t)) {
+	if (LIBPE_IS_PAST_THE_END(ctx, rva_ptr, sizeof(uint32_t))) {
 		// TODO: Should we report something?
 		return;
 	}
@@ -746,7 +759,7 @@ static void print_exports(pe_ctx_t *ctx)
 
 		ofs = exp->AddressOfFunctions + sizeof(uint32_t) * i;
 		uint32_t *faddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		if (LIBPE_IS_PAST_THE_END(ctx, faddr_ptr, uint32_t)) {
+		if (LIBPE_IS_PAST_THE_END(ctx, faddr_ptr, sizeof(uint32_t))) {
 			// TODO: Should we report something?
 			break;
 		}
@@ -757,86 +770,63 @@ static void print_exports(pe_ctx_t *ctx)
 		char addr[30];
 		snprintf(addr, 30, "%#x", faddr);
 
-		const char *fname = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		// TODO: Validate if it's ok to read fname+N
-		// TODO: How can we guarantee we're reading a string from a
-		// valid range of ctx->map?
-		char fun[300];
-		strncpy(fun, fname, sizeof(fun)-1);
+		const char *fname_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		// TODO: Validate if it's ok to read fname_ptr+N
+		char fname[300];
+		strncpy(fname, fname_ptr, sizeof(fname)-1);
 
-		output(addr, fun);
+		output(addr, fname);
 	}
 }
 
 static void print_imports(pe_ctx_t *ctx)
 {
-#if 0
-	uint64_t va; // store temporary addresses
-	long aux;
-	IMAGE_IMPORT_DESCRIPTOR id;
-	char c = 0;
-	char dllname[MAX_DLL_NAME];
-	unsigned int i;
-
-	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_IMPORT);
-	if (!directory)
+	IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	if (dir == NULL)
 		EXIT_ERROR("import directory not found")
 
-	va = directory->VirtualAddress;
-	if (!va)
-		EXIT_ERROR("import directory not found");
+	uint64_t va = dir->VirtualAddress;
+	if (va == 0) {
+		fprintf(stderr, "import directory not found\n");
+		return;
+	}
 
-	if (fseek(pe->handle, rva2ofs(pe, va), SEEK_SET))
-		EXIT_ERROR("error seeking file");
-
-	memset(&id, 0, sizeof(id));
-	memset(&dllname, 0, sizeof(dllname));
+	uint64_t ofs = pe_rva2ofs(ctx, va);
 
 	output("Imported functions", NULL);
-	while (1)
-	{
-		if (!fread(&id, sizeof(id), 1, pe->handle))
+
+	while (1) {
+		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		if (LIBPE_IS_PAST_THE_END(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+			// TODO: Should we report something?
 			return;
-
-		if (!id.u1.OriginalFirstThunk)
-			break;
-
-		aux = ftell(pe->handle);
-		va = rva2ofs(pe, id.Name);
-
-		if (!va)
-			return;
-
-		// shortcut to read DLL name
-		if (fseek(pe->handle, va, SEEK_SET))
-			return;
-
-		// print dll name
-		for (i=0; i < MAX_DLL_NAME; i++)
-		{
-			fread(&c, sizeof(c), 1, pe->handle);
-
-			if (!c)
-				break;
-
-			dllname[i] = c;
 		}
 
-		output(dllname, NULL);
-		memset(&dllname, 0, sizeof(dllname));
+		if (id->u1.OriginalFirstThunk == 0)
+			break;
 
-		if (fseek(pe->handle, aux, SEEK_SET)) // restore file pointer
-			return;
+		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
+		uint64_t aux = ofs; // Store current ofs
 
-		// search for dll imported functions
-		va = rva2ofs(pe, id.u1.OriginalFirstThunk);
+		ofs = pe_rva2ofs(ctx, id->Name);
+		if (ofs == 0)
+			break;
+		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		// TODO: Validate if it's ok to read dll_name_ptr+N
+		char dll_name[MAX_DLL_NAME];
+		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
 
-		if (!va)
-			return;
+		output(dll_name, NULL);
 
-		print_imported_functions(pe, va);
+		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk);
+		if (ofs == 0)
+			break;
+
+		// Search for DLL imported functions
+		print_imported_functions(ctx, ofs);
+
+		ofs = aux; // Restore previous ofs
 	}
-#endif
 }
 
 int main(int argc, char *argv[])

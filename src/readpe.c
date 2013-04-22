@@ -595,7 +595,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 			output(NULL, characteristicsTable[j].name);
 #else
-			output(NULL, pe_image_characteristic_name(j));
+			output(NULL, pe_image_characteristic_name(i));
 #endif
 	}
 }

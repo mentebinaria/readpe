@@ -108,7 +108,6 @@ void parse_options(int argc, char *argv[])
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-				break;
 			case 'h':
 				config.all = false;
 				parse_headers(optarg);
@@ -682,7 +681,6 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 				if (is_ordinal) {
 					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
 						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
-					ofs += sizeof(IMAGE_THUNK_DATA32);
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -694,8 +692,8 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
 					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
 					//size_t fname_len = strlen(fname);
-					ofs += sizeof(IMAGE_THUNK_DATA32);
 				}
+				ofs += sizeof(IMAGE_THUNK_DATA32);
 				break;
 			}
 			case MAGIC_PE64:
@@ -716,7 +714,6 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 				if (is_ordinal) {
 					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu64,
 						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
-					ofs += sizeof(IMAGE_THUNK_DATA64);
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -728,8 +725,8 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
 					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
 					//size_t fname_len = strlen(fname);
-					ofs += sizeof(IMAGE_THUNK_DATA64);
 				}
+				ofs += sizeof(IMAGE_THUNK_DATA64);
 				break;
 			}
 		}

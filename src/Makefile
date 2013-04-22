@@ -18,7 +18,7 @@ endif
 CC ?= gcc
 RM = rm -f
 SOURCES = output.c
-PROGS = readpe # pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr peres
+PROGS = readpe rva2ofs ofs2rva # pedis pepack pescan rva2ofs pesec ofs2rva pestr pehash pestr peres
 INSTALL = install -m 0755
 SHAREDIR = /usr/share/pev
 MAN = ../doc/manpages

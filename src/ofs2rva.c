@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	ofs2rva.c - convert raw file offset to RVA
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2012 - 2013 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,46 +23,42 @@
 
 static int ind;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s <offset> FILE\n"
-	"Convert raw file offset to RVA\n"
-	"\nExample: %s 0x1b9b8 calc.exe\n"
-	"\nOptions:\n"
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Convert raw file offset to RVA\n"
+		"\nExample: %s 0x1b9b8 calc.exe\n"
+		"\nOptions:\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_options(int argc, char *argv[])
 {
-	int c;
-
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "v";
 
 	static const struct option long_options[] = {
-		{"help",             no_argument,       NULL,  1 },
-		{"version",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{ "help",		no_argument,	NULL,  1  },
+		{ "version",	no_argument,	NULL, 'v' },
+		{  NULL,		0,				NULL,  0  }
 	};
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	int c;
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
 
 		switch (c)
 		{
-			case 1:		// --help option
+			case 1: // --help option
 				usage();
 				exit(EXIT_SUCCESS);
-				
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
@@ -72,35 +68,39 @@ static void parse_options(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
-	DWORD ofs = 0;
+	if (argc != 3) {
+		usage();
+		return EXIT_FAILURE;
+	}
 
 	parse_options(argc, argv); // opcoes
 
-	if (argc != 3)
-	{
-		usage();
-		exit(1);
+	pe_ctx_t ctx;
+
+	pe_err_e err = pe_load(&ctx, argv[2]);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
 	}
 
-	if ((fp = fopen(argv[2], "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
-
-	ofs = (DWORD) strtol(argv[1], NULL, 0);
+	uint16_t ofs = (uint16_t)strtol(argv[1], NULL, 0);
 
 	if (!ofs)
 		EXIT_ERROR("invalid offset");
 
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	pe_init(&pe, fp); // inicializa o struct pe
-
-	if (!is_pe(&pe))
+	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 		
-	printf("%#x\n", ofs2rva(&pe, ofs));
+	printf("%#x\n", pe_ofs2rva(&ctx, ofs));
+
 	// libera a memoria
-	pe_deinit(&pe);
+	pe_unload(&ctx);
 	
-	return 1;
+	return EXIT_SUCCESS;
 }

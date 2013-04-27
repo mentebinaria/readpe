@@ -25,7 +25,7 @@
 #include "dir_resources.h"
 #include "dir_security.h"
 
-// directory Entries
+// Directory entries
 typedef enum {
 	IMAGE_DIRECTORY_ENTRY_EXPORT			= 0, // Export Table
 	IMAGE_DIRECTORY_ENTRY_IMPORT			= 1, // Import Table

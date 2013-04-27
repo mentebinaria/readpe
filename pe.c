@@ -28,45 +28,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-const char *pe_error_msg(pe_err_e error) {
-	static const char * const errors[] = {
-		"no error", // LIBPE_E_OK,
-		"allocation failure", // LIBPE_E_ALLOCATION_FAILURE,
-		"open() failed", // LIBPE_E_OPEN_FAILED,
-		"fstat() failed", // LIBPE_E_FSTAT_FAILED,
-		"not a regular file", // LIBPE_E_NOT_A_FILE,
-		"not a PE file", // LIBPE_E_NOT_A_PE_FILE,
-		"invalid e_lfanew", // LIBPE_E_INVALID_LFANEW,
-		"missing COFF header", // LIBPE_E_MISSING_COFF_HEADER,
-		"missing OPTIONAL header", // LIBPE_E_MISSING_OPTIONAL_HEADER,
-		"invalid signature", // LIBPE_E_INVALID_SIGNATURE,
-		"unsupported image format", // LIBPE_E_UNSUPPORTED_IMAGE,
-		"mmap() failed", // LIBPE_E_MMAP_FAILED,
-		"munmap() failed", // LIBPE_E_MUNMAP_FAILED,
-		"close() failed", // LIBPE_E_CLOSE_FAILED,
-		"too many directories", // LIBPE_E_TOO_MANY_DIRECTORIES,
-		"too many sections", // LIBPE_E_TOO_MANY_SECTIONS,
-	};
-	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
-	size_t index = index_max + error;
-	return (index < index_max)
-		? errors[index]
-		: (index == index_max)
-			? errors[0] // LIBPE_E_OK
-			: "invalid error code";
-}
-
-void pe_error_print(FILE *stream, pe_err_e error) {
-	if (errno == 0) {
-		fprintf(stream, "ERROR [%d]: %s\n", error, pe_error_msg(error));
-	} else {
-		char errmsg[255];
-		strerror_r(errno, errmsg, sizeof(errmsg));
-		fprintf(stream, "ERROR [%d]: %s (%s)\n", error, pe_error_msg(error),
-			errmsg);
-	}
-}
-
 pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
 	int ret = 0;
 

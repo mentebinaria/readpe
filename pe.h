@@ -20,23 +20,19 @@
 #ifndef LIBPE_H
 #define LIBPE_H
 
+#include "macros.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "error.h"
 #include "hdr_dos.h"
 #include "hdr_coff.h"
 #include "hdr_optional.h"
 #include "directories.h"
 #include "sections.h"
-
-#define LIBPE_PTR_ADD(p, o)						((void *)((char *)p + o))
-#define LIBPE_SIZEOF_ARRAY(array)				(sizeof(array) / sizeof(array[0]))
-#define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
-#define LIBPE_IS_PAST_THE_END(ctx, ptr, size)	\
-	((uintptr_t)(LIBPE_PTR_ADD((ptr), (size))) > (ctx)->map_end)
 
 #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
@@ -93,28 +89,7 @@ typedef struct {
 	pe_file_t pe;
 } pe_ctx_t;
 
-typedef enum {
-	LIBPE_E_OK = 0,
-	LIBPE_E_ALLOCATION_FAILURE = -15,
-	LIBPE_E_OPEN_FAILED,
-	LIBPE_E_FSTAT_FAILED,
-	LIBPE_E_NOT_A_FILE,
-	LIBPE_E_NOT_A_PE_FILE,
-	LIBPE_E_INVALID_LFANEW,
-	LIBPE_E_MISSING_COFF_HEADER,
-	LIBPE_E_MISSING_OPTIONAL_HEADER,
-	LIBPE_E_INVALID_SIGNATURE,
-	LIBPE_E_UNSUPPORTED_IMAGE,
-	LIBPE_E_MMAP_FAILED,
-	LIBPE_E_MUNMAP_FAILED,
-	LIBPE_E_CLOSE_FAILED,
-	LIBPE_E_TOO_MANY_DIRECTORIES,
-	LIBPE_E_TOO_MANY_SECTIONS,
-} pe_err_e;
-
 // General functions
-const char *pe_error_msg(pe_err_e error);
-void pe_error_print(FILE *stream, pe_err_e error);
 pe_err_e pe_load(pe_ctx_t *ctx, const char *path);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);

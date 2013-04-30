@@ -1,9 +1,27 @@
-branches:
-	only:
-		- master
-		- mmap
 language: c
 compiler:
-	- gcc
-	- clang
-script: make clean && make
+  - gcc
+  - clang
+
+branches:
+  only:
+    - master
+    - mmap
+
+script:
+  make clean && make
+
+install:
+  make install
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+    recipients:
+      - jweyrich@gmail.com
+  irc:
+    on_success: always
+    on_failure: always
+    channels:
+      - "irc.freenode.org#MenteBinaria"

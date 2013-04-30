@@ -1,0 +1,9 @@
+branches:
+	only:
+		- master
+		- mmap
+language: c
+compiler:
+	- gcc
+	- clang
+script: make clean && make

@@ -83,8 +83,7 @@ $(libpe_BUILDDIR)/%.o: %.c
 	@$(CHK_DIR_EXISTS) $(dir $@) || $(MKDIR) $(dir $@)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
-install:
-	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
+install: installdirs
 ifeq ($(PLATFORM_OS), Linux)
 	$(INSTALL_DATA) $(LIBNAME).so $(DEST)/$(LIBNAME).so.$(VERSION)
 	cd $(DEST); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
@@ -96,6 +95,9 @@ else ifeq ($(PLATFORM_OS), Darwin)
 else ifeq ($(PLATFORM_OS), CYGWIN)
 	# TODO
 endif
+
+installdirs:
+	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
 
 strip-binaries:
 ifeq ($(PLATFORM_OS), Linux)

@@ -9,10 +9,8 @@ branches:
     - mmap
 
 script:
-  make clean && make
-
-install:
-  make install
+  - make clean all
+  - sudo make install
 
 notifications:
   email:

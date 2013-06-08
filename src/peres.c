@@ -30,19 +30,19 @@
 
 static int ind;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s OPTIONS FILE\n"
-	"Show information about resource section and extract it\n"
-	"\nExample: %s -a putty.exe\n"
-	"\nOptions:\n"
-	" -a, --all					Show all information, statistics and extract resources\n"
-	" -x, --extract					Extract resources\n"
-	" -i, --info					Show informations\n"
-	" -s, --statistics				Show statistics\n"
-	" -v, --version					Show version and exit\n"
-	" --help						Show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Show information about resource section and extract it\n"
+		"\nExample: %s -a putty.exe\n"
+		"\nOptions:\n"
+		" -a, --all					Show all information, statistics and extract resources\n"
+		" -x, --extract					Extract resources\n"
+		" -i, --info					Show informations\n"
+		" -s, --statistics				Show statistics\n"
+		" -v, --version					Show version and exit\n"
+		" --help						Show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_options(int argc, char **argv)

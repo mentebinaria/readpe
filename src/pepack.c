@@ -24,17 +24,17 @@
 struct options config;
 static int ind;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s FILE\n"
-	"Search for packers in PE files\n"
-	"\nExample: %s putty.exe\n"
-	"\nOptions:\n"
-	" -d, --database <file>                  use database file (default: ./userdb.txt)\n"
-	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"	
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Search for packers in PE files\n"
+		"\nExample: %s putty.exe\n"
+		"\nOptions:\n"
+		" -d, --database <file>                  use database file (default: ./userdb.txt)\n"
+		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_options(int argc, char *argv[])

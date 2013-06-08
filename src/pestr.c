@@ -24,19 +24,19 @@
 struct options config;
 static int ind;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s OPTIONS FILE\n"
-	"Search for [encrypted] strings in PE files\n"
-	"\nExample: %s acrobat.exe\n"
-	"\nOptions:\n"
-	" -n, --min-length                       set minimun string length (default: 4)\n"
-	" -o, --offset                           show string offset in file\n"
-	" -s, --section                          show string section, if exists\n"
-	" --net                                  show network-related strings (IPs, hostnames etc)\n"
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Search for [encrypted] strings in PE files\n"
+		"\nExample: %s acrobat.exe\n"
+		"\nOptions:\n"
+		" -n, --min-length                       set minimun string length (default: 4)\n"
+		" -o, --offset                           show string offset in file\n"
+		" -s, --section                          show string section, if exists\n"
+		" --net                                  show network-related strings (IPs, hostnames etc)\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_options(int argc, char *argv[])

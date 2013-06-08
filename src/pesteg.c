@@ -24,22 +24,22 @@
 static int ind;
 const char *datafile_path;
 
-void usage()
+void usage(void)
 {
 	printf("Usage: %s -d DATAFILE [OPTIONS] FILE OUTFILE\n"
-	"Creates OUTFILE, a copy of FILE with DATAFILE hidden\n"
-	"\nExample: %s -d message.txt wordpad.exe out.exe\n"
-	"\nOptions:\n"
-	" -d, --data <filename>                  file to be hidden in\n"
-	" -k, --key <key>                        data encription key\n"
-	" -m, --method <1|2|3|4>                 set steganography method\n"
-	"                                         1 - code section hole (default)\n"
-	"                                         2 - non-code section hole\n"
-	"                                         3 - unused headers area\n"
-	"                                         4 - image page\n"
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Creates OUTFILE, a copy of FILE with DATAFILE hidden\n"
+		"\nExample: %s -d message.txt wordpad.exe out.exe\n"
+		"\nOptions:\n"
+		" -d, --data <filename>                  file to be hidden in\n"
+		" -k, --key <key>                        data encription key\n"
+		" -m, --method <1|2|3|4>                 set steganography method\n"
+		"                                         1 - code section hole (default)\n"
+		"                                         2 - non-code section hole\n"
+		"                                         3 - unused headers area\n"
+		"                                         4 - image page\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 void parse_options(int argc, char *argv[])

@@ -24,24 +24,24 @@
 extern struct options config;
 static int ind;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s OPTIONS FILE\n"
-	"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
-	"\nExample: %s -r 0x4c4df putty.exe\n"
-	"\nOptions:\n"
-	" --att                                  set AT&T syntax\n"
-	" -e, --entrypoint                       disassemble entrypoint\n"
-	" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-	" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
-	" -i, <number>                           number of instructions to be disassembled\n"
-	" -n, <number>                           number of bytes to be disassembled\n"
-	" -o, --offset <offset>                  disassemble at specified file offset\n"
-	" -r, --rva <rva>                        disassemble at specified RVA\n"
-	" -s, --section <section name>           disassemble entire section given\n"
-	" -v, --version                          show version and exit\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, PROGRAM);
+		"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
+		"\nExample: %s -r 0x4c4df putty.exe\n"
+		"\nOptions:\n"
+		" --att                                  set AT&T syntax\n"
+		" -e, --entrypoint                       disassemble entrypoint\n"
+		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
+		" -i, <number>                           number of instructions to be disassembled\n"
+		" -n, <number>                           number of bytes to be disassembled\n"
+		" -o, --offset <offset>                  disassemble at specified file offset\n"
+		" -r, --rva <rva>                        disassemble at specified RVA\n"
+		" -s, --section <section name>           disassemble entire section given\n"
+		" -v, --version                          show version and exit\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, PROGRAM);
 }
 
 static void parse_options(int argc, char *argv[])

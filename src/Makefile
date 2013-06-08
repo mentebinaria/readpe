@@ -54,7 +54,7 @@ ifeq ($(PLATFORM_OS), Darwin)
 	override CFLAGS += -Wno-deprecated-declarations
 endif
 
-PROGS = readpe rva2ofs ofs2rva pehash # pedis pepack pescan rva2ofs pesec ofs2rva pestr  pestr peres
+PROGS = readpe rva2ofs ofs2rva pehash pesec # pedis pepack pescan rva2ofs ofs2rva pestr  pestr peres
 SHAREDIR = $(datadir)/pev
 LIBPE = $(srcdir)/../lib/libpe
 LIBUDIS86 = $(srcdir)/../lib/libudis86
@@ -82,7 +82,7 @@ pescan: LDFLAGS += -lm
 # Generic rule matching binary names and sources
 
 %: %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) output.c $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) output.c xmalloc.c $^ -o $@ $(LDFLAGS)
 
 install: installdirs
 	for prog in $(PROGS); do \

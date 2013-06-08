@@ -47,4 +47,6 @@
 
 #define SPACES 32 // spaces # for text-based output
 
+void *xmalloc(size_t size);
+
 #endif

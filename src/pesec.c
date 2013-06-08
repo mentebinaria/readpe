@@ -163,12 +163,17 @@ static bool stack_cookies(pe_ctx_t *ctx)
 	if (ctx == NULL)
 		return false;
 
-	if (LIBPE_IS_PAST_THE_END(ctx, ctx->map_addr, sizeof(mvs2010))) {
-		return false;
+	size_t found = 0;
+	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
+	const uint64_t filesize = pe_filesize(ctx);
+	for (uint64_t ofs=0; ofs < filesize; ofs++) {
+		for (size_t i=0; i < sizeof(mvs2010); i++) {
+			if (file_bytes[ofs] == mvs2010[i] && found == i)
+				found++;
+		}
 	}
 
-	int ret = memcmp(ctx->map_addr, mvs2010, sizeof(mvs2010)) == 0;
-	return ret == 0;
+	return found == sizeof(mvs2010);
 }
 
 static int round_up(int numToRound, int multiple)

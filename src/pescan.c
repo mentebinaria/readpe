@@ -78,6 +78,7 @@ static void parse_options(int argc, char *argv[])
 }
 
 // check for abnormal dos stub (common in packed files)
+/*
 static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 {
    BYTE dos_stub[] =
@@ -152,12 +153,13 @@ static DWORD pe_get_tls_directory(PE_FILE *pe)
 
 	return 0;
 }
-
+*/
 /*
  * -1 - fake tls callbacks detected
  *  0 - no tls directory
  * >0 - number of callbacks functions found
 */
+/*
 static int pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
@@ -381,24 +383,71 @@ double calculate_entropy_file(PE_FILE *pe)
 
         return calculate_entropy(byte_count, size);
 }
+*/
+int8_t cpl_analysis(pe_ctx_t *ctx)
+{
+	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+	IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
+
+	if (!hdr_coff_ptr || !hdr_dos_ptr)
+		return -1;
+
+	if (
+		 (hdr_coff_ptr->TimeDateStamp == 708992537 ||
+		 hdr_coff_ptr->TimeDateStamp > 1354555867) &&
+		 (hdr_coff_ptr->Characteristics == 0xa18e ||
+		  hdr_coff_ptr->Characteristics == 0xa38e ||
+		  hdr_coff_ptr->Characteristics == 0x2306) &&
+		 hdr_dos_ptr->e_sp == 0xb8
+		)
+		return 1;
+
+	return 0;
+	
+}
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
-	DWORD ep, stub_offset;
-	int callbacks;
-	double entropy;
-//	unsigned int num_sections;
-
 	if (argc < 2)
 	{
 		usage();
-		exit(1);
+		return EXIT_FAILURE;
 	}
 
 	parse_options(argc, argv); // opcoes
 
+	pe_ctx_t ctx;
+
+	pe_err_e err = pe_load(&ctx, argv[argc-1]);
+
+   if (err != LIBPE_E_OK) {
+      pe_error_print(stderr, err);
+      return EXIT_FAILURE;
+   }
+
+   err = pe_parse(&ctx);
+   if (err != LIBPE_E_OK) {
+      pe_error_print(stderr, err);
+      return EXIT_FAILURE;
+   }   
+
+   if (!pe_is_pe(&ctx))
+      EXIT_ERROR("not a valid PE file");
+
+	if (pe_is_dll(&ctx)) {
+		uint16_t ret = cpl_analysis(&ctx);
+		switch (ret) {
+			case 1:
+				output("cpl analysis", "banker");
+				break;
+			default:
+				output("cpl analysis:", "no threat");
+				break;
+		}
+	}
+
+
+/*
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
 		EXIT_ERROR("file not found or unreadable");
 
@@ -495,6 +544,7 @@ int main(int argc, char *argv[])
 	print_timestamp(&coff.TimeDateStamp);
 
 	pe_deinit(&pe);
-
-	return 0;
+*/
+	pe_unload(&ctx);
+	return EXIT_SUCCESS;
 }

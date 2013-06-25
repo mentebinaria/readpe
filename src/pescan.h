@@ -23,16 +23,7 @@
 #define PESCAN_H
 
 #include "common.h"
-#include <ctype.h>
-#include <time.h>
-#include <math.h>
 
 #define PROGRAM "pescan"
-
-struct options {
-	bool verbose;
-};
-
-struct options config;
 
 #endif

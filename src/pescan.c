@@ -20,9 +20,13 @@
 */
 
 #include "pescan.h"
+#include <ctype.h>
+#include <time.h>
+#include <math.h>
 
-static int ind;
-char value[MAX_MSG];
+typedef struct {
+	bool verbose;
+} options_t;
 
 static void usage(void)
 {
@@ -36,24 +40,32 @@ static void usage(void)
 		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
 }
 
-static void parse_options(int argc, char *argv[])
+static void free_options(options_t *options)
 {
-	int c;
+	if (options == NULL)
+		return;
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "f:v";
 
 	static const struct option long_options[] = {
-		{"format",           required_argument, NULL, 'f'},
-		{"help",             no_argument,       NULL,  1 },
-		{"verbose",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{"format",		required_argument,	NULL,	'f'},
+		{"help",		no_argument,		NULL,	 1 },
+		{"verbose",		no_argument,		NULL,	'v'},
+		{ NULL,			0,					NULL, 	 0 }
 	};
 
-	memset(&config, 0, sizeof(config));
+	int c, ind;
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
@@ -63,18 +75,19 @@ static void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-
 			case 'f':
-				parse_format(optarg); break;
-
+				parse_format(optarg);
+				break;
 			case 'v':
-				config.verbose = true; break;
-
+				options->verbose = true;
+				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
 // check for abnormal dos stub (common in packed files)
@@ -82,14 +95,14 @@ static void parse_options(int argc, char *argv[])
 static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 {
    BYTE dos_stub[] =
-   "\x0e"               // push cs
-   "\x1f"               // pop ds
-   "\xba\x0e\x00"       // mov dx, 0x0e
-   "\xb4\x09"           // mov ah, 0x09
-   "\xcd\x21"           // int 0x21
-   "\xb8\x01\x4c"       // mov ax, 0x4c01
-   "\xcd\x21"           // int 0x21
-   "This program cannot be run in DOS mode.\r\r\n$";
+	   "\x0e"               // push cs
+	   "\x1f"               // pop ds
+	   "\xba\x0e\x00"       // mov dx, 0x0e
+	   "\xb4\x09"           // mov ah, 0x09
+	   "\xcd\x21"           // int 0x21
+	   "\xb8\x01\x4c"       // mov ax, 0x4c01
+	   "\xcd\x21"           // int 0x21
+	   "This program cannot be run in DOS mode.\r\r\n$";
 
    BYTE data[sizeof(dos_stub)-1]; // -1 to ignore ending null
    IMAGE_DOS_HEADER dos;
@@ -348,42 +361,37 @@ static void print_timestamp(DWORD *stamp)
 	output("timestamp", value);
 
 }
+*/
 
-double calculate_entropy(const unsigned int byte_count[256], const int total_length)
+double calculate_entropy(const uint8_t counted_bytes[256], const size_t total_length)
 {
+	static const double log_2 = 1.44269504088896340736;
 	double entropy = 0.;
-	const double log_2 = 1.44269504088896340736;
 
-	for(unsigned int i = 0; i < 256; i++)
-	{
-		double temp = (double)byte_count[i] / total_length;
-		if(temp > 0.)
+	for (size_t i = 0; i < 256; i++) {
+		double temp = (double)counted_bytes[i] / total_length;
+		if (temp > 0.)
 			entropy += fabs(temp * (log(temp) * log_2));
-
 	}
 
 	return entropy;
 }
 
-double calculate_entropy_file(PE_FILE *pe)
+double calculate_entropy_file(pe_ctx_t *ctx)
 {
-        unsigned int byte_count[256] = {0};
-	unsigned int n, size;
-	unsigned char buffer[1024];
+	uint8_t counted_bytes[256];
+	memset(counted_bytes, 0, sizeof(counted_bytes));
 
-	n = size = 0;
+	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
+	const uint64_t filesize = pe_filesize(ctx);
+	for (uint64_t ofs=0; ofs < filesize; ofs++) {
+		const uint8_t byte = file_bytes[ofs];
+		counted_bytes[byte]++;
+	}
 
-	rewind(pe->handle);
-
-	while((n = fread(buffer, 1, 1024, pe->handle)) != 0)
-        {
-		for (unsigned int i = 0; i < n; i++)
-                	byte_count[(int) buffer[i]]++, size++;
-        }
-
-        return calculate_entropy(byte_count, size);
+	return calculate_entropy(counted_bytes, (size_t)filesize);
 }
-*/
+
 int8_t cpl_analysis(pe_ctx_t *ctx)
 {
 	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
@@ -408,31 +416,41 @@ int8_t cpl_analysis(pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
 
-	parse_options(argc, argv); // opcoes
+	options_t *options = parse_options(argc, argv); // opcoes
 
+	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load(&ctx, argv[argc-1]);
+	pe_err_e err = pe_load(&ctx, path);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-   if (err != LIBPE_E_OK) {
-      pe_error_print(stderr, err);
-      return EXIT_FAILURE;
-   }
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-   err = pe_parse(&ctx);
-   if (err != LIBPE_E_OK) {
-      pe_error_print(stderr, err);
-      return EXIT_FAILURE;
-   }   
+	if (!pe_is_pe(&ctx))
+		EXIT_ERROR("not a valid PE file");
 
-   if (!pe_is_pe(&ctx))
-      EXIT_ERROR("not a valid PE file");
+	static char value[MAX_MSG];
+
+	// File entropy
+	double entropy = calculate_entropy_file(&ctx);
+
+	if (entropy < 7.0)
+		snprintf(value, MAX_MSG, "normal (%f)", entropy);
+	else
+		snprintf(value, MAX_MSG, "packed (%f)", entropy);
+	output("file entropy", value);
 
 	if (pe_is_dll(&ctx)) {
 		uint16_t ret = cpl_analysis(&ctx);
@@ -448,24 +466,6 @@ int main(int argc, char *argv[])
 
 
 /*
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
-
-	pe_init(&pe, fp); // inicializa o struct pe
-
-	if (!is_pe(&pe))
-		EXIT_ERROR("not a valid PE file");
-
-	// File entropy
-	entropy = calculate_entropy_file(&pe);
-
-	if(entropy < 7.0)
-		snprintf(value, MAX_MSG, "normal (%f)", entropy);
-	else
-		snprintf(value, MAX_MSG, "packed (%f)", entropy);
-	output("file entropy", value);
-        memset(&value, 0, sizeof(value));
-
 	if (!pe_get_optional(&pe))
 		return 1;
 
@@ -475,29 +475,28 @@ int main(int argc, char *argv[])
 	// fake ep
 	if (ep == 0)
 		snprintf(value, MAX_MSG, "null");
-	else if (pe_check_fake_entrypoint(&pe, &ep))
+	else if (pe_check_fake_entrypoint(&pe, &ep)) {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "fake");
-	else
+	} else {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "normal");
+	}
 
 	output("entrypoint", value);
 
 	// dos stub
 	memset(&value, 0, sizeof(value));
-	if (!normal_dos_stub(&pe, &stub_offset))
-	{
+	if (!normal_dos_stub(&pe, &stub_offset)) {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
 		else
 			snprintf(value, MAX_MSG, "suspicious");
-	}
-	else
+	} else
 		snprintf(value, MAX_MSG, "normal");
 
 	output("DOS stub", value);
@@ -519,15 +518,12 @@ int main(int argc, char *argv[])
 	print_strange_sections(&pe);
 
 	// no imagebase
-	if (!normal_imagebase(&pe))
-	{
+	if (!normal_imagebase(&pe)) {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - %#"PRIx64, pe.imagebase);
 		else
 			snprintf(value, MAX_MSG, "suspicious");
-	}
-	else
-	{
+	} else {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "normal - %#"PRIx64, pe.imagebase);
 		else
@@ -542,9 +538,17 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("unable to read coff header");
 
 	print_timestamp(&coff.TimeDateStamp);
-
-	pe_deinit(&pe);
 */
-	pe_unload(&ctx);
+
+	// libera a memoria
+	free_options(options);
+
+	// free
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
 	return EXIT_SUCCESS;
 }

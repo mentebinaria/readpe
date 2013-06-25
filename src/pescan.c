@@ -363,7 +363,7 @@ static void print_timestamp(DWORD *stamp)
 }
 */
 
-double calculate_entropy(const uint8_t counted_bytes[256], const size_t total_length)
+double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
 {
 	static const double log_2 = 1.44269504088896340736;
 	double entropy = 0.;
@@ -379,7 +379,7 @@ double calculate_entropy(const uint8_t counted_bytes[256], const size_t total_le
 
 double calculate_entropy_file(pe_ctx_t *ctx)
 {
-	uint8_t counted_bytes[256];
+	unsigned int counted_bytes[256];
 	memset(counted_bytes, 0, sizeof(counted_bytes));
 
 	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);

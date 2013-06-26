@@ -178,6 +178,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_32);
 			ctx->pe.num_directories =
 				ctx->pe.optional_hdr._32->NumberOfRvaAndSizes;
+			ctx->pe.entrypoint = ctx->pe.optional_hdr._32->AddressOfEntryPoint;
+			ctx->pe.imagebase = ctx->pe.optional_hdr._32->ImageBase;
 			break;
 		case MAGIC_PE64:
 			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
@@ -187,6 +189,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_64);
 			ctx->pe.num_directories =
 				ctx->pe.optional_hdr._64->NumberOfRvaAndSizes;
+			ctx->pe.entrypoint = ctx->pe.optional_hdr._64->AddressOfEntryPoint;
+			ctx->pe.imagebase = ctx->pe.optional_hdr._64->ImageBase;
 			break;
 	}
 
@@ -289,7 +293,7 @@ uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva) {
 }
 
 // Returns the RVA for a given offset
-uint32_t pe_ofs2rva(pe_ctx_t *ctx, uint32_t ofs) {
+uint64_t pe_ofs2rva(pe_ctx_t *ctx, uint64_t ofs) {
 	if (ofs == 0 || ctx->pe.sections == NULL)
 		return 0;
 
@@ -298,7 +302,8 @@ uint32_t pe_ofs2rva(pe_ctx_t *ctx, uint32_t ofs) {
 		if (ofs >= ctx->pe.sections[i]->PointerToRawData &&
 			ofs < (ctx->pe.sections[i]->PointerToRawData
 				+ ctx->pe.sections[i]->SizeOfRawData))
-			return ofs + ctx->pe.sections[i]->VirtualAddress;
+			return ctx->pe.sections[i]->VirtualAddress > 0 ? ofs +
+ctx->pe.sections[i]->VirtualAddress : ofs + ctx->pe.imagebase;
 	}
 	return 0;
 }

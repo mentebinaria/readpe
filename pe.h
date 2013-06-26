@@ -62,6 +62,8 @@ typedef struct {
 	uint16_t num_sections;
 	void *sections_ptr;
 	IMAGE_SECTION_HEADER **sections; // array up to MAX_SECTIONS
+	uint64_t entrypoint;
+	uint64_t imagebase;
 
 #if 0
 	uint16_t e_lfanew;
@@ -98,7 +100,7 @@ bool pe_is_dll(pe_ctx_t *ctx);
 uint64_t pe_filesize(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);
 uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva);
-uint32_t pe_ofs2rva(pe_ctx_t *ctx, uint32_t ofs);
+uint64_t pe_ofs2rva(pe_ctx_t *ctx, uint64_t ofs);
 
 // Header functions
 IMAGE_DOS_HEADER *pe_dos(pe_ctx_t *ctx);

@@ -27,6 +27,8 @@
 typedef struct {
 	bool verbose;
 } options_t;
+options_t *options;
+	static char value[MAX_MSG];
 
 static void usage(void)
 {
@@ -50,7 +52,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = xmalloc(sizeof(options_t));
+	options = xmalloc(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
@@ -425,7 +427,7 @@ static void print_timestamp(pe_ctx_t *ctx)
 	else
 		snprintf(value, MAX_MSG, "normal");
 
-	if (config.verbose)
+	if (options->verbose)
 	{
 		strftime(timestr, sizeof(timestr),
 			" - %a, %d %b %Y %H:%M:%S UTC",
@@ -488,15 +490,14 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	static char value[MAX_MSG];
 
 	// File entropy
 	double entropy = calculate_entropy_file(&ctx);
 
 	if (entropy < 7.0)
-		snprintf(value, MAX_MSG, "normal (%f)", entropy);
+		snprintf(value, MAX_MSG, "%f (normal)", entropy);
 	else
-		snprintf(value, MAX_MSG, "packed (%f)", entropy);
+		snprintf(value, MAX_MSG, "%f (probably packed)", entropy);
 	output("file entropy", value);
 
 	if (pe_is_dll(&ctx)) {

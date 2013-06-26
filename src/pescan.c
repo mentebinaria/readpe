@@ -384,7 +384,55 @@ double calculate_entropy_file(PE_FILE *pe)
         return calculate_entropy(byte_count, size);
 }
 */
-int8_t cpl_analysis(pe_ctx_t *ctx)
+
+// new anti-disassembly technique with undocumented Intel FPU instructions
+static bool fpu_trick(pe_ctx_t *ctx)
+{
+   const char *opcode_ptr = ctx->map_addr;
+
+	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
+		if (*opcode_ptr++ == '\xdf') {
+			if (++times == 4)
+				return true;
+		}
+		else
+			times = 0;
+	}
+
+	return false;
+}
+
+static void print_timestamp(pe_ctx_t *ctx)
+{
+   IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+
+	time_t now = time(NULL);
+	char timestr[33];
+
+	if (hdr_coff_ptr->TimeDateStamp == 0)
+		snprintf(value, MAX_MSG, "zero/invalid");
+	else if (hdr_coff_ptr->TimeDateStamp < 946692000)
+		snprintf(value, MAX_MSG, "too old (pre-2000)");
+	else if (hdr_coff_ptr->TimeDateStamp > (uint32_t) now)
+		snprintf(value, MAX_MSG, "future time");
+	else
+		snprintf(value, MAX_MSG, "normal");
+
+	if (config.verbose)
+	{
+		strftime(timestr, sizeof(timestr),
+			" - %a, %d %b %Y %H:%M:%S UTC",
+			gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
+
+		strcat(value, timestr);
+		//strcat(value, " - ");
+		//strcat(value, ctime((time_t *) hdr_coff_ptr->TimeDateStamp));
+	}
+
+	output("timestamp", value);
+}
+
+static int8_t cpl_analysis(pe_ctx_t *ctx)
 {
 	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
 	IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
@@ -446,6 +494,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	print_timestamp(&ctx);
+
+	output("fpu undocumented", fpu_trick(&ctx) ? "yes" : "no");
 
 /*
 	if ((fp = fopen(argv[argc-1], "rb")) == NULL)

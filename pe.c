@@ -52,12 +52,14 @@ pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
 	struct stat stat;
 	ret = fstat(fd, &stat);
 	if (ret == -1) {
+		close(fd);
 		//perror("fstat");
 		return LIBPE_E_FSTAT_FAILED;
 	}
 
 	// Check if we're dealing with a regular file.
 	if (!S_ISREG(stat.st_mode)) {
+		close(fd);
 		//fprintf(stderr, "%s is not a file\n", ctx->path);
 		return LIBPE_E_NOT_A_FILE;
 	}
@@ -69,6 +71,7 @@ pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
 	ctx->map_addr = mmap(NULL, ctx->map_size, PROT_READ|PROT_WRITE,
 		MAP_SHARED, fd, 0);
 	if (ctx->map_addr == MAP_FAILED) {
+		close(fd);
 		//perror("mmap");
 		return LIBPE_E_MMAP_FAILED;
 	}

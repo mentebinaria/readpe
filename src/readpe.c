@@ -35,7 +35,7 @@ static void usage(void)
 		" -S, --all-sections                     print all PE sections headers\n"
 		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 		" -d, --dirs                             show data directories\n"
-		" -h, --header <dos|coff|optional>       show sepecific header\n"
+		" -h, --header <dos|coff|optional>       show specific header\n"
 		" -i, --imports                          show imported functions\n"
 		" -e, --exports                          show exported functions\n"
 		" -v, --version                          show version and exit\n"

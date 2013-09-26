@@ -116,6 +116,7 @@ uninstall:
 
 clean:
 	$(RM) $(libpe_OBJS)
+	$(RM_DIR) build
 	$(RM) $(LIBNAME)*.o \
 		$(LIBNAME)*.so \
 		$(LIBNAME)*.dylib \

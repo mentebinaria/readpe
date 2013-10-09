@@ -250,7 +250,11 @@ static void print_optional_header(PE_FILE *pe)
 	"System native",
 	"Windows GUI",
 	"Windows CLI",
+	"Unknown",
+	"Unknown",
+	"Unknown",
 	"Posix CLI",
+	"Unknown",
 	"Windows CE GUI",
 	"EFI application",
 	"EFI driver with boot",
@@ -329,7 +333,7 @@ static void print_optional_header(PE_FILE *pe)
 		output("Checksum", s);
 
 		subsystem = pe->optional_ptr->_32->Subsystem;
-		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
+		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 14 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_32->DllCharacteristics);
@@ -410,7 +414,7 @@ static void print_optional_header(PE_FILE *pe)
 		output("Checksum", s);
 
 		subsystem = pe->optional_ptr->_64->Subsystem;
-		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 10 ? subs_desc[subsystem] : "Unknown");
+		snprintf(s, MAX_MSG, "%#x (%s)", subsystem, subsystem <= 14 ? subs_desc[subsystem] : "Unknown");
 		output("Subsystem required", s);
 
 		snprintf(s, MAX_MSG, "%#x", pe->optional_ptr->_64->DllCharacteristics);

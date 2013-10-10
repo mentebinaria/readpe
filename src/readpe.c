@@ -280,6 +280,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		{ IMAGE_SUBSYSTEM_NATIVE,					"System native"			},
 		{ IMAGE_SUBSYSTEM_WINDOWS_GUI,				"Windows GUI"			},
 		{ IMAGE_SUBSYSTEM_WINDOWS_CUI,				"Windows CLI"			},
+		{ IMAGE_SUBSYSTEM_OS2_CUI,					"OS/2 CLI"				},
 		{ IMAGE_SUBSYSTEM_POSIX_CUI,				"Posix CLI"				},
 		{ IMAGE_SUBSYSTEM_WINDOWS_CE_GUI,			"Windows CE GUI"		},
 		{ IMAGE_SUBSYSTEM_EFI_APPLICATION, 			"EFI application"		},
@@ -287,6 +288,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		{ IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER,		"EFI run-time driver"	},
 		{ IMAGE_SUBSYSTEM_EFI_ROM, 					"EFI ROM"				},
 		{ IMAGE_SUBSYSTEM_XBOX,			 			"XBOX"					},
+		{ IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION,	"Boot application"		}
 	};
 	static const size_t max_subsystem = LIBPE_SIZEOF_ARRAY(subsystemNames);
 #endif

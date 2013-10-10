@@ -1,0 +1,58 @@
+
+     __ \    _ \ \ \   / 
+     |   |   __/  \ \ /  
+     .__/  \___|   \_/   
+    _| the PE file analysis toolkit v0.70
+ 
+1. What is pev
+2. OS support
+3. Pre-requisites
+4. Building
+5. Included programs
+6. Contribute
+7. Bugs
+
+1. What is pev
+
+ pev is a PE file analysis toolkit that includes some
+ nice programs to work with PE files in many systems
+ It can be useful for programmers, security analysts
+ and forensic investigators. It's licensed under
+ GPLv3+ terms.
+
+2. OS support
+
+ This is a development version tested only in Linux.
+
+3. Pre-requisites
+
+ libssl (pehash only)
+ libc
+ gcc
+ make
+
+4. Building
+
+ $ git clone --recursive -b mmap https://github.com/merces/pev.git pev
+ $ cd pev
+ $ make
+
+5. Included tools
+
+ * pehash   - calculate PE file hashes
+ * pescan   - search for suspicious things in PE files, including TLS callbacks
+ * pesec    - check security features in PE files
+ * readpe   - show PE file headers, sections and more
+ * rva2ofs  - convert RVA to raw file offsets
+ * ofs2rva  - convert raw file offsets to RVA
+
+6. Contributing
+
+ The development version is available at https://github.com/merces/pev
+ We are always needing some help. If you want to contribute, subscribe
+ to pev-devel mailing list at
+ https://lists.sourceforge.net/lists/listinfo/pev-devel
+
+7. Bugs
+
+ Please, report bugs at https://github.com/merces/pev/issues

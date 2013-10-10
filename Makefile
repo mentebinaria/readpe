@@ -1,7 +1,7 @@
 LIBPE_DIR = lib/libpe
 PEV_DIR = src
 MAKE = make
-VERSION = 0.60
+VERSION = 0.70
 ZIPFILE = pev-$(VERSION)-win32.zip
 
 # just call each separated Makefile

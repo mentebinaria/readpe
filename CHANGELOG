@@ -1,10 +1,15 @@
-pev - the PE analyzer toolkit - ChangeLog
+pev - the PE file analysis toolkit - ChangeLog
 
 Legend:
 + Added feature
 * Improved/changed feature
 - Bug fixed
 ! Known issue / missing feature
+
+pev 0.70 - ?
+ + pescan: cpl banker detection;
+ + pescan: detection of anti-disassembly fpu trick.
+ * libpe: use of mmap() insted of fseek()/fread().
 
 pev 0.60 - October 31, 2012
  ! Missing full/english documentation.

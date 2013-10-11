@@ -605,12 +605,12 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%#x", header->Characteristics);
 	output("Characteristics", s);
 
-	for (uint16_t i=1, j=0; i<0x8000; i <<= 1, j++) {
-		if (header->Characteristics & i)
+	for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
+		if (header->Characteristics & flag)
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
-			output(NULL, characteristicsTable[j].name);
+			output(NULL, characteristicsTable[i].name);
 #else
-			output(NULL, pe_image_characteristic_name(i));
+			output(NULL, pe_image_characteristic_name(flag));
 #endif
 	}
 }

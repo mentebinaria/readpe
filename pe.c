@@ -434,6 +434,33 @@ const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
 	return NULL;
 }
 
+const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characteristic) {
+	typedef struct {
+		ImageDllCharacteristics characteristic;
+		const char * const name;
+	} ImageDllCharacteristicsName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const ImageDllCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NX_COMPAT),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_ISOLATION),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_SEH),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_BIND),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_WDM_DRIVER),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
 	typedef struct {
 		WindowsSubsystem subsystem;

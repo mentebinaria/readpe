@@ -115,6 +115,7 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name
 
 const char *pe_machine_type_name(MachineType type);
 const char *pe_image_characteristic_name(ImageCharacteristics characteristic);
+const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characteristic);
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);

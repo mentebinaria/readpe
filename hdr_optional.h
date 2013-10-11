@@ -22,6 +22,7 @@
 
 #include <inttypes.h>
 
+// REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx
 typedef enum {
 	// Unknown subsystem
 	IMAGE_SUBSYSTEM_UNKNOWN						= 0,
@@ -51,6 +52,33 @@ typedef enum {
 	IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION	= 16
 } WindowsSubsystem;
 
+// REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx
+typedef enum {
+	// IMAGE_DLLCHARACTERISTICS_RESERVED_1			= 0x0001,
+	// IMAGE_DLLCHARACTERISTICS_RESERVED_2			= 0x0002,
+	// IMAGE_DLLCHARACTERISTICS_RESERVED_4			= 0x0004,
+	// IMAGE_DLLCHARACTERISTICS_RESERVED_8			= 0x0008,
+	// The DLL can be relocated at load time.
+	IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE			= 0x0040,
+	// Code integrity checks are forced.
+	IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY		= 0x0080,
+	// The image is compatible with data execution prevention (DEP).
+	IMAGE_DLLCHARACTERISTICS_NX_COMPAT				= 0x0100,
+	// The image is isolation aware, but should not be isolated.
+	IMAGE_DLLCHARACTERISTICS_NO_ISOLATION			= 0x0200,
+	// The image does not use structured exception handling (SEH).
+	// No handlers can be called in this image.
+	IMAGE_DLLCHARACTERISTICS_NO_SEH					= 0x0400,
+	// Do not bind the image.
+	IMAGE_DLLCHARACTERISTICS_NO_BIND				= 0x0800,
+	// IMAGE_DLLCHARACTERISTICS_RESERVED_1000		= 0x1000,
+	// A WDM driver.
+	IMAGE_DLLCHARACTERISTICS_WDM_DRIVER				= 0x2000,
+	// IMAGE_DLLCHARACTERISTICS_RESERVED_4000		= 0x4000,
+	// The image is terminal server aware.
+	IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE	= 0x8000
+} ImageDllCharacteristics;
+
 typedef enum {
 	MAGIC_ROM	= 0x107,
 	MAGIC_PE32	= 0x10b,
@@ -75,6 +103,7 @@ typedef struct {
 	uint32_t GpValue;
 } IMAGE_ROM_OPTIONAL_HEADER;
 
+// REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx
 typedef struct {
 	uint16_t Magic;
 	uint8_t MajorLinkerVersion;
@@ -109,6 +138,7 @@ typedef struct {
 	// IMAGE_DATA_DIRECTORY DataDirectory[MAX_DIRECTORIES];
 } IMAGE_OPTIONAL_HEADER_32;
 
+// REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx
 typedef struct {
 	uint16_t Magic;
 	uint8_t MajorLinkerVersion;

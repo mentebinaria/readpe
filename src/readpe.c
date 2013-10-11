@@ -385,6 +385,13 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x", header->_32->DllCharacteristics);
 			output("DLL characteristics", s);
 
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
+				if (header->_32->DllCharacteristics & flag)
+					output(NULL, pe_image_dllcharacteristic_name(flag));
+			}
+#endif
+
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfStackReserve);
 			output("Size of stack to reserve", s);
 
@@ -477,6 +484,13 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			snprintf(s, MAX_MSG, "%#x", header->_64->DllCharacteristics);
 			output("DLL characteristics", s);
+
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
+				if (header->_64->DllCharacteristics & flag)
+					output(NULL, pe_image_dllcharacteristic_name(flag));
+			}
+#endif
 
 			snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfStackReserve);
 			output("Size of stack to reserve", s);

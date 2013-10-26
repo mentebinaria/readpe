@@ -23,7 +23,7 @@ mandir = $(datarootdir)/man
 man1dir = $(mandir)/man1
 manext = .1
 man1ext = .1
-srcdir = .
+srcdir = $(CURDIR)
 
 ####### Makefile Conventions - Utilities
 

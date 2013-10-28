@@ -20,6 +20,13 @@
 */
 
 #include "pepack.h"
+#include <strings.h>
+
+#define MAX_SIG_SIZE 2048
+
+typedef struct options {
+   char *dbfile;
+} options_t;
 
 struct options config;
 static int ind;
@@ -37,23 +44,35 @@ static void usage(void)
 		PROGRAM, PROGRAM);
 }
 
-static void parse_options(int argc, char *argv[])
+static void free_options(options_t *options)
 {
-	int c;
+	if (options == NULL)
+		return;
+
+	if (options->dbfile != NULL)
+		free(options->dbfile);
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "d:f:v";
 
 	static const struct option long_options[] = {
-		{"database",         required_argument, NULL, 'd'},
-		{"format",           required_argument, NULL, 'f'},
-		{"help",             no_argument,       NULL,  1 },
-		{"version",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{ "database",         required_argument, NULL, 'd' },
+		{ "format",           required_argument, NULL, 'f' },
+		{ "help",             no_argument,       NULL,  1  },
+		{ "version",          no_argument,       NULL, 'v' },
+		{ NULL,               0,                 NULL,  0  }
 	};
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	int c;
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
@@ -79,6 +98,8 @@ static void parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
 /* MEW Packer and others basically stores the entrypoint
@@ -86,15 +107,14 @@ static void parse_options(int argc, char *argv[])
    executable and/or writable flags)
    Windows Loader still executes the binary
 */
-static bool generic_packer(PE_FILE *pe, QWORD ep)
+static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 {
-   unsigned char packer = '0';
-	IMAGE_SECTION_HEADER *sec = pe_rva2section(pe, ep);
+	unsigned char packer = '0';
+	IMAGE_SECTION_HEADER *sec = pe_rva2section(ctx, entrypoint);
 
    // we count the flags for the section and if there is more than
    // 2 it means we don't have the mew_packer
-   unsigned int invalid_flags[] =
-	{0x20000000, 0x40000000, 0x80000000};
+   unsigned int invalid_flags[] = { 0x20000000, 0x40000000, 0x80000000 };
 
 	if (!sec)
 		return false;
@@ -103,28 +123,29 @@ static bool generic_packer(PE_FILE *pe, QWORD ep)
 	if (!memcmp(sec->Name, ".text", 5))
 		return false;
 
-	for (unsigned int j=0; j < sizeof(invalid_flags) / sizeof(unsigned int); j++)
+	for (unsigned int j=0; j < LIBPE_SIZEOF_ARRAY(invalid_flags); j++)
 	{
 		if (sec->Characteristics & invalid_flags[j])
 			packer++;
 	}
 
-   return (packer < '3');
+   return packer < '3';
 }
 
 static bool loaddb(FILE **fp)
 {
-	char *dbfile = config.dbfile ? config.dbfile : "userdb.txt";
+	const char *dbfile = config.dbfile ? config.dbfile : "userdb.txt";
 
 	*fp = fopen(dbfile, "r");	
 
 	if (!*fp)
+		// TODO(jweyrich): This might change - Should we use a config.h with a constant from $(SHAREDIR)?
 		*fp = fopen("/usr/share/pev/userdb.txt", "r");
 
 	return (*fp != NULL);
 }
 
-static bool match_peid_signature(unsigned char *data, char *sig)
+static bool match_peid_signature(const unsigned char *data, char *sig)
 {
 	unsigned char byte_str[3], byte;
 	
@@ -159,7 +180,7 @@ static bool match_peid_signature(unsigned char *data, char *sig)
 	return true;
 }
 
-static bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile, char *packer_name)
+static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FILE *dbfile, char *packer_name, size_t packer_name_len)
 {
 	if (!dbfile || !data)
 		return false;
@@ -192,7 +213,8 @@ static bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile
 		if (*buff == '[' && *(buff+len-2) == ']')
 		{
 			*(buff+len-2) = '\0'; // remove square brackets
-			strncpy(packer_name, buff+1, MAX_MSG);
+			strncpy(packer_name, buff+1, packer_name_len);
+			packer_name[packer_name_len-1] = '\0'; // Guarantee it's Null-terminated.
 		}
 		
 		// check if signature match
@@ -205,68 +227,74 @@ static bool compare_signature(unsigned char *data, QWORD ep_offset, FILE *dbfile
 			}
 		}
 	}
-	packer_name = NULL;
 	free(buff);
 	return false;
 }
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *dbfile = NULL, *fp = NULL;
-	QWORD ep_offset, pesize;
-	char value[MAX_MSG];
-	unsigned char *pe_data;
-
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
-	memset(&config, 0, sizeof(config));
-	parse_options(argc, argv); // opcoes
+	options_t *options = parse_options(argc, argv); // opcoes
 
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
+	const char *path = argv[argc-1];
+	pe_ctx_t ctx;
 
-	pe_init(&pe, fp); // inicializa o struct pe
+	pe_err_e err = pe_load(&ctx, path);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	if (!is_pe(&pe))
-		EXIT_ERROR("invalid PE file");
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	if (!pe_get_optional(&pe))
-		EXIT_ERROR("unable to read optional header");
+	if (!pe_is_pe(&ctx))
+		EXIT_ERROR("not a valid PE file");
 
-   if (!(ep_offset = rva2ofs(&pe, pe.entrypoint)))
+	uint64_t ep_offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);
+	if (ep_offset == 0)
 		EXIT_ERROR("unable to get entrypoint offset");
 	
-	pesize = pe_get_size(&pe);
-	pe_data = xmalloc(pesize);
+	// TODO(jweyrich): Create a new API to retrieve map_addr.
+	// TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)` instead?
+	const unsigned char *pe_data = ctx.map_addr;
 	
-	//if (fseek(pe.handle, ep, SEEK_SET))
-		//EXIT_ERROR("unable to seek to entrypoint offset");
-	
-	if (!fread(pe_data, pesize, 1, pe.handle))
-		EXIT_ERROR("unable to read entrypoint data");
-	
+	FILE *dbfile = NULL;
 	if (!loaddb(&dbfile))
 		fprintf(stderr, "warning: without valid database file, %s will search in generic mode only\n", PROGRAM);
 	
+	char value[MAX_MSG];
+
 	// packer by signature
-	if (compare_signature(pe_data, ep_offset, dbfile, value));
+	if (compare_signature(pe_data, ep_offset, dbfile, value, sizeof(value)))
+		;
 	// generic detection
-	else if (generic_packer(&pe, ep_offset))
+	else if (generic_packer(&ctx, ep_offset))
 		snprintf(value, MAX_MSG, "generic");
 	else
 		snprintf(value, MAX_MSG, "no packer found");
 	
-	free(pe_data);
 	output("packer", value);
 
 	if (dbfile)
 		fclose(dbfile);
-	pe_deinit(&pe);
-	
-	return 0;
+
+	// libera a memoria
+	free_options(options);
+
+	// free
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }

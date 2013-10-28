@@ -23,13 +23,7 @@
 #define PACKID_H
 
 #include "common.h"
-#include <strings.h>
 
 #define PROGRAM "pepack"
-#define MAX_SIG_SIZE 2048
-
-struct options {
-   char *dbfile;
-};
 
 #endif

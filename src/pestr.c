@@ -21,6 +21,8 @@
 
 #include "common.h"
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <pcre.h>
 
 #define PROGRAM "pestr"
@@ -28,16 +30,13 @@
 #define OVECCOUNT 30
 #define LINE_BUFFER 2048
 
-struct options {
-   unsigned short strsize;
+typedef struct {
+	unsigned short strsize;
 	bool offset;
 	bool section;
 	bool functions;
 	bool net;
-};
-
-struct options config;
-static int ind;
+} options_t;
 
 static void usage(void)
 {
@@ -54,26 +53,36 @@ static void usage(void)
 		PROGRAM, PROGRAM);
 }
 
-static void parse_options(int argc, char *argv[])
+static void free_options(options_t *options)
 {
-	int c;
+	if (options == NULL)
+		return;
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "fosn:v";
 
 	static const struct option long_options[] = {
-		{"functions",       no_argument,        NULL, 'f'},
-		{"offset",          no_argument,        NULL, 'o'},
-		{"section",         no_argument,        NULL, 's'},
-		{"min-length",      required_argument,  NULL, 'n'},
-		{"help",            no_argument,        NULL,  1 },
-		{"version",         no_argument,        NULL,  3 },
-		{"net",             no_argument,        NULL,  2 },
-		{ NULL,             0,                  NULL,  0 }
+		{ "functions",       no_argument,        NULL, 'f' },
+		{ "offset",          no_argument,        NULL, 'o' },
+		{ "section",         no_argument,        NULL, 's' },
+		{ "min-length",      required_argument,  NULL, 'n' },
+		{ "help",            no_argument,        NULL,  1  },
+		{ "version",         no_argument,        NULL,  3  },
+		{ "net",             no_argument,        NULL,  2  },
+		{ NULL,              0,                  NULL,  0  }
 	};
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	int c, ind;
+
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
@@ -83,131 +92,94 @@ static void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-
 			case 2:
-				config.net = true;
+				options->net = true;
 				break;
-
 			case 'f':
-				//config.functions = true;
+				//options->functions = true;
 				EXIT_ERROR("not implemented yet");
 				break;
-
 			case 'n':
-				config.strsize = (unsigned char) strtoul(optarg, NULL, 0);
+			{
+				unsigned long value = strtoul(optarg, NULL, 0);
+				if (value == ULONG_MAX && errno == ERANGE) {
+					fprintf(stderr, "The original (nonnegated) value would overflow");
+					exit(EXIT_FAILURE);
+				}
+				options->strsize = (unsigned char)value;
 				break;
-				
+			}
 			case 'o':
-				config.offset = true;
+				options->offset = true;
 				break;
-				
 			case 's':
-				config.section = true;
+				options->section = true;
 				break;
-				
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
-static unsigned char *ofs2section(PE_FILE *pe, unsigned long offset)
+static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
 {
-	unsigned int i;
-	unsigned long sect_size, sect_offset, aux=0;
+	IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
 
-	aux = ftell(pe->handle);
+	for (uint16_t i=0; i < ctx->pe.num_sections; i++) {
+		uint32_t sect_offset = sections[i]->PointerToRawData;
+		uint32_t sect_size = sections[i]->SizeOfRawData;
 
-	pe_get_sections(pe);
-	for (i=0; i < pe->num_sections; i++)
-	{
-		sect_offset = pe->sections_ptr[i]->PointerToRawData;
-		sect_size = pe->sections_ptr[i]->SizeOfRawData;
-
-		if (offset >= sect_offset && offset <= (sect_offset + sect_size))
-		{
-			fseek(pe->handle, aux, SEEK_SET);
-			return pe->sections_ptr[i]->Name;
+		if (offset >= sect_offset && offset <= (sect_offset + sect_size)) {
+			return (unsigned char *)sections[i]->Name;
 		}
 	}
-	fseek(pe->handle, aux, SEEK_SET);
-	return NULL;
-}
-
-static char *ref_functions(PE_FILE *pe, unsigned long offset)
-{
-	unsigned long buff, aux=0;
-	const size_t str_size = 100;
-	char *str = xmalloc(str_size);
-	FILE *fp = pe->handle;
-
-	aux = ftell(fp);
-	rewind(fp);
-	memset(str, 0, str_size);
-
-	while (fread(&buff, 1, sizeof(buff), fp))
-	{
-		snprintf(str, 100, "%#x", ofs2rva(pe, offset));
-		return str;
-		if (buff == ofs2rva(pe, offset) + pe->imagebase)
-
-		{
-			fseek(fp, aux, SEEK_SET);
-			return "aqui|";
-		}
-
-		// slow search
-		//fseek(fp, - (buff_size-1), SEEK_CUR);
-	}
-	fseek(fp, aux, SEEK_SET);
 
 	return NULL;
 }
 
-#define ASCII 0
-#define UNICODE 1
+typedef enum {
+	ENCODING_ASCII = 0,
+	ENCODING_UNICODE = 1
+} encoding_t;
 
-static bool ishostname(const char *s, unsigned short encoding)
+static bool ishostname(const char *s, const encoding_t encoding)
 {
-	pcre *re;
-	const char *err;
-	int rc, errofs, ovector[OVECCOUNT];
-	unsigned i;
-	char *patterns[] = {
+	const char *patterns[] = {
 		"^[a-zA-Z]{3,}://.*$", // protocol://
 		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
 	};
-
-	char *domains[] = {
-	".aero",	".asia",	".biz",	".com",	".cat",	".com",	".coop",
-	".info",	".int",	".jobs",	".mobi",	".museum",	".name",	".net", ".br",
-	".org",	".pro",	".tel",	".travel",	".xxx", ".edu", ".gov", ".mil",
-	".jus",	
+	const char *domains[] = {
+		".aero",	".asia",	".biz",	".com",	".cat",	".com",	".coop",
+		".info",	".int",	".jobs",	".mobi",	".museum",	".name",	".net", ".br",
+		".org",	".pro",	".tel",	".travel",	".xxx", ".edu", ".gov", ".mil",
+		".jus",	
 	};
 
 	if (!isalnum((int) *s))
 		return false;
 
-	for (i=0; i < sizeof(domains) / sizeof(domains[0]); i++)
-	{
+	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(domains); i++) {
 		// TODO: unicode equivalent
 		if (strcasestr(s, domains[i]))
 			return true;
 	}
 
-	for (i=0; i < sizeof(patterns) / sizeof(patterns[0]); i++)
-	{
-		re = pcre_compile(patterns[i], (encoding == UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
+	int ovector[OVECCOUNT];
 
+	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
+		const char *err;
+		int errofs;
+		pcre *re = pcre_compile(patterns[i], (encoding == ENCODING_UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
 		if (!re)
 			EXIT_ERROR("regex compilation failed");
 
-		rc = pcre_exec(re, NULL, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
+		int rc = pcre_exec(re, NULL, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
 		pcre_free(re);
 
 		if (rc > 0)
@@ -217,32 +189,30 @@ static bool ishostname(const char *s, unsigned short encoding)
 	return false;
 }
 
-static void printb(PE_FILE *pe, unsigned char *bytes, unsigned pos, unsigned length, unsigned long
-offset)
-{
-	if (config.offset)
+static void printb(
+	pe_ctx_t *ctx,
+	const options_t *options,
+	const uint8_t *bytes,
+	size_t pos,
+	size_t length,
+	unsigned long offset
+) {
+	if (options->offset)
 		printf("%#lx\t", (unsigned long) offset);
 
-	if (config.section)
-	{
-		char *s = (char *) ofs2section(pe, offset);
+	if (options->section) {
+		char *s = (char *) ofs2section(ctx, offset);
 		printf("%s\t", s ? s : "[none]");
 	}
 
-	if (config.functions)
-	{
-		char *s = ref_functions(pe, offset);
-
-		printf("%s\t", s ? s : "[none]");
-		free(s);
+	if (options->functions) {
+		uint64_t rva = pe_ofs2rva(ctx, offset);
+		printf("%#"PRIx64"\t", rva); // snprintf takes care of Null-termination.
 	}
 
 	// print the string
-	while (pos < length)
-	{
-	
-		if (bytes[pos] == '\0') // unicode printing
-		{
+	while (pos < length) {
+		if (bytes[pos] == '\0') { // unicode printing
 			pos++;
 			continue;
 		}
@@ -254,80 +224,88 @@ offset)
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
-	unsigned char *buff, byte;
-	unsigned int ascii, ofs, pos;
-	unsigned int utf = 0;
-
-	memset(&config, 0, sizeof(config));
-	parse_options(argc, argv); // opcoes
-
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
+	options_t *options = parse_options(argc, argv); // opcoes
 
-	pe_init(&pe, fp); // inicializa o struct pe
+	const char *path = argv[argc-1];
+	pe_ctx_t ctx;
 
-	if (!is_pe(&pe))
+	pe_err_e err = pe_load(&ctx, path);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	rewind(pe.handle);
-	buff = xmalloc(LINE_BUFFER);
-	memset(buff, 0, LINE_BUFFER);
+	const uint64_t pe_size = pe_filesize(&ctx);
+	const uint8_t *pe_raw_data = ctx.map_addr;
+	uint64_t pe_raw_offset = 0;
 
-	for (ofs=ascii=pos=0; fread(&byte, 1, 1, pe.handle); ofs++)
-	{
-		if (isprint(byte))
-		{
+	unsigned char buff[LINE_BUFFER];
+	memset(buff, 0, LINE_BUFFER);
+	uint64_t buff_index = 0;
+
+	uint32_t ascii = 0;
+	uint32_t utf = 0;
+
+	while (pe_raw_offset < pe_size) {
+		const uint8_t byte = pe_raw_data[pe_raw_offset];
+
+		if (isprint(byte)) {
 			ascii++;
-			buff[pos++] = byte;
+			buff[buff_index++] = byte;
+			pe_raw_offset++;
 			continue;
-		}
-		else if (ascii == 1 && byte == '\0')
-		{
+		} else if (ascii == 1 && byte == '\0') {
 			utf++;
-			buff[pos++] = byte;
+			buff[buff_index++] = byte;
 			ascii = 0;
+			pe_raw_offset++;
 			continue;
-		}
-		else
-		{
-			if (ascii >= (config.strsize ? config.strsize : 4))
-			{
-				if (config.net)
-				{
-					if (ishostname((char *) buff, ASCII))
-						printb(&pe, buff, 0, ascii, ofs - ascii);
+		} else {
+			if (ascii >= (options->strsize ? options->strsize : 4)) {
+				if (options->net) {
+					if (ishostname((char *) buff, ENCODING_ASCII))
+						printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
+				} else {
+					printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
 				}
-				else
-					printb(&pe, buff, 0, ascii, ofs - ascii);
-					
-			}
-			else if (utf >= (config.strsize ? config.strsize : 4))
-			{
-				if (config.net)
-				{
-					if (ishostname((char *) buff, UNICODE))
-						printb(&pe, buff, 0, utf*2, ofs - utf*2);
+			} else if (utf >= (options->strsize ? options->strsize : 4)) {
+				if (options->net) {
+					if (ishostname((char *) buff, ENCODING_UNICODE))
+						printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
+				} else {
+					printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
 				}
-				else
-					printb(&pe, buff, 0, utf*2, ofs - utf*2);
-					
 			}
-			ascii = utf = pos = 0;
+			ascii = utf = buff_index = 0;
 			memset(buff, 0, LINE_BUFFER);
 		}
+
+		pe_raw_offset++;
 	}
-	free(buff);
 	
 	// libera a memoria
-	pe_deinit(&pe);
-	
-	return 0;
+	free_options(options);
+
+	// free
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }

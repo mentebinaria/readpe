@@ -21,26 +21,25 @@
 
 #include "common.h"
 #include "../lib/libudis86/udis86.h"
+#include <errno.h>
+#include <limits.h>
 
 #define PROGRAM "pedis"
 
 #define SYN_ATT 1
 #define SYN_INTEL 0
 
-struct options {
+typedef struct {
 	bool all_sections;
 	char *section;
 	bool syntax;
-	QWORD offset;
-	QWORD nbytes;           // limit the number of bytes instructions. 0 means no limit.
-	QWORD ninstructions;     // limit the number of disassembled instructions. 0 means no limit.
+	uint64_t offset;
+	uint64_t nbytes;           // limit the number of bytes instructions. 0 means no limit.
+	uint64_t ninstructions;     // limit the number of disassembled instructions. 0 means no limit.
 	bool entrypoint;
 	bool offset_is_rva;
-	WORD mode;
-};
-
-static struct options config;
-static int ind;
+	uint16_t mode;
+} options_t;
 
 static void usage(void)
 {
@@ -62,33 +61,44 @@ static void usage(void)
 		PROGRAM, PROGRAM);
 }
 
-static void parse_options(int argc, char *argv[])
+static void free_options(options_t *options)
 {
-	int c;
+	if (options == NULL)
+		return;
+
+	if (options->section != NULL)
+		free(options->section);
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "em:i:n:o:r:s:f:v";
 
 	static const struct option long_options[] = {
-		{"help",             no_argument,       NULL,  1 },
-		{"att",              no_argument,       NULL,  2 },
-		{"",                 required_argument, NULL, 'n'},
-		{"entrypoint",       no_argument,       NULL, 'e'},
-		{"mode",             required_argument, NULL, 'm'},
-		{"offset",           required_argument, NULL, 'o'},
-		{"rva",              required_argument, NULL, 'r'},
-		{"section",          required_argument, NULL, 's'},
-		{"format",           required_argument, NULL, 'f'},
-		{"version",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{ "help",             no_argument,       NULL,  1  },
+		{ "att",              no_argument,       NULL,  2  },
+		{ "",                 required_argument, NULL, 'n' },
+		{ "entrypoint",       no_argument,       NULL, 'e' },
+		{ "mode",             required_argument, NULL, 'm' },
+		{ "offset",           required_argument, NULL, 'o' },
+		{ "rva",              required_argument, NULL, 'r' },
+		{ "section",          required_argument, NULL, 's' },
+		{ "format",           required_argument, NULL, 'f' },
+		{ "version",          no_argument,       NULL, 'v' },
+		{ NULL,               0,                 NULL,  0  }
 	};
 
-	// setting all fields to false
-	memset(&config, false, sizeof(config));
-	config.syntax = SYN_INTEL;
+	options->syntax = SYN_INTEL;
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	int c, ind;
+
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
@@ -98,45 +108,59 @@ static void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-				
 			case 2:
-				config.syntax = SYN_ATT; break;
-				
+				options->syntax = SYN_ATT;
+				break;
 			case 'e':
-				config.entrypoint = true; break;
-				
+				options->entrypoint = true;
+				break;
 			case 'm':
-				config.mode = strtol(optarg, NULL, 10); break;
-
+				options->mode = strtol(optarg, NULL, 10);
+				switch (options->mode) {
+					default: EXIT_ERROR("Bad argument for mode.");
+					case 16: break;
+					case 32: break;
+					case 64: break;
+				}
+				break;
 			case 'i':
-				config.ninstructions = strtol(optarg, NULL, 0); break;
-
+				options->ninstructions = strtol(optarg, NULL, 0);
+				if (errno == ERANGE)
+					EXIT_ERROR("number of instructions value would underflow or overflow");
+				break;
 			case 'n':
-				config.nbytes = strtol(optarg, NULL, 0); break;
-
+				options->nbytes = strtol(optarg, NULL, 0);
+				if (errno == ERANGE)
+					EXIT_ERROR("number of bytes value would underflow or overflow");
+				break;
 			case 'o':
-				config.offset = strtol(optarg, NULL, 0);
-				config.offset_is_rva = false; break;
-				
+				options->offset = strtol(optarg, NULL, 0);
+				if (errno == ERANGE)
+					EXIT_ERROR("offset value would underflow or overflow");
+				options->offset_is_rva = false;
+				break;
 			case 'r':
-				config.offset = strtol(optarg, NULL, 0);
-				config.offset_is_rva = true; break;
-
+				options->offset = strtol(optarg, NULL, 0);
+				if (errno == ERANGE)
+					EXIT_ERROR("rva value would underflow or overflow");
+				options->offset_is_rva = true;
+				break;
 			case 's':
-				config.section = optarg; break;
-
+				options->section = strdup(optarg);
+				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-
 			case 'f':
-				parse_format(optarg); break;
-
+				parse_format(optarg);
+				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
 static char *insert_spaces(const char *s) 
@@ -186,13 +210,13 @@ static bool is_ret_instruction(unsigned char opcode)
 	}
 }
 
-static void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
+static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud_obj, uint64_t offset)
 {
-	QWORD c = 0; // counter for disassembled instructions
-	QWORD b = 0; // counter for disassembled bytes
-	
-	if (!pe || !offset)
+	if (ctx == NULL || offset == 0)
 		return;
+
+	uint64_t c = 0; // counter for disassembled instructions
+	uint64_t b = 0; // counter for disassembled bytes
 
 	while (ud_disassemble(ud_obj))
 	{
@@ -203,13 +227,13 @@ static void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		c++; // increment instruction counter
 		b += ud_insn_len(ud_obj);
 
-		if (config.nbytes && b >= config.nbytes)
+		if (options->nbytes && b >= options->nbytes)
 			return;
 
 		mnic = ud_obj->mnemonic;
 		op_t = ud_obj->operand ? ud_obj->operand[0].type : 0;
 		
-		snprintf(ofs, MAX_MSG, "%"PRIx64, (config.offset_is_rva ? pe->imagebase : 0) + offset + ud_insn_off(ud_obj));
+		snprintf(ofs, MAX_MSG, "%"PRIx64, (options->offset_is_rva ? ctx->pe.imagebase : 0) + offset + ud_insn_off(ud_obj));
 		bytes = insert_spaces(ud_insn_hex(ud_obj));
 
 		if (!bytes)
@@ -220,8 +244,15 @@ static void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		{
 			char *ins = strtok(ud_insn_asm(ud_obj), "0x");
 
-			snprintf(value, MAX_MSG, "%s%*c%s%#"PRIx64, bytes, SPACES - (int) strlen(bytes), ' ', ins ? ins : "",
-			pe->imagebase + offset + ud_insn_off(ud_obj) + ud_obj->operand[0].lval.sdword + ud_insn_len(ud_obj));
+			snprintf(value,
+				MAX_MSG,
+				"%s%*c%s%#"PRIx64,
+				bytes,
+				SPACES - (int) strlen(bytes),
+				' ',
+				ins ? ins : "",
+				ctx->pe.imagebase + offset + ud_insn_off(ud_obj) + ud_obj->operand[0].lval.sdword + ud_insn_len(ud_obj)
+			);
 		}
 		else
 			snprintf(value, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(ud_obj));
@@ -230,11 +261,11 @@ static void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 		output(ofs, value);
 
 		// for sections, we stop at end of section
-		if (config.section && c >= config.ninstructions)
+		if (options->section && c >= options->ninstructions)
 			break;
-		else if (c >= config.ninstructions && config.ninstructions)
+		else if (c >= options->ninstructions && options->ninstructions)
 			break;
-		else if (config.entrypoint)
+		else if (options->entrypoint)
 		{
 		// search for LEAVE or RET insrtuctions
 		for (unsigned int i=0; i < ud_insn_len(ud_obj); i++)
@@ -246,52 +277,69 @@ static void disassemble_offset(PE_FILE *pe, ud_t *ud_obj, QWORD offset)
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
-	ud_t ud_obj;              // libudis86 object
-	QWORD offset = 0;         // offset to start disassembly
-
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
-	parse_options(argc, argv);
-	
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
+	options_t *options = parse_options(argc, argv); // opcoes
+
+	const char *path = argv[argc-1];
+	pe_ctx_t ctx;
+
+	pe_err_e err = pe_load(&ctx, path);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	if (!pe_is_pe(&ctx))
+		EXIT_ERROR("not a valid PE file");
+
+	FILE *pe_file_pointer = fopen(argv[argc-1], "rb");
+	if (pe_file_pointer == NULL)
 		EXIT_ERROR("file not found or unreadable");
 
-	pe_init(&pe, fp);
+	IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
+	if (optional == NULL)
+		return EXIT_FAILURE;
+
+	ud_t ud_obj; // libudis86 object
 	ud_init(&ud_obj);
+	
+	uint8_t mode_bits = 0;
+	switch (optional->type) {
+		default:
+			EXIT_ERROR("Unsupported architecture.");
+			return EXIT_FAILURE;
+		case MAGIC_PE32: mode_bits = 32; break;
+		case MAGIC_PE64: mode_bits = 64; break;
+	}
 
-	if (!is_pe(&pe))
-		EXIT_ERROR("not a valid PE file");
-	
-	// get entrypoint and architecture
-	if (!pe_get_optional(&pe))
-		EXIT_ERROR("unable to retrieve optional header");
-	
 	// set disassembly mode according with PE architecture
-	ud_set_mode(&ud_obj, config.mode ? config.mode : (pe.architecture == PE64 ? 64 : 32));
+	ud_set_mode(&ud_obj, options->mode ? options->mode : mode_bits);
 
-	rewind(pe.handle);
+	uint64_t offset = 0;         // offset to start disassembly
 	
-	if (config.entrypoint)
-		offset = rva2ofs(&pe, pe.entrypoint);
-	else if (config.offset)
-		offset = config.offset_is_rva ? rva2ofs(&pe, config.offset) : config.offset;
-	else if (config.section)
+	if (options->entrypoint)
+		offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);
+	else if (options->offset)
+		offset = options->offset_is_rva ? pe_rva2ofs(&ctx, options->offset) : options->offset;
+	else if (options->section)
 	{
-		IMAGE_SECTION_HEADER *section;
-
-		section = pe_get_section(&pe, config.section);
+		IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->section);
 
 		if (section) // section found
 		{
 			offset = section->PointerToRawData;
-			if (!config.ninstructions)
-				config.ninstructions = section->SizeOfRawData;
+			if (!options->ninstructions)
+				options->ninstructions = section->SizeOfRawData;
 		}
 		else
 			EXIT_ERROR("invalid section name");
@@ -299,19 +347,30 @@ int main(int argc, char *argv[])
 	else
 	{
 		usage();
-		pe_deinit(&pe);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	
 	if (!offset)
 		EXIT_ERROR("unable to reach file offset");
 
-	ud_set_syntax(&ud_obj, config.syntax ? UD_SYN_ATT : UD_SYN_INTEL);
-	ud_set_input_file(&ud_obj, pe.handle);
+	ud_set_syntax(&ud_obj, options->syntax ? UD_SYN_ATT : UD_SYN_INTEL);
+	ud_set_input_file(&ud_obj, pe_file_pointer);
 	ud_input_skip(&ud_obj, offset);
-	disassemble_offset(&pe, &ud_obj, offset);
+	disassemble_offset(&ctx, options, &ud_obj, offset);
+
+	// fecha o arquivo
+	if (pe_file_pointer != NULL)
+		fclose(pe_file_pointer);
+
+	// libera a memoria
+	free_options(options);
 
 	// free
-	pe_deinit(&pe);
-	return 0;
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }

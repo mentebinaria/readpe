@@ -27,8 +27,6 @@
 typedef struct {
 	bool verbose;
 } options_t;
-options_t *options;
-	static char value[MAX_MSG];
 
 static void usage(void)
 {
@@ -52,7 +50,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options = xmalloc(sizeof(options_t));
+	options_t *options = xmalloc(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
@@ -292,6 +290,8 @@ static void print_strange_sections(PE_FILE *pe)
 	if (!pe_get_sections(pe) || !pe->num_sections)
 		return;
 
+	char value[MAX_MSG];
+
 	if (pe->num_sections <= 2)
 		snprintf(value, MAX_MSG, "%d (low)", pe->num_sections);
 	else if (pe->num_sections > 8)
@@ -339,6 +339,8 @@ static void print_timestamp(DWORD *stamp)
 {
 	time_t now = time(NULL);
 	char timestr[33];
+
+	char value[MAX_MSG];
 
 	if (*stamp == 0)
 		snprintf(value, MAX_MSG, "zero/invalid");
@@ -411,12 +413,14 @@ static bool fpu_trick(pe_ctx_t *ctx)
 	return false;
 }
 
-static void print_timestamp(pe_ctx_t *ctx)
+static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
 {
    IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
 
 	time_t now = time(NULL);
 	char timestr[33];
+
+	char value[MAX_MSG];
 
 	if (hdr_coff_ptr->TimeDateStamp == 0)
 		snprintf(value, MAX_MSG, "zero/invalid");
@@ -460,7 +464,6 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 		return 1;
 
 	return 0;
-	
 }
 
 int main(int argc, char *argv[])
@@ -494,6 +497,8 @@ int main(int argc, char *argv[])
 	// File entropy
 	double entropy = calculate_entropy_file(&ctx);
 
+	char value[MAX_MSG];
+
 	if (entropy < 7.0)
 		snprintf(value, MAX_MSG, "%f (normal)", entropy);
 	else
@@ -512,7 +517,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	print_timestamp(&ctx);
+	print_timestamp(&ctx, options);
 
 	output("fpu undocumented", fpu_trick(&ctx) ? "yes" : "no");
 

@@ -19,12 +19,14 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pesec.h"
+#include "common.h"
 #include <string.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include "compat/strlcat.h"
+
+#define PROGRAM "pesec"
 
 typedef enum {
 	CERT_FORMAT_TEXT = 1,

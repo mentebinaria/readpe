@@ -19,7 +19,9 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "rva2ofs.h"
+#include "common.h"
+
+#define PROGRAM "rva2ofs"
 
 static int ind;
 

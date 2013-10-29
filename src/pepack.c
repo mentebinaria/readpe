@@ -19,9 +19,10 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pepack.h"
+#include "common.h"
 #include <strings.h>
 
+#define PROGRAM "pepack"
 #define MAX_SIG_SIZE 2048
 
 typedef struct options {

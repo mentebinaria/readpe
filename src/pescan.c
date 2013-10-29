@@ -19,10 +19,12 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pescan.h"
+#include "common.h"
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+
+#define PROGRAM "pescan"
 
 typedef struct {
 	bool verbose;

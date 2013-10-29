@@ -19,7 +19,10 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ofs2rva.h"
+
+#include "common.h"
+
+#define PROGRAM "ofs2rva"
 
 static int ind;
 

@@ -19,9 +19,27 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pedis.h"
+#include "common.h"
+#include "../lib/libudis86/udis86.h"
 
-extern struct options config;
+#define PROGRAM "pedis"
+
+#define SYN_ATT 1
+#define SYN_INTEL 0
+
+struct options {
+	bool all_sections;
+	char *section;
+	bool syntax;
+	QWORD offset;
+	QWORD nbytes;           // limit the number of bytes instructions. 0 means no limit.
+	QWORD ninstructions;     // limit the number of disassembled instructions. 0 means no limit.
+	bool entrypoint;
+	bool offset_is_rva;
+	WORD mode;
+};
+
+static struct options config;
 static int ind;
 
 static void usage(void)

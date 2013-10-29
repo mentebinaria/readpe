@@ -19,9 +19,27 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "readpe.h"
+#include "common.h"
+#include <time.h>
+#include <ctype.h>
 
-extern struct options config;
+#define PROGRAM "readpe"
+#define MAX_DLL_NAME 256
+#define MAX_FUNCTION_NAME 512
+
+struct options {
+	bool all;
+	bool dos;
+	bool coff;
+	bool opt;
+	bool dirs;
+	bool imports;
+	bool exports;
+	bool all_headers;
+	bool all_sections;
+};
+
+static struct options config;
 static int ind;
 
 static void usage(void)

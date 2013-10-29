@@ -19,7 +19,18 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pehash.h"
+#include "common.h"
+#include <openssl/md5.h>
+#include <openssl/sha.h>
+
+#define PROGRAM "pehash"
+
+struct options {
+	bool all;
+	bool md5;
+	bool sha1;
+	bool sha256;
+};
 
 struct options config;
 static int ind;

@@ -19,7 +19,22 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pestr.h"
+#include "common.h"
+#include <ctype.h>
+#include <pcre.h>
+
+#define PROGRAM "pestr"
+#define BUFSIZE 4
+#define OVECCOUNT 30
+#define LINE_BUFFER 2048
+
+struct options {
+   unsigned short strsize;
+	bool offset;
+	bool section;
+	bool functions;
+	bool net;
+};
 
 struct options config;
 static int ind;

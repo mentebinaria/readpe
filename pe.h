@@ -44,6 +44,12 @@
 #define SIGNATURE_NE 0x454E // NE\0\0 in little-endian
 #define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
 
+typedef enum {
+	LIBPE_OPT_NOCLOSE_FD = (1 << 0) // Keeps `file` open (from pe_file_t).
+} pe_option_e;
+
+typedef uint16_t pe_options_e; // bitmasked pe_option_e values
+
 typedef struct {
 	// DOS header
 	IMAGE_DOS_HEADER *dos_hdr;
@@ -84,6 +90,7 @@ typedef struct {
 } pe_file_t;
 
 typedef struct {
+	FILE *stream;
 	char *path;
 	void *map_addr;
 	off_t map_size;
@@ -93,6 +100,7 @@ typedef struct {
 
 // General functions
 pe_err_e pe_load(pe_ctx_t *ctx, const char *path);
+pe_err_e pe_load_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
 bool pe_is_pe(pe_ctx_t *ctx);

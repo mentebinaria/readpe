@@ -27,6 +27,7 @@ const char *pe_error_msg(pe_err_e error) {
 		"no error", // LIBPE_E_OK,
 		"allocation failure", // LIBPE_E_ALLOCATION_FAILURE,
 		"open() failed", // LIBPE_E_OPEN_FAILED,
+		"fdopen() failed", // LIBPE_E_FDOPEN_FAILED,
 		"fstat() failed", // LIBPE_E_FSTAT_FAILED,
 		"not a regular file", // LIBPE_E_NOT_A_FILE,
 		"not a PE file", // LIBPE_E_NOT_A_PE_FILE,

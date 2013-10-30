@@ -29,6 +29,10 @@
 #include <sys/stat.h>
 
 pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
+	return pe_load_ext(ctx, path, 0);
+}
+
+pe_err_e pe_load_ext(pe_ctx_t *ctx, const char *path, pe_options_e options) {
 	int ret = 0;
 
 	// Cleanup the whole struct.
@@ -78,11 +82,21 @@ pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
 
 	ctx->map_end = (uintptr_t)LIBPE_PTR_ADD(ctx->map_addr, ctx->map_size);
 
-	// We can now close the fd.
-	ret = close(fd);
-	if (ret == -1) {
-		//perror("close");
-		return LIBPE_E_CLOSE_FAILED;
+	if (options & LIBPE_OPT_NOCLOSE_FD) {
+		// The file descriptor is not dup'ed, and will be closed when the stream created by fdopen() is closed.
+		FILE *fp = fdopen(fd, "r+b"); // NOTE: 'b' is ignored on all POSIX conforming systems.
+		if (fp == NULL) {
+			//perror("fdopen");
+			return LIBPE_E_FDOPEN_FAILED;
+		}
+		ctx->stream = fp;
+	} else {
+		// We can now close the fd.
+		ret = close(fd);
+		if (ret == -1) {
+			//perror("close");
+			return LIBPE_E_CLOSE_FAILED;
+		}
 	}
 
 	// Give advice about how we'll use our memory mapping.
@@ -97,6 +111,10 @@ pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
 
 pe_err_e pe_unload(pe_ctx_t *ctx) {
 	int ret = 0;
+
+	if (ctx->stream != NULL) {
+		fclose(ctx->stream);
+	}
 
 	if (ctx->path != NULL) {
 		free(ctx->path);

@@ -265,6 +265,27 @@ static void showNode(const NODE_PERES *node)
 	}
 }
 
+static void freeNodes(NODE_PERES *currentNode)
+{
+	if (currentNode == NULL)
+		return;
+
+	while (currentNode->nextNode != NULL) {
+		currentNode = currentNode->nextNode;
+	}
+
+	while (currentNode != NULL) {
+		if (currentNode->lastNode == NULL) {
+			free(currentNode);
+			break;
+		} else {
+			currentNode = currentNode->lastNode;
+			if (currentNode->nextNode != NULL)
+				free(currentNode->nextNode);
+		}
+	}
+}
+
 static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
 	assert(currentNode != NULL);
@@ -321,27 +342,6 @@ static const NODE_PERES * lastNodeByTypeAndLevel(const NODE_PERES *currentNode, 
 	}
 
 	return NULL;
-}
-
-static void freeNodes(NODE_PERES *currentNode)
-{
-	if (currentNode == NULL)
-		return;
-
-	while (currentNode->nextNode != NULL) {
-		currentNode = currentNode->nextNode;
-	}
-
-	while (currentNode != NULL) {
-		if (currentNode->lastNode == NULL) {
-			free(currentNode);
-			break;
-		} else {
-			currentNode = currentNode->lastNode;
-			if (currentNode->nextNode != NULL)
-				free(currentNode->nextNode);
-		}
-	}
 }
 
 static const RESOURCE_ENTRY * getResourceEntryByNameOffset(uint32_t nameOffset)
@@ -538,7 +538,6 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		//printf("Offset by RVA: 0x%x\n\n", resourceDirOffset);
 	}
 
-
 	uintptr_t offset = resourceDirOffset;
 	void *ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 	if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
@@ -561,7 +560,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 		if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
 			// TODO: Should we report something?
-			return NULL;
+			goto _error;
 		}
 
 		node = createNode(node, RDT_DIRECTORY_ENTRY);
@@ -579,7 +578,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 			ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 			if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 				// TODO: Should we report something?
-				return NULL;
+				goto _error;
 			}
 
 			node = createNode(node, RDT_RESOURCE_DIRECTORY);
@@ -596,7 +595,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 				if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
 					// TODO: Should we report something?
-					return NULL;
+					goto _error;
 				}
 
 				node = createNode(node, RDT_DIRECTORY_ENTRY);
@@ -609,7 +608,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 				if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 					// TODO: Should we report something?
-					return NULL;
+					goto _error;
 				}
 
 				node = createNode(node, RDT_RESOURCE_DIRECTORY);
@@ -626,7 +625,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 					if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
 						// TODO: Should we report something?
-						return NULL;
+						goto _error;
 					}
 					node = createNode(node, RDT_DIRECTORY_ENTRY);
 					node->rootNode = rootNode;
@@ -638,7 +637,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 					if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
 						// TODO: Should we report something?
-						return NULL;
+						goto _error;
 					}
 					node = createNode(node, RDT_DATA_STRING);
 					node->rootNode = rootNode;
@@ -650,7 +649,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 					if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
 						// TODO: Should we report something?
-						return NULL;
+						goto _error;
 					}
 					node = createNode(node, RDT_DATA_ENTRY);
 					node->rootNode = rootNode;
@@ -663,7 +662,13 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 			}
 		}
 	}
+
 	return node;
+
+_error:
+	if (node != NULL)
+		freeNodes(node);
+	return NULL;
 }
 
 int main(int argc, char **argv)

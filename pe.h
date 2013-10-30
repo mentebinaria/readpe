@@ -45,7 +45,7 @@
 #define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
 
 typedef enum {
-	LIBPE_OPT_NOCLOSE_FD = (1 << 0) // Keeps `file` open (from pe_file_t).
+	LIBPE_OPT_NOCLOSE_FD = (1 << 0) // Keeps `stream` open for further usage.
 } pe_option_e;
 
 typedef uint16_t pe_options_e; // bitmasked pe_option_e values

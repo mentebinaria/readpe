@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load(&ctx, path);
+	pe_err_e err = pe_load_ext(&ctx, path, LIBPE_OPT_NOCLOSE_FD);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
@@ -301,10 +301,6 @@ int main(int argc, char *argv[])
 
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
-
-	FILE *pe_file_pointer = fopen(argv[argc-1], "rb");
-	if (pe_file_pointer == NULL)
-		EXIT_ERROR("file not found or unreadable");
 
 	IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
 	if (optional == NULL)
@@ -326,41 +322,36 @@ int main(int argc, char *argv[])
 	ud_set_mode(&ud_obj, options->mode ? options->mode : mode_bits);
 
 	uint64_t offset = 0;         // offset to start disassembly
-	
+
 	if (options->entrypoint)
 		offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);
 	else if (options->offset)
 		offset = options->offset_is_rva ? pe_rva2ofs(&ctx, options->offset) : options->offset;
-	else if (options->section)
-	{
+	else if (options->section) {
 		IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->section);
 
-		if (section) // section found
-		{
+		if (section) { // section found
 			offset = section->PointerToRawData;
 			if (!options->ninstructions)
 				options->ninstructions = section->SizeOfRawData;
 		}
 		else
 			EXIT_ERROR("invalid section name");
-	}
-	else
-	{
+	} else {
 		usage();
-		exit(EXIT_FAILURE);
+		return EXIT_FAILURE;
 	}
 	
-	if (!offset)
-		EXIT_ERROR("unable to reach file offset");
+	if (!offset) {
+		fprintf(stderr, "unable to reach file offset (%#"PRIx64")\n", offset);
+		return EXIT_FAILURE;
+	}
 
 	ud_set_syntax(&ud_obj, options->syntax ? UD_SYN_ATT : UD_SYN_INTEL);
-	ud_set_input_file(&ud_obj, pe_file_pointer);
+	ud_set_input_buffer(&ud_obj, ctx.map_addr, pe_filesize(&ctx));
+	//ud_set_input_file(&ud_obj, ctx.stream);
 	ud_input_skip(&ud_obj, offset);
 	disassemble_offset(&ctx, options, &ud_obj, offset);
-
-	// fecha o arquivo
-	if (pe_file_pointer != NULL)
-		fclose(pe_file_pointer);
 
 	// libera a memoria
 	free_options(options);

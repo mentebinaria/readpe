@@ -5,7 +5,7 @@ PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 
-prefix = /usr/local
+prefix = /usr
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
 sbindir = $(exec_prefix)/sbin

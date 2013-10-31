@@ -7,9 +7,11 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.70 - ?
- + pescan: cpl banker detection;
+ * readpe and peres: output enhancements (Jardel Weyrich).
+ - readpe: fixed subsystem types (Dmitry Mostovenko).
+ + pescan: cpl banker detection.
  + pescan: detection of anti-disassembly fpu trick.
- * libpe: use of mmap() insted of fseek()/fread().
+ * libpe: use of mmap! (Jardel Weyrich).
 
 pev 0.60 - October 31, 2012
  ! Missing full/english documentation.
@@ -22,8 +24,8 @@ pev 0.60 - October 31, 2012
  + pedis: added -n option to limit number of disassembled instructions.
  + pedis: added options to disassembly entrypoint and raw fille offset.
  + pedis: disassemble bytes number specified by -n option.
- + pehash: new tool to calculate PE file hashes (Jan Seidl <janseidl *noSPAM* gmail.com>).
- + pepack: added PEiD signature search (Rodrigo Escobar <ipax *noSPAM* dclabs.com.br>).
+ + pehash: new tool to calculate PE file hashes (Jan Seidl).
+ + pepack: added PEiD signature search (Rodrigo Escobar).
  + pescan: added -f/--format option to format output.
  + pescan: added section, imagebase and timestamp analysis.
  + readpe: added --exports option to show exported functions.
@@ -33,14 +35,14 @@ pev 0.50 - June 25, 2012
  ! Missing documentation.
  ! Missing valid XML and HTML output formats.
  ! pedis shows arguments of jumps and calls as relative positions.
- * Improved pev tools Makefile (Gabriel Barbosa <gbarbsa *noSPAM* qualys.com>).
- * MEW packer detection in packid (Rodrigo Rubira <rbranco *noSPAM* qualys.com>).
+ * Improved pev tools Makefile (Gabriel Barbosa).
+ * MEW packer detection in packid (Rodrigo Rubira).
  * pev now is a collection of binaries and a library to work with PE executables.
  + Output in monospaced text and csv in most programs.
  + Released libpe 1.0 to support our programs.
- + libpe: xmalloc trick and fixes (Rodrigo Rubira <rbranco *noSPAM* qualys.com>).
- + pedis: disassemble functions and sections (Tiago Zaniquelli <ztiago *noSPAM* gmail.com>).
- + pepack: detect fake EP (Wagner Barongello <wagner *noSPAM* barongello.com).
+ + libpe: xmalloc trick and fixes (Rodrigo Rubira).
+ + pedis: disassemble functions and sections (Tiago Zaniquelli).
+ + pepack: detect fake EP (Wagner Barongello).
  + pescan: new tool to search for suspicious things in PE files including TLS callbacks.
  + pesec: find security features in PE files.
  + readpe can now show imported functions with --imports or -i switch.
@@ -52,7 +54,7 @@ pev 0.50 - June 25, 2012
 pev 0.40 - August 7, 2011
  * Compatible with PE/COFF specification v8.2.
  * Date format in COFF header similar to RFC 2822.
- * Improved function to get machine type (Gabriel Duarte <confusosk8 *noSPAM* gmail.com>).
+ * Improved function to get machine type (Gabriel Duarte).
  + ASLR and DEP identification.
  + Added "-r" option to show resource items at first level.
  + Added TLS callback functions detection in every PE section.
@@ -64,7 +66,7 @@ pev 0.31 - May 11, 2011
  + Added characteristics flags in COFF output.
  + Added human-readable machine types in COFF output.
  - Fixed warning with Linux 32-bits boxes when compiling.
- - Fixed compilation in OS X. (Gustavo Roberto <gustavorobertux *noSPAM* gmail.com>).
+ - Fixed compilation in OS X. (Gustavo Roberto).
 
 pev 0.30 - February 20, 2011
  * Improved memory use.

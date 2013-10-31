@@ -7,6 +7,7 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.70 - ?
+ + peres: new tool to analyze/extract PE resources (Marcelo Fleury).
  * readpe and peres: output enhancements (Jardel Weyrich).
  - readpe: fixed subsystem types (Dmitry Mostovenko).
  + pescan: cpl banker detection.

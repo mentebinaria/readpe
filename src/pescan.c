@@ -3,7 +3,7 @@
 
 	pescan.c - search for suspicious things in PE files
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2013 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -326,48 +326,17 @@ static void print_strange_sections(PE_FILE *pe)
 		output((char *)pe->sections_ptr[i]->Name, value);
 	}
 }
-
-static bool normal_imagebase(PE_FILE *pe)
-{
-	if (!pe->imagebase)
-		pe_get_optional(pe);
-
-	return  (pe->imagebase == 0x100000000 ||
-				pe->imagebase == 0x1000000 ||
-				pe->imagebase == 0x400000);
-}
-
-static void print_timestamp(DWORD *stamp)
-{
-	time_t now = time(NULL);
-	char timestr[33];
-
-	char value[MAX_MSG];
-
-	if (*stamp == 0)
-		snprintf(value, MAX_MSG, "zero/invalid");
-	else if (*stamp < 946692000)
-		snprintf(value, MAX_MSG, "too old (pre-2000)");
-	else if (*stamp > (DWORD) now)
-		snprintf(value, MAX_MSG, "future time");
-	else
-		snprintf(value, MAX_MSG, "normal");
-
-	if (config.verbose)
-	{
-		strftime(timestr, sizeof(timestr),
-			" - %a, %d %b %Y %H:%M:%S UTC",
-			gmtime((time_t *) stamp));
-
-		strcat(value, timestr);
-		//strcat(value, " - ");
-		//strcat(value, ctime((time_t *) stamp));
-	}
-
-	output("timestamp", value);
-
-}
 */
+
+static bool normal_imagebase(pe_ctx_t *ctx)
+{
+	//IMAGE_OPTIONAL_HEADER *hdr_optinal_ptr = pe_optional(ctx);
+
+	return  (ctx->pe.imagebase == 0x100000000 ||
+				ctx->pe.imagebase == 0x1000000 ||
+				ctx->pe.imagebase == 0x400000);
+}
+
 
 double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
 {
@@ -440,8 +409,6 @@ static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
 			gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
 
 		strcat(value, timestr);
-		//strcat(value, " - ");
-		//strcat(value, ctime((time_t *) hdr_coff_ptr->TimeDateStamp));
 	}
 
 	output("timestamp", value);
@@ -523,6 +490,20 @@ int main(int argc, char *argv[])
 
 	output("fpu undocumented", fpu_trick(&ctx) ? "yes" : "no");
 
+	// imagebase analysis
+	if (!normal_imagebase(&ctx)) {
+		if (options->verbose)
+			snprintf(value, MAX_MSG, "suspicious - %#"PRIx64, ctx.pe.imagebase);
+		else
+			snprintf(value, MAX_MSG, "suspicious");
+	} else {
+		if (options->verbose)
+			snprintf(value, MAX_MSG, "normal - %#"PRIx64, ctx.pe.imagebase);
+		else
+			snprintf(value, MAX_MSG, "normal");
+	}
+	output("imagebase", value);
+
 /*
 	if (!pe_get_optional(&pe))
 		return 1;
@@ -575,19 +556,6 @@ int main(int argc, char *argv[])
 	// section analysis
 	print_strange_sections(&pe);
 
-	// no imagebase
-	if (!normal_imagebase(&pe)) {
-		if (config.verbose)
-			snprintf(value, MAX_MSG, "suspicious - %#"PRIx64, pe.imagebase);
-		else
-			snprintf(value, MAX_MSG, "suspicious");
-	} else {
-		if (config.verbose)
-			snprintf(value, MAX_MSG, "normal - %#"PRIx64, pe.imagebase);
-		else
-			snprintf(value, MAX_MSG, "normal");
-	}
-	output("imagebase", value);
 
 	// invalid timestamp
 	IMAGE_COFF_HEADER coff;

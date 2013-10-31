@@ -23,7 +23,7 @@
 #define OUTPUT_H
 
 void parse_format(const char *optarg);
-void output(char *field, char *value);
+void output(const char *field, const char *value);
 
 typedef enum {
 	FORMAT_TEXT = 1,

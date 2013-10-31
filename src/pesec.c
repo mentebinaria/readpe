@@ -19,12 +19,14 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pesec.h"
+#include "common.h"
 #include <string.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include "compat/strlcat.h"
+
+#define PROGRAM "pesec"
 
 typedef enum {
 	CERT_FORMAT_TEXT = 1,
@@ -37,7 +39,7 @@ typedef struct {
 	BIO *certout;
 } options_t;
 
-static void usage()
+static void usage(void)
 {
 	printf("Usage: %s [OPTIONS] FILE\n"
 		"Check for security features in PE files\n"
@@ -152,35 +154,28 @@ static options_t *parse_options(int argc, char *argv[])
 find stack cookies, a.k.a canary, buffer security check
 option in MVS 2010
 */
-static bool stack_cookies(PE_FILE *pe)
+static bool stack_cookies(pe_ctx_t *ctx)
 {
-	unsigned int i, found = 0;
-	unsigned char buff;
-	const unsigned char mvs2010[] = {
+	static const unsigned char mvs2010[] = {
 		0x55, 0x8b, 0xec, 0x83,
 		0x33, 0xc5, 0x33, 0xcd,
 		0xe8, 0xc3
 	};
 
-	if (!pe)
+	if (ctx == NULL)
 		return false;
 
-	if (!pe->entrypoint)
-		if (!pe_get_optional(pe))
-			return false;
-
-	rewind(pe->handle);
-
-	while (fread(&buff, 1, 1, pe->handle))
-	{
-		for (i=0; i < sizeof(mvs2010); i++)
-		{
-			if (buff == mvs2010[i] && found == i)
+	size_t found = 0;
+	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
+	const uint64_t filesize = pe_filesize(ctx);
+	for (uint64_t ofs=0; ofs < filesize; ofs++) {
+		for (size_t i=0; i < sizeof(mvs2010); i++) {
+			if (file_bytes[ofs] == mvs2010[i] && found == i)
 				found++;
 		}
 	}
 
-	return (found == sizeof(mvs2010));
+	return found == sizeof(mvs2010);
 }
 
 static int round_up(int numToRound, int multiple)
@@ -297,40 +292,34 @@ error:
 	return result;
 }
 
-static void parse_certificates(const options_t *options, PE_FILE *pe)
+static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 {
-	if (!pe_get_directories(pe))
-		EXIT_ERROR("unable to read the Directories entry from Optional header");
-
-	const IMAGE_DATA_DIRECTORY * const directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_SECURITY);
+	const IMAGE_DATA_DIRECTORY * const directory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_SECURITY);
 	if (directory == NULL)
 		return;
 
 	if (directory->VirtualAddress == 0 || directory->Size == 0)
 		return;
 
-	DWORD fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
+	uint32_t fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
 
 	output("Certificates", NULL);
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
-		if (fseek(pe->handle, fileOffset, SEEK_SET))
-			EXIT_ERROR("unable to seek");
-
-		DWORD dwCertLen = 0;
-
 		// Read the size of this WIN_CERTIFICATE
-		if (!fread(&dwCertLen, sizeof(DWORD), 1, pe->handle))
-			EXIT_ERROR("unable to read");
+		uint32_t *dwLength_ptr = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
+		if (LIBPE_IS_PAST_THE_END(ctx, dwLength_ptr, sizeof(uint32_t))) {
+			// TODO: Should we report something?
+			return;
+		}
+		// Type punning
+		uint32_t dwLength = *(uint32_t *)dwLength_ptr;
 
-		if (fseek(pe->handle, fileOffset, SEEK_SET))
-			EXIT_ERROR("unable to seek");
-
-		WIN_CERTIFICATE *cert = xmalloc(dwCertLen);
-
-		// Read the whole WIN_CERTIFICATE based on the previously read size
-		if (!fread(cert, dwCertLen, 1, pe->handle))
-			EXIT_ERROR("unable to read");
+		WIN_CERTIFICATE *cert = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
+		if (LIBPE_IS_PAST_THE_END(ctx, cert, dwLength)) {
+			// TODO: Should we report something?
+			return;
+		}
 
 		static char value[MAX_MSG];
 
@@ -385,8 +374,6 @@ static void parse_certificates(const options_t *options, PE_FILE *pe)
 			case WIN_CERT_TYPE_EFI_GUID:
 				EXIT_ERROR("WIN_CERT_TYPE_EFI_GUID is not supported");
 		}
-
-		free(cert);
 	}
 }
 
@@ -394,33 +381,44 @@ int main(int argc, char *argv[])
 {
 	if (argc < 2) {
 		usage();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	options_t *options = parse_options(argc, argv); // opcoes
 
 	const char *path = argv[argc-1];
+	pe_ctx_t ctx;
 
-	FILE *fp = NULL;
-	if ((fp = fopen(path, "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
+	pe_err_e err = pe_load(&ctx, path);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	PE_FILE pe;
-	pe_init(&pe, fp); // inicializa o struct pe
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	if (!is_pe(&pe))
+	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	if (!pe_get_optional(&pe))
-		return 1;
+	IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
+	if (optional == NULL)
+		return EXIT_FAILURE;
 
-	WORD dllchar = 0;
-	if (pe.architecture == PE32)
-		dllchar = pe.optional_ptr->_32->DllCharacteristics;
-	else if (pe.architecture == PE64)
-		dllchar = pe.optional_ptr->_64->DllCharacteristics;
-	else
-		return 1;
+	uint16_t dllchar = 0;
+	switch (optional->type) {
+		default:
+			return EXIT_FAILURE;
+		case MAGIC_PE32:
+			dllchar = optional->_32->DllCharacteristics;
+			break;
+		case MAGIC_PE64:
+			dllchar = optional->_64->DllCharacteristics;
+			break;
+	}
 
 	char field[MAX_MSG];
 
@@ -438,15 +436,20 @@ int main(int argc, char *argv[])
 
 	// stack cookies
 	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
-	output(field, stack_cookies(&pe) ? "yes" : "no");
+	output(field, stack_cookies(&ctx) ? "yes" : "no");
 
 	// certificados
-	parse_certificates(options, &pe);
+	parse_certificates(options, &ctx);
 
 	// libera a memoria
-	pe_deinit(&pe);
-
 	free_options(options);
 
-	return 0;
+	// free
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }

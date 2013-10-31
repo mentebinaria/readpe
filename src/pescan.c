@@ -19,41 +19,55 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pescan.h"
+#include "common.h"
+#include <ctype.h>
+#include <time.h>
+#include <math.h>
 
-static int ind;
-char value[MAX_MSG];
+#define PROGRAM "pescan"
 
-static void usage()
+typedef struct {
+	bool verbose;
+} options_t;
+
+static void usage(void)
 {
 	printf("\n%s %s\n%s\n\nUsage: %s OPTIONS FILE\n"
-	"Search for suspicious things in PE files\n"
-	"\nExample: %s putty.exe\n"
-	"\nOptions:\n"
-   " -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-	" -v, --verbose                          show more info about items found\n"
-	" --help                                 show this help and exit\n",
-	PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
+		"Search for suspicious things in PE files\n"
+		"\nExample: %s putty.exe\n"
+		"\nOptions:\n"
+	   " -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -v, --verbose                          show more info about items found\n"
+		" --help                                 show this help and exit\n",
+		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
 }
 
-static void parse_options(int argc, char *argv[])
+static void free_options(options_t *options)
 {
-	int c;
+	if (options == NULL)
+		return;
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "f:v";
 
 	static const struct option long_options[] = {
-		{"format",           required_argument, NULL, 'f'},
-		{"help",             no_argument,       NULL,  1 },
-		{"verbose",          no_argument,       NULL, 'v'},
-		{ NULL,              0,                 NULL,  0 }
+		{"format",		required_argument,	NULL,	'f'},
+		{"help",		no_argument,		NULL,	 1 },
+		{"verbose",		no_argument,		NULL,	'v'},
+		{ NULL,			0,					NULL, 	 0 }
 	};
 
-	memset(&config, 0, sizeof(config));
+	int c, ind;
 
-	while ((c = getopt_long(argc, argv, short_options,
-			long_options, &ind)))
+	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
 			break;
@@ -63,32 +77,34 @@ static void parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-
 			case 'f':
-				parse_format(optarg); break;
-
+				parse_format(optarg);
+				break;
 			case 'v':
-				config.verbose = true; break;
-
+				options->verbose = true;
+				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
 // check for abnormal dos stub (common in packed files)
+/*
 static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 {
    BYTE dos_stub[] =
-   "\x0e"               // push cs
-   "\x1f"               // pop ds
-   "\xba\x0e\x00"       // mov dx, 0x0e
-   "\xb4\x09"           // mov ah, 0x09
-   "\xcd\x21"           // int 0x21
-   "\xb8\x01\x4c"       // mov ax, 0x4c01
-   "\xcd\x21"           // int 0x21
-   "This program cannot be run in DOS mode.\r\r\n$";
+	   "\x0e"               // push cs
+	   "\x1f"               // pop ds
+	   "\xba\x0e\x00"       // mov dx, 0x0e
+	   "\xb4\x09"           // mov ah, 0x09
+	   "\xcd\x21"           // int 0x21
+	   "\xb8\x01\x4c"       // mov ax, 0x4c01
+	   "\xcd\x21"           // int 0x21
+	   "This program cannot be run in DOS mode.\r\r\n$";
 
    BYTE data[sizeof(dos_stub)-1]; // -1 to ignore ending null
    IMAGE_DOS_HEADER dos;
@@ -152,12 +168,13 @@ static DWORD pe_get_tls_directory(PE_FILE *pe)
 
 	return 0;
 }
-
+*/
 /*
  * -1 - fake tls callbacks detected
  *  0 - no tls directory
  * >0 - number of callbacks functions found
 */
+/*
 static int pe_get_tls_callbacks(PE_FILE *pe)
 {
 	QWORD tls_addr = 0;
@@ -275,6 +292,8 @@ static void print_strange_sections(PE_FILE *pe)
 	if (!pe_get_sections(pe) || !pe->num_sections)
 		return;
 
+	char value[MAX_MSG];
+
 	if (pe->num_sections <= 2)
 		snprintf(value, MAX_MSG, "%d (low)", pe->num_sections);
 	else if (pe->num_sections > 8)
@@ -323,6 +342,8 @@ static void print_timestamp(DWORD *stamp)
 	time_t now = time(NULL);
 	char timestr[33];
 
+	char value[MAX_MSG];
+
 	if (*stamp == 0)
 		snprintf(value, MAX_MSG, "zero/invalid");
 	else if (*stamp < 946692000)
@@ -346,77 +367,163 @@ static void print_timestamp(DWORD *stamp)
 	output("timestamp", value);
 
 }
+*/
 
-double calculate_entropy(const unsigned int byte_count[256], const int total_length)
+double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
 {
+	static const double log_2 = 1.44269504088896340736;
 	double entropy = 0.;
-	const double log_2 = 1.44269504088896340736;
 
-	for(unsigned int i = 0; i < 256; i++)
-	{
-		double temp = (double)byte_count[i] / total_length;
-		if(temp > 0.)
+	for (size_t i = 0; i < 256; i++) {
+		double temp = (double)counted_bytes[i] / total_length;
+		if (temp > 0.)
 			entropy += fabs(temp * (log(temp) * log_2));
-
 	}
 
 	return entropy;
 }
 
-double calculate_entropy_file(PE_FILE *pe)
+double calculate_entropy_file(pe_ctx_t *ctx)
 {
-        unsigned int byte_count[256] = {0};
-	unsigned int n, size;
-	unsigned char buffer[1024];
+	unsigned int counted_bytes[256];
+	memset(counted_bytes, 0, sizeof(counted_bytes));
 
-	n = size = 0;
+	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
+	const uint64_t filesize = pe_filesize(ctx);
+	for (uint64_t ofs=0; ofs < filesize; ofs++) {
+		const uint8_t byte = file_bytes[ofs];
+		counted_bytes[byte]++;
+	}
 
-	rewind(pe->handle);
+	return calculate_entropy(counted_bytes, (size_t)filesize);
+}
 
-	while((n = fread(buffer, 1, 1024, pe->handle)) != 0)
-        {
-		for (unsigned int i = 0; i < n; i++)
-                	byte_count[(int) buffer[i]]++, size++;
-        }
+// new anti-disassembly technique with undocumented Intel FPU instructions
+static bool fpu_trick(pe_ctx_t *ctx)
+{
+   const char *opcode_ptr = ctx->map_addr;
 
-        return calculate_entropy(byte_count, size);
+	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
+		if (*opcode_ptr++ == '\xdf') {
+			if (++times == 4)
+				return true;
+		}
+		else
+			times = 0;
+	}
+
+	return false;
+}
+
+static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
+{
+   IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+
+	time_t now = time(NULL);
+	char timestr[33];
+
+	char value[MAX_MSG];
+
+	if (hdr_coff_ptr->TimeDateStamp == 0)
+		snprintf(value, MAX_MSG, "zero/invalid");
+	else if (hdr_coff_ptr->TimeDateStamp < 946692000)
+		snprintf(value, MAX_MSG, "too old (pre-2000)");
+	else if (hdr_coff_ptr->TimeDateStamp > (uint32_t) now)
+		snprintf(value, MAX_MSG, "future time");
+	else
+		snprintf(value, MAX_MSG, "normal");
+
+	if (options->verbose)
+	{
+		strftime(timestr, sizeof(timestr),
+			" - %a, %d %b %Y %H:%M:%S UTC",
+			gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
+
+		strcat(value, timestr);
+		//strcat(value, " - ");
+		//strcat(value, ctime((time_t *) hdr_coff_ptr->TimeDateStamp));
+	}
+
+	output("timestamp", value);
+}
+
+static int8_t cpl_analysis(pe_ctx_t *ctx)
+{
+	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+	IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
+
+	if (!hdr_coff_ptr || !hdr_dos_ptr)
+		return -1;
+
+	if (
+		 (hdr_coff_ptr->TimeDateStamp == 708992537 ||
+		 hdr_coff_ptr->TimeDateStamp > 1354555867) &&
+		 (hdr_coff_ptr->Characteristics == 0xa18e ||
+		  hdr_coff_ptr->Characteristics == 0xa38e ||
+		  hdr_coff_ptr->Characteristics == 0x2306) &&
+		 hdr_dos_ptr->e_sp == 0xb8
+		)
+		return 1;
+
+	return 0;
 }
 
 int main(int argc, char *argv[])
 {
-	PE_FILE pe;
-	FILE *fp = NULL;
-	DWORD ep, stub_offset;
-	int callbacks;
-	double entropy;
-//	unsigned int num_sections;
-
-	if (argc < 2)
-	{
+	if (argc < 2) {
 		usage();
-		exit(1);
+		return EXIT_FAILURE;
 	}
 
-	parse_options(argc, argv); // opcoes
+	options_t *options = parse_options(argc, argv); // opcoes
 
-	if ((fp = fopen(argv[argc-1], "rb")) == NULL)
-		EXIT_ERROR("file not found or unreadable");
+	const char *path = argv[argc-1];
+	pe_ctx_t ctx;
 
-	pe_init(&pe, fp); // inicializa o struct pe
+	pe_err_e err = pe_load(&ctx, path);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
-	if (!is_pe(&pe))
+	err = pe_parse(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
+
 	// File entropy
-	entropy = calculate_entropy_file(&pe);
+	double entropy = calculate_entropy_file(&ctx);
 
-	if(entropy < 7.0)
-		snprintf(value, MAX_MSG, "normal (%f)", entropy);
+	char value[MAX_MSG];
+
+	if (entropy < 7.0)
+		snprintf(value, MAX_MSG, "%f (normal)", entropy);
 	else
-		snprintf(value, MAX_MSG, "packed (%f)", entropy);
+		snprintf(value, MAX_MSG, "%f (probably packed)", entropy);
 	output("file entropy", value);
-        memset(&value, 0, sizeof(value));
 
+	if (pe_is_dll(&ctx)) {
+		uint16_t ret = cpl_analysis(&ctx);
+		switch (ret) {
+			case 1:
+				output("cpl analysis", "banker");
+				break;
+			default:
+				output("cpl analysis:", "no threat");
+				break;
+		}
+	}
+
+	print_timestamp(&ctx, options);
+
+	output("fpu undocumented", fpu_trick(&ctx) ? "yes" : "no");
+
+/*
 	if (!pe_get_optional(&pe))
 		return 1;
 
@@ -426,29 +533,28 @@ int main(int argc, char *argv[])
 	// fake ep
 	if (ep == 0)
 		snprintf(value, MAX_MSG, "null");
-	else if (pe_check_fake_entrypoint(&pe, &ep))
+	else if (pe_check_fake_entrypoint(&pe, &ep)) {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "fake");
-	else
+	} else {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
 		else
 			snprintf(value, MAX_MSG, "normal");
+	}
 
 	output("entrypoint", value);
 
 	// dos stub
 	memset(&value, 0, sizeof(value));
-	if (!normal_dos_stub(&pe, &stub_offset))
-	{
+	if (!normal_dos_stub(&pe, &stub_offset)) {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
 		else
 			snprintf(value, MAX_MSG, "suspicious");
-	}
-	else
+	} else
 		snprintf(value, MAX_MSG, "normal");
 
 	output("DOS stub", value);
@@ -470,15 +576,12 @@ int main(int argc, char *argv[])
 	print_strange_sections(&pe);
 
 	// no imagebase
-	if (!normal_imagebase(&pe))
-	{
+	if (!normal_imagebase(&pe)) {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "suspicious - %#"PRIx64, pe.imagebase);
 		else
 			snprintf(value, MAX_MSG, "suspicious");
-	}
-	else
-	{
+	} else {
 		if (config.verbose)
 			snprintf(value, MAX_MSG, "normal - %#"PRIx64, pe.imagebase);
 		else
@@ -493,8 +596,17 @@ int main(int argc, char *argv[])
 		EXIT_ERROR("unable to read coff header");
 
 	print_timestamp(&coff.TimeDateStamp);
+*/
 
-	pe_deinit(&pe);
+	// libera a memoria
+	free_options(options);
 
-	return 0;
+	// free
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK) {
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }

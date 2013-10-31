@@ -34,7 +34,7 @@
 
 3. Pre-requisites
 
- libssl (pehash only)
+ libssl (pehash, pesec)
  libpcre (pestr only)
  libc
  gcc
@@ -80,7 +80,7 @@
   * binutils
   * make
   * libpcre-dev (pestr)
-  * openssl-devel (pehash)
+  * openssl-devel (pehash, pesec)
   * zip
 
   Compile with:
@@ -114,7 +114,7 @@
 
   For Homebrew, install the dependency and compile pev with:
 
-  $ sudo brew install pcre
+  $ brew install pcre
   $ make CFLAGS="-I/usr/local/include"
 
   NOTE: The paths above may change depending on how you installed the
@@ -126,7 +126,7 @@
  * pedis    - PE disassembler
  * pepack   - packer detector
  * pescan   - search for suspicious things in PE files, including TLS callbacks
- * pesec    - check security features in PE files
+ * pesec    - check security features in PE files, including digital signatures
  * pestr    - search for unicode and ascii strings in PE files
  * readpe   - show PE file headers, sections and more
  * rva2ofs  - convert RVA to raw file offsets

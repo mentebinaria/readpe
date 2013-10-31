@@ -1,7 +1,7 @@
 /*
 	libpe - the PE library
 
-	Copyright (C) 2010 - 2012 Fernando Mercês
+	Copyright (C) 2010 - 2013 libpe authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,471 +19,583 @@
 
 #include "pe.h"
 
-void *xmalloc(size_t size)
-{
-	if (size <= 0)
-		return NULL;
+#include <errno.h>
+#include <fcntl.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 
-	void *new_mem = malloc(size);
-
-	if (!new_mem)
-	{
-		fprintf(stderr, "fatal: memory exhausted (xmalloc of %zu bytes)\n", size);
-		exit(-1);
-	}
-
-	return new_mem;
+pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
+	return pe_load_ext(ctx, path, 0);
 }
 
-// return a rva of given offset
-DWORD ofs2rva(PE_FILE *pe, DWORD ofs)
-{
-	if (!ofs || !pe || !pe_get_sections(pe))
-		return 0;
+pe_err_e pe_load_ext(pe_ctx_t *ctx, const char *path, pe_options_e options) {
+	int ret = 0;
 
-	for (unsigned int i=0; i <  pe->num_sections; i++)
-	{
-		// if offset is inside section, return your VA in section
-		if (ofs >= pe->sections_ptr[i]->PointerToRawData &&
-		ofs < (pe->sections_ptr[i]->PointerToRawData + pe->sections_ptr[i]->SizeOfRawData))
-			return ofs + pe->sections_ptr[i]->VirtualAddress;
+	// Cleanup the whole struct.
+	memset(ctx, 0, sizeof(pe_ctx_t));
+
+	ctx->path = strdup(path);
+	if (ctx->path == NULL) {
+		//perror("strdup");
+		return LIBPE_E_ALLOCATION_FAILURE;
 	}
-	return 0;
+
+	// Open the file.
+	const int fd = open(ctx->path, O_RDWR);
+	if (fd == -1) {
+		//perror("open");
+		return LIBPE_E_OPEN_FAILED;
+	}
+
+	// Stat the fd to retrieve the file informations.
+	// If file is a symlink, fstat will stat the pointed file, not the link.
+	struct stat stat;
+	ret = fstat(fd, &stat);
+	if (ret == -1) {
+		close(fd);
+		//perror("fstat");
+		return LIBPE_E_FSTAT_FAILED;
+	}
+
+	// Check if we're dealing with a regular file.
+	if (!S_ISREG(stat.st_mode)) {
+		close(fd);
+		//fprintf(stderr, "%s is not a file\n", ctx->path);
+		return LIBPE_E_NOT_A_FILE;
+	}
+
+	// Grab the file size.
+	ctx->map_size = stat.st_size;
+
+	// Create the virtual memory mapping.
+	ctx->map_addr = mmap(NULL, ctx->map_size, PROT_READ|PROT_WRITE,
+		MAP_SHARED, fd, 0);
+	if (ctx->map_addr == MAP_FAILED) {
+		close(fd);
+		//perror("mmap");
+		return LIBPE_E_MMAP_FAILED;
+	}
+
+	ctx->map_end = (uintptr_t)LIBPE_PTR_ADD(ctx->map_addr, ctx->map_size);
+
+	if (options & LIBPE_OPT_NOCLOSE_FD) {
+		// The file descriptor is not dup'ed, and will be closed when the stream created by fdopen() is closed.
+		FILE *fp = fdopen(fd, "r+b"); // NOTE: 'b' is ignored on all POSIX conforming systems.
+		if (fp == NULL) {
+			//perror("fdopen");
+			return LIBPE_E_FDOPEN_FAILED;
+		}
+		ctx->stream = fp;
+	} else {
+		// We can now close the fd.
+		ret = close(fd);
+		if (ret == -1) {
+			//perror("close");
+			return LIBPE_E_CLOSE_FAILED;
+		}
+	}
+
+	// Give advice about how we'll use our memory mapping.
+	ret = madvise(ctx->map_addr, ctx->map_size, MADV_SEQUENTIAL);
+	if (ret < 0) {
+		//perror("madvise");
+		// NOTE: This is a recoverable error. Do not abort.
+	}
+
+	return LIBPE_E_OK;
 }
 
-QWORD rva2ofs(PE_FILE *pe, QWORD rva)
-{
-	if (!rva || !pe || !pe_get_sections(pe))
-		return 0;
+pe_err_e pe_unload(pe_ctx_t *ctx) {
+	int ret = 0;
 
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
-		rva < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
-			return rva - pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->PointerToRawData;
+	if (ctx->stream != NULL) {
+		fclose(ctx->stream);
 	}
-	return 0;
+
+	if (ctx->path != NULL) {
+		free(ctx->path);
+	}
+
+	// Dealloc internal pointers.
+	if (ctx->pe.directories != NULL) {
+		free(ctx->pe.directories);
+	}
+	if (ctx->pe.sections != NULL) {
+		free(ctx->pe.sections);
+	}
+
+	// Dealloc the virtual mapping.
+	if (ctx->map_addr != NULL) {
+		ret = munmap(ctx->map_addr, ctx->map_size);
+		if (ret != 0) {
+			//perror("munmap");
+			return LIBPE_E_MUNMAP_FAILED;
+		}
+	}
+
+	// Cleanup the whole struct.
+	memset(ctx, 0, sizeof(pe_ctx_t));
+
+	return LIBPE_E_OK;
 }
 
-// the first function you need to call
-bool pe_init(PE_FILE *pe, FILE *handle)
-{
-	if (!pe || !handle)
+pe_err_e pe_parse(pe_ctx_t *ctx) {
+	ctx->pe.dos_hdr = ctx->map_addr;
+	if (ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
+		return LIBPE_E_NOT_A_PE_FILE;
+
+	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
+		ctx->pe.dos_hdr->e_lfanew);
+	if (LIBPE_IS_PAST_THE_END(ctx, signature_ptr, sizeof(uint32_t)))
+		return LIBPE_E_INVALID_LFANEW;
+
+	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
+	ctx->pe.signature = *signature_ptr;
+
+	switch (ctx->pe.signature) {
+		default:
+			//fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
+			return LIBPE_E_INVALID_SIGNATURE;
+		case SIGNATURE_NE:
+		case SIGNATURE_PE:
+			break;
+	}
+
+	ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
+		LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
+	if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.coff_hdr,
+		sizeof(IMAGE_COFF_HEADER)))
+		return LIBPE_E_MISSING_COFF_HEADER;
+
+	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
+
+	// Optional header points right after the COFF header.
+	ctx->pe.optional_hdr_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr,
+		sizeof(IMAGE_COFF_HEADER));
+
+	// Figure out whether it's a PE32 or PE32+.
+	uint16_t *opt_type_ptr = ctx->pe.optional_hdr_ptr;
+	if (LIBPE_IS_PAST_THE_END(ctx, opt_type_ptr,
+		LIBPE_SIZEOF_MEMBER(IMAGE_OPTIONAL_HEADER, type)))
+		return LIBPE_E_MISSING_OPTIONAL_HEADER;
+
+	ctx->pe.optional_hdr.type = *opt_type_ptr;
+
+	switch (ctx->pe.optional_hdr.type) {
+		default:
+		case MAGIC_ROM:
+			// Oh boy! We do not support ROM. Abort!
+			//fprintf(stderr, "ROM image is not supported\n");
+			return LIBPE_E_UNSUPPORTED_IMAGE;
+		case MAGIC_PE32:
+			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
+				sizeof(IMAGE_OPTIONAL_HEADER_32)))
+				return LIBPE_E_MISSING_OPTIONAL_HEADER;
+			ctx->pe.optional_hdr._32 = ctx->pe.optional_hdr_ptr;
+			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_32);
+			ctx->pe.num_directories =
+				ctx->pe.optional_hdr._32->NumberOfRvaAndSizes;
+			ctx->pe.entrypoint = ctx->pe.optional_hdr._32->AddressOfEntryPoint;
+			ctx->pe.imagebase = ctx->pe.optional_hdr._32->ImageBase;
+			break;
+		case MAGIC_PE64:
+			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
+				sizeof(IMAGE_OPTIONAL_HEADER_64)))
+				return LIBPE_E_MISSING_OPTIONAL_HEADER;
+			ctx->pe.optional_hdr._64 = ctx->pe.optional_hdr_ptr;
+			ctx->pe.optional_hdr.length = sizeof(IMAGE_OPTIONAL_HEADER_64);
+			ctx->pe.num_directories =
+				ctx->pe.optional_hdr._64->NumberOfRvaAndSizes;
+			ctx->pe.entrypoint = ctx->pe.optional_hdr._64->AddressOfEntryPoint;
+			ctx->pe.imagebase = ctx->pe.optional_hdr._64->ImageBase;
+			break;
+	}
+
+	if (ctx->pe.num_directories > MAX_DIRECTORIES) {
+		//fprintf(stderr, "Too many directories (%u)\n", ctx->pe.num_directories);
+		return LIBPE_E_TOO_MANY_DIRECTORIES;
+	}
+
+	if (ctx->pe.num_sections > MAX_SECTIONS) {
+		//fprintf(stderr, "Too many sections (%u)\n", ctx->pe.num_sections);
+		return LIBPE_E_TOO_MANY_SECTIONS;
+	}
+
+	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
+		ctx->pe.optional_hdr.length);
+	// If there are no directories, sections_ptr will point right
+	// after the OPTIONAL header.
+	ctx->pe.sections_ptr = ctx->pe.directories_ptr;
+
+	if (ctx->pe.num_directories > 0) {
+		ctx->pe.directories = malloc(ctx->pe.num_directories
+			* sizeof(IMAGE_DATA_DIRECTORY *));
+		if (ctx->pe.directories == NULL)
+			return LIBPE_E_ALLOCATION_FAILURE;
+		for (uint32_t i = 0; i < ctx->pe.num_directories; i++) {
+			ctx->pe.directories[i] = LIBPE_PTR_ADD(ctx->pe.directories_ptr,
+				i * sizeof(IMAGE_DATA_DIRECTORY));
+			// Calculate sections' start address.
+			ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.sections_ptr,
+				sizeof(IMAGE_DATA_DIRECTORY));
+		}
+	} else {
+		ctx->pe.directories_ptr = NULL;
+	}
+
+	if (ctx->pe.num_sections > 0) {
+		ctx->pe.sections = malloc(ctx->pe.num_sections
+			* sizeof(IMAGE_SECTION_HEADER *));
+		if (ctx->pe.sections == NULL)
+			return LIBPE_E_ALLOCATION_FAILURE;
+		for (uint32_t i = 0; i < ctx->pe.num_sections; i++) {
+			ctx->pe.sections[i] = LIBPE_PTR_ADD(ctx->pe.sections_ptr,
+				i * sizeof(IMAGE_SECTION_HEADER));
+		}
+	} else {
+		ctx->pe.sections_ptr = NULL;
+	}
+
+	return LIBPE_E_OK;
+}
+
+bool pe_is_pe(pe_ctx_t *ctx) {
+	// Check MZ header
+	if (ctx->pe.dos_hdr == NULL || ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
 		return false;
 
-	memset(pe, 0, sizeof(PE_FILE));
-	pe->handle = handle;
+	// Check PE signature
+	if (ctx->pe.signature != SIGNATURE_PE)
+		return false;
 
 	return true;
+}
+
+bool pe_is_dll(pe_ctx_t *ctx) {
+	if (ctx->pe.coff_hdr == NULL)
+		return false;
+	return ctx->pe.coff_hdr->Characteristics & IMAGE_FILE_DLL ? true : false;
+}
+
+uint64_t pe_filesize(pe_ctx_t *ctx) {
+	return ctx->map_size;
 }
 
 // return the section of given rva
-IMAGE_SECTION_HEADER* pe_rva2section(PE_FILE *pe, QWORD rva)
-{
-	if (!pe || !rva)
+IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva) {
+	if (rva == 0 || ctx->pe.sections == NULL)
 		return NULL;
 
-	if (!pe->num_sections || !pe->sections_ptr)
-		pe_get_sections(pe);
-
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		if (rva >= pe->sections_ptr[i]->VirtualAddress &&
-		rva <= pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->Misc.VirtualSize)
-			return pe->sections_ptr[i];
-	}
-
-	return NULL;
-}
-
-// return a section by name
-IMAGE_SECTION_HEADER* pe_get_section(PE_FILE *pe, const char *section_name)
-{
-	if (!pe || !section_name)
-		return NULL;
-
-	if (!pe->addr_sections || !pe->num_sections)
-		pe_get_sections(pe);
-
-	if (!pe->num_sections || pe->num_sections > MAX_SECTIONS)
-		return NULL;
-
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		if (memcmp(pe->sections_ptr[i]->Name, section_name, strlen(section_name)) == 0)
-			return pe->sections_ptr[i];
+	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
+		if (rva >= ctx->pe.sections[i]->VirtualAddress &&
+			rva <= ctx->pe.sections[i]->VirtualAddress
+				+ ctx->pe.sections[i]->Misc.VirtualSize)
+			return ctx->pe.sections[i];
 	}
 	return NULL;
 }
 
-bool pe_get_resource_entries(PE_FILE *pe)
-{
-	IMAGE_RESOURCE_DIRECTORY dir;
-
-	if (!pe)
-		return false;
-
-	if (pe->rsrc_entries_ptr)
-		return pe->rsrc_entries_ptr;
-
-	if (!pe_get_resource_directory(pe, &dir))
-		return false;
-
-	pe->num_rsrc_entries = dir.NumberOfIdEntries + dir.NumberOfNamedEntries;
-
-	if (!pe->num_rsrc_entries)
-		return false;
-
-	pe->rsrc_entries_ptr = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pe->num_rsrc_entries);
-
-	for (unsigned int i=0; i < pe->num_rsrc_entries; i++)
-	{
-		pe->rsrc_entries_ptr[i] = xmalloc(sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
-
-		if (!fread(pe->rsrc_entries_ptr[i], sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, pe->handle))
-			return false;
-	}
-	return true;
-}
-
-bool pe_get_resource_directory(PE_FILE *pe, IMAGE_RESOURCE_DIRECTORY *dir)
-{
-	if (!pe)
-		return false;
-
-	if (!pe->directories_ptr)
-		if (!pe_get_directories(pe))
-			return false;
-
-	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-	if (!directory)
-		return false;
-
-	if (directory->Size > 0)
-	{
-		pe->addr_rsrc_dir = rva2ofs(pe, directory->VirtualAddress);
-		if (fseek(pe->handle, pe->addr_rsrc_dir, SEEK_SET))
-			return false;
-
-		if (!fread(dir, sizeof(dir), 1, pe->handle))
-			return false;
-
-		return true;
-	}
-	return false;
-}
-
-IMAGE_DATA_DIRECTORY *pe_get_data_directory(PE_FILE *pe, ImageDirectoryEntry entry)
-{
-	if (!pe || !pe->directories_ptr || entry > (WORD)(pe->num_directories - 1))
-		return NULL;
-
-	return pe->directories_ptr[entry];
-}
-
-
-bool pe_get_sections(PE_FILE *pe)
-{
-	IMAGE_SECTION_HEADER **sections;
-
-	if (!pe)
-		return false;
-
-	if (pe->sections_ptr)
-		return true;
-
-	if (!pe->addr_sections || !pe->num_sections)
-	{
-		if (!pe_get_directories(pe))
-			return false;
-	}
-
-	if (pe->num_sections > MAX_SECTIONS)
-		return false;
-
-	if (fseek(pe->handle, pe->addr_sections, SEEK_SET))
-		return false;
-	sections = xmalloc(sizeof(IMAGE_SECTION_HEADER *) * pe->num_sections);
-
-	for (unsigned int i=0; i < pe->num_sections; i++)
-	{
-		sections[i] = xmalloc(sizeof(IMAGE_SECTION_HEADER));
-		if (!fread(sections[i], sizeof(IMAGE_SECTION_HEADER), 1, pe->handle))
-			return false;
-	}
-
-	pe->sections_ptr = sections;
-	rewind(pe->handle);
-
-	if (!pe->sections_ptr)
-		return false;
-
-	return true;
-}
-
-bool pe_get_directories(PE_FILE *pe)
-{
-	if (!pe)
-		return false;
-
-	if (pe->directories_ptr)
-		return true;
-
-	if (!pe->addr_directories)
-	{
-		if (!pe_get_optional(pe))
-			return false;
-	}
-
-	if (fseek(pe->handle, pe->addr_directories, SEEK_SET))
-		return false;
-
-	if (pe->num_directories > 32)
-		return false;
-
-	const size_t directories_size = sizeof(IMAGE_DATA_DIRECTORY *) * pe->num_directories;
-
-	pe->directories_ptr = xmalloc(directories_size);
-	if (!pe->directories_ptr)
-		return false;
-
-	// Zero out the entire block, otherwise if one allocation fails for dirs[i],
-	// pe_deinit() will try to free wild pointers. This of course does not take
-	// into consideration that an allocation failure will make the process die.
-	memset(pe->directories_ptr, 0, directories_size);
-
-	for (unsigned int i=0; i < pe->num_directories; i++)
-	{
-		pe->directories_ptr[i] = xmalloc(sizeof(IMAGE_DATA_DIRECTORY));
-		if (!fread(pe->directories_ptr[i], sizeof(IMAGE_DATA_DIRECTORY), 1, pe->handle))
-			return false;
-	}
-
-	pe->addr_sections = ftell(pe->handle);
-
-	if (!pe->addr_sections)
-		return false;
-
-	return true;
-}
-
-bool pe_get_optional(PE_FILE *pe)
-{
-	IMAGE_OPTIONAL_HEADER *header;
-
-	if (!pe)
-		return false;
-
-	if (pe->optional_ptr)
-		return true;
-
-	if (!pe->addr_optional)
-	{
-		IMAGE_COFF_HEADER coff;
-
-		if (!pe_get_coff(pe, &coff))
-			return false;
-	}
-
-	if (fseek(pe->handle, pe->addr_optional, SEEK_SET))
-		return false;
-
-	pe->optional_ptr = xmalloc(sizeof(IMAGE_OPTIONAL_HEADER));
-	if (!pe->optional_ptr)
-		return false;
-
-	header = pe->optional_ptr;
-
-	switch (pe->architecture)
-	{
-		case PE32:
-			header->_32 = xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_32));
-			if (!fread(header->_32, sizeof(IMAGE_OPTIONAL_HEADER_32), 1, pe->handle))
-				return false;
-			pe->num_directories = header->_32->NumberOfRvaAndSizes;
-			pe->entrypoint = header->_32->AddressOfEntryPoint;
-			pe->imagebase = header->_32->ImageBase;
-			header->_64 = NULL;
-			break;
-
-		case PE64:
-			header->_64 = xmalloc(sizeof (IMAGE_OPTIONAL_HEADER_64));
-			if (!fread(header->_64, sizeof(IMAGE_OPTIONAL_HEADER_64), 1, pe->handle))
-				return false;
-			pe->num_directories = header->_64->NumberOfRvaAndSizes;
-			pe->entrypoint = header->_64->AddressOfEntryPoint;
-			pe->imagebase = header->_64->ImageBase;
-			header->_32 = NULL;
-			break;
-
-		default:
-			pe_deinit(pe);
-			return false;
-	}
-
-	pe->addr_directories = ftell(pe->handle);
-
-	if (!pe->addr_directories)
-		return false;
-
-	return true;
-}
-
-bool pe_get_coff(PE_FILE *pe, IMAGE_COFF_HEADER *header)
-{
-	if (!pe)
-		return false;
-
-	if (!pe->addr_coff)
-	{
-		IMAGE_DOS_HEADER dos;
-
-		if (!pe_get_dos(pe, &dos))
-			return false;
-	}
-
-	if (!pe->handle)
-		return false;
-
-	if (fseek(pe->handle, pe->addr_coff, SEEK_SET))
-		return false;
-
-	if (!fread(header, sizeof(IMAGE_COFF_HEADER), 1, pe->handle))
-		return false;
-
-	pe->num_sections = header->NumberOfSections;
-	pe->addr_optional = ftell(pe->handle);
-	pe->isdll = header->Characteristics & (1<<13) ? true : false;
-
-	if (!fread(&pe->architecture, sizeof(WORD), 1, pe->handle))
-		return false;
-
-	if(!pe->addr_optional)
-		return false;
-
-	return true;
-}
-
-bool pe_get_dos(PE_FILE *pe, IMAGE_DOS_HEADER *header)
-{
-	if (!pe)
-		return false;
-
-	if (!pe->handle)
-		return false;
-
-	rewind(pe->handle);
-
-	if (!fread(header, sizeof(IMAGE_DOS_HEADER), 1, pe->handle))
-		return false;
-
-	pe->addr_coff = header->e_lfanew + 4; // NT signature (PE\0\0)
-
-	return true;
-}
-
-QWORD pe_get_size(PE_FILE *pe)
-{
-	if (pe->size)
-		return pe->size;
-
-	if (fseek(pe->handle, 0, SEEK_END))
+uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva) {
+	if (rva == 0 || ctx->pe.sections == NULL)
 		return 0;
 
-	pe->size = ftell(pe->handle);
-	rewind(pe->handle);
-	return pe->size;
+	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
+		if (rva >= ctx->pe.sections[i]->VirtualAddress &&
+			rva < (ctx->pe.sections[i]->VirtualAddress
+				+ ctx->pe.sections[i]->SizeOfRawData))
+			return rva - ctx->pe.sections[i]->VirtualAddress
+				+ ctx->pe.sections[i]->PointerToRawData;
+	}
+	return 0;
 }
 
-bool is_pe(PE_FILE *pe)
-{
-	WORD header;
-	LONG elfanew;
-	DWORD pesig;
+// Returns the RVA for a given offset
+uint64_t pe_ofs2rva(pe_ctx_t *ctx, uint64_t ofs) {
+	if (ofs == 0 || ctx->pe.sections == NULL)
+		return 0;
 
-	header = elfanew = pesig = 0;
-
-	if (pe->handle == NULL)
-		return false;
-
-	rewind(pe->handle);	
-	if (!fread(&header, sizeof(WORD), 1, pe->handle))
-		return false;
-
-	// check MZ header
-	if (header != MZ)
-		return false;
-
-	// check PE signature
-	if (fseek(pe->handle, sizeof(IMAGE_DOS_HEADER) - sizeof(LONG), SEEK_SET))
-		return false;
-
-	if (!fread(&elfanew, sizeof(LONG), 1, pe->handle))
-		return false;
-
-	if (fseek(pe->handle, elfanew, SEEK_SET))
-		return false;
-
-	if (!fread(&pesig, sizeof(DWORD), 1, pe->handle))
-		return false;
-
-	if (pesig != 0x4550) // "PE\0\0"
-		return false;
-
-	rewind(pe->handle);
-	return true;
+	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
+		// If offset points within this section, return its VA
+		if (ofs >= ctx->pe.sections[i]->PointerToRawData &&
+			ofs < (ctx->pe.sections[i]->PointerToRawData
+				+ ctx->pe.sections[i]->SizeOfRawData))
+			return ctx->pe.sections[i]->VirtualAddress > 0 ? ofs +
+ctx->pe.sections[i]->VirtualAddress : ofs + ctx->pe.imagebase;
+	}
+	return 0;
 }
 
-// free pointers
-void pe_deinit(PE_FILE *pe)
-{
-	unsigned int i;
+IMAGE_DOS_HEADER *pe_dos(pe_ctx_t *ctx) {
+	return ctx->pe.dos_hdr;
+}
 
-	if (pe->handle)
-		fclose(pe->handle);
+IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx) {
+	return ctx->pe.coff_hdr;
+}
 
-	if (pe->optional_ptr)
-	{
-		if (pe->optional_ptr->_32)
-			free(pe->optional_ptr->_32);
+IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx) {
+	return &ctx->pe.optional_hdr;
+}
 
-		if (pe->optional_ptr->_64)
-			free(pe->optional_ptr->_64);
+uint32_t pe_directories_count(pe_ctx_t *ctx) {
+	return ctx->pe.num_directories;
+}
 
-		free(pe->optional_ptr);
+IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx) {
+	return ctx->pe.directories;
+}
+
+IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry) {
+	if (ctx->pe.directories == NULL || entry > ctx->pe.num_directories - 1)
+		return NULL;
+
+	return ctx->pe.directories[entry];
+}
+
+uint32_t pe_sections_count(pe_ctx_t *ctx) {
+	return ctx->pe.num_sections;
+}
+
+IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx) {
+	return ctx->pe.sections;
+}
+
+IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
+	if (ctx->pe.sections == NULL || name == NULL)
+		return NULL;
+
+	size_t name_len = strlen(name);
+	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
+		if (memcmp(ctx->pe.sections[i]->Name, name, name_len) == 0)
+			return ctx->pe.sections[i];
 	}
+	return NULL;
+}
 
-	if (pe->directories_ptr)
-	{
-		for (i=0; i < pe->num_directories; i++)
-		{
-			if (pe->directories_ptr[i])
-				free(pe->directories_ptr[i]);
-		}
-		free(pe->directories_ptr);
+const char *pe_machine_type_name(MachineType type) {
+	typedef struct {
+		MachineType type;
+		const char * const name;
+	} MachineEntry;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const MachineEntry names[] = {
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_UNKNOWN),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_AM33),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_AMD64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARM),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARMV7),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_CEE),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_EBC),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_I386),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_IA64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_M32R),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPS16),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPSFPU),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPSFPU16),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPC),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPCFP),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_R4000),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3DSP),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH4),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH5),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_THUMB),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_WCEMIPSV2)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (type == names[i].type)
+			return names[i].name;
 	}
+	return NULL;
+}
 
-	if (pe->sections_ptr)
-	{
-		for (i=0; i < pe->num_sections; i++)
-		{
-			if (pe->sections_ptr[i])
-				free(pe->sections_ptr[i]);
-		}
-		free(pe->sections_ptr);
+const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
+	typedef struct {
+		ImageCharacteristics characteristic;
+		const char * const name;
+	} ImageCharacteristicsName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const ImageCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_FILE_RELOCS_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_EXECUTABLE_IMAGE),
+		LIBPE_ENTRY(IMAGE_FILE_LINE_NUMS_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_LOCAL_SYMS_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_AGGRESSIVE_WS_TRIM),
+		LIBPE_ENTRY(IMAGE_FILE_LARGE_ADDRESS_AWARE),
+		LIBPE_ENTRY(IMAGE_FILE_RESERVED),
+		LIBPE_ENTRY(IMAGE_FILE_BYTES_REVERSED_LO),
+		LIBPE_ENTRY(IMAGE_FILE_32BIT_MACHINE),
+		LIBPE_ENTRY(IMAGE_FILE_DEBUG_STRIPPED),
+		LIBPE_ENTRY(IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP),
+		LIBPE_ENTRY(IMAGE_FILE_NET_RUN_FROM_SWAP),
+		LIBPE_ENTRY(IMAGE_FILE_SYSTEM),
+		LIBPE_ENTRY(IMAGE_FILE_DLL),
+		LIBPE_ENTRY(IMAGE_FILE_UP_SYSTEM_ONLY),
+		LIBPE_ENTRY(IMAGE_FILE_BYTES_REVERSED_HI)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
 	}
+	return NULL;
+}
 
-	if (pe->rsrc_entries_ptr)
-	{
-		for (i=0; i < pe->num_rsrc_entries; i++)
-		{
-			if (pe->rsrc_entries_ptr[i])
-				free(pe->rsrc_entries_ptr[i]);
-		}
+const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characteristic) {
+	typedef struct {
+		ImageDllCharacteristics characteristic;
+		const char * const name;
+	} ImageDllCharacteristicsName;
 
-		free(pe->rsrc_entries_ptr);
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const ImageDllCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NX_COMPAT),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_ISOLATION),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_SEH),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_BIND),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_WDM_DRIVER),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
 	}
+	return NULL;
+}
 
-	if (pe->rsrc_ptr)
-			free(pe->rsrc_ptr);
+const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
+	typedef struct {
+		WindowsSubsystem subsystem;
+		const char * const name;
+	} WindowsSubsystemName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const WindowsSubsystemName names[] = {
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_UNKNOWN),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_NATIVE),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_GUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_OS2_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_POSIX_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_CE_GUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_APPLICATION),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_ROM),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_XBOX),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (subsystem == names[i].subsystem)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_directory_name(ImageDirectoryEntry entry) {
+	typedef struct {
+		ImageDirectoryEntry entry;
+		const char * const name;
+	} ImageDirectoryEntryName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const ImageDirectoryEntryName names[] = {
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_EXPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_IMPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_RESOURCE),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_EXCEPTION),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_SECURITY),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_BASERELOC),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_DEBUG),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_ARCHITECTURE),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_GLOBALPTR),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_TLS),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_IAT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR),
+		LIBPE_ENTRY(IMAGE_DIRECTORY_RESERVED)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (entry == names[i].entry)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_section_characteristic_name(SectionCharacteristics characteristic) {
+	typedef struct {
+		SectionCharacteristics characteristic;
+		const char * const name;
+	} SectionCharacteristicsName;
+
+#define LIBPE_ENTRY(v)	{ v, # v }
+	static const SectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_NO_PAD),
+		LIBPE_ENTRY(IMAGE_SCN_CNT_CODE),
+		LIBPE_ENTRY(IMAGE_SCN_CNT_INITIALIZED_DATA),
+		LIBPE_ENTRY(IMAGE_SCN_CNT_UNINITIALIZED_DATA),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_OTHER),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_INFO),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_REMOVE),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_COMDAT),
+		LIBPE_ENTRY(IMAGE_SCN_NO_DEFER_SPEC_EXC),
+		LIBPE_ENTRY(IMAGE_SCN_GPREL),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PURGEABLE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_LOCKED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PRELOAD),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_1BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_2BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_4BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_8BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_16BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_32BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_64BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_128BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_256BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_512BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_1024BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_2048BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_4096BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_ALIGN_8192BYTES),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_NRELOC_OVFL),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_DISCARDABLE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_NOT_CACHED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_NOT_PAGED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_SHARED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_EXECUTE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_READ),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_WRITE)
+	};
+#undef LIBPE_ENTRY
+
+	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
+	for (size_t i=0; i < max_index; i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
 }

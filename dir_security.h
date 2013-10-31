@@ -1,7 +1,26 @@
-#ifndef LIBPE_DIR_ENTRY_SECURITY_H
-#define LIBPE_DIR_ENTRY_SECURITY_H
+/*
+	libpe - the PE library
 
-#include "types.h"
+	Copyright (C) 2010 - 2013 libpe authors
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef LIBPE_DIR_SECURITY_H
+#define LIBPE_DIR_SECURITY_H
+
+#include <inttypes.h>
 
 #define ANYSIZE_ARRAY 1
 
@@ -27,15 +46,15 @@ typedef enum {
 	WIN_CERT_TYPE_EFI_GUID			= 0x0EF1
 } CertType;
 
-#pragma pack(4)
+#pragma pack(push, 4)
 
 // Originally declared in Wintrust.h
 typedef struct {
 	// Specified the size, in bytes, of the WIN_CERTIFICATE structure,
 	// including the data in bCertificate.
-	DWORD dwLength;
+	uint32_t dwLength;
 	// Indicates the revision of the structure.
-	WORD wRevision;
+	uint16_t wRevision;
 	// Specifies the type of certificate.
 	// This member can be one of the following values:
 	//   Value								Meaning
@@ -44,16 +63,16 @@ typedef struct {
 	//   WIN_CERT_TYPE_PKCS_SIGNED_DATA		The certificate contains a PKCS SignedData structure.
 	//   WIN_CERT_TYPE_RESERVED_1			Reserved.
 	//	 WIN_CERT_TYPE_TS_STACK_SIGNED
-	WORD wCertificateType;
+	uint16_t wCertificateType;
 	// A variable-sized array of bytes that contains the certificate data.
-	BYTE bCertificate[ANYSIZE_ARRAY];
+	uint8_t bCertificate[ANYSIZE_ARRAY];
 } WIN_CERTIFICATE;
 
 typedef struct {
-	DWORD cbData;
-	BYTE *pbData;
+	uint32_t cbData;
+	uint8_t *pbData;
 } CRYPT_DATA_BLOB;
 
-#pragma pack()
+#pragma pack(pop)
 
 #endif

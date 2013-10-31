@@ -22,4 +22,8 @@ notifications:
     on_success: always
     on_failure: always
     channels:
+<<<<<<< HEAD
       - "irc.freenode.org#MenteBinaria"
+=======
+      - "irc.freenode.org#MenteBinaria"
+>>>>>>> mmap

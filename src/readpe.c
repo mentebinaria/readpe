@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2012 - 2013 pev authors
+	Copyright (C) 2013 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -63,11 +63,11 @@ static void usage(void)
 
 static void parse_headers(const char *optarg)
 {
-	if (strcmp(optarg, "dos"))
+	if (!strcmp(optarg, "dos"))
 		config.dos = true;
-	else if (strcmp(optarg, "coff") == 0)
+	else if (!strcmp(optarg, "coff"))
 		config.coff = true;
-	else if (strcmp(optarg, "optional") == 0)
+	else if (!strcmp(optarg, "optional"))
 		config.opt = true;
 	else
 		EXIT_ERROR("invalid header option");

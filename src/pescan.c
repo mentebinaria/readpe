@@ -115,10 +115,10 @@ static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 	*stub_offset = dos.e_cparhdr << 4;
 
    // dos stub starts at e_cparhdr shifted by 4
-   if (fseek(pe->handle, *stub_offset, SEEK_SET))
+   if (fseek(ctx->pe.handle, *stub_offset, SEEK_SET))
       EXIT_ERROR("unable to seek in file");
 
-   if (!fread(&data, sizeof(data), 1, pe->handle))
+   if (!fread(&data, sizeof(data), 1, ctx->pe.handle))
       EXIT_ERROR("unable to read DOS stub");
 
    if (memcmp(dos_stub, data, sizeof(data))==0)
@@ -126,49 +126,38 @@ static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
 
    return false;
 }
-
-static IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(PE_FILE *pe, DWORD *ep)
-{
-	IMAGE_SECTION_HEADER *epsec = NULL;
-
-	if (!pe->optional_ptr)
-		pe_get_optional(pe);
-
-	if (!pe->num_sections || !pe->sections_ptr)
-		pe_get_sections(pe);
-
-	if (!pe->num_sections)
-		return NULL;
-
-	epsec = pe_rva2section(pe, *ep);
-
-	if (!epsec)
-		return NULL;
-
-	if (!(epsec->Characteristics & 0x20))
-		return epsec;
-
-   return NULL;
-}
-
-static DWORD pe_get_tls_directory(PE_FILE *pe)
-{
-	if (!pe_get_directories(pe))
-		return 0;
-
-	if (pe->num_directories > 32)
-		return 0;
-
-	IMAGE_DATA_DIRECTORY *directory = pe_get_data_directory(pe, IMAGE_DIRECTORY_ENTRY_TLS);
-	if (!directory)
-		return false;
-
-	if (directory->Size > 0)
-		return directory->VirtualAddress;
-
-	return 0;
-}
 */
+
+static IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep)
+{
+	if (ctx->pe.num_sections == 0)
+		return NULL;
+
+	const IMAGE_SECTION_HEADER *section = pe_rva2section(ctx, ep);
+	if (section == NULL)
+		return NULL;
+
+	if (section->Characteristics & IMAGE_SCN_CNT_CODE)
+		return NULL;
+	
+	return section;
+}
+
+static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
+{
+	if (ctx->pe.num_directories == 0 || ctx->pe.num_directories > MAX_DIRECTORIES)
+		return 0;
+
+	const IMAGE_DATA_DIRECTORY *directory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_TLS);
+	if (directory == NULL)
+		return 0;
+
+	if (directory->Size == 0)
+		return 0;
+
+	return directory->VirtualAddress;
+}
+
 /*
  * -1 - fake tls callbacks detected
  *  0 - no tls directory
@@ -190,43 +179,43 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 
 
 	// search for tls in all sections
-	for (unsigned int i=0, j=0; i < pe->num_sections; i++)
+	for (uint16_t i=0, j=0; i < ctx->pe.num_sections; i++)
 	{
-		if (tls_addr >= pe->sections_ptr[i]->VirtualAddress &&
-		tls_addr < (pe->sections_ptr[i]->VirtualAddress + pe->sections_ptr[i]->SizeOfRawData))
+		if (tls_addr >= ctx->pe.sections[i]->VirtualAddress &&
+			tls_addr < (ctx->pe.sections[i]->VirtualAddress + ctx->pe.sections[i]->SizeOfRawData))
 		{
 			unsigned int funcaddr = 0;
 
-			if (fseek(pe->handle, tls_addr - pe->sections_ptr[i]->VirtualAddress
-			+ pe->sections_ptr[i]->PointerToRawData, SEEK_SET))
+			if (fseek(ctx->pe.handle, tls_addr - ctx->pe.sections[i]->VirtualAddress
+				+ ctx->pe.sections[i]->PointerToRawData, SEEK_SET))
 			 	return 0;
 
-			if (pe->architecture == PE32)
+			if (ctx->pe.architecture == MAGIC_PE32)
 			{
 				IMAGE_TLS_DIRECTORY32 tlsdir32;
 
-				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, pe->handle))
+				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, ctx->pe.handle))
 					return 0;
 
-				if (! (tlsdir32.AddressOfCallBacks & pe->optional_ptr->_32->ImageBase))
+				if (! (tlsdir32.AddressOfCallBacks & ctx->ctx->pe.optional_ptr->_32->ImageBase))
 					break;
 
-				if (fseek(pe->handle,
-						rva2ofs(pe, tlsdir32.AddressOfCallBacks - pe->optional_ptr->_32->ImageBase), SEEK_SET))
+				if (fseek(ctx->pe.handle,
+						rva2ofs(pe, tlsdir32.AddressOfCallBacks - ctx->ctx->pe.optional_ptr->_32->ImageBase), SEEK_SET))
 					return 0;
 			}
-			else if (pe->architecture == PE64)
+			else if (ctx->pe.architecture == MAGIC_PE64)
 			{
 				IMAGE_TLS_DIRECTORY64 tlsdir64;
 
-				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, pe->handle))
+				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, ctx->pe.handle))
 					return 0;
 
-				if (! (tlsdir64.AddressOfCallBacks & pe->optional_ptr->_64->ImageBase))
+				if (! (tlsdir64.AddressOfCallBacks & ctx->ctx->pe.optional_ptr->_64->ImageBase))
 					break;
 
-				if (fseek(pe->handle,
-				 rva2ofs(pe, tlsdir64.AddressOfCallBacks - pe->optional_ptr->_64->ImageBase), SEEK_SET))
+				if (fseek(ctx->pe.handle,
+				 rva2ofs(pe, tlsdir64.AddressOfCallBacks - ctx->ctx->pe.optional_ptr->_64->ImageBase), SEEK_SET))
 					return 0;
 			}
 			else
@@ -235,14 +224,14 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 			ret = -1; // tls directory and section exists
 			do
 			{
-				fread(&funcaddr, sizeof(int), 1, pe->handle);
+				fread(&funcaddr, sizeof(int), 1, ctx->pe.handle);
 				if (funcaddr)
 				{
 					char value[MAX_MSG];
 
 					ret = ++j; // function found
 
-					if (config.verbose)
+					if (options->verbose)
 					{
 						snprintf(value, MAX_MSG, "%#x", funcaddr);
 						output("TLS callback function", value);
@@ -255,10 +244,11 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 	}
 	return 0;
 }
+*/
 
 static bool strisprint(const char *string)
 {
-	char *s = (char *) string;
+	const char *s = string;
 
 	if (strncmp(string, ".tls", 5) == 0)
 		return false;
@@ -276,7 +266,7 @@ static bool strisprint(const char *string)
 	return true;
 }
 
-static void stradd(char *dest, char *src, bool *pad)
+static void stradd(char *dest, const char *src, bool *pad)
 {
 	if (*pad)
 		strcat(dest, ", ");
@@ -285,53 +275,50 @@ static void stradd(char *dest, char *src, bool *pad)
 	*pad = true;
 }
 
-static void print_strange_sections(PE_FILE *pe)
+static void print_strange_sections(pe_ctx_t *ctx)
 {
-	bool aux = false;
-
-	if (!pe_get_sections(pe) || !pe->num_sections)
+	if (ctx->pe.num_sections == 0)
 		return;
 
 	char value[MAX_MSG];
 
-	if (pe->num_sections <= 2)
-		snprintf(value, MAX_MSG, "%d (low)", pe->num_sections);
-	else if (pe->num_sections > 8)
-		snprintf(value, MAX_MSG, "%d (high)", pe->num_sections);
+	if (ctx->pe.num_sections <= 2)
+		snprintf(value, MAX_MSG, "%d (low)", ctx->pe.num_sections);
+	else if (ctx->pe.num_sections > 8)
+		snprintf(value, MAX_MSG, "%d (high)", ctx->pe.num_sections);
 	else
-		snprintf(value, MAX_MSG, "%d", pe->num_sections);
+		snprintf(value, MAX_MSG, "%d", ctx->pe.num_sections);
 
 	output("section count", value);
-	for (unsigned i=0; i < pe->num_sections && i <= 65535; i++, aux=false)
+
+	bool aux = false;
+	for (uint16_t i=0; i < ctx->pe.num_sections; i++, aux=false)
 	{
 		memset(&value, 0, sizeof(value));
 
-		if (!strisprint((const char *)pe->sections_ptr[i]->Name))
+		if (!strisprint((const char *)ctx->pe.sections[i]->Name))
 			stradd(value, "suspicious name", &aux);
 
-		if (!pe->sections_ptr[i]->SizeOfRawData)
+		if (ctx->pe.sections[i]->SizeOfRawData == 0)
 			stradd(value, "zero length", &aux);
-		else if (pe->sections_ptr[i]->SizeOfRawData <= 512)
+		else if (ctx->pe.sections[i]->SizeOfRawData <= 512)
 			stradd(value, "small length", &aux);
 
 		// rwx or writable + executable code
-		if (pe->sections_ptr[i]->Characteristics & 0x80000000 &&
-		(pe->sections_ptr[i]->Characteristics & 0x20 ||
-		pe->sections_ptr[i]->Characteristics & 0x20000000))
+		if (ctx->pe.sections[i]->Characteristics & IMAGE_SCN_MEM_WRITE &&
+			(ctx->pe.sections[i]->Characteristics & IMAGE_SCN_CNT_CODE ||
+			ctx->pe.sections[i]->Characteristics & IMAGE_SCN_MEM_EXECUTE))
 			stradd(value, "self-modifying", &aux);
 
 		if (!aux)
 			strncpy(value, "normal", 7);
 
-		output((char *)pe->sections_ptr[i]->Name, value);
+		output((const char *)ctx->pe.sections[i]->Name, value);
 	}
 }
-*/
 
 static bool normal_imagebase(pe_ctx_t *ctx)
 {
-	//IMAGE_OPTIONAL_HEADER *hdr_optinal_ptr = pe_optional(ctx);
-
 	return  (ctx->pe.imagebase == 0x100000000 ||
 				ctx->pe.imagebase == 0x1000000 ||
 				ctx->pe.imagebase == 0x400000);
@@ -386,11 +373,9 @@ static bool fpu_trick(pe_ctx_t *ctx)
 
 static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
 {
-   IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
 
-	time_t now = time(NULL);
-	char timestr[33];
-
+	const time_t now = time(NULL);
 	char value[MAX_MSG];
 
 	if (hdr_coff_ptr->TimeDateStamp == 0)
@@ -404,6 +389,7 @@ static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
 
 	if (options->verbose)
 	{
+		char timestr[33];
 		strftime(timestr, sizeof(timestr),
 			" - %a, %d %b %Y %H:%M:%S UTC",
 			gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
@@ -419,17 +405,40 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
 	IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
 
-	if (!hdr_coff_ptr || !hdr_dos_ptr)
+	if (hdr_coff_ptr == NULL || hdr_dos_ptr == NULL)
 		return -1;
 
-	if (
-		 (hdr_coff_ptr->TimeDateStamp == 708992537 ||
-		 hdr_coff_ptr->TimeDateStamp > 1354555867) &&
-		 (hdr_coff_ptr->Characteristics == 0xa18e ||
-		  hdr_coff_ptr->Characteristics == 0xa38e ||
-		  hdr_coff_ptr->Characteristics == 0x2306) &&
-		 hdr_dos_ptr->e_sp == 0xb8
-		)
+	static const uint16_t characteristics1 =
+		( IMAGE_FILE_EXECUTABLE_IMAGE
+		| IMAGE_FILE_LINE_NUMS_STRIPPED
+		| IMAGE_FILE_LOCAL_SYMS_STRIPPED
+		| IMAGE_FILE_BYTES_REVERSED_LO
+		| IMAGE_FILE_32BIT_MACHINE
+		| IMAGE_FILE_DLL
+		| IMAGE_FILE_BYTES_REVERSED_HI);
+	static const uint16_t characteristics2 =
+		( IMAGE_FILE_EXECUTABLE_IMAGE
+		| IMAGE_FILE_LINE_NUMS_STRIPPED
+		| IMAGE_FILE_LOCAL_SYMS_STRIPPED
+		| IMAGE_FILE_BYTES_REVERSED_LO
+		| IMAGE_FILE_32BIT_MACHINE
+		| IMAGE_FILE_DEBUG_STRIPPED
+		| IMAGE_FILE_DLL
+		| IMAGE_FILE_BYTES_REVERSED_HI);
+	static const uint16_t characteristics3 =
+		( IMAGE_FILE_EXECUTABLE_IMAGE
+		| IMAGE_FILE_LINE_NUMS_STRIPPED
+		| IMAGE_FILE_32BIT_MACHINE
+		| IMAGE_FILE_DEBUG_STRIPPED
+		| IMAGE_FILE_DLL);
+
+	if ((hdr_coff_ptr->TimeDateStamp == 708992537 ||
+			hdr_coff_ptr->TimeDateStamp > 1354555867)
+		&& (hdr_coff_ptr->Characteristics == characteristics1 || // equals 0xa18e
+			hdr_coff_ptr->Characteristics == characteristics2 || // equals 0xa38e
+			hdr_coff_ptr->Characteristics == characteristics3) // equals 0x2306
+		&& hdr_dos_ptr->e_sp == 0xb8
+	)
 		return 1;
 
 	return 0;
@@ -461,7 +470,6 @@ int main(int argc, char *argv[])
 
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
-
 
 	// File entropy
 	double entropy = calculate_entropy_file(&ctx);
@@ -504,34 +512,35 @@ int main(int argc, char *argv[])
 	}
 	output("imagebase", value);
 
-/*
-	if (!pe_get_optional(&pe))
-		return 1;
+	const IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
+	if (optional == NULL)
+		EXIT_ERROR("unable to read optional header");
 
-  	ep = (pe.optional_ptr->_32 ? pe.optional_ptr->_32->AddressOfEntryPoint :
-	(pe.optional_ptr->_64 ? pe.optional_ptr->_64->AddressOfEntryPoint : 0));
+	uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
+		(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
 
 	// fake ep
-	if (ep == 0)
+	if (ep == 0) {
 		snprintf(value, MAX_MSG, "null");
-	else if (pe_check_fake_entrypoint(&pe, &ep)) {
-		if (config.verbose)
-			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
+	} else if (pe_check_fake_entrypoint(&ctx, ep)) {
+		if (options->verbose)
+			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, pe_rva2ofs(&ctx, ep));
 		else
 			snprintf(value, MAX_MSG, "fake");
 	} else {
-		if (config.verbose)
-			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, rva2ofs(&pe, ep));
+		if (options->verbose)
+			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, pe_rva2ofs(&ctx, ep));
 		else
 			snprintf(value, MAX_MSG, "normal");
 	}
 
 	output("entrypoint", value);
 
+/*
 	// dos stub
 	memset(&value, 0, sizeof(value));
-	if (!normal_dos_stub(&pe, &stub_offset)) {
-		if (config.verbose)
+	if (!normal_dos_stub(&ctx, &stub_offset)) {
+		if (options->verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
 		else
 			snprintf(value, MAX_MSG, "suspicious");
@@ -541,7 +550,7 @@ int main(int argc, char *argv[])
 	output("DOS stub", value);
 
 	// tls callbacks
-	callbacks = pe_get_tls_callbacks(&pe);
+	callbacks = pe_get_tls_callbacks(&ctx);
 
 	if (callbacks == 0)
 		snprintf(value, MAX_MSG, "not found");
@@ -552,19 +561,17 @@ int main(int argc, char *argv[])
 
 	output("TLS directory", value);
 	memset(&value, 0, sizeof(value));
+*/
 
 	// section analysis
-	print_strange_sections(&pe);
-
+	print_strange_sections(&ctx);
 
 	// invalid timestamp
-	IMAGE_COFF_HEADER coff;
-
-	if (!pe_get_coff(&pe, &coff))
+	IMAGE_COFF_HEADER *coff = pe_coff(&ctx);
+	if (coff == NULL)
 		EXIT_ERROR("unable to read coff header");
 
-	print_timestamp(&coff.TimeDateStamp);
-*/
+	print_timestamp(&ctx, options);
 
 	// libera a memoria
 	free_options(options);

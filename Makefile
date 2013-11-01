@@ -23,7 +23,7 @@ mandir = $(datarootdir)/man
 man1dir = $(mandir)/man1
 manext = .1
 man1ext = .1
-srcdir = $(CURDIR)
+srcdir = .
 
 ####### Makefile Conventions - Utilities
 
@@ -55,10 +55,10 @@ endif
 VERSION = 1.0
 LIBNAME = libpe
 
-libpe_BUILDDIR = build
-libpe_SRCS_FILTER = $(wildcard $(dir)/*.c)
-libpe_SRCS = $(foreach dir, $(srcdir), $(libpe_SRCS_FILTER))
-libpe_OBJS = $(addprefix $(libpe_BUILDDIR)/, $(addsuffix .o, $(basename ${libpe_SRCS})))
+libpe_BUILDDIR = $(CURDIR)/build
+libpe_SRCS_FILTER = $(wildcard ${dir}/*.c)
+libpe_SRCS = $(foreach dir, ${srcdir}, ${libpe_SRCS_FILTER})
+libpe_OBJS = $(addprefix ${libpe_BUILDDIR}/, $(addsuffix .o, $(basename ${libpe_SRCS})))
 
 ####### Build rules
 
@@ -115,8 +115,7 @@ uninstall:
 		$(DEST)/$(LIBNAME)*.dylib
 
 clean:
-	$(RM) $(libpe_OBJS)
-	$(RM_DIR) build
+	$(RM_DIR) $(libpe_BUILDDIR)
 	$(RM) $(LIBNAME)*.o \
 		$(LIBNAME)*.so \
 		$(LIBNAME)*.dylib \

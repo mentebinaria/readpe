@@ -356,7 +356,7 @@ IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry e
 	return ctx->pe.directories[entry];
 }
 
-uint32_t pe_sections_count(pe_ctx_t *ctx) {
+uint16_t pe_sections_count(pe_ctx_t *ctx) {
 	return ctx->pe.num_sections;
 }
 

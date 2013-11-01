@@ -117,7 +117,7 @@ IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx);
 uint32_t pe_directories_count(pe_ctx_t *ctx);
 IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx);
 IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry);
-uint32_t pe_sections_count(pe_ctx_t *ctx);
+uint16_t pe_sections_count(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name);
 

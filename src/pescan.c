@@ -93,44 +93,39 @@ static options_t *parse_options(int argc, char *argv[])
 }
 
 // check for abnormal dos stub (common in packed files)
-/*
-static bool normal_dos_stub(PE_FILE *pe, DWORD *stub_offset)
+static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 {
-   BYTE dos_stub[] =
-	   "\x0e"               // push cs
-	   "\x1f"               // pop ds
-	   "\xba\x0e\x00"       // mov dx, 0x0e
-	   "\xb4\x09"           // mov ah, 0x09
-	   "\xcd\x21"           // int 0x21
-	   "\xb8\x01\x4c"       // mov ax, 0x4c01
-	   "\xcd\x21"           // int 0x21
-	   "This program cannot be run in DOS mode.\r\r\n$";
+	const uint8_t dos_stub[] =
+		"\x0e"               // push cs
+		"\x1f"               // pop ds
+		"\xba\x0e\x00"       // mov dx, 0x0e
+		"\xb4\x09"           // mov ah, 0x09
+		"\xcd\x21"           // int 0x21
+		"\xb8\x01\x4c"       // mov ax, 0x4c01
+		"\xcd\x21"           // int 0x21
+		"This program cannot be run in DOS mode.\r\r\n$";
+	
+	const size_t dos_stub_size = sizeof(dos_stub) - 1; // -1 to ignore ending null
 
-   BYTE data[sizeof(dos_stub)-1]; // -1 to ignore ending null
-   IMAGE_DOS_HEADER dos;
+	const IMAGE_DOS_HEADER *dos = pe_dos(ctx);
+	if (dos == NULL)
+		EXIT_ERROR("unable to retrieve PE DOS header");
 
-   if (!pe_get_dos(pe, &dos))
-      EXIT_ERROR("unable to retrieve PE DOS header");
+	*stub_offset = dos->e_cparhdr << 4;
 
-	*stub_offset = dos.e_cparhdr << 4;
+	// dos stub starts at e_cparhdr shifted by 4
+	const char *dos_stub_ptr = LIBPE_PTR_ADD(ctx->map_addr, *stub_offset);
+	if (LIBPE_IS_PAST_THE_END(ctx, dos_stub_ptr, dos_stub_size)) {
+		EXIT_ERROR("unable to seek in file");
+	}
 
-   // dos stub starts at e_cparhdr shifted by 4
-   if (fseek(ctx->pe.handle, *stub_offset, SEEK_SET))
-      EXIT_ERROR("unable to seek in file");
-
-   if (!fread(&data, sizeof(data), 1, ctx->pe.handle))
-      EXIT_ERROR("unable to read DOS stub");
-
-   if (memcmp(dos_stub, data, sizeof(data))==0)
-      return true;
-
-   return false;
+	return memcmp(dos_stub, dos_stub_ptr, dos_stub_size) == 0;
 }
-*/
 
-static IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep)
+static const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep)
 {
-	if (ctx->pe.num_sections == 0)
+	const uint16_t num_sections = pe_sections_count(ctx);
+	if (num_sections == 0)
 		return NULL;
 
 	const IMAGE_SECTION_HEADER *section = pe_rva2section(ctx, ep);
@@ -139,7 +134,7 @@ static IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep
 
 	if (section->Characteristics & IMAGE_SCN_CNT_CODE)
 		return NULL;
-	
+
 	return section;
 }
 
@@ -164,30 +159,27 @@ static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
  * >0 - number of callbacks functions found
 */
 /*
-static int pe_get_tls_callbacks(PE_FILE *pe)
+static int pe_get_tls_callbacks(pe_ctx_t *ctx)
 {
-	QWORD tls_addr = 0;
 	int ret = 0;
 
-	if (!pe)
+	const IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
+
+	uint64_t tls_addr = pe_get_tls_directory(pe);
+
+	if (tls_addr == 0 || sections == NULL)
 		return 0;
 
-	tls_addr = pe_get_tls_directory(pe);
-
-	if (!tls_addr || !pe_get_sections(pe))
-		return 0;
-
+	const uint16_t num_sections = pe_sections_count(ctx);
 
 	// search for tls in all sections
-	for (uint16_t i=0, j=0; i < ctx->pe.num_sections; i++)
+	for (uint16_t i=0, j=0; i < num_sections; i++)
 	{
-		if (tls_addr >= ctx->pe.sections[i]->VirtualAddress &&
-			tls_addr < (ctx->pe.sections[i]->VirtualAddress + ctx->pe.sections[i]->SizeOfRawData))
+		if (tls_addr >= sections[i]->VirtualAddress &&
+			tls_addr < (sections[i]->VirtualAddress + sections[i]->SizeOfRawData))
 		{
-			unsigned int funcaddr = 0;
-
-			if (fseek(ctx->pe.handle, tls_addr - ctx->pe.sections[i]->VirtualAddress
-				+ ctx->pe.sections[i]->PointerToRawData, SEEK_SET))
+			if (fseek(ctx->pe.handle, tls_addr - sections[i]->VirtualAddress
+				+ sections[i]->PointerToRawData, SEEK_SET))
 			 	return 0;
 
 			if (ctx->pe.architecture == MAGIC_PE32)
@@ -197,11 +189,11 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 				if (!fread(&tlsdir32, sizeof(tlsdir32), 1, ctx->pe.handle))
 					return 0;
 
-				if (! (tlsdir32.AddressOfCallBacks & ctx->ctx->pe.optional_ptr->_32->ImageBase))
+				if (!(tlsdir32.AddressOfCallBacks & ctx->ctx->pe.optional_ptr->_32->ImageBase))
 					break;
 
 				if (fseek(ctx->pe.handle,
-						rva2ofs(pe, tlsdir32.AddressOfCallBacks - ctx->ctx->pe.optional_ptr->_32->ImageBase), SEEK_SET))
+						pe_rva2ofs(ctx, tlsdir32.AddressOfCallBacks - ctx->ctx->pe.optional_ptr->_32->ImageBase), SEEK_SET))
 					return 0;
 			}
 			else if (ctx->pe.architecture == MAGIC_PE64)
@@ -211,24 +203,26 @@ static int pe_get_tls_callbacks(PE_FILE *pe)
 				if (!fread(&tlsdir64, sizeof(tlsdir64), 1, ctx->pe.handle))
 					return 0;
 
-				if (! (tlsdir64.AddressOfCallBacks & ctx->ctx->pe.optional_ptr->_64->ImageBase))
+				if (!(tlsdir64.AddressOfCallBacks & ctx->ctx->pe.optional_ptr->_64->ImageBase))
 					break;
 
 				if (fseek(ctx->pe.handle,
-				 rva2ofs(pe, tlsdir64.AddressOfCallBacks - ctx->ctx->pe.optional_ptr->_64->ImageBase), SEEK_SET))
+						pe_rva2ofs(ctx, tlsdir64.AddressOfCallBacks - ctx->ctx->pe.optional_ptr->_64->ImageBase), SEEK_SET))
 					return 0;
 			}
 			else
 				return 0;
 
 			ret = -1; // tls directory and section exists
+
+			char value[MAX_MSG];
+			unsigned int funcaddr = 0;
+
 			do
 			{
 				fread(&funcaddr, sizeof(int), 1, ctx->pe.handle);
 				if (funcaddr)
 				{
-					char value[MAX_MSG];
-
 					ret = ++j; // function found
 
 					if (options->verbose)
@@ -277,43 +271,46 @@ static void stradd(char *dest, const char *src, bool *pad)
 
 static void print_strange_sections(pe_ctx_t *ctx)
 {
-	if (ctx->pe.num_sections == 0)
+	const uint16_t num_sections = pe_sections_count(ctx);
+	if (num_sections == 0)
 		return;
 
 	char value[MAX_MSG];
 
 	if (ctx->pe.num_sections <= 2)
-		snprintf(value, MAX_MSG, "%d (low)", ctx->pe.num_sections);
+		snprintf(value, MAX_MSG, "%d (low)", num_sections);
 	else if (ctx->pe.num_sections > 8)
-		snprintf(value, MAX_MSG, "%d (high)", ctx->pe.num_sections);
+		snprintf(value, MAX_MSG, "%d (high)", num_sections);
 	else
-		snprintf(value, MAX_MSG, "%d", ctx->pe.num_sections);
+		snprintf(value, MAX_MSG, "%d", num_sections);
 
 	output("section count", value);
 
+	const IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
+
 	bool aux = false;
-	for (uint16_t i=0; i < ctx->pe.num_sections; i++, aux=false)
+	for (uint16_t i=0; i < num_sections; i++, aux=false)
 	{
 		memset(&value, 0, sizeof(value));
 
-		if (!strisprint((const char *)ctx->pe.sections[i]->Name))
+		if (!strisprint((const char *)sections[i]->Name))
 			stradd(value, "suspicious name", &aux);
 
-		if (ctx->pe.sections[i]->SizeOfRawData == 0)
+		if (sections[i]->SizeOfRawData == 0)
 			stradd(value, "zero length", &aux);
-		else if (ctx->pe.sections[i]->SizeOfRawData <= 512)
+		else if (sections[i]->SizeOfRawData <= 512)
 			stradd(value, "small length", &aux);
 
 		// rwx or writable + executable code
-		if (ctx->pe.sections[i]->Characteristics & IMAGE_SCN_MEM_WRITE &&
-			(ctx->pe.sections[i]->Characteristics & IMAGE_SCN_CNT_CODE ||
-			ctx->pe.sections[i]->Characteristics & IMAGE_SCN_MEM_EXECUTE))
+		if (sections[i]->Characteristics & IMAGE_SCN_MEM_WRITE &&
+			(sections[i]->Characteristics & IMAGE_SCN_CNT_CODE ||
+			sections[i]->Characteristics & IMAGE_SCN_MEM_EXECUTE))
 			stradd(value, "self-modifying", &aux);
 
 		if (!aux)
 			strncpy(value, "normal", 7);
 
-		output((const char *)ctx->pe.sections[i]->Name, value);
+		output((const char *)sections[i]->Name, value);
 	}
 }
 
@@ -494,8 +491,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	print_timestamp(&ctx, options);
-
 	output("fpu undocumented", fpu_trick(&ctx) ? "yes" : "no");
 
 	// imagebase analysis
@@ -536,9 +531,8 @@ int main(int argc, char *argv[])
 
 	output("entrypoint", value);
 
-/*
 	// dos stub
-	memset(&value, 0, sizeof(value));
+	uint32_t stub_offset;
 	if (!normal_dos_stub(&ctx, &stub_offset)) {
 		if (options->verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
@@ -549,6 +543,7 @@ int main(int argc, char *argv[])
 
 	output("DOS stub", value);
 
+/*
 	// tls callbacks
 	callbacks = pe_get_tls_callbacks(&ctx);
 
@@ -560,7 +555,6 @@ int main(int argc, char *argv[])
 		snprintf(value, MAX_MSG, "found - %d function(s)", callbacks);
 
 	output("TLS directory", value);
-	memset(&value, 0, sizeof(value));
 */
 
 	// section analysis

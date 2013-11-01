@@ -36,7 +36,7 @@ static void usage(void)
 		"Search for suspicious things in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-	   " -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 		" -v, --verbose                          show more info about items found\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
@@ -59,10 +59,10 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "f:v";
 
 	static const struct option long_options[] = {
-		{"format",		required_argument,	NULL,	'f'},
-		{"help",		no_argument,		NULL,	 1 },
-		{"verbose",		no_argument,		NULL,	'v'},
-		{ NULL,			0,					NULL, 	 0 }
+		{ "format",		required_argument,	NULL,	'f' },
+		{ "help",		no_argument,		NULL,	 1  },
+		{ "verbose",	no_argument,		NULL,	'v' },
+		{ NULL,			0,					NULL, 	 0  }
 	};
 
 	int c, ind;

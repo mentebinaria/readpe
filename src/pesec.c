@@ -109,12 +109,12 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "f:c:o:v";
 
 	static const struct option long_options[] = {
-		{"format",		required_argument,	NULL,	'f'},
-		{"certoutform",	required_argument,	NULL,	'c'},
-		{"certout",		required_argument,	NULL,	'o'},
-		{"help",		no_argument,		NULL,	 1 },
-		{"version",		no_argument,		NULL,	'v'},
-		{ NULL,			0,					NULL, 	 0 }
+		{ "format",			required_argument,	NULL,	'f' },
+		{ "certoutform",	required_argument,	NULL,	'c' },
+		{ "certout",		required_argument,	NULL,	'o' },
+		{ "help",			no_argument,		NULL,	 1  },
+		{ "version",		no_argument,		NULL,	'v' },
+		{ NULL,				0,					NULL, 	 0  }
 	};
 
 	int c, ind;
@@ -126,7 +126,7 @@ static options_t *parse_options(int argc, char *argv[])
 
 		switch (c)
 		{
-			case 1:		// --help option
+			case 1: // --help option
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':

@@ -22,7 +22,7 @@
 
 #include <inttypes.h>
 
-#define LIBPE_PTR_ADD(p, o)						((void *)((char *)p + o))
+#define LIBPE_PTR_ADD(p, o)						((void *)((char *)(p) + (o)))
 #define LIBPE_SIZEOF_ARRAY(array)				(sizeof(array) / sizeof(array[0]))
 #define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
 #define LIBPE_IS_PAST_THE_END(ctx, ptr, size)	\

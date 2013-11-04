@@ -103,21 +103,21 @@ pe_err_e pe_load(pe_ctx_t *ctx, const char *path);
 pe_err_e pe_load_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
-bool pe_is_pe(pe_ctx_t *ctx);
-bool pe_is_dll(pe_ctx_t *ctx);
-uint64_t pe_filesize(pe_ctx_t *ctx);
+bool pe_is_pe(const pe_ctx_t *ctx);
+bool pe_is_dll(const pe_ctx_t *ctx);
+uint64_t pe_filesize(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);
-uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva);
-uint64_t pe_ofs2rva(pe_ctx_t *ctx, uint64_t ofs);
+uint64_t pe_rva2ofs(const pe_ctx_t *ctx, uint64_t rva);
+uint64_t pe_ofs2rva(const pe_ctx_t *ctx, uint64_t ofs);
 
 // Header functions
 IMAGE_DOS_HEADER *pe_dos(pe_ctx_t *ctx);
 IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx);
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx);
-uint32_t pe_directories_count(pe_ctx_t *ctx);
+uint32_t pe_directories_count(const pe_ctx_t *ctx);
 IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx);
 IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry);
-uint16_t pe_sections_count(pe_ctx_t *ctx);
+uint16_t pe_sections_count(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name);
 

@@ -263,7 +263,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	return LIBPE_E_OK;
 }
 
-bool pe_is_pe(pe_ctx_t *ctx) {
+bool pe_is_pe(const pe_ctx_t *ctx) {
 	// Check MZ header
 	if (ctx->pe.dos_hdr == NULL || ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
 		return false;
@@ -275,13 +275,13 @@ bool pe_is_pe(pe_ctx_t *ctx) {
 	return true;
 }
 
-bool pe_is_dll(pe_ctx_t *ctx) {
+bool pe_is_dll(const pe_ctx_t *ctx) {
 	if (ctx->pe.coff_hdr == NULL)
 		return false;
 	return ctx->pe.coff_hdr->Characteristics & IMAGE_FILE_DLL ? true : false;
 }
 
-uint64_t pe_filesize(pe_ctx_t *ctx) {
+uint64_t pe_filesize(const pe_ctx_t *ctx) {
 	return ctx->map_size;
 }
 
@@ -299,7 +299,7 @@ IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva) {
 	return NULL;
 }
 
-uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva) {
+uint64_t pe_rva2ofs(const pe_ctx_t *ctx, uint64_t rva) {
 	if (rva == 0 || ctx->pe.sections == NULL)
 		return 0;
 
@@ -314,7 +314,7 @@ uint64_t pe_rva2ofs(pe_ctx_t *ctx, uint64_t rva) {
 }
 
 // Returns the RVA for a given offset
-uint64_t pe_ofs2rva(pe_ctx_t *ctx, uint64_t ofs) {
+uint64_t pe_ofs2rva(const pe_ctx_t *ctx, uint64_t ofs) {
 	if (ofs == 0 || ctx->pe.sections == NULL)
 		return 0;
 
@@ -324,7 +324,7 @@ uint64_t pe_ofs2rva(pe_ctx_t *ctx, uint64_t ofs) {
 			ofs < (ctx->pe.sections[i]->PointerToRawData
 				+ ctx->pe.sections[i]->SizeOfRawData))
 			return ctx->pe.sections[i]->VirtualAddress > 0 ? ofs +
-ctx->pe.sections[i]->VirtualAddress : ofs + ctx->pe.imagebase;
+				ctx->pe.sections[i]->VirtualAddress : ofs + ctx->pe.imagebase;
 	}
 	return 0;
 }
@@ -341,7 +341,7 @@ IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx) {
 	return &ctx->pe.optional_hdr;
 }
 
-uint32_t pe_directories_count(pe_ctx_t *ctx) {
+uint32_t pe_directories_count(const pe_ctx_t *ctx) {
 	return ctx->pe.num_directories;
 }
 
@@ -356,7 +356,7 @@ IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry e
 	return ctx->pe.directories[entry];
 }
 
-uint16_t pe_sections_count(pe_ctx_t *ctx) {
+uint16_t pe_sections_count(const pe_ctx_t *ctx) {
 	return ctx->pe.num_sections;
 }
 

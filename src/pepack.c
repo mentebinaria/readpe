@@ -25,12 +25,9 @@
 #define PROGRAM "pepack"
 #define MAX_SIG_SIZE 2048
 
-typedef struct options {
-   char *dbfile;
+typedef struct {
+	char *dbfile;
 } options_t;
-
-struct options config;
-static int ind;
 
 static void usage(void)
 {
@@ -72,7 +69,7 @@ static options_t *parse_options(int argc, char *argv[])
 		{ NULL,               0,                 NULL,  0  }
 	};
 
-	int c;
+	int c, ind;
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
@@ -83,17 +80,14 @@ static options_t *parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-				
 			case 'd':
-				config.dbfile = optarg; break;
-				
+				options->dbfile = strdup(optarg);
+				break;
 			case 'f':
 				parse_format(optarg); break;
-				
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
-
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);
@@ -133,17 +127,17 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
    return packer < '3';
 }
 
-static bool loaddb(FILE **fp)
+static bool loaddb(FILE **fp, const options_t *options)
 {
-	const char *dbfile = config.dbfile ? config.dbfile : "userdb.txt";
+	const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
 
 	*fp = fopen(dbfile, "r");	
-
-	if (!*fp)
+	if (!*fp) {
 		// TODO(jweyrich): This might change - Should we use a config.h with a constant from $(SHAREDIR)?
 		*fp = fopen("/usr/share/pev/userdb.txt", "r");
+	}
 
-	return (*fp != NULL);
+	return *fp != NULL;
 }
 
 static bool match_peid_signature(const unsigned char *data, char *sig)
@@ -268,7 +262,7 @@ int main(int argc, char *argv[])
 	const unsigned char *pe_data = ctx.map_addr;
 	
 	FILE *dbfile = NULL;
-	if (!loaddb(&dbfile))
+	if (!loaddb(&dbfile, options))
 		fprintf(stderr, "warning: without valid database file, %s will search in generic mode only\n", PROGRAM);
 	
 	char value[MAX_MSG];

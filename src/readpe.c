@@ -387,7 +387,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x", header->_32->CheckSum);
 			output("Checksum", s);
 
-			uint16_t subsystem = header->_32->Subsystem;
+			const uint16_t subsystem = header->_32->Subsystem;
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 			const char *subsystem_name = "Unknown";
 			for (size_t i=0; i < max_subsystem; i++) {
@@ -487,7 +487,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x", header->_64->CheckSum);
 			output("Checksum", s);
 
-			uint16_t subsystem = header->_64->Subsystem;
+			const uint16_t subsystem = header->_64->Subsystem;
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 			const char *subsystem_name = "Unknown";
 			for (size_t i=0; i < max_subsystem; i++) {
@@ -701,25 +701,25 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 		switch (ctx->pe.optional_hdr.type) {
 			case MAGIC_PE32:
 			{
-				IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 				if (LIBPE_IS_PAST_THE_END(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
 					// TODO: Should we report something?
 					return;
 				}
 
 				// Type punning
-				uint32_t thunk_type = *(uint32_t *)thunk;
+				const uint32_t thunk_type = *(uint32_t *)thunk;
 				if (thunk_type == 0)
 					return;
 
-				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+				const bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
 				if (is_ordinal) {
 					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
 						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
 				} else {
-					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (LIBPE_IS_PAST_THE_END(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 						// TODO: Should we report something?
 						return;
@@ -734,14 +734,14 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 			}
 			case MAGIC_PE64:
 			{
-				IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 				if (LIBPE_IS_PAST_THE_END(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
 					// TODO: Should we report something?
 					return;
 				}
 
 				// Type punning
-				uint64_t thunk_type = *(uint64_t *)thunk;
+				const uint64_t thunk_type = *(uint64_t *)thunk;
 				if (thunk_type == 0)
 					return;
 
@@ -752,7 +752,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (LIBPE_IS_PAST_THE_END(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 						// TODO: Should we report something?
 						return;
@@ -773,11 +773,11 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 
 static void print_exports(pe_ctx_t *ctx)
 {
-	IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL)
 		EXIT_ERROR("export directory not found")
 
-	uint64_t va = dir->VirtualAddress;
+	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
 		fprintf(stderr, "export directory not found\n");
 		return;
@@ -786,25 +786,25 @@ static void print_exports(pe_ctx_t *ctx)
 	uint64_t ofs;
 
 	ofs = pe_rva2ofs(ctx, va);
-	IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (LIBPE_IS_PAST_THE_END(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
 		// TODO: Should we report something?
 		return;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
-	uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (LIBPE_IS_PAST_THE_END(ctx, rva_ptr, sizeof(uint32_t))) {
 		// TODO: Should we report something?
 		return;
 	}
-	uint32_t rva = *rva_ptr;
+	const uint32_t rva = *rva_ptr;
 
 	ofs = pe_rva2ofs(ctx, rva);
 
 	output("Exported functions", NULL);
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
-		uint64_t aux = ofs; // Store current ofs
+		const uint64_t aux = ofs; // Store current ofs
 
 		ofs = exp->AddressOfFunctions + sizeof(uint32_t) * i;
 		uint32_t *faddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
@@ -812,7 +812,7 @@ static void print_exports(pe_ctx_t *ctx)
 			// TODO: Should we report something?
 			break;
 		}
-		uint32_t faddr = *faddr_ptr;
+		const uint32_t faddr = *faddr_ptr;
 
 		ofs = aux; // Restore previous ofs
 
@@ -830,11 +830,11 @@ static void print_exports(pe_ctx_t *ctx)
 
 static void print_imports(pe_ctx_t *ctx)
 {
-	IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL)
 		EXIT_ERROR("import directory not found")
 
-	uint64_t va = dir->VirtualAddress;
+	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
 		fprintf(stderr, "import directory not found\n");
 		return;
@@ -855,7 +855,7 @@ static void print_imports(pe_ctx_t *ctx)
 			break;
 
 		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
-		uint64_t aux = ofs; // Store current ofs
+		const uint64_t aux = ofs; // Store current ofs
 
 		ofs = pe_rva2ofs(ctx, id->Name);
 		if (ofs == 0)
@@ -951,7 +951,7 @@ int main(int argc, char *argv[])
 
 	// sections
 	if (config.all_sections || config.all) {
-		if (ctx.pe.sections != NULL)
+		if (pe_sections(&ctx) != NULL)
 			print_sections(&ctx);
 		else { EXIT_ERROR("unable to read sections"); }
 	}

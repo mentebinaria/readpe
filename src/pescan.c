@@ -286,7 +286,7 @@ static void print_strange_sections(pe_ctx_t *ctx)
 
 	output("section count", value);
 
-	const IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
+	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
 
 	bool aux = false;
 	for (uint16_t i=0; i < num_sections; i++, aux=false)
@@ -399,8 +399,8 @@ static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
 
 static int8_t cpl_analysis(pe_ctx_t *ctx)
 {
-	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
-	IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
+	const IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+	const IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
 
 	if (hdr_coff_ptr == NULL || hdr_dos_ptr == NULL)
 		return -1;

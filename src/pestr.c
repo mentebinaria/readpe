@@ -81,7 +81,6 @@ static options_t *parse_options(int argc, char *argv[])
 	};
 
 	int c, ind;
-
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)

@@ -74,9 +74,9 @@ else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
-		-o $(LIBNAME).dylib $^
+		$(LDFLAGS) -o $(LIBNAME).dylib $^
 else ifeq ($(PLATFORM_OS), CYGWIN)
-	$(LINK) -shared -o $(LIBNAME).dll $^
+	$(LINK) -shared $(LDFLAGS) -o $(LIBNAME).dll $^
 endif
 
 $(libpe_BUILDDIR)/%.o: %.c

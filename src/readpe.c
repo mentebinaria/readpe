@@ -697,6 +697,9 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 	char hint_str[16];
 	char fname[MAX_FUNCTION_NAME];
 
+	memset(hint_str, 0, sizeof(hint_str));
+	memset(fname, 0, sizeof(fname));
+
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
 			case MAGIC_PE32:

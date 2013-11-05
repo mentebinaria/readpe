@@ -20,7 +20,7 @@
 */
 
 #include "common.h"
-#include <strings.h>
+#include <string.h>
 
 #define PROGRAM "pepack"
 #define MAX_SIG_SIZE 2048

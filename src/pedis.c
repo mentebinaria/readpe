@@ -23,6 +23,7 @@
 #include "../lib/libudis86/udis86.h"
 #include <errno.h>
 #include <limits.h>
+#include <string.h>
 
 #define PROGRAM "pedis"
 

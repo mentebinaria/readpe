@@ -25,15 +25,20 @@
 
 #define PROGRAM "pehash"
 
-struct options {
-	bool all;
-	bool md5;
-	bool sha1;
-	bool sha256;
-};
-
-struct options config;
-static int ind;
+typedef struct {
+	struct {
+		bool all;
+		bool md5;
+		bool sha1;
+		bool sha256;
+	} algorithms;
+	struct {
+		bool all;
+		bool dos;
+		bool coff;
+		bool optional;
+	} headers;
+} options_t;
 
 static void usage(void)
 {
@@ -44,44 +49,68 @@ static void usage(void)
 		" -A, --all                              full output (all available hashes) (default)\n"
 		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 		" -h, --hash <md5|sha1|sha256>           hashing algorithm\n"
+		" -H, --header <dos|coff|optional>       hash only the specified header\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
 
 }
 
-static void parse_hash_algorithm(const char *optarg)
+static void parse_hash_algorithm(options_t *options, const char *optarg)
 {
 	if (strcmp(optarg, "md5") == 0)
-		config.md5 = true;
+		options->algorithms.md5 = true;
 	else if (strcmp(optarg, "sha1") == 0)
-		config.sha1 = true;
+		options->algorithms.sha1 = true;
 	else if (strcmp(optarg, "sha256") == 0)
-		config.sha256 = true;
+		options->algorithms.sha256 = true;
 	else
 		EXIT_ERROR("invalid hashing algorithm option");
 }
 
-void parse_options(int argc, char *argv[])
+static void parse_header_name(options_t *options, const char *optarg)
 {
+	if (strcmp(optarg, "dos") == 0)
+		options->headers.dos = true;
+	else if (strcmp(optarg, "coff") == 0)
+		options->headers.coff = true;
+	else if (strcmp(optarg, "optional") == 0)
+		options->headers.optional = true;
+	else
+		EXIT_ERROR("invalid header name option");
+}
+
+static void free_options(options_t *options)
+{
+	if (options == NULL)
+		return;
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = xmalloc(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
+
 	// parameters for getopt_long() function 
-	static const char short_options[] = "AHSh:dif:v";
+	static const char short_options[] = "Ah:H:v";
 
 	static const struct option long_options[] = {
 		{ "help",		no_argument,		NULL,  1  },
 		{ "all",		no_argument,		NULL, 'A' },
 		{ "hash",		required_argument,	NULL, 'h' },
+		{ "header",		required_argument,	NULL, 'H' },
 		{ "format",		required_argument,	NULL, 'f' },
 		{ "version",	no_argument,		NULL, 'v' },
 		{  NULL,		0,					NULL,  0  }
 	};
 
-	// setting all fields to false
-	memset(&config, false, sizeof(config));
+	// Default options.
+	options->algorithms.all = true;
+	options->headers.all = true;
 
-	config.all = true;
-
-	int c;
+	int c, ind;
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
@@ -93,14 +122,18 @@ void parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'A':
-				config.all = true;
+				options->algorithms.all = true;
 				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'h':
-				config.all = false;
-				parse_hash_algorithm(optarg);
+				options->algorithms.all = false;
+				parse_hash_algorithm(options, optarg);
+				break;
+			case 'H':
+				options->headers.all = false;
+				parse_header_name(options, optarg);
 				break;
 			case 'f':
 				parse_format(optarg);
@@ -110,6 +143,8 @@ void parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
 static void calc_sha1(const unsigned char *data, size_t size, char *sha1sum)
@@ -158,7 +193,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	parse_options(argc, argv); // Opcoes
+	options_t *options = parse_options(argc, argv); // opcoes
 
 	pe_ctx_t ctx;
 
@@ -179,25 +214,69 @@ int main(int argc, char *argv[])
 
 	uint64_t pesize = pe_filesize(&ctx);
 
-	const unsigned char *data = ctx.map_addr;
+	const unsigned char *data = NULL;
+	uint64_t data_size = 0;
 
-	if (config.md5 || config.all) {
-		char md5_sum[(MD5_DIGEST_LENGTH*2) + 1];
-		calc_md5(data, pesize, md5_sum);
-		output("md5", md5_sum);
+	if (options->headers.all) {
+		data = ctx.map_addr;
+		data_size = pesize;
+	} else if (options->headers.dos) {
+		const IMAGE_DOS_HEADER *dos_hdr = pe_dos(&ctx);
+		data = (const unsigned char *)dos_hdr;
+		data_size = sizeof(IMAGE_DOS_HEADER);
+	} else if (options->headers.coff) {
+		const IMAGE_COFF_HEADER *coff_hdr = pe_coff(&ctx);
+		data = (const unsigned char *)coff_hdr;
+		data_size = sizeof(IMAGE_COFF_HEADER);
+	} else if (options->headers.optional) {
+		const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
+		switch (opt_hdr->type) {
+			case MAGIC_ROM:
+				// Oh boy! We do not support ROM. Abort!
+				fprintf(stderr, "ROM image is not supported\n");
+				break;
+			case MAGIC_PE32:
+				if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
+					// TODO: Should we report something?
+					break;
+				}
+				data = (const unsigned char *)opt_hdr->_32;
+				data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
+				break;
+			case MAGIC_PE64:
+				if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
+					// TODO: Should we report something?
+					break;
+				}
+				data = (const unsigned char *)opt_hdr->_64;
+				data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
+				break;
+
+		}
 	}
 
-	if (config.sha1 || config.all){
-		char sha1_sum[((SHA_DIGEST_LENGTH*2)+1)];
-		calc_sha1(data, pesize, sha1_sum);
-		output("sha-1", sha1_sum);
+	if (data != NULL && data_size > 0) {
+		if (options->algorithms.md5 || options->algorithms.all) {
+			char md5_sum[(MD5_DIGEST_LENGTH*2) + 1];
+			calc_md5(data, data_size, md5_sum);
+			output("md5", md5_sum);
+		}
+
+		if (options->algorithms.sha1 || options->algorithms.all) {
+			char sha1_sum[((SHA_DIGEST_LENGTH*2)+1)];
+			calc_sha1(data, data_size, sha1_sum);
+			output("sha-1", sha1_sum);
+		}
+
+		if (options->algorithms.sha256 || options->algorithms.all) {
+			char sha256_sum[((SHA256_DIGEST_LENGTH*2)+1)];
+			calc_sha256(data, data_size, sha256_sum);
+			output("sha-256", sha256_sum);
+		}
 	}
 
-	if (config.sha256 || config.all) {
-		char sha256_sum[((SHA256_DIGEST_LENGTH*2)+1)];
-		calc_sha256(data, pesize, sha256_sum);
-		output("sha-256", sha256_sum);
-	}
+	// libera a memoria
+	free_options(options);
 
 	// free
 	err = pe_unload(&ctx);

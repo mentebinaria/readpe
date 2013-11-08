@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load(&ctx, argv[argc-1]);
+	pe_err_e err = pe_load_file(&ctx, argv[argc-1]);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

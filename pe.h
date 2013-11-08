@@ -99,8 +99,8 @@ typedef struct {
 } pe_ctx_t;
 
 // General functions
-pe_err_e pe_load(pe_ctx_t *ctx, const char *path);
-pe_err_e pe_load_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
+pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path);
+pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
 bool pe_is_pe(const pe_ctx_t *ctx);

@@ -28,11 +28,11 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
-pe_err_e pe_load(pe_ctx_t *ctx, const char *path) {
-	return pe_load_ext(ctx, path, 0);
+pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path) {
+	return pe_load_file_ext(ctx, path, 0);
 }
 
-pe_err_e pe_load_ext(pe_ctx_t *ctx, const char *path, pe_options_e options) {
+pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options) {
 	int ret = 0;
 
 	// Cleanup the whole struct.

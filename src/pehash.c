@@ -93,7 +93,7 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	// parameters for getopt_long() function 
-	static const char short_options[] = "fAa:h:v";
+	static const char short_options[] = "f:Aa:h:v";
 
 	static const struct option long_options[] = {
 		{ "help",			no_argument,		NULL,  1  },
@@ -119,6 +119,9 @@ static options_t *parse_options(int argc, char *argv[])
 			case 1:     // --help option
 				usage();
 				exit(EXIT_SUCCESS);
+			case 'f':
+				parse_format(optarg);
+				break;
 			case 'a':
 				options->algorithms.all = false;
 				parse_hash_algorithm(options, optarg);
@@ -129,9 +132,6 @@ static options_t *parse_options(int argc, char *argv[])
 			case 'h':
 				options->headers.all = false;
 				parse_header_name(options, optarg);
-				break;
-			case 'f':
-				parse_format(optarg);
 				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);

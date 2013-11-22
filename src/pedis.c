@@ -56,7 +56,7 @@ static void usage(void)
 		" -n, <number>                           number of bytes to be disassembled\n"
 		" -o, --offset <offset>                  disassemble at specified file offset\n"
 		" -r, --rva <rva>                        disassemble at specified RVA\n"
-		" -s, --section <section name>           disassemble entire section given\n"
+		" -s, --section <section_name>           disassemble entire section given\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);

@@ -47,7 +47,7 @@ static void usage(void)
 		"\nOptions:\n"
 		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 		" -c, --certoutform <text|pem>           specifies the certificate output format (default: text)\n"
-		" -o, --certout filename                 specifies the output filename to write certificates to (default: stdout)\n"
+		" -o, --certout <filename>               specifies the output filename to write certificates to (default: stdout)\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);

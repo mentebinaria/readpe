@@ -46,10 +46,9 @@ static void usage(void)
 		"Show PE file cryptographic signatures\n"
 		"\nExample: %s --hash md5 winzip.exe\n"
 		"\nOptions:\n"
-		" -A, --all                              full output (all available hashes) (default)\n"
 		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-		" -h, --hash <md5|sha1|sha256>           hashing algorithm\n"
-		" -H, --header <dos|coff|optional>       hash only the specified header\n"
+		" -a, --algorithm <md5|sha1|sha256>      hash using only the specified algorithm\n"
+		" -h, --header <dos|coff|optional>       hash only the specified header\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
@@ -94,16 +93,15 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	// parameters for getopt_long() function 
-	static const char short_options[] = "Ah:H:v";
+	static const char short_options[] = "fAa:h:v";
 
 	static const struct option long_options[] = {
-		{ "help",		no_argument,		NULL,  1  },
-		{ "all",		no_argument,		NULL, 'A' },
-		{ "hash",		required_argument,	NULL, 'h' },
-		{ "header",		required_argument,	NULL, 'H' },
-		{ "format",		required_argument,	NULL, 'f' },
-		{ "version",	no_argument,		NULL, 'v' },
-		{  NULL,		0,					NULL,  0  }
+		{ "help",			no_argument,		NULL,  1  },
+		{ "format",			required_argument,	NULL, 'f' },
+		{ "algorithm",		required_argument,	NULL, 'a' },
+		{ "header",			required_argument,	NULL, 'h' },
+		{ "version",		no_argument,		NULL, 'v' },
+		{  NULL,			0,					NULL,  0  }
 	};
 
 	// Default options.
@@ -121,17 +119,14 @@ static options_t *parse_options(int argc, char *argv[])
 			case 1:     // --help option
 				usage();
 				exit(EXIT_SUCCESS);
-			case 'A':
-				options->algorithms.all = true;
+			case 'a':
+				options->algorithms.all = false;
+				parse_hash_algorithm(options, optarg);
 				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'h':
-				options->algorithms.all = false;
-				parse_hash_algorithm(options, optarg);
-				break;
-			case 'H':
 				options->headers.all = false;
 				parse_header_name(options, optarg);
 				break;

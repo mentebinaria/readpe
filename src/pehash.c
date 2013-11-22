@@ -38,6 +38,10 @@ typedef struct {
 		bool coff;
 		bool optional;
 	} headers;
+	struct {
+		char *name;
+		uint16_t index;
+	} sections;
 } options_t;
 
 static void usage(void)
@@ -48,7 +52,9 @@ static void usage(void)
 		"\nOptions:\n"
 		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
 		" -a, --algorithm <md5|sha1|sha256>      hash using only the specified algorithm\n"
-		" -h, --header <dos|coff|optional>       hash only the specified header\n"
+		" -h, --header <dos|coff|optional>       hash only the header with the specified name\n"
+		" -s, --section <section_name>           hash only the section with the specified name\n"
+		" --section-index <section_index>        hash only the section at the specified index (1..n)\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
@@ -84,6 +90,9 @@ static void free_options(options_t *options)
 	if (options == NULL)
 		return;
 
+	if (options->sections.name != NULL)
+		free(options->sections.name);
+
 	free(options);
 }
 
@@ -93,13 +102,15 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	// parameters for getopt_long() function 
-	static const char short_options[] = "f:Aa:h:v";
+	static const char short_options[] = "f:Aa:h:s:v";
 
 	static const struct option long_options[] = {
 		{ "help",			no_argument,		NULL,  1  },
 		{ "format",			required_argument,	NULL, 'f' },
 		{ "algorithm",		required_argument,	NULL, 'a' },
 		{ "header",			required_argument,	NULL, 'h' },
+		{ "section-name",	required_argument,	NULL, 's' },
+		{ "section-index",	required_argument,	NULL,  2  },
 		{ "version",		no_argument,		NULL, 'v' },
 		{  NULL,			0,					NULL,  0  }
 	};
@@ -126,6 +137,18 @@ static options_t *parse_options(int argc, char *argv[])
 				options->algorithms.all = false;
 				parse_hash_algorithm(options, optarg);
 				break;
+			case 's':
+				options->headers.all = false;
+				// TODO: How do we need to handle non-ascii names?
+				options->sections.name = strdup(optarg);
+				break;
+			case 2:
+				options->headers.all = false;
+				options->sections.index = strtol(optarg, NULL, 10);
+				if (options->sections.index < 1 || options->sections.index > MAX_SECTIONS) {
+					EXIT_ERROR("Bad argument for section-index,");
+				}
+				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
@@ -138,6 +161,8 @@ static options_t *parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	// TODO: Warn about simultaneous usage of -h, -s, and --section-index.
 
 	return options;
 }
@@ -207,14 +232,14 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	uint64_t pesize = pe_filesize(&ctx);
-
+	const IMAGE_SECTION_HEADER *section_ptr = NULL;
 	const unsigned char *data = NULL;
 	uint64_t data_size = 0;
 
 	if (options->headers.all) {
+		const uint64_t pe_size = pe_filesize(&ctx);
 		data = ctx.map_addr;
-		data_size = pesize;
+		data_size = pe_size;
 	} else if (options->headers.dos) {
 		const IMAGE_DOS_HEADER *dos_hdr = pe_dos(&ctx);
 		data = (const unsigned char *)dos_hdr;
@@ -248,6 +273,35 @@ int main(int argc, char *argv[])
 				break;
 
 		}
+	} else if (options->sections.name != NULL) {
+		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
+		if (section == NULL) {
+			EXIT_ERROR("The requested section could not be found on this binary");
+		}
+		section_ptr = section;
+	} else if (options->sections.index > 0) {
+		const uint16_t num_sections = pe_sections_count(&ctx);
+		if (num_sections == 0 || options->sections.index > num_sections) {
+			EXIT_ERROR("The requested section could not be found on this binary");
+		}
+		IMAGE_SECTION_HEADER ** const sections = pe_sections(&ctx);
+		const IMAGE_SECTION_HEADER *section = sections[options->sections.index - 1];
+		section_ptr = section;
+	}
+
+	if (section_ptr != NULL) {
+		if (section_ptr->SizeOfRawData == 0) {
+			EXIT_ERROR("The requested section is empty");
+		}
+		const uint8_t *section_data_ptr = LIBPE_PTR_ADD(ctx.map_addr, section_ptr->PointerToRawData);
+		// printf("map_addr = %p\n", ctx.map_addr);
+		// printf("section_data_ptr = %p\n", section_data_ptr);
+		// printf("SizeOfRawData = %u\n", section_ptr->SizeOfRawData);
+		if (LIBPE_IS_PAST_THE_END(&ctx, section_data_ptr, section_ptr->SizeOfRawData)) {
+			EXIT_ERROR("The requested section has an invalid size");
+		}
+		data = (const unsigned char *)section_data_ptr;
+		data_size = section_ptr->SizeOfRawData;
 	}
 
 	if (data != NULL && data_size > 0) {

@@ -23,7 +23,6 @@
 #include "../lib/libudis86/udis86.h"
 #include <errno.h>
 #include <limits.h>
-#include <string.h>
 
 #define PROGRAM "pedis"
 
@@ -75,7 +74,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = xmalloc(sizeof(options_t));
+	options_t *options = malloc_s(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
@@ -176,7 +175,7 @@ static char *insert_spaces(const char *s)
 
 	size = size + (size/2);
 
-	new = xmalloc(size+1);
+	new = malloc_s(size+1);
 	memset(new, 0, size+1);
 
 	for (unsigned int i=0, j=0, pos=0; i < size; i++)
@@ -288,7 +287,7 @@ int main(int argc, char *argv[])
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load_file_ext(&ctx, path, LIBPE_OPT_NOCLOSE_FD);
+	pe_err_e err = pe_load_ext(&ctx, path, LIBPE_OPT_NOCLOSE_FD);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

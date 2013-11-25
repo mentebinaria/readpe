@@ -49,6 +49,7 @@ endif
 DEST = $(DESTDIR)$(bindir)
 override LDFLAGS += -L$(LIBPE) -lpe
 override CFLAGS += -I$(LIBPE) -W -Wall -Wextra -std=c99 -pedantic
+override DFLAGS += -D_GNU_SOURCE
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations
@@ -69,10 +70,9 @@ all: $(PROGS)
 pesec: LDFLAGS += -lcrypto
 pesec: compat/strlcat.c
 
-pestr: CPPFLAGS += -D_GNU_SOURCE
 pestr: LDFLAGS += -lpcre
 
-pehash: LDFLAGS += -lssl -lcrypto
+pehash: LDFLAGS += -lssl -lcrypto -lfuzzy
 
 pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: $(LIBUDIS86)/libudis86/*.c
@@ -82,7 +82,7 @@ pescan: LDFLAGS += -lm
 # Generic rule matching binary names and sources
 
 %: %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) output.c xmalloc.c $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(DFLAGS) output.c malloc_s.c $^ -o $@ $(LDFLAGS)
 
 install: installdirs
 	for prog in $(PROGS); do \

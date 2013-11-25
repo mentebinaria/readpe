@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <strings.h>
 #include <getopt.h>
 
 #include <pe.h>
@@ -47,6 +48,6 @@
 
 #define SPACES 32 // spaces # for text-based output
 
-void *xmalloc(size_t size);
+void *malloc_s(size_t size);
 
 #endif

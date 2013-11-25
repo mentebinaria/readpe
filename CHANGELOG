@@ -7,12 +7,14 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.70 - ?
- + peres: new tool to analyze/extract PE resources (Marcelo Fleury).
+ * libpe: rewritten, now using mmap. (Jardel Weyrich).
  * readpe and peres: output enhancements (Jardel Weyrich).
  - readpe: fixed subsystem types (Dmitry Mostovenko).
+ + peres: added new tool to analyze/extract PE resources (Marcelo Fleury).
  + pescan: cpl banker detection.
- + pescan: detection of anti-disassembly fpu trick.
- * libpe: use of mmap! (Jardel Weyrich).
+ + pescan: undocumented anti-disassembly fpu trick detection.
+ + pehash: sections and headers hash calculation (Jardel Weyrich).
+ + pehash: ssdeep calculation
 
 pev 0.60 - October 31, 2012
  ! Missing full/english documentation.

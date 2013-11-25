@@ -36,6 +36,7 @@
 
  libssl (pehash, pesec)
  libpcre (pestr only)
+ libfuzzy (pehash)
  libc
  gcc
  make

@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	pehash.c - calculate PE file cryptographic signatures
+	pehash.c - calculate hashes of PE pieces
 
 	Copyright (C) 2012 - 2013 pev authors
 
@@ -22,6 +22,7 @@
 #include "common.h"
 #include <openssl/md5.h>
 #include <openssl/sha.h>
+#include <fuzzy.h>
 
 #define PROGRAM "pehash"
 
@@ -31,6 +32,7 @@ typedef struct {
 		bool md5;
 		bool sha1;
 		bool sha256;
+		bool ssdeep;
 	} algorithms;
 	struct {
 		bool all;
@@ -47,16 +49,16 @@ typedef struct {
 static void usage(void)
 {
 	printf("Usage: %s OPTIONS FILE\n"
-		"Show PE file cryptographic signatures\n"
-		"\nExample: %s --hash md5 winzip.exe\n"
+		"Calculate hashes of PE pieces\n"
+		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
-		" -a, --algorithm <md5|sha1|sha256>      hash using only the specified algorithm\n"
-		" -h, --header <dos|coff|optional>       hash only the header with the specified name\n"
-		" -s, --section <section_name>           hash only the section with the specified name\n"
-		" --section-index <section_index>        hash only the section at the specified index (1..n)\n"
-		" -v, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -f, --format <text|csv|xml|html>           change output format (default: text)\n"
+		" -a, --algorithm <md5|sha1|sha256|ssdeep>   hash using only the specified algorithm\n"
+		" -h, --header <dos|coff|optional>           hash only the header with the specified name\n"
+		" -s, --section <section_name>               hash only the section with the specified name\n"
+		" --section-index <section_index>            hash only the section at the specified index (1..n)\n"
+		" -v, --version                              show version and exit\n"
+		" --help                                     show this help and exit\n",
 		PROGRAM, PROGRAM);
 
 }
@@ -69,6 +71,8 @@ static void parse_hash_algorithm(options_t *options, const char *optarg)
 		options->algorithms.sha1 = true;
 	else if (strcmp(optarg, "sha256") == 0)
 		options->algorithms.sha256 = true;
+	else if (strcmp(optarg, "ssdeep") == 0)
+		options->algorithms.ssdeep = true;
 	else
 		EXIT_ERROR("invalid hashing algorithm option");
 }
@@ -98,21 +102,21 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = xmalloc(sizeof(options_t));
+	options_t *options = malloc_s(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	// parameters for getopt_long() function 
 	static const char short_options[] = "f:Aa:h:s:v";
 
 	static const struct option long_options[] = {
-		{ "help",			no_argument,		NULL,  1  },
+		{ "help",			no_argument,			NULL,  1  },
 		{ "format",			required_argument,	NULL, 'f' },
 		{ "algorithm",		required_argument,	NULL, 'a' },
 		{ "header",			required_argument,	NULL, 'h' },
 		{ "section-name",	required_argument,	NULL, 's' },
-		{ "section-index",	required_argument,	NULL,  2  },
-		{ "version",		no_argument,		NULL, 'v' },
-		{  NULL,			0,					NULL,  0  }
+		{ "section-index",required_argument,	NULL,  2  },
+		{ "version",		no_argument,			NULL, 'v' },
+		{  NULL,				0,							NULL,  0  }
 	};
 
 	// Default options.
@@ -213,11 +217,11 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	options_t *options = parse_options(argc, argv); // opcoes
+	options_t *options = parse_options(argc, argv);
 
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load_file(&ctx, argv[argc-1]);
+	pe_err_e err = pe_load(&ctx, argv[argc-1]);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
@@ -322,12 +326,16 @@ int main(int argc, char *argv[])
 			calc_sha256(data, data_size, sha256_sum);
 			output("sha-256", sha256_sum);
 		}
+
+		if (options->algorithms.ssdeep || options->algorithms.all) {
+			char ssdeep[FUZZY_MAX_RESULT + 1];
+			fuzzy_hash_buf(data, data_size, ssdeep);
+			output("sssdeep", ssdeep);
+		}
 	}
 
-	// libera a memoria
-	free_options(options);
-
 	// free
+	free_options(options);
 	err = pe_unload(&ctx);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);

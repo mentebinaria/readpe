@@ -119,7 +119,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = xmalloc(sizeof(options_t));
+	options_t *options = malloc_s(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
@@ -289,7 +289,7 @@ static void freeNodes(NODE_PERES *currentNode)
 static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
 	assert(currentNode != NULL);
-	NODE_PERES *newNode = xmalloc(sizeof(NODE_PERES));
+	NODE_PERES *newNode = malloc_s(sizeof(NODE_PERES));
 	newNode->lastNode = currentNode;
 	newNode->nextNode = NULL;
 	newNode->nodeType = typeOfNextNode;
@@ -312,6 +312,7 @@ static const NODE_PERES * lastNodeByType(const NODE_PERES *currentNode, NODE_TYP
 	return NULL;
 }
 
+/*
 static const NODE_PERES * firstNodeByType(const NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch)
 {
 	assert(currentNode != NULL);
@@ -328,6 +329,7 @@ static const NODE_PERES * firstNodeByType(const NODE_PERES *currentNode, NODE_TY
 
 	return firstNode;
 }
+*/
 
 static const NODE_PERES * lastNodeByTypeAndLevel(const NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
 {
@@ -545,7 +547,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		return NULL;
 	}
 
-	NODE_PERES *node = xmalloc(sizeof(NODE_PERES));
+	NODE_PERES *node = malloc_s(sizeof(NODE_PERES));
 	node->lastNode = NULL; // root
 	node->nodeType = RDT_RESOURCE_DIRECTORY;
 	node->nodeLevel = RDT_LEVEL1;
@@ -683,7 +685,7 @@ int main(int argc, char **argv)
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load_file(&ctx, path);
+	pe_err_e err = pe_load(&ctx, path);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

@@ -52,7 +52,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = xmalloc(sizeof(options_t));
+	options_t *options = malloc_s(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
@@ -138,6 +138,7 @@ static const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint3
 	return section;
 }
 
+/*
 static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
 {
 	if (ctx->pe.num_directories == 0 || ctx->pe.num_directories > MAX_DIRECTORIES)
@@ -152,6 +153,7 @@ static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
 
 	return directory->VirtualAddress;
 }
+*/
 
 /*
  * -1 - fake tls callbacks detected
@@ -453,7 +455,7 @@ int main(int argc, char *argv[])
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load_file(&ctx, path);
+	pe_err_e err = pe_load(&ctx, path);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

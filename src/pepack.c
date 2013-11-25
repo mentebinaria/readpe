@@ -20,7 +20,6 @@
 */
 
 #include "common.h"
-#include <string.h>
 
 #define PROGRAM "pepack"
 #define MAX_SIG_SIZE 2048
@@ -55,7 +54,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = xmalloc(sizeof(options_t));
+	options_t *options = malloc_s(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
@@ -180,7 +179,7 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 	if (!dbfile || !data)
 		return false;
 
-	char *buff = xmalloc(MAX_SIG_SIZE);
+	char *buff = malloc_s(MAX_SIG_SIZE);
 
 	//memset(buff, 0, MAX_SIG_SIZE);
 	while (fgets(buff, MAX_SIG_SIZE, dbfile))
@@ -238,7 +237,7 @@ int main(int argc, char *argv[])
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load_file(&ctx, path);
+	pe_err_e err = pe_load(&ctx, path);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

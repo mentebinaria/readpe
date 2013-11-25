@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	output("fpu undocumented", fpu_trick(&ctx) ? "yes" : "no");
+	output("fpu anti-disassembly", fpu_trick(&ctx) ? "yes" : "no");
 
 	// imagebase analysis
 	if (!normal_imagebase(&ctx)) {

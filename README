@@ -13,8 +13,8 @@
  4.2. Building libpe only
  4.3. Building a particular tool
  4.4. Building in Windows (via Cygwin)
-5. Included programs
-6. Contribute
+5. Programs included
+6. Contributing
 7. Bugs
 
 1. What is pev
@@ -28,14 +28,14 @@
 2. OS support
 
  This version is tested in Linux (x86 and x86-64),
- OSX systems and Windows under Cygwin (http://www.cygwin.com).
+ OS X and Windows under Cygwin (http://www.cygwin.com).
  If you'rerunning pev tools sucessfully in other environments,
- please let  us know.
+ please let us know.
 
 3. Pre-requisites
 
  libssl (pehash, pesec)
- libpcre (pestr only)
+ libpcre (pestr)
  libfuzzy (pehash)
  libc
  gcc
@@ -70,7 +70,7 @@
   $ make pesec
 
   The commmand above will build only pesec binary
-  but *you need to compile libpe first* (section 4.2).
+  but *you have to compile libpe first* (section 4.2).
 
  4.4. Building in Windows (via Cygwin)
 
@@ -80,7 +80,7 @@
   * gcc
   * binutils
   * make
-  * libpcre-dev (pestr)
+  * libpcre-devel (pestr)
   * openssl-devel (pehash, pesec)
   * zip
 
@@ -123,21 +123,22 @@
 
 5. Included tools
 
- * pehash   - calculate PE file hashes
+ * ofs2rva  - convert raw file offsets to RVA
  * pedis    - PE disassembler
+ * pehash   - calculate PE file hashes
  * pepack   - packer detector
+ * peres    - resources viewer/extractor
  * pescan   - search for suspicious things in PE files, including TLS callbacks
  * pesec    - check security features in PE files, including digital signatures
  * pestr    - search for unicode and ascii strings in PE files
  * readpe   - show PE file headers, sections and more
  * rva2ofs  - convert RVA to raw file offsets
- * ofs2rva  - convert raw file offsets to RVA
 
 6. Contributing
 
- The development version is available at https://github.com/merces/pev
- We are always needing some help. If you want to contribute, subscribe
- to pev-devel mailing list at
+ The most actual code is available at https://github.com/merces/pev.
+ We are always needing some help. If you want to contribute, plase
+subscribe to pev-devel mailing list at
  https://lists.sourceforge.net/lists/listinfo/pev-devel
 
 7. Bugs

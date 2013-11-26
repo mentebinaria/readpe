@@ -1,7 +1,9 @@
 #!/bin/bash
 
 now=$(date +"%F_%H-%M")
-arch=$(uname -a)
+arch=$(uname -m)
+so=$(uname -o)
+so=${so#*/}
 version=$(sed -n 's/^.*VERSION \"\([0-9]\.[0-9]*\)\"/\1/p' ../src/common.h)
 
 test_build()

@@ -379,7 +379,13 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node, int count)
 	memset(dirName, 0, sizeof(dirName));
 
 	uint32_t nameOffset = node->rootNode->resource.directoryEntry->DirectoryName.name.NameOffset;
-	snprintf(dirName, sizeof(dirName), "%s/%s", resourceDir, getResourceEntryByNameOffset(nameOffset)->dirName);
+	const RESOURCE_ENTRY *resourceEntry = getResourceEntryByNameOffset(nameOffset);
+
+	if (resourceEntry != NULL) {
+		snprintf(dirName, sizeof(dirName), "%s/%s", resourceDir, resourceEntry->dirName);
+	} else {
+		snprintf(dirName, sizeof(dirName), "%s", resourceDir);
+	}
 
 	if (stat(dirName, &statDir) == -1)
 		mkdir(dirName, 0700);
@@ -387,8 +393,8 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node, int count)
 	char fileName[100];
 	memset(fileName, 0, sizeof(fileName));
 
-	if (getResourceEntryByNameOffset(nameOffset) != NULL)
-		snprintf(fileName, sizeof(fileName), "%s/%d%s", dirName, count, getResourceEntryByNameOffset(nameOffset)->extension);
+	if (resourceEntry != NULL)
+		snprintf(fileName, sizeof(fileName), "%s/%d%s", dirName, count, resourceEntry->extension);
 	else
 		snprintf(fileName, sizeof(fileName), "%s/%d.bin", dirName, count);
 

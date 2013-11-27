@@ -155,7 +155,7 @@ static bool ishostname(const char *s, const encoding_t encoding)
 	};
 
 	const char *domains[] = {
-".xxx", ".asia", ".jobs", ".mobi", ".travel", ".xxx",
+".asia", ".jobs", ".mobi", ".travel", ".xxx",
 ".aero", ".arpa", ".biz", ".com", ".coop", ".edu", ".gov", ".info", ".int", ".jus", ".mil",
 ".museum", ".name", ".net", ".org", ".pro", ".ac", ".ad", ".ae", ".af", ".ag", 
 ".ai", ".al", ".am", ".an", ".ao", ".aq", ".ar", ".as", ".at", ".au", ".aw", ".az", ".ba",
@@ -182,9 +182,11 @@ static bool ishostname(const char *s, const encoding_t encoding)
 	if (!isalnum((int) *s))
 		return false;
 
+	const size_t s_len = strlen(s);
+
 	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(domains); i++) {
 		// TODO: unicode equivalent
-		const char *p = s + (strlen(s) - strlen(domains[i]));
+		const char *p = s + (s_len - strlen(domains[i]));
 		if (strcasestr(p, domains[i]))
 			return true;
 	}
@@ -253,7 +255,7 @@ int main(int argc, char *argv[])
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load(&ctx, path);
+	pe_err_e err = pe_load_file(&ctx, path);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 	const char *path = argv[argc-1];
 	pe_ctx_t ctx;
 
-	pe_err_e err = pe_load_ext(&ctx, path, LIBPE_OPT_NOCLOSE_FD);
+	pe_err_e err = pe_load_file_ext(&ctx, path, LIBPE_OPT_NOCLOSE_FD);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;

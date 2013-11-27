@@ -22,7 +22,7 @@
 #include "common.h"
 #include <openssl/md5.h>
 #include <openssl/sha.h>
-#include <fuzzy.h>
+#include "../lib/libfuzzy/fuzzy.h"
 
 #define PROGRAM "pehash"
 

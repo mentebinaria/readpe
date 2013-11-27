@@ -59,6 +59,7 @@ PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres
 SHAREDIR = $(datadir)/pev
 LIBPE = $(srcdir)/../lib/libpe
 LIBUDIS86 = $(srcdir)/../lib/libudis86
+LIBFUZZY = $(srcdir)/../lib/libfuzzy
 MANDIR = $(srcdir)/../doc/manpages
 
 ####### Build rules
@@ -72,7 +73,9 @@ pesec: compat/strlcat.c
 
 pestr: LDFLAGS += -lpcre
 
-pehash: LDFLAGS += -lssl -lcrypto -lfuzzy
+pehash: CFLAGS += -I$(LIBFUZZY)
+pehash: $(LIBFUZZY)/*.c
+pehash: LDFLAGS += -lssl -lcrypto
 
 pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: $(LIBUDIS86)/libudis86/*.c

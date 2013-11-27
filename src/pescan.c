@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
 		uint16_t ret = cpl_analysis(&ctx);
 		switch (ret) {
 			case 1:
-				output("cpl analysis", "banker");
+				output("cpl analysis", "malware");
 				break;
 			default:
 				output("cpl analysis:", "no threat");

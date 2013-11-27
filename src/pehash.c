@@ -20,8 +20,7 @@
 */
 
 #include "common.h"
-#include <openssl/md5.h>
-#include <openssl/sha.h>
+#include <openssl/evp.h>
 #include "../lib/libfuzzy/fuzzy.h"
 
 #define PROGRAM "pehash"
@@ -29,9 +28,7 @@
 typedef struct {
 	struct {
 		bool all;
-		bool md5;
-		bool sha1;
-		bool sha256;
+		char *alg_name;
 		bool ssdeep;
 	} algorithms;
 	struct {
@@ -53,28 +50,27 @@ static void usage(void)
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
 		" -f, --format <text|csv|xml|html>           change output format (default: text)\n"
-		" -a, --algorithm <md5|sha1|sha256|ssdeep>   hash using only the specified algorithm\n"
+		" -a, --algorithm <md5|sha1|sha256|...|ssdeep>   hash using only the specified algorithm\n"
 		" -h, --header <dos|coff|optional>           hash only the header with the specified name\n"
 		" -s, --section <section_name>               hash only the section with the specified name\n"
 		" --section-index <section_index>            hash only the section at the specified index (1..n)\n"
 		" -v, --version                              show version and exit\n"
 		" --help                                     show this help and exit\n",
 		PROGRAM, PROGRAM);
-
 }
 
 static void parse_hash_algorithm(options_t *options, const char *optarg)
 {
-	if (strcmp(optarg, "md5") == 0)
-		options->algorithms.md5 = true;
-	else if (strcmp(optarg, "sha1") == 0)
-		options->algorithms.sha1 = true;
-	else if (strcmp(optarg, "sha256") == 0)
-		options->algorithms.sha256 = true;
-	else if (strcmp(optarg, "ssdeep") == 0)
+	if (strcmp(optarg, "ssdeep") == 0) {
 		options->algorithms.ssdeep = true;
-	else
-		EXIT_ERROR("invalid hashing algorithm option");
+		return;
+	}
+
+	const EVP_MD *md = EVP_get_digestbyname(optarg);
+	if (md == NULL)
+		EXIT_ERROR("The requested algorithm is not supported");
+	
+	options->algorithms.alg_name = strdup(optarg);
 }
 
 static void parse_header_name(options_t *options, const char *optarg)
@@ -94,6 +90,9 @@ static void free_options(options_t *options)
 	if (options == NULL)
 		return;
 
+	if (options->algorithms.alg_name != NULL)
+		free(options->algorithms.alg_name);
+
 	if (options->sections.name != NULL)
 		free(options->sections.name);
 
@@ -109,14 +108,14 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "f:Aa:h:s:v";
 
 	static const struct option long_options[] = {
-		{ "help",			no_argument,			NULL,  1  },
+		{ "help",			no_argument,		NULL,  1  },
 		{ "format",			required_argument,	NULL, 'f' },
 		{ "algorithm",		required_argument,	NULL, 'a' },
 		{ "header",			required_argument,	NULL, 'h' },
 		{ "section-name",	required_argument,	NULL, 's' },
-		{ "section-index",required_argument,	NULL,  2  },
-		{ "version",		no_argument,			NULL, 'v' },
-		{  NULL,				0,							NULL,  0  }
+		{ "section-index",	required_argument,	NULL,  2  },
+		{ "version",		no_argument,		NULL, 'v' },
+		{  NULL,			0,					NULL,  0  }
 	};
 
 	// Default options.
@@ -171,43 +170,24 @@ static options_t *parse_options(int argc, char *argv[])
 	return options;
 }
 
-static void calc_sha1(const unsigned char *data, size_t size, char *sha1sum)
+static void calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
 {
-	unsigned char hash[SHA_DIGEST_LENGTH];
-	SHA_CTX mdContext;
+	const EVP_MD *md = EVP_get_digestbyname(alg_name);
+	//assert(md != NULL); // We already checked this in parse_hash_algorithm()
 
-	SHA1_Init(&mdContext);
-	SHA1_Update(&mdContext, data, size);
-	SHA1_Final(hash, &mdContext);
+	unsigned char md_value[EVP_MAX_MD_SIZE];
+	unsigned int md_len;
 
-	for (unsigned i=0; i < SHA_DIGEST_LENGTH; i++)
-		snprintf(&sha1sum[i*2], MAX_MSG, "%02x", hash[i]);
-}
+	EVP_MD_CTX md_ctx;
+	// FIXME: Handle errors - Check return values.
+	EVP_MD_CTX_init(&md_ctx);
+	EVP_DigestInit_ex(&md_ctx, md, NULL);
+	EVP_DigestUpdate(&md_ctx, data, size);
+	EVP_DigestFinal_ex(&md_ctx, md_value, &md_len);
+	EVP_MD_CTX_cleanup(&md_ctx);
 
-static void calc_sha256(const unsigned char *data, size_t size, char *sha256sum)
-{
-	unsigned char hash[SHA256_DIGEST_LENGTH];
-	SHA256_CTX mdContext;
-
-	SHA256_Init(&mdContext);
-	SHA256_Update(&mdContext, data, size);
-	SHA256_Final(hash, &mdContext);
-
-	for (unsigned i=0; i < SHA256_DIGEST_LENGTH; i++)
-		sprintf(&sha256sum[i*2], "%02x", hash[i]);
-}
-
-static void calc_md5(const unsigned char *data, size_t size, char *md5sum)
-{
-	unsigned char hash[MD5_DIGEST_LENGTH];
-	MD5_CTX mdContext;
-
-	MD5_Init(&mdContext);
-	MD5_Update(&mdContext, data, size);
-	MD5_Final(hash, &mdContext);
-
-	for (unsigned i=0; i < MD5_DIGEST_LENGTH; i++)
-		sprintf(&md5sum[i*2], "%02x", hash[i]);
+	for (unsigned int i=0; i < md_len; i++)
+		sprintf(&output[i * 2], "%02x", md_value[i]);
 }
 
 int main(int argc, char *argv[])
@@ -216,6 +196,8 @@ int main(int argc, char *argv[])
 		usage();
 		return EXIT_FAILURE;
 	}
+
+	OpenSSL_add_all_digests();
 
 	options_t *options = parse_options(argc, argv);
 
@@ -311,28 +293,26 @@ int main(int argc, char *argv[])
 	}
 
 	if (data != NULL) {
-		if (options->algorithms.md5 || options->algorithms.all) {
-			char md5_sum[(MD5_DIGEST_LENGTH*2) + 1];
-			calc_md5(data, data_size, md5_sum);
-			output("md5", md5_sum);
+		char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
+
+		if (options->algorithms.all) {
+			calc_hash("md5", data, data_size, hash_value);
+			output("md5", hash_value);
+			calc_hash("sha1", data, data_size, hash_value);
+			output("sha-1", hash_value);
+			calc_hash("sha256", data, data_size, hash_value);
+			output("sha-256", hash_value);
 		}
 
-		if (options->algorithms.sha1 || options->algorithms.all) {
-			char sha1_sum[((SHA_DIGEST_LENGTH*2)+1)];
-			calc_sha1(data, data_size, sha1_sum);
-			output("sha-1", sha1_sum);
-		}
-
-		if (options->algorithms.sha256 || options->algorithms.all) {
-			char sha256_sum[((SHA256_DIGEST_LENGTH*2)+1)];
-			calc_sha256(data, data_size, sha256_sum);
-			output("sha-256", sha256_sum);
-		}
-
-		if (options->algorithms.ssdeep || options->algorithms.all) {
+		if (options->algorithms.all || options->algorithms.ssdeep) {
 			char ssdeep[FUZZY_MAX_RESULT + 1];
 			fuzzy_hash_buf(data, data_size, ssdeep);
 			output("sssdeep", ssdeep);
+		}
+
+		if (options->algorithms.alg_name != NULL) {
+			calc_hash(options->algorithms.alg_name, data, data_size, hash_value);
+			output(options->algorithms.alg_name, hash_value);
 		}
 	}
 
@@ -343,6 +323,8 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
 
 	return EXIT_SUCCESS;
 }

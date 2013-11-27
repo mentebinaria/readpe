@@ -7,20 +7,26 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.70 - ?
+ ! Missing full/English documentation.
+ ! Missing valid XML and HTML output formats.
+ ! pestr: no support for --net option with unicode strings.
+ ! pestr: unable to handle too big strings.
  * libpe: rewritten, now using mmap. (Jardel Weyrich).
+ * pestr: added countries domains suffixes.
  * readpe and peres: output enhancements (Jardel Weyrich).
- - readpe: fixed subsystem types (Dmitry Mostovenko).
- + peres: added new tool to analyze/extract PE resources (Marcelo Fleury).
- + pescan: cpl banker detection.
- + pescan: undocumented anti-disassembly fpu trick detection.
  + pehash: sections and headers hash calculation (Jardel Weyrich).
- + pehash: ssdeep calculation
+ + pehash: ssdeep calculation.
+ + peres: added new tool to analyze/extract PE resources (Marcelo Fleury).
+ + pescan: cpl malware detection.
+ + pescan: undocumented anti-disassembly fpu trick detection.
+ - readpe can't show functions exported by ID only.
+ - readpe: fixed subsystem types (Dmitry Mostovenko).
 
 pev 0.60 - October 31, 2012
- ! Missing full/english documentation.
+ ! Missing full/English documentation.
  ! Missing valid XML and HTML output formats.
- ! pestr doesn't support --net option with unicode strings.
- ! readpe can't show exported functions by ID.
+ ! pestr: no support for --net option with unicode strings.
+ ! readpe can't show functions exported by ID only.
  * pedis: -F/--function option replaced by -r/--rva.
  + added manpages for all tools.
  + pedis: added -m/--mode option to set disassembly mode (16, 32 or 64-bit).

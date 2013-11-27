@@ -29,13 +29,14 @@
 
  This version is tested in Linux (x86 and x86-64),
  OS X and Windows under Cygwin (http://www.cygwin.com).
- If you'rerunning pev tools sucessfully in other environments,
+ If you're running pev tools sucessfully in other environments,
  please let us know.
 
 3. Pre-requisites
 
  libssl (pehash, pesec)
  libpcre (pestr)
+ libpe (source included)
  libc
  gcc
  make
@@ -124,7 +125,7 @@
 
  * ofs2rva  - convert raw file offsets to RVA
  * pedis    - PE disassembler
- * pehash   - calculate PE file hashes
+ * pehash   - calculate file hashes of PE pieces
  * pepack   - packer detector
  * peres    - resources viewer/extractor
  * pescan   - search for suspicious things in PE files, including TLS callbacks
@@ -135,9 +136,9 @@
 
 6. Contributing
 
- The most actual code is available at https://github.com/merces/pev.
+ The latest development code is available at https://github.com/merces/pev.
  We are always needing some help. If you want to contribute, plase
-subscribe to pev-devel mailing list at
+ subscribe to pev-devel mailing list at
  https://lists.sourceforge.net/lists/listinfo/pev-devel
 
 7. Bugs

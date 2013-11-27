@@ -165,7 +165,8 @@ static bool ishostname(const char *s, const encoding_t encoding)
 
 	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(domains); i++) {
 		// TODO: unicode equivalent
-		if (strcasestr(s, domains[i]))
+		const char *p = s + (strlen(s) - strlen(domains[i]));
+		if (strcasestr(p, domains[i]))
 			return true;
 	}
 

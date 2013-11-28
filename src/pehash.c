@@ -49,13 +49,15 @@ static void usage(void)
 		"Calculate hashes of PE pieces\n"
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>           change output format (default: text)\n"
-		" -a, --algorithm <md5|sha1|sha256|...|ssdeep>   hash using only the specified algorithm\n"
-		" -h, --header <dos|coff|optional>           hash only the header with the specified name\n"
-		" -s, --section <section_name>               hash only the section with the specified name\n"
-		" --section-index <section_index>            hash only the section at the specified index (1..n)\n"
-		" -v, --version                              show version and exit\n"
-		" --help                                     show this help and exit\n",
+		" -f, --format <text|csv|xml|html>    change output format (default: text)\n"
+		" -a, --algorithm <algorithm>         generate hash using one of the following algorithms:\n"
+		"                                       md4, md5, ripemd160, sha, sha1, sha224, sha256\n"
+		"                                       sha384, sha512, whirlpool or ssdeep\n\n"
+		" -h, --header <dos|coff|optional>    hash only the header with the specified name\n"
+		" -s, --section <section_name>        hash only the section with the specified name\n"
+		" --section-index <section_index>     hash only the section at the specified index (1..n)\n"
+		" -v, --version                       show version and exit\n"
+		" --help                              show this help and exit\n",
 		PROGRAM, PROGRAM);
 }
 

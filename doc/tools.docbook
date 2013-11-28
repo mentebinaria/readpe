@@ -47,13 +47,16 @@ Calculate hashes of PE pieces
 Example: pehash -s '.text' winzip.exe
 
 Options:
- -f, --format &lt;text|csv|xml|html&gt;           change output format (default: text)
- -a, --algorithm &lt;md5|sha1|sha256|ssdeep&gt;   hash using only the specified algorithm
- -h, --header &lt;dos|coff|optional&gt;           hash only the header with the specified name
- -s, --section &lt;section_name&gt;               hash only the section with the specified name
- --section-index &lt;section_index&gt;            hash only the section at the specified index (1..n)
- -v, --version                              show version and exit
- --help                                     show this help and exit
+ -f, --format &lt;text|csv|xml|html&gt;    change output format (default: text)
+ -a, --algorithm &lt;algorithm&gt;         generate hash using one of the following algorithms:
+                                       md4, md5, ripemd160, sha, sha1, sha224, sha256
+                                       sha384, sha512, whirlpool or ssdeep
+
+ -h, --header &lt;dos|coff|optional&gt;    hash only the header with the specified name
+ -s, --section &lt;section_name&gt;        hash only the section with the specified name
+ --section-index &lt;section_index&gt;     hash only the section at the specified index (1..n)
+ -v, --version                       show version and exit
+ --help                              show this help and exit
 </screen>
 </sect1>
 

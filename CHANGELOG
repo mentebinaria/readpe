@@ -15,7 +15,8 @@ pev 0.70 - ?
  * pestr: added countries domains suffixes.
  * readpe and peres: output enhancements (Jardel Weyrich).
  + pehash: sections and headers hash calculation (Jardel Weyrich).
- + pehash: ssdeep calculation.
+ + pehash: ssdeep fuzzy hash calculation.
+ + pehash: support for new digest hashes like sha512, ripemd160 and more.
  + peres: added new tool to analyze/extract PE resources (Marcelo Fleury).
  + pescan: cpl malware detection.
  + pescan: undocumented anti-disassembly fpu trick detection.

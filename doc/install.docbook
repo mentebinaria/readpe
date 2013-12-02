@@ -67,7 +67,7 @@ pasta e os binários estarão prontos para uso.</para>
 <section id="binmac">
 <title>No Mac OS X</title>
 <para>No OS X você pode instalar o .pkg fornecido ou, para usuários do
-<ulink link="http://www.macports.org/">macports</ulink>, comandar no
+<ulink url="http://www.macports.org/">macports</ulink>, comandar no
 terminal:</para>
 
 <screen>
@@ -105,7 +105,7 @@ corretamente:
 </para>
 
 <simplelist>
-<member>libpe (código-fonte incluso)</member>
+<member><ulink url="https://github.com/merces/libpe">libpe</ulink> (inclusa se você clonou o repositório git do pev com a oção --recursive do git)</member>
 <member>libssl (usada no pehash e pesec)</member>
 <member>libpcre (usada no pestr)</member>
 <member>gcc</member>

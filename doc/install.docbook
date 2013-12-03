@@ -224,7 +224,18 @@ a versão corrente ainda não. Se conseguir compilar para alguma plataforma
 diferente, por favor nos avise. Ficaremos agradecidos.</para>
 </section>
 
+<section id="compat">
+<title>Retrocompatibilidade de saída</title>
+<para>Na versão 0.70 o formato de saída do peres e do readpe foram sofreram
+alterações. Caso precise trabalhar com o formato anterior, até a versão 0.60, você
+pode compilar estes programas definindo a flag LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06,
+como no exemplo:</para>
+
+<screen>
+<prompt>$ </prompt><command>DFLAGS+=-DLIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06 make readpe</command>
+</screen>
 </section>
 
+</section>
 
 </chapter>

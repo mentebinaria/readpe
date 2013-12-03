@@ -29,3 +29,4 @@ src/peres
 tests/samples
 tests/*.exe
 tests/*.bin
+html*

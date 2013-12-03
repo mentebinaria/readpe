@@ -2,20 +2,18 @@
 <!DOCTYPE book [
   <!ENTITY info SYSTEM "info.docbook">
   <!ENTITY pev SYSTEM "pev.docbook">
-  <!ENTITY pe SYSTEM "pe.docbook">
   <!ENTITY install SYSTEM "install.docbook">
-  <!ENTITY usage SYSTEM "usage.docbook">
+  <!ENTITY using SYSTEM "using.docbook">
   <!ENTITY tools SYSTEM "tools.docbook">
-  <!ENTITY license SYSTEM "fdl-1.3.xml">
+  <!ENTITY license SYSTEM "../../fdl-1.3.xml">
 ]>
 
-<book id="pev-manual" lang="pt-br">
+<book id="pev-manual" lang="en-us">
 
 &info;
 &pev;
-&pe;
 &install;
-&usage;
+&using;
 &tools;
 &license;
 

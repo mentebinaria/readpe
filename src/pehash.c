@@ -25,7 +25,16 @@
 
 #define PROGRAM "pehash"
 
+#define HAS_ALGO \
+		if (options->algorithms.alg_name) { \
+			calc_hash(options->algorithms.alg_name, data, data_size, hash_value); \
+			output(options->algorithms.alg_name, hash_value); \
+		} else { \
+			print_basic_hash(data, data_size); \
+		}
+
 typedef struct {
+	bool all;
 	struct {
 		bool all;
 		char *alg_name;
@@ -49,13 +58,15 @@ static void usage(void)
 		"Calculate hashes of PE pieces\n"
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>           change output format (default: text)\n"
-		" -a, --algorithm <md5|sha1|sha256|...|ssdeep>   hash using only the specified algorithm\n"
-		" -h, --header <dos|coff|optional>           hash only the header with the specified name\n"
-		" -s, --section <section_name>               hash only the section with the specified name\n"
-		" --section-index <section_index>            hash only the section at the specified index (1..n)\n"
-		" -v, --version                              show version and exit\n"
-		" --help                                     show this help and exit\n",
+		" -f, --format <text|csv|xml|html>    change output format (default: text)\n"
+		" -a, --algorithm <algorithm>         generate hash using one of the following algorithms:\n"
+		"                                       md4, md5, ripemd160, sha, sha1, sha224, sha256\n"
+		"                                       sha384, sha512, whirlpool or ssdeep\n\n"
+		" -h, --header <dos|coff|optional>    hash only the header with the specified name\n"
+		" -s, --section <section_name>        hash only the section with the specified name\n"
+		" --section-index <section_index>     hash only the section at the specified index (1..n)\n"
+		" -v, --version                       show version and exit\n"
+		" --help                              show this help and exit\n",
 		PROGRAM, PROGRAM);
 }
 
@@ -105,22 +116,23 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	// parameters for getopt_long() function 
-	static const char short_options[] = "f:Aa:h:s:v";
+	static const char short_options[] = "f:a:h:s:v";
 
 	static const struct option long_options[] = {
-		{ "help",			no_argument,		NULL,  1  },
-		{ "format",			required_argument,	NULL, 'f' },
-		{ "algorithm",		required_argument,	NULL, 'a' },
-		{ "header",			required_argument,	NULL, 'h' },
-		{ "section-name",	required_argument,	NULL, 's' },
-		{ "section-index",	required_argument,	NULL,  2  },
-		{ "version",		no_argument,		NULL, 'v' },
-		{  NULL,			0,					NULL,  0  }
+		{ "help",          no_argument,         NULL,  1  },
+		{ "format",        required_argument,   NULL, 'f' },
+		{ "algorithm",     required_argument,   NULL, 'a' },
+		{ "header",        required_argument,   NULL, 'h' },
+		{ "section-name",  required_argument,   NULL, 's' },
+		{ "section-index", required_argument,   NULL,  2  },
+		{ "version",       no_argument,         NULL, 'v' },
+		{  NULL,           0,                   NULL,  0  }
 	};
 
 	// Default options.
 	options->algorithms.all = true;
 	options->headers.all = true;
+	options->all = true;
 
 	int c, ind;
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
@@ -138,14 +150,17 @@ static options_t *parse_options(int argc, char *argv[])
 				break;
 			case 'a':
 				options->algorithms.all = false;
+				options->all = false;
 				parse_hash_algorithm(options, optarg);
 				break;
 			case 's':
+				options->all = false;
 				options->headers.all = false;
 				// TODO: How do we need to handle non-ascii names?
 				options->sections.name = strdup(optarg);
 				break;
 			case 2:
+				options->all = false;
 				options->headers.all = false;
 				options->sections.index = strtol(optarg, NULL, 10);
 				if (options->sections.index < 1 || options->sections.index > MAX_SECTIONS) {
@@ -156,6 +171,7 @@ static options_t *parse_options(int argc, char *argv[])
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'h':
+				options->all = false;
 				options->headers.all = false;
 				parse_header_name(options, optarg);
 				break;
@@ -172,6 +188,10 @@ static options_t *parse_options(int argc, char *argv[])
 
 static void calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
 {
+	if (strncmp(alg_name, "ssdeep", 6) == 0) {
+		fuzzy_hash_buf(data, size, output);
+		return;
+	}
 	const EVP_MD *md = EVP_get_digestbyname(alg_name);
 	//assert(md != NULL); // We already checked this in parse_hash_algorithm()
 
@@ -188,6 +208,21 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
 
 	for (unsigned int i=0; i < md_len; i++)
 		sprintf(&output[i * 2], "%02x", md_value[i]);
+}
+
+static void print_basic_hash(const unsigned char *data, size_t size)
+{
+	char *basic_hashes[] = { "md5", "sha1", "ssdeep" };
+	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
+
+	if (!data || !size)
+		return;
+
+	for (int i=0; i < 3; i++) {
+		calc_hash(basic_hashes[i], data, size, hash_value);
+		output(basic_hashes[i], hash_value);
+	}
+	putchar('\n');
 }
 
 int main(int argc, char *argv[])
@@ -222,42 +257,71 @@ int main(int argc, char *argv[])
 	const unsigned char *data = NULL;
 	uint64_t data_size = 0;
 
-	if (options->headers.all) {
-		const uint64_t pe_size = pe_filesize(&ctx);
-		data = ctx.map_addr;
-		data_size = pe_size;
-	} else if (options->headers.dos) {
+	unsigned c = pe_sections_count(&ctx);
+	IMAGE_SECTION_HEADER ** const sections = pe_sections(&ctx);
+	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
+
+	data = ctx.map_addr;
+	data_size = pe_filesize(&ctx);
+
+	if (options->all) {
+		output("file", ctx.path);
+		print_basic_hash(data, data_size);
+	}
+
+	if (options->all || options->headers.all || options->headers.dos) {
 		const IMAGE_DOS_HEADER *dos_hdr = pe_dos(&ctx);
 		data = (const unsigned char *)dos_hdr;
 		data_size = sizeof(IMAGE_DOS_HEADER);
-	} else if (options->headers.coff) {
+
+		output("header", "IMAGE_DOS_HEADER");
+		HAS_ALGO;
+	}
+
+	if (options->all || options->headers.all || options->headers.coff) {
 		const IMAGE_COFF_HEADER *coff_hdr = pe_coff(&ctx);
 		data = (const unsigned char *)coff_hdr;
 		data_size = sizeof(IMAGE_COFF_HEADER);
-	} else if (options->headers.optional) {
-		const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
-		switch (opt_hdr->type) {
-			case MAGIC_ROM:
-				// Oh boy! We do not support ROM. Abort!
-				fprintf(stderr, "ROM image is not supported\n");
-				break;
-			case MAGIC_PE32:
-				if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
-					// TODO: Should we report something?
-					break;
-				}
-				data = (const unsigned char *)opt_hdr->_32;
-				data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
-				break;
-			case MAGIC_PE64:
-				if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
-					// TODO: Should we report something?
-					break;
-				}
-				data = (const unsigned char *)opt_hdr->_64;
-				data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
-				break;
 
+		output("header", "IMAGE_COFF_HEADER");
+		HAS_ALGO;
+	}
+	
+	if (options->all || options->headers.all || options->headers.optional) {
+      const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
+      switch (opt_hdr->type) {
+         case MAGIC_ROM:
+            // Oh boy! We do not support ROM. Abort!
+            fprintf(stderr, "ROM image is not supported\n");
+            break;
+         case MAGIC_PE32:
+            if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
+               // TODO: Should we report something?
+               break;
+            }   
+            data = (const unsigned char *)opt_hdr->_32;
+            data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
+            break;
+         case MAGIC_PE64:
+            if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
+               // TODO: Should we report something?
+               break;
+            }   
+            data = (const unsigned char *)opt_hdr->_64;
+            data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
+            break;
+		}
+
+		output("header", "IMAGE_OPTIONAL_HEADER");
+		HAS_ALGO;
+	}
+
+	if (options->all) {
+		for (unsigned int i=0; i<c; i++) {
+			data_size = sections[i]->SizeOfRawData; 
+			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
+			output("section", (char *)sections[i]->Name);
+			HAS_ALGO;
 		}
 	} else if (options->sections.name != NULL) {
 		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
@@ -295,22 +359,9 @@ int main(int argc, char *argv[])
 	if (data != NULL) {
 		char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
-		if (options->algorithms.all) {
-			calc_hash("md5", data, data_size, hash_value);
-			output("md5", hash_value);
-			calc_hash("sha1", data, data_size, hash_value);
-			output("sha-1", hash_value);
-			calc_hash("sha256", data, data_size, hash_value);
-			output("sha-256", hash_value);
-		}
-
-		if (options->algorithms.all || options->algorithms.ssdeep) {
-			char ssdeep[FUZZY_MAX_RESULT + 1];
-			fuzzy_hash_buf(data, data_size, ssdeep);
-			output("sssdeep", ssdeep);
-		}
-
-		if (options->algorithms.alg_name != NULL) {
+		if (options->algorithms.all && options->all) {
+			print_basic_hash(data, data_size);
+		} else if (options->algorithms.alg_name != NULL) {
 			calc_hash(options->algorithms.alg_name, data, data_size, hash_value);
 			output(options->algorithms.alg_name, hash_value);
 		}

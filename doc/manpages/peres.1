@@ -1,20 +1,33 @@
-.TH OFS2RVA 1
+.TH PERES 1
 .SH NAME
-ofs2rva - converts a PE raw file offset to relative virtual address
+peres - analyze and extract PE file resources
 
 .SH SYNOPSIS
-.B ofs2rva
-.IR offset
+.B peres
+[OPTIONS]...
 .IR pefile
 
 .SH DESCRIPTION
-ofs2rva converts a raw file offset to RVA (Relative Virtual Address), if it's valid. It's part of pev analysis toolkit.
-.PP
-\&\fIoffset\fR is a valid PE file offset in decimal or hexadecimal (prefixed with 0x).
+peres opens the resource section of a PE file and it is able to show/extract resources.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
 .SH OPTIONS
+.TP
+.BR \-a ", " \-\-all
+show all information, statistics and extract resources.
+
+.TP
+.BR \-x ", " \-\-extract
+extract resources.
+
+.TP
+.BR \-i ", " \-\-info
+show resources information.
+
+.TP
+.BR \-s ", " \-\-statistics
+show resource section statistics.
 
 .TP
 .BR \-v ", " \-\-version
@@ -25,9 +38,9 @@ show program version and exit.
 show help.
 
 .SH EXAMPLES
-Get RVA of 0x1b9b8 offset of \fBcalc.exe\fP:
+Show resources statistics of \fBputty.exe\fP:
 .IP
-$ ofs2rva 0x1b9b8 calc.exe
+$ peres -s putty.exe
 
 .SH REPORTING BUGS
 Please, check the latest development code and report at https://github.com/merces/pev/issues
@@ -35,6 +48,3 @@ Please, check the latest development code and report at https://github.com/merce
 .SH COPYRIGHT
 Copyright © 2013 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
-
-.SH SEE ALSO
-rva2ofs(1)

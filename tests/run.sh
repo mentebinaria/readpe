@@ -11,11 +11,6 @@ test_build()
 	. test_build.sh	
 }
 
-#run_pescan()
-#{
-    
-#}
-
 run_pepack()
 {
     echo "--------- pepack ----------"

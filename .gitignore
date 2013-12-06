@@ -30,3 +30,5 @@ tests/samples
 tests/*.exe
 tests/*.bin
 html*
+tests/running_report
+tests/running_report/*

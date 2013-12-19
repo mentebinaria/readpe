@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE book [
+  <!ENTITY info SYSTEM "info.docbook">
+  <!ENTITY pe SYSTEM "pe.docbook">
+  <!ENTITY license SYSTEM "../../fdl-1.3.xml">
+]>
+
+<book id="pev-tutorial" lang="pt-br">
+
+&info;
+&pe;
+&license;
+
+</book>

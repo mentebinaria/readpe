@@ -1,6 +1,6 @@
 .TH PEHASH 1
 .SH NAME
-pehash - calculate PE checksums
+pehash - calculate hashes of PE pieces
 
 .SH SYNOPSIS
 .B pehash
@@ -8,22 +8,34 @@ pehash - calculate PE checksums
 .IR pefile
 
 .SH DESCRIPTION
-pehash uses libssl to calculate PE file checksums. It's part of pev analysis toolkit.
+pehash uses libssl and libfuzzy to calculate PE file hashes. It's part of pev analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
 .SH OPTIONS
 .TP
 .BR \-A ", " \-\-all
-calculate and display all available checksums (default).
+calculate and show basic hashes of file, headers and sections (default).
+
+.TP
+.BR \-a ", " \-\-algorithm\ <md4|md5|ripemd160|sha|sha1|sha224|sha256|sha384|sha512|whirlpool|ssdeep>
+hash with the specified algorithm only.
 
 .TP
 .BR \-f ", " \-\-format\ <text|csv|xml|html>
 change output format (default is text).
 
 .TP
-.BR \-h ", " \-\-hash\ <md5|sha1|sha256>
-set hash algorithm.
+.BR \-h ", " \-\-header\ <dos|coff|optional>
+hash only the header with the specified name.
+
+.TP
+.BR \-s ", " \-\-section\ <section_name>
+hash only the section with the specified name.
+
+.TP
+.BR \-\-section-\index\ <section_index>
+hash only the section at the specified index (1..n).
 
 .TP
 .BR \-v ", " \-\-version
@@ -42,5 +54,5 @@ $ pehash putty.exe
 Please, check the latest development code and report at https://github.com/merces/pev/issues
 
 .SH COPYRIGHT
-Copyright © 2012 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+Copyright © 2013 pev authors. Licensed GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

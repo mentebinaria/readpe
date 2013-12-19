@@ -3,9 +3,9 @@
 NAME=pev-manual
 XSL=/usr/share/xml/docbook/stylesheet/nwalsh/html/chunk.xsl
 FOXSL=/usr/share/xml/docbook/stylesheet/nwalsh/fo/docbook.xsl
-SRC=pev-manual.docbook
-HTML_DIR=html-doc
-PDF_DIR=pdf-doc
+SRC=manual.docbook
+HTML_DIR=html
+PDF_DIR=pdf
 VERSION=0.70
 
 html:
@@ -15,7 +15,7 @@ html:
 pdf:
 	mkdir -p $(PDF_DIR)
 	xsltproc -o $(NAME).fo $(FOXSL) $(SRC)
-	fop $(NAME).fo -pdf $(PDF_DIR)/pev-$(VERSION)-manual-v1.0.pdf
+	fop $(NAME).fo -pdf $(PDF_DIR)/$(NAME)-$(VERSION).pdf
 
 clean:
 	rm -rf *.html *.pdf *.fo *~ $(HTML_DIR) $(PDF_DIR) 

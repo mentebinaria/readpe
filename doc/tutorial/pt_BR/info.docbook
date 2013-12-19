@@ -1,9 +1,10 @@
 <bookinfo>
 
-<title>pev 0.70 - Manual do Usuário (em desenvolvimento)</title>
+<title>Análise de arquivos PE com o pev</title>
+<subtitle>Tutorial para iniciantes</subtitle>
 
-<date>2013-10-26</date>
-<releaseinfo>0.70</releaseinfo>
+<date>2013-12-03</date>
+<releaseinfo>1.0</releaseinfo>
 
 <copyright>
 <year>2013</year>
@@ -23,7 +24,11 @@ cópia da licença (em inglês) está disponível no apêndice "GNU Free Documen
 <keyword>pev</keyword>
 <keyword>pe</keyword>
 <keyword>malware</keyword>
-<keyword>analysis</keyword>
+<keyword>análise</keyword>
+<keyword>vírus</keyword>
+<keyword>ameaças</keyword>
+<keyword>executável</keyword>
+<keyword>executáveis</keyword>
 </keywordset>
 
 </bookinfo>

@@ -356,7 +356,7 @@ static const RESOURCE_ENTRY * getResourceEntryByNameOffset(uint32_t nameOffset)
 	return NULL;
 }
 
-static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node, int count)
+static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node)
 {
 	assert(node != NULL);
 	const NODE_PERES *dataEntryNode = lastNodeByType(node, RDT_DATA_ENTRY);
@@ -387,26 +387,29 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node, int count)
 		snprintf(dirName, sizeof(dirName), "%s", resourceDir);
 	}
 
+	// TODO(jweyrich): Would it make sense to hardcode `RDT_LEVEL2` rather than use `node->nodeLevel-1` ?
+	const NODE_PERES *nameNode = lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, node->nodeLevel - 1);
+	//printf("%d\n", nameNode->resource.directoryEntry->DirectoryName.name.NameOffset);
+
 	if (stat(dirName, &statDir) == -1)
 		mkdir(dirName, 0700);
 
-	char fileName[100];
-	memset(fileName, 0, sizeof(fileName));
+	char relativeFileName[100];
+	memset(relativeFileName, 0, sizeof(relativeFileName));
 
-	if (resourceEntry != NULL)
-		snprintf(fileName, sizeof(fileName), "%s/%d%s", dirName, count, resourceEntry->extension);
-	else
-		snprintf(fileName, sizeof(fileName), "%s/%d.bin", dirName, count);
+	snprintf(relativeFileName, sizeof(relativeFileName), "%s/" "%" PRIu32 "%s",
+		dirName,
+		nameNode->resource.directoryEntry->DirectoryName.name.NameOffset,
+		resourceEntry != NULL ? resourceEntry->extension : ".bin");
 
-	FILE *fp = fopen(fileName, "wb+");
+	FILE *fp = fopen(relativeFileName, "wb+");
 	if (fp == NULL) {
 		// TODO: Should we report something?
 		return;
 	}
 	fwrite(buffer, dataEntrySize, 1, fp);
 	fclose(fp);
-	output("Save On", fileName);
-	count++;
+	output("Save On", relativeFileName);
 }
 
 static void extractResources(pe_ctx_t *ctx, const NODE_PERES *node)
@@ -426,7 +429,7 @@ static void extractResources(pe_ctx_t *ctx, const NODE_PERES *node)
 			continue;
 		}
 		count++;
-		saveResource(ctx, node, count);
+		saveResource(ctx, node);
 		node = node->nextNode;
 	}
 }

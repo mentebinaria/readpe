@@ -364,6 +364,8 @@ int main(int argc, char *argv[])
 		} else if (options->algorithms.alg_name != NULL) {
 			calc_hash(options->algorithms.alg_name, data, data_size, hash_value);
 			output(options->algorithms.alg_name, hash_value);
+		} else {
+			print_basic_hash(data, data_size);
 		}
 	}
 

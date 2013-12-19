@@ -530,7 +530,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 #endif
 
 	const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-	if (resourceDirectory == NULL)
+	if (resourceDirectory == NULL || resourceDirectory->Size == 0)
 		return NULL;
 
 	uint64_t resourceDirOffset = pe_rva2ofs(ctx, resourceDirectory->VirtualAddress);
@@ -710,6 +710,10 @@ int main(int argc, char **argv)
 		EXIT_ERROR("not a valid PE file");
 
 	NODE_PERES *node = discoveryNodesPeres(&ctx);
+	if (node == NULL) {
+		fprintf(stderr, "this file has no resources\n");
+		return EXIT_SUCCESS;
+	}
 
 	if (options->all) {
 		showInformations(node);

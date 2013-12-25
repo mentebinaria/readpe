@@ -320,7 +320,10 @@ int main(int argc, char *argv[])
 		for (unsigned int i=0; i<c; i++) {
 			data_size = sections[i]->SizeOfRawData; 
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
-			output("section", (char *)sections[i]->Name);
+
+			if (data_size)
+				output("section", (char *)sections[i]->Name);
+
 			HAS_ALGO;
 		}
 	} else if (options->sections.name != NULL) {
@@ -356,7 +359,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (data != NULL) {
+	if (!options->all && data != NULL) {
 		char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
 		if (options->algorithms.all && options->all) {

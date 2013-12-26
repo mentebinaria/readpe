@@ -1,0 +1,84 @@
+<chapter id="advanced-usage">
+<title>Advanced features</title>
+
+<sect1 id="security">
+<title>Security tests</title>
+
+<para>
+Not all binaries are suspicious. You might have some normal binaries to study,
+finding vulnerabilities on it, etc. You can use pesec to check security features
+in PE files. It can be useful for programmers, vulnerabilities researchers, programmers,
+etc. Have a look:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pesec about.exe</command>
+
+ASLR:                            no
+DEP/NX:                          no
+SEH:                             yes
+Stack cookies (EXPERIMENTAL):    yes
+</screen>
+
+<para>
+Currently pesec can discover if the PE file has ASLR (Address Space Layout Randomization),
+DEP (Data Execution Prevention) / NX (No eXecutable bit), SEH (Structured Exception Handling)
+and Stack Cookies as known as Canary. If you want to use pesec, you probably know what these
+protection schemes are. ;)
+</para>
+
+<para>
+We experimentally support stack cookies put by Visual Studio only but we do really
+have plans to extend this support. Stay tuned!
+</para>
+
+</sect1>
+
+<sect1 id="disasm">
+<title>Disassembling</title>
+
+<para>
+pedis is a full disassembler that can be used to
+lots of different purposes. Let's suppose you find
+the following output from pescan first:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pescan -v malware.exe</command>
+
+file entropy:                    7.868122 (probably packed)
+fpu anti-disassembly:            yes
+imagebase:                       normal - 0x400000
+entrypoint:                      fake - va: 0x2ddb40 - raw: 0xe0f40
+DOS stub:                        suspicious - raw: 0x40
+TLS callback function:           0x6ddd10
+TLS directory:                   found - 1 function(s)
+section count:                   3
+UPX0:                            suspicious name, zero length, self-modifying
+UPX1:                            suspicious name, self-modifying
+.rsrc:                           normal
+timestamp:                       normal - Mon, 18 Nov 2013 16:34:20 UTC
+</screen>
+
+<para>
+You may want to see why DOS stub was marked as suspicious. You can use
+pedis for that. As DOS stub starts on offset 0x40 and it's a 16-bit
+assembly code, you can ask pedis to disassemble 16 bytes for example, starting
+at offset 0x40. Look:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pedis -m 16 -o 0x40 -n 16 malware.exe</command>
+
+40:                              ba 10 00                        mov dx, 0x10
+43:                              0e                              push cs
+44:                              1f                              pop ds
+45:                              b4 09                           mov ah, 0x9
+47:                              cd 21                           int 0x21
+49:                              b8 01 4c                        mov ax, 0x4c01
+4c:                              cd 21                           int 0x21
+4e:                              90                              nop
+</screen>
+
+</sect1>
+</chapter>

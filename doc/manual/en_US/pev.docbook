@@ -1,34 +1,33 @@
 <chapter id="pev">
-<title>O que é o pev?</title>
+<title>What is pev?</title>
 
-<para>Desde a versão 0.50, o pev é um kit de ferramentas multiplataforma para
-se trabalhar com binários PE em linha de comando.</para>
+<para>
+Since version 0.50, pev is a multiplatform toolkit to work with PE (Portable
+Executable) binaries. Its main goal is to provide feature-rich tool for proper
+analyze binaries, specially suspicious ones.</para>
 
 <sect1 id="history">
-<title>História</title>
+<title>History</title>
+
 <para>
-O pev naseceu da uma necessidade bem simples: um programa que rodasse em Linux,
-em linha de comando e exibisse a versão (File Version) de arquivos executáveis
-do Windows (.exe, .dll etc). Este número de versão fica na seção de
-resources (recursos) do arquivo PE, caso exista. No entanto, foi desenvolvido
-um pequeno programa que buscava em todo o binário este número de versão, sem
-qualquer otimização.
+pev has born of a simple need: a program to find the version (File Version) of
+a PE32 file and that could be run in Linux. This version number is stored in
+Resources (.rsrc) section but at the time we've decided to simply search for
+the string in the whole binary, without any optimization.
+</para>
+
+
+<para>
+Later on we've decided to parse the PE32 file until reach .rsrc section and
+get the File Version field. In order to do that, we realized we must parse the
+entire file and we thought if we could print out all the fields and values as well...
 </para>
 
 <para>
-Num outro momento decidimos encontrar os resources do PE de maneira mais
-inteligente e tivemos que passar por vários cabeçalhos do PE para chegar onde
-queríamos. Então percebemos que poderíamos também imprimir tais cabeçalhos
-e trasnformar o pev num programa para exibir várias informações sobre o PE (e
-não mais só a versão).
-</para>
-
-<para>
-Até a versão 0.40, o pev era um binário único mas na versão 0.50,
-decidimos dividir as operações entre os binários e dar mais
-foco em análise de binários suspeitos. Além disso, o código em comum de
-trabalho com o arquivo PE deu origem à uma biblioteca, batizada de libpe.
-Atualmente todos os binários do kit pev são dependentes da libpe.
+Until version 0.40, pev was an unique program for parse the PE headers and sections
+(now readpe is responsible for this). In version 0.50 we focused on malware analysis
+and splitted pev into various programs beyond a library, called libpe. Currently
+all pev programs use libpe.
 </para>
 
 </sect1>
@@ -44,10 +43,10 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.70 - ?
+pev 0.70 - December 26, 2013
  ! Missing full/English documentation.
  ! Missing valid XML and HTML output formats.
- ! pestr: no support for --net option with unicode strings.
+ ! pestr: no support for --net option when parsing unicode strings.
  ! pestr: unable to handle too big strings.
  * libpe: rewritten, now using mmap. (Jardel Weyrich).
  * pestr: added countries domains suffixes.

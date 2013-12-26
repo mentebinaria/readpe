@@ -1,0 +1,340 @@
+<chapter id="basic-usage">
+<title>Basic usage</title>
+
+<sect1 id="hdrsec">
+<title>Getting headers and sections</title>
+
+<para>
+readpe is the right tool for parsing PE files without infer anything regarding
+its fields and values. Using readpe you can see all basic PE file information.
+For example, in order to see the <emphasis>Optional Header</emphasis>, you could
+run:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe --header optional putty.exe</command>
+
+Optional/Image header
+Magic number:                    0x10b (PE32)
+Linker major version:            7
+Linker minor version:            10
+Size of .text section:           0x54000
+Size of .data section:           0x28000
+Size of .bss section:            0
+Entrypoint:                      0x4c4df
+Address of .text section:        0x1000
+Address of .data section:        0x55000
+ImageBase:                       0x400000
+Alignment of sections:           0x1000
+Alignment factor:                0x1000
+Major version of required OS:    4
+Minor version of required OS:    0
+Major version of image:          0
+Minor version of image:          0
+Major version of subsystem:      4
+Minor version of subsystem:      0
+Size of image:                   0x7d000
+Size of headers:                 0x1000
+Checksum:                        0
+Subsystem required:              0x2 (Windows GUI)
+DLL characteristics:             0
+Size of stack to reserve:        0x100000
+Size of stack to commit:         0x1000
+Size of heap space to reserve:   0x100000
+Size of heap space to commit:    0x1000
+</screen>
+
+<tip><para>The Magic Number is 0x10b for PE32 files and 0x20b for PE32+ files.</para></tip>
+
+<para>
+In order to pass some pev tools output you can set use the -f / --format option. The following
+example will output the <emphasis>DOS Header</emphasis> in HTML:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe --format html --header dos putty.exe</command>
+
+&lt;p&gt;DOS Header&lt;/p&gt;
+&lt;span&gt;&lt;b&gt;Magic number:&lt;/b&gt; 0x5a4d (MZ)&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Bytes in last page:&lt;/b&gt; 144&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Pages in file:&lt;/b&gt; 3&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Relocations:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Size of header in paragraphs:&lt;/b&gt; 4&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Minimum extra paragraphs:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Maximum extra paragraphs:&lt;/b&gt; 65535&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Initial (relative) SS value:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Initial SP value:&lt;/b&gt; 0xb8&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Initial IP value:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Initial (relative) CS value:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Address of relocation table:&lt;/b&gt; 0x40&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;Overlay number:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;OEM identifier:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;OEM information:&lt;/b&gt; 0&lt;/span&gt;&lt;br /&gt;
+&lt;span&gt;&lt;b&gt;PE header offset:&lt;/b&gt; 0xf8&lt;/span&gt;&lt;br /&gt;
+</screen>
+
+<para>
+Using grep you could easily get the PE file entrypoint in CSV format by filtering the readpe output:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe --format csv --header optional putty.exe | grep ^Entry</command>
+
+Entrypoint,0x4f125
+</screen>
+
+<para>
+With readpe you can inspect the PE sections as well. Use -S option to see information about all PE sections, just
+like this:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe -S putty.exe</command>
+
+Sections
+Name:                            .text
+Virtual Address:                 0x1000
+Physical Address:                0x55fb1
+Size:                            0x56000 (352256 bytes)
+Pointer To Data:                 0x1000
+Relocations:                     0
+Characteristics:                 0x60000020
+                                 IMAGE_SCN_CNT_CODE
+                                 IMAGE_SCN_MEM_EXECUTE
+                                 IMAGE_SCN_MEM_READ
+Name:                            .rdata
+Virtual Address:                 0x57000
+Physical Address:                0x1b62a
+Size:                            0x1c000 (114688 bytes)
+Pointer To Data:                 0x57000
+Relocations:                     0
+Characteristics:                 0x40000040
+                                 IMAGE_SCN_CNT_INITIALIZED_DATA
+                                 IMAGE_SCN_MEM_READ
+</screen>
+</sect1>
+
+<sect1 id="functions">
+<title>Looking at function directories</title>
+
+<para>
+readpe can show you the directories with -d option, like this:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe -d putty.exe</command>
+
+Data directories
+IMAGE_DIRECTORY_ENTRY_IMPORT:    0x70c28 (240 bytes)
+IMAGE_DIRECTORY_ENTRY_RESOURCE:  0x79000 (15248 bytes)
+IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG: 0x70bc0 (72 bytes)
+</screen>
+
+<para>
+If the executable has an import directory you may want to
+see a list of imported functions with -i / --imports option:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>readpe -i putty.exe</command>
+
+Imported functions
+
+KERNEL32.DLL
+                               SetEnvironmentVariableA
+                               CompareStringW
+                               CompareStringA
+                               HeapSize
+                               SetEndOfFile
+                               InterlockedExchange
+                               RtlUnwind
+                               SetFilePointer
+                               SetStdHandle
+                               GetEnvironmentStringsW
+                               FreeEnvironmentStringsW
+                               GetEnvironmentStrings
+                               FreeEnvironmentStringsA
+                               UnhandledExceptionFilter
+
+ADVAPI32.dll
+                               RegCloseKey
+                               RegQueryValueExA
+                               RegOpenKeyA
+                               GetUserNameA
+                               CopySid
+                               GetLengthSid
+</screen>
+
+<para>
+You can have exported functions as well by using readpe -e / --exports option.
+</para>
+</sect1>
+
+<sect1 id="comparing">
+<title>Comparing PE pieces</title>
+<para>
+With pehash you can calculate checksums of PE pieces and not only whole PE files.
+You can for example compare two malwares by similarity using ssdeep. Have a look:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pehash -s CODE ComentarioDeVoz_.cpl</command>
+md5:                             125468ee08364727ab0e3462049f9ca1
+sha1:                            0c17c91f085bd01023cf7bbeba2b8743da30f679
+ssdeep:                          6144:2QrIKt9jjmVG0xcpcZTcLexXqS1XGtbNwI/4p3RLjD0OVG:2QrD3mVG0xcpcZTEexvXENv/e3RD0W
+
+<prompt>$ </prompt><command>pehash -s CODE comentario.cpl</command>
+md5:                             2f8bd81be7752e5c58759f53b04afde8
+sha1:                            0824b4417b7b4d3562f067023cb43d23858781bd
+ssdeep:                          6144:FQrIKt9jjmVG0xcpcZTcLexXqS1XGtbNwI/4p3Zv60G4:FQrD3mVG0xcpcZTEexvXENv/e3J6V
+</screen>
+
+<para>
+Although the CODE section hashes of each files are different, their ssdeep checksum matches. So, you
+could probably infer that these are variants.
+</para>
+
+<para>
+You can also have the hash for each part using pehash without any option:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pehash putty.exe</command>
+file:                            putty.exe
+md5:                             bf48dbde8d2f02a5e6d690aa38a807c8
+sha1:                            540019f257522e70499050bf9b7587f134ad4b29
+ssdeep:                          6144:bBJBbIOkgKzCe9dMVHsGLULRTXFewKFWTyMTkiYCw+VSvGFal+412c2cnoACqzM:tJBMOkce9dgHs+UTVhdK12c2Os60
+
+header:                          IMAGE_DOS_HEADER
+md5:                             5084c5d5cfe99932e67450023c068941
+sha1:                            856558429bb575486a46a92ba2684eaab8578cef
+ssdeep:                          3:WlWUqt/vllPln:idqH
+
+header:                          IMAGE_COFF_HEADER
+md5:                             fab3fbb2a03a0bb5ad91164a60bd97c2
+sha1:                            ca7f9522dda8682e27dbd24450f1bdfe72734561
+ssdeep:                          3:O3k3l/llAkn:/XSk
+
+header:                          IMAGE_OPTIONAL_HEADER
+md5:                             a5657c263853683593e280717b2a8614
+sha1:                            23a7de72685ffe33421ea676a36ff1f50461cd02
+ssdeep:                          3:2nW1gX9lhtllrllA9/ll/ldt1l9tllH:EgN
+
+section:                         .text
+md5:                             a86a42754136ac16c3f3b8294472aa7b
+sha1:                            5cb35d8cda616b5e6b0187420fb911d337261a80
+ssdeep:                          6144:SBJBbIOkgKzCe9dMVHsGLULRTXFewKFWTyMTkiYCw+VSvGFal+412c:mJBMOkce9dgHs+UTVhdK12c
+
+section:                         .rdata
+md5:                             cd0604be086bca22f88bf09b4b22fece
+sha1:                            7443ec37f0945c32e79e1272edb4c9cd5bc957b5
+ssdeep:                          3072:TBKwji3uXTnoACqzMoAkqr6hZoLJ4p21/vl5:mcnoACqzMoA36boLJpd
+
+section:                         .data
+md5:                             7d2026ecbad12a80a656cd7c2980968a
+sha1:                            e0fae0cd65f35411aba6e7e6136f80d2fa61929f
+ssdeep:                          48:q1HpvUj77SKm+NCYqcoTv+2djMmBPItT/kKvggUhoSjgbv3:q1HpvUjXmZYqvtPBgtbAgUhoSkb/
+
+section:                         .rsrc
+md5:                             f39b1c4cb0ad41c3567cdb73359eaa6b
+sha1:                            e366ffe90c918656718700047b4c24766060c6c6
+ssdeep:                          192:T8Sycgh8G2PnHGaAnkTjVDBY5di6Wx1gPWDSL73oKEBngLg:T+5SG2vHi4jVDBKDPfL73UFg0
+</screen>
+
+<para>
+Just in case you'd like to do some exhotic hash calculations...
+Why not? Let's have the whirpool hash of the third section of putty.exe:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pehash --algorithm whirlpool --section-index 3 ~/winapp/putty.exe</command>
+whirlpool:                       a1ecb0ab9af7583424802cc9a76444360aa1fddf782ce5be3975c46de5730402e21ab6da5fe1bf71699147f9efa04c3301ea0a4f468425c709a36a2be7f14134
+</screen>
+
+<para>
+We support all openssl hashes. Normally it means support for md4, md5, ripemd160,
+sha, sha1, sha224, sha256, sha384, sha512 and whirlpool, besides ssdeep provided
+by included libssdeep.
+</para>
+
+</sect1>
+
+<sect1 id="suspicious">
+<title>Handling with suspicious files</title>
+<para>
+Suspicious files are nice. We could probably think about lots of suspicious
+characteristics that PE files may have and all we know is on pescan:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pescan -v Nota.cpl </command>
+
+file entropy:                    7.986840 (probably packed)
+cpl analysis:                    malware
+fpu anti-disassembly:            no
+imagebase:                       normal - 0x400000
+entrypoint:                      normal - va: 0x15c330 - raw: 0x65530
+DOS stub:                        suspicious - raw: 0x40
+TLS directory:                   not found
+section count:                   3
+.text:                           self-modifying
+.rsrc:                           self-modifying
+.reloc:                          small length
+timestamp:                       normal - Wed, 26 Jun 2013 12:22:16 UTC
+</screen>
+
+<para>
+pescan is the PE scanner program intented to find any suspicious characteristic
+on it. It's good for an initial analysis. Further you can analyze things deeply
+with readpe, pedis, peres and so on.
+</para>
+
+<para>
+Strings are also good indicators in PE file analysis. To avoid the problem with
+Unicode and ASCII strings, we've developed our own strings dumper for PE files.
+Using pestr you can filter for example strings that appears to be filenames,
+internet domains and IPs:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pestr --net fbvdupdt7.2.exe</command>
+
+http://ocsp.thawte.com0
+http://ocsp.thawte.com0
+http://ocsp.thawte.com0
+http://ts-ocsp.ws.tec.com07
+</screen>
+
+<para>
+If you want to know where the strings are located inside the
+PE file, just add -o/--offset and -s/--section options:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>pestr -so DETAILS.exe</command>
+
+0x4d	[none]	!This program cannot be run in DOS mode.
+0xd0	[none]	Rich
+0x1e8	[none]	.text
+0x20f	[none]	`.rdata
+0x809e	.rdata	ZglEvalCoord2
+0x80b0	.rdata	glMaterialf
+0x80be	.rdata	glOrtho
+0x80c6	.rdata	OPENGL32.dll
+0x8d7e	.data	abcdefghijklmnopqrstuvwxyz
+0x8d9e	.data	ABCDEFGHIJKLMNOPQRSTUVWXYZ
+0xa716	.rsrc	VS_VERSION_INFO
+0xa772	.rsrc	StringFileInfo
+0xa796	.rsrc	041904E3
+0xa7ae	.rsrc	Comments
+0xa7c0	.rsrc	Made in Russia
+0xa7e6	.rsrc	CompanyName
+</screen>
+
+<para>
+All tools are provided with manpages. Check it out and discover what you
+can do with pev. ;)
+</para>
+
+</sect1>
+</chapter>

@@ -1,5 +1,5 @@
 <chapter id="tools">
-<title>Ferramentas incluídas</title>
+<title>Included tools</title>
 
 <sect1 id="ofs2rva">
 <title>ofs2rva</title>
@@ -97,7 +97,7 @@ Options:
 
 
 <sect1 id="pescan">
-<title>peres</title>
+<title>pescan</title>
 <screen>
 Usage: pescan OPTIONS FILE
 Search for suspicious things in PE files

@@ -147,13 +147,58 @@ typedef enum {
 	ENCODING_UNICODE = 1
 } encoding_t;
 
-static bool ishostname(const char *s, const encoding_t encoding)
-{
-	const char *patterns[] = {
+typedef struct {
+	pcre *pcre;
+} pcre_container;
+
+static void free_hostname_patterns(pcre_container *array) {
+	pcre_container *current = array;
+	// Free everything until we find a NULL pointer
+	size_t i = 0;
+	while (current != NULL) {
+		//fprintf(stderr, "FREE: [%d].pcre = %p\n", i, current->pcre);
+		if (current->pcre == NULL)
+			break;
+		pcre_free(current->pcre);
+		current->pcre = NULL;
+		current++;
+		i++;
+	}
+	if (array != NULL)
+		free(array);
+}
+
+static pcre_container *compile_hostname_patterns(encoding_t encoding) {
+	static const char *patterns[] = {
 		"^[a-zA-Z]{3,}://.*$", // protocol://
 		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
 	};
 
+	size_t patterns_count = LIBPE_SIZEOF_ARRAY(patterns);
+	size_t array_size = sizeof(pcre_container) * (patterns_count + 1); // + 1 for NULL canary
+	
+	pcre_container *compiled_patterns = malloc_s(array_size);
+	memset(compiled_patterns, 0, array_size); // Zero everything out
+
+	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
+		const char *err;
+		int errofs;
+		pcre *re = pcre_compile(patterns[i], (encoding == ENCODING_UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
+		if (re == NULL) {
+			free_hostname_patterns(compiled_patterns);
+			compiled_patterns = NULL;
+			fprintf(stderr, "pcre_compile failed - %d, %s\n", errofs, err);
+			EXIT_ERROR("regex compilation failed");
+		}
+		compiled_patterns[i].pcre = re;
+		//fprintf(stderr, "ALLOC: [%d].pcre = %p\n", i, compiled_patterns[i].pcre);
+	}
+
+	return compiled_patterns;
+}
+
+static bool ishostname(const char *s, const encoding_t encoding, pcre_container *array)
+{
 	const char *domains[] = {
 ".asia", ".jobs", ".mobi", ".travel", ".xxx",
 ".aero", ".arpa", ".biz", ".com", ".coop", ".edu", ".gov", ".info", ".int", ".jus", ".mil",
@@ -193,15 +238,14 @@ static bool ishostname(const char *s, const encoding_t encoding)
 
 	int ovector[OVECCOUNT];
 
-	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
+	for (size_t i=0; ; i++) {
+		pcre *re = array[i].pcre;
+		if (re == NULL)
+			break;
+
 		const char *err;
 		int errofs;
-		pcre *re = pcre_compile(patterns[i], (encoding == ENCODING_UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
-		if (!re)
-			EXIT_ERROR("regex compilation failed");
-
 		int rc = pcre_exec(re, NULL, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
-		pcre_free(re);
 
 		if (rc > 0)
 			return true;
@@ -281,6 +325,9 @@ int main(int argc, char *argv[])
 	uint32_t ascii = 0;
 	uint32_t utf = 0;
 
+	pcre_container *hostname_patterns_ascii = compile_hostname_patterns(ENCODING_ASCII);
+	pcre_container *hostname_patterns_unicode = compile_hostname_patterns(ENCODING_UNICODE);
+
 	while (pe_raw_offset < pe_size) {
 		const uint8_t byte = pe_raw_data[pe_raw_offset];
 
@@ -298,14 +345,14 @@ int main(int argc, char *argv[])
 		} else {
 			if (ascii >= (options->strsize ? options->strsize : 4)) {
 				if (options->net) {
-					if (ishostname((char *) buff, ENCODING_ASCII))
+					if (ishostname((char *) buff, ENCODING_ASCII, hostname_patterns_ascii))
 						printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
 				} else {
 					printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
 				}
 			} else if (utf >= (options->strsize ? options->strsize : 4)) {
 				if (options->net) {
-					if (ishostname((char *) buff, ENCODING_UNICODE))
+					if (ishostname((char *) buff, ENCODING_UNICODE, hostname_patterns_unicode))
 						printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
 				} else {
 					printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
@@ -319,6 +366,8 @@ int main(int argc, char *argv[])
 	}
 
 	// libera a memoria
+	free_hostname_patterns(hostname_patterns_ascii);
+	free_hostname_patterns(hostname_patterns_unicode);
 	free_options(options);
 
 	// free

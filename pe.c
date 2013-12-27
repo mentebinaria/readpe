@@ -368,9 +368,8 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 	if (ctx->pe.sections == NULL || name == NULL)
 		return NULL;
 
-	size_t name_len = strlen(name);
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		if (memcmp(ctx->pe.sections[i]->Name, name, name_len) == 0)
+		if (strcmp(ctx->pe.sections[i]->Name, name) == 0)
 			return ctx->pe.sections[i];
 	}
 	return NULL;

@@ -696,6 +696,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 
 	char hint_str[16];
 	char fname[MAX_FUNCTION_NAME];
+	bool is_ordinal;
 
 	memset(hint_str, 0, sizeof(hint_str));
 	memset(fname, 0, sizeof(fname));
@@ -715,7 +716,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 				if (thunk_type == 0)
 					return;
 
-				const bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
 				if (is_ordinal) {
 					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
@@ -748,7 +749,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 				if (thunk_type == 0)
 					return;
 
-				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
 				if (is_ordinal) {
 					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu64,
@@ -770,7 +771,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 			}
 		}
 
-		output(hint_str, fname);
+		output(NULL, is_ordinal ? hint_str : fname);
 	}
 }
 
@@ -854,7 +855,7 @@ static void print_imports(pe_ctx_t *ctx)
 			return;
 		}
 
-		if (id->u1.OriginalFirstThunk == 0)
+		if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
 			break;
 
 		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
@@ -870,7 +871,7 @@ static void print_imports(pe_ctx_t *ctx)
 
 		output(dll_name, NULL);
 
-		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk);
+		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0)
 			break;
 

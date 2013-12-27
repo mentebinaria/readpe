@@ -57,6 +57,7 @@ pev 0.70 - December 26, 2013
  + peres: added new tool to analyze/extract PE resources (Marcelo Fleury).
  + pescan: cpl malware detection.
  + pescan: undocumented anti-disassembly fpu trick detection.
+ + pesec: show and extract cerfiticates from digitally signed binaries (Jardel Weyrich).
  - readpe can't show functions exported by ID only.
  - readpe: fixed subsystem types (Dmitry Mostovenko).
 

@@ -23,7 +23,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <pcre.h>
+#include "regex.h"
+#include "compat/sys/queue.h" // Available on Linux and BSD-based systems as <sys/queue.h>
 
 #define PROGRAM "pestr"
 #define BUFSIZE 4
@@ -147,57 +148,61 @@ typedef enum {
 	ENCODING_UNICODE = 1
 } encoding_t;
 
-typedef struct {
-	pcre *pcre;
-} pcre_container;
+typedef struct regex_entry {
+	regex_t regex;
+	SLIST_ENTRY(regex_entry) entries;
+} regex_entry_t;
 
-static void free_hostname_patterns(pcre_container *array) {
-	pcre_container *current = array;
-	// Free everything until we find a NULL pointer
-	size_t i = 0;
-	while (current != NULL) {
-		//fprintf(stderr, "FREE: [%d].pcre = %p\n", i, current->pcre);
-		if (current->pcre == NULL)
-			break;
-		pcre_free(current->pcre);
-		current->pcre = NULL;
-		current++;
-		i++;
+typedef SLIST_HEAD(, regex_entry) regex_list_t;
+
+static void free_hostname_patterns(regex_list_t *regex_list_head) {
+	if (regex_list_head == NULL)
+		return;
+
+	while (!SLIST_EMPTY(regex_list_head)) {
+		regex_entry_t *entry = SLIST_FIRST(regex_list_head);
+		SLIST_REMOVE_HEAD(regex_list_head, entries);
+		free(entry);
 	}
-	if (array != NULL)
-		free(array);
+
+	free(regex_list_head);
 }
 
-static pcre_container *compile_hostname_patterns(encoding_t encoding) {
+static regex_list_t *compile_hostname_patterns(encoding_t encoding) {
 	static const char *patterns[] = {
 		"^[a-zA-Z]{3,}://.*$", // protocol://
 		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
 	};
 
-	size_t patterns_count = LIBPE_SIZEOF_ARRAY(patterns);
-	size_t array_size = sizeof(pcre_container) * (patterns_count + 1); // + 1 for NULL canary
-	
-	pcre_container *compiled_patterns = malloc_s(array_size);
-	memset(compiled_patterns, 0, array_size); // Zero everything out
+	int pcre_options = 0;
 
-	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
-		const char *err;
-		int errofs;
-		pcre *re = pcre_compile(patterns[i], (encoding == ENCODING_UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
-		if (re == NULL) {
-			free_hostname_patterns(compiled_patterns);
-			compiled_patterns = NULL;
-			fprintf(stderr, "pcre_compile failed - %d, %s\n", errofs, err);
-			EXIT_ERROR("regex compilation failed");
-		}
-		compiled_patterns[i].pcre = re;
-		//fprintf(stderr, "ALLOC: [%d].pcre = %p\n", i, compiled_patterns[i].pcre);
+	if (encoding == ENCODING_UNICODE) {
+		//pcre_options |= PCRE_UTF8;
+#ifdef PCRE_UCP
+		pcre_options |= PCRE_UCP;
+#endif
 	}
 
-	return compiled_patterns;
+	regex_list_t *regex_list_head = malloc_s(sizeof(regex_list_t));
+	SLIST_INIT(regex_list_head);
+
+	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
+		regex_entry_t *entry = malloc(sizeof(regex_entry_t));
+		regex_init_with_pattern(&entry->regex, patterns[i], pcre_options);
+		SLIST_INSERT_HEAD(regex_list_head, entry, entries);
+
+		int ret = regex_compile(&entry->regex);
+		if (ret < 0) {
+			free_hostname_patterns(regex_list_head);
+			regex_list_head = NULL;
+			EXIT_ERROR("regex compilation failed");
+		}
+	}
+
+	return regex_list_head;
 }
 
-static bool ishostname(const char *s, const encoding_t encoding, pcre_container *array)
+static bool ishostname(const char *s, const encoding_t encoding, regex_list_t *regex_list_head)
 {
 	const char *domains[] = {
 ".asia", ".jobs", ".mobi", ".travel", ".xxx",
@@ -238,15 +243,9 @@ static bool ishostname(const char *s, const encoding_t encoding, pcre_container 
 
 	int ovector[OVECCOUNT];
 
-	for (size_t i=0; ; i++) {
-		pcre *re = array[i].pcre;
-		if (re == NULL)
-			break;
-
-		const char *err;
-		int errofs;
-		int rc = pcre_exec(re, NULL, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
-
+	regex_entry_t *entry;
+	SLIST_FOREACH(entry, regex_list_head, entries) {
+		int rc = regex_exec(&entry->regex, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
 		if (rc > 0)
 			return true;
 	}
@@ -325,8 +324,8 @@ int main(int argc, char *argv[])
 	uint32_t ascii = 0;
 	uint32_t utf = 0;
 
-	pcre_container *hostname_patterns_ascii = compile_hostname_patterns(ENCODING_ASCII);
-	pcre_container *hostname_patterns_unicode = compile_hostname_patterns(ENCODING_UNICODE);
+	regex_list_t *hostname_patterns_ascii = compile_hostname_patterns(ENCODING_ASCII);
+	regex_list_t *hostname_patterns_unicode = compile_hostname_patterns(ENCODING_UNICODE);
 
 	while (pe_raw_offset < pe_size) {
 		const uint8_t byte = pe_raw_data[pe_raw_offset];

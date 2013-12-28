@@ -369,7 +369,7 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 		return NULL;
 
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		if (strcmp(ctx->pe.sections[i]->Name, name) == 0)
+		if (strcmp((const char *)ctx->pe.sections[i]->Name, name) == 0)
 			return ctx->pe.sections[i];
 	}
 	return NULL;

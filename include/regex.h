@@ -144,7 +144,7 @@ int regex_compile(regex_t *obj) {
 	);
 
 	if (compiled == NULL) {
-		fprintf(stderr, "pcre_compile failed - %d, %s\n",
+		fprintf(stderr, "pcre_compile failed for pattern '%s' - %d, %s\n", obj->pattern,
 			obj->error.offset, obj->error.ptr);
 		return -2;
 	}
@@ -165,7 +165,7 @@ int regex_exec(regex_t *obj, const char *subject, int length, int startoffset, i
 	if (ret >= 0) {
 		obj->extra = pcre_study(obj->regex, options, &obj->error.ptr);
 		if (obj->extra == NULL) {
-			fprintf(stderr, "pcre_study failed - %s\n", obj->error.ptr);
+			fprintf(stderr, "pcre_study failed for pattern '%s' - %s\n", obj->pattern, obj->error.ptr);
 			// We do not return an error because this is a recoverable error.
 		}
 	}

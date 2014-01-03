@@ -103,6 +103,7 @@ pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path);
 pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
+bool pe_is_loaded(const pe_ctx_t *ctx);
 bool pe_is_pe(const pe_ctx_t *ctx);
 bool pe_is_dll(const pe_ctx_t *ctx);
 uint64_t pe_filesize(const pe_ctx_t *ctx);

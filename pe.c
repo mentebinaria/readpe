@@ -263,6 +263,10 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	return LIBPE_E_OK;
 }
 
+bool pe_is_loaded(const pe_ctx_t *ctx) {
+	return ctx->map_addr != NULL && ctx->map_size > 0;
+}
+
 bool pe_is_pe(const pe_ctx_t *ctx) {
 	// Check MZ header
 	if (ctx->pe.dos_hdr == NULL || ctx->pe.dos_hdr->e_magic != MAGIC_MZ)

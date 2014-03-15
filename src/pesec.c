@@ -274,9 +274,12 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 		if (issuer_name_len > 0) {
 			char issuer_name[issuer_name_len + 1];
 			X509_NAME_get_text_by_NID(name, NID_commonName, issuer_name, issuer_name_len + 1);
-			output(NULL, issuer_name);
+			output("Issuer", issuer_name);
 		}
 	}
+	// Close signers (required by our broken XML)
+	if (format == FORMAT_XML && numcerts > 0)
+		output("/Signers", NULL);
 
 error:
 	if (p7 != NULL)
@@ -306,6 +309,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 	output("Certificates", NULL);
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
+		output("Certificate", NULL);
 		// Read the size of this WIN_CERTIFICATE
 		uint32_t *dwLength_ptr = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
 		if (LIBPE_IS_PAST_THE_END(ctx, dwLength_ptr, sizeof(uint32_t))) {
@@ -374,7 +378,13 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 			case WIN_CERT_TYPE_EFI_GUID:
 				EXIT_ERROR("WIN_CERT_TYPE_EFI_GUID is not supported");
 		}
+		// Close certificate (required by our broken XML)
+		if (format == FORMAT_XML)
+			output("/Certificate", NULL);
 	}
+	// Close certificates (required by our broken XML)
+	if (format == FORMAT_XML)
+		output("/Certificates", NULL);
 }
 
 int main(int argc, char *argv[])

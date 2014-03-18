@@ -299,9 +299,12 @@ static void print_strange_sections(pe_ctx_t *ctx)
 
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
 
+	output_open_scope("sections");
+
 	bool aux = false;
 	for (uint16_t i=0; i < num_sections; i++, aux=false)
 	{
+		output_open_scope("section");
 		memset(&value, 0, sizeof(value));
 
 		if (!strisprint((const char *)sections[i]->Name))
@@ -322,7 +325,9 @@ static void print_strange_sections(pe_ctx_t *ctx)
 			strncpy(value, "normal", 7);
 
 		output((const char *)sections[i]->Name, value);
+		output_close_scope();
 	}
+	output_close_scope();
 }
 
 static bool normal_imagebase(pe_ctx_t *ctx)
@@ -569,15 +574,15 @@ int main(int argc, char *argv[])
 
 	output("TLS directory", value);
 
-	// section analysis
-	print_strange_sections(&ctx);
-
 	// invalid timestamp
 	IMAGE_COFF_HEADER *coff = pe_coff(&ctx);
 	if (coff == NULL)
 		EXIT_ERROR("unable to read coff header");
 
 	print_timestamp(&ctx, options);
+
+	// section analysis
+	print_strange_sections(&ctx);
 
 	// libera a memoria
 	free_options(options);

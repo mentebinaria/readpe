@@ -46,8 +46,12 @@ static char *g_cmdline;
 #define INDENT_ARGS_(level)		INDENT_COLUMNS_(level), " "
 #define INDENT(level, format)	INDENT_FORMAT_ format, INDENT_ARGS_(level)
 
-static void to_text(const output_type_e type, const char *key, const char *value) {
-	const uint16_t level = STACK_COUNT(g_scope_stack);
+static void to_text(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value)
+{
 	size_t key_size = key ? strlen(key) : 0;
 	
 	switch (type) {
@@ -83,7 +87,13 @@ static void to_text(const output_type_e type, const char *key, const char *value
 	}
 }
 
-static void to_csv(const output_type_e type, const char *key, const char *value) {
+static void to_csv(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value)
+{
+	(void)level;
 	// FIXME(jweyrich): Escape key/value so they don't break the CSV.
 	// ',' and '\n' ?
 	switch (type) {
@@ -104,9 +114,12 @@ static void to_csv(const output_type_e type, const char *key, const char *value)
 	}
 }
 
-static void to_xml(const output_type_e type, const char *key, const char *value) {
-	const uint16_t level = STACK_COUNT(g_scope_stack);
-
+static void to_xml(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value)
+{
 	// FIXME(jweyrich): Somehow output the XML root element.
 	// FIXME(jweyrich): Escape key/value so they don't break the XML.
 	// REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
@@ -155,9 +168,12 @@ static void to_xml(const output_type_e type, const char *key, const char *value)
 	}
 }
 
-static void to_html(const output_type_e type, const char *key, const char *value) {
-	const uint16_t level = STACK_COUNT(g_scope_stack);
-
+static void to_html(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value)
+{
 	// FIXME(jweyrich): Somehow output the HTML document with a body.
 	// FIXME(jweyrich): Escape key/value so they don't break the HTML.
 	// REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
@@ -363,7 +379,7 @@ void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
 	g_cmdline = output_join_array_of_strings(g_argv, g_argc, ' ');
-	if (!g_cmdline)
+	if (g_cmdline == NULL)
 		abort();
 	//printf("cmdline = %s\n", g_cmdline);
 }
@@ -414,20 +430,21 @@ void output_open_scope(const char *scope_name) {
 	const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
+	const uint16_t level = STACK_COUNT(g_scope_stack);
 
 	switch (g_format) {
 		case FORMAT_CSV:
-			to_csv(type, key, value);
+			to_csv(type, level, key, value);
 			break;
 		case FORMAT_XML:
-			to_xml(type, key, value);
+			to_xml(type, level, key, value);
 			break;
 		case FORMAT_HTML:
-			to_html(type, key, value);
+			to_html(type, level, key, value);
 			break;
 		default:
 		case FORMAT_TEXT:
-			to_text(type, key, value);
+			to_text(type, level, key, value);
 			break;
 	}
 
@@ -449,16 +466,17 @@ void output_close_scope(void) {
 	const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
+	const uint16_t level = STACK_COUNT(g_scope_stack);
 
 	switch (g_format) {
 		case FORMAT_CSV:
-			to_csv(type, key, value);
+			to_csv(type, level, key, value);
 			break;
 		case FORMAT_XML:
-			to_xml(type, key, value);
+			to_xml(type, level, key, value);
 			break;
 		case FORMAT_HTML:
-			to_html(type, key, value);
+			to_html(type, level, key, value);
 			break;
 		default:
 		case FORMAT_TEXT:
@@ -468,20 +486,21 @@ void output_close_scope(void) {
 
 void output_keyval(const char *key, const char *value) {
 	const output_type_e type = OUTPUT_TYPE_ATTRIBUTE;
+	const uint16_t level = STACK_COUNT(g_scope_stack);
 
 	switch (g_format) {
 		case FORMAT_CSV:
-			to_csv(type, key, value);
+			to_csv(type, level, key, value);
 			break;
 		case FORMAT_XML:
-			to_xml(type, key, value);
+			to_xml(type, level, key, value);
 			break;
 		case FORMAT_HTML:
-			to_html(type, key, value);
+			to_html(type, level, key, value);
 			break;
 		default:
 		case FORMAT_TEXT:
-			to_text(type, key, value);
+			to_text(type, level, key, value);
 			break;
 	}
 }

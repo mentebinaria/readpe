@@ -38,20 +38,30 @@ typedef enum {
 	OUTPUT_TYPE_ATTRIBUTE = 3
 } output_type_e;
 
-typedef void (*format_func)(
+typedef void (*output_fn)(
 	const output_type_e type,
 	const uint16_t level,
 	const char *key,
 	const char *value);
 
-typedef struct {
+struct _format_t; // Forward declaration
+typedef char * (*escape_fn)(
+	const struct _format_t *format,
+	const char *str);
+
+typedef char * const entity_t;
+typedef char ** const entity_table_t;
+
+typedef struct _format_t {
 	const format_e format;
 	const char *name;
-	const format_func func;
+	const output_fn output_fn;
+	const escape_fn escape_fn;
+	const entity_table_t entities_table;
 } format_t;
 
 //
-// Declaration of format specific functions
+// Declaration of format specific things
 //
 
 static void to_text(
@@ -75,6 +85,13 @@ static void to_csv(
 	const char *key,
 	const char *value);
 
+static const entity_t g_html_entities[255];
+static const entity_t g_xml_entities[255];
+static const entity_t g_csv_entities[255];
+
+static char *escape_csv(const format_t *format, const char *str);
+static char *escape(const format_t *format, const char *str);
+
 //
 // Global variables
 //
@@ -86,11 +103,11 @@ static char **g_argv = NULL;
 static char *g_cmdline = NULL;
 
 static format_t g_supported_formats[] = {
-	{ FORMAT_TEXT,		"text",	&to_text	},
-	{ FORMAT_HTML,		"html",	&to_html	},
-	{ FORMAT_XML,		"xml",	&to_xml		},
-	{ FORMAT_CSV,		"csv",	&to_csv		},
-	{ FORMAT_INVALID,	NULL,	NULL		}
+	{ FORMAT_TEXT,		"text",	&to_text,	&escape, 		NULL							},
+	{ FORMAT_HTML,		"html",	&to_html,	&escape, 		(entity_table_t)g_html_entities	},
+	{ FORMAT_XML,		"xml",	&to_xml,	&escape, 		(entity_table_t)g_xml_entities	},
+	{ FORMAT_CSV,		"csv",	&to_csv,	&escape_csv,	(entity_table_t)g_csv_entities	},
+	{ FORMAT_INVALID,	NULL,	NULL,		NULL,			NULL							}
 };
 
 //
@@ -155,6 +172,164 @@ static char *output_join_array_of_strings(char *strings[], size_t count, char de
 #define INDENT(level, format)	INDENT_FORMAT_ format, INDENT_ARGS_(level)
 
 //
+// Escaping
+// REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
+//
+
+// HTML entities '"', '&', '\'', '<', '>', ...
+static const entity_t g_html_entities[255] = {
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	"&quot;",NULL,	NULL,	NULL,	"&amp;","&apos;",
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	"&lt;",	NULL,	"&gt;",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,
+};
+
+// XML entities '"', '&', '\'', '<', '>'
+static const entity_t g_xml_entities[255] = {
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	"&quot;",NULL,	NULL,	NULL,	"&amp;","&apos;",
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	"&lt;",	NULL,	"&gt;",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,
+};
+
+// CSV entities ',', '"', '\n'
+// TODO(jweyrich): Escape ',' - Are we going to enclose the str in quotes?
+// TODO(jweyrich): Escape ',' - Are we going to enclose the str in quotes?
+static const entity_t g_csv_entities[255] = {
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	"\\n",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	"\"\"",	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	",",	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,
+};
+
+static size_t escape_count_chars_ex(const char *str, size_t len, const entity_table_t entities) {
+	size_t result = 0;
+	for (size_t i = 0; i < len; i++) {
+		const unsigned char index = (unsigned char)str[i];
+		const entity_t entity = entities[index];
+		result += entity == NULL ? 1 : strlen(entity);
+	}
+	return result;
+}
+
+#if 0
+static size_t escape_count_chars(const format_t *format, const char *str, size_t len) {
+	return escape_count_chars_ex(str, len, format->entities_table);
+}
+#endif
+
+static char *escape_ex(const char *str, const entity_table_t entities) {
+	if (str == NULL)
+		return NULL;
+
+	if (str[0] == '\0')
+		return strdup("");
+
+	if (entities == NULL)
+		return strdup(str);
+
+	const size_t old_length = strlen(str);
+	const size_t new_length = escape_count_chars_ex(str, old_length, entities);
+	if (old_length == new_length)
+		return strdup(str);
+
+	char *new_str = malloc(new_length + 1); // Extra byte for NULL terminator
+	if (new_str == NULL)
+		abort();
+
+	new_str[new_length] = '\0';
+
+	size_t consumed = 0;
+	for (size_t i = 0; i < old_length; i++) {
+		const unsigned char index = (unsigned char)str[i];
+		const entity_t entity = entities[index];
+		if (entity == NULL) {
+			new_str[consumed++] = str[i];
+		} else {
+			const size_t entity_len = strlen(entity);
+			memcpy(new_str + consumed, entity, entity_len);
+			consumed += entity_len;
+		}
+	}
+
+	return new_str;
+}
+
+static char *escape(const format_t *format, const char *str) {
+	return escape_ex(str, format->entities_table);
+}
+
+static char *escape_csv(const format_t *format, const char *str) {
+	return escape_ex(str, format->entities_table);
+}
+
+//
 // Definition of format specific functions
 //
 
@@ -165,15 +340,18 @@ static void to_text(
 	const char *value)
 {
 	size_t key_size = key ? strlen(key) : 0;
+
+	char * const escaped_key = g_format->escape_fn(g_format, key);
+	char * const escaped_value = g_format->escape_fn(g_format, value);
 	
 	switch (type) {
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			if (level > 0) {
 				putchar('\n');
-				printf(INDENT(level, "%s\n"), key);
+				printf(INDENT(level, "%s\n"), escaped_key);
 			} else {
 				putchar('\n');
-				printf("%s\n", key);
+				printf("%s\n", escaped_key);
 			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
@@ -181,19 +359,19 @@ static void to_text(
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value) {
 				if (level > 0)
-					printf(INDENT(level, "%s:%*c%s\n"), key, (int)(SPACES - key_size), ' ', value);
+					printf(INDENT(level, "%s:%*c%s\n"), escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
 				else 
-					printf("%s:%*c%s\n", key, (int)(SPACES - key_size), ' ', value);
+					printf("%s:%*c%s\n", escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
 			} else if (key) {
 				if (level > 0)
-					printf(INDENT(level, "\n%s\n"), key);
+					printf(INDENT(level, "\n%s\n"), escaped_key);
 				else 
-					printf("\n%s\n", key);
+					printf("\n%s\n", escaped_key);
 			} else if (value) {
 				if (level > 0)
-					printf(INDENT(level, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', value);
+					printf(INDENT(level, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', escaped_value);
 				else 
-					printf("%*c%s\n", (int)(SPACES - key_size + 1), ' ', value);
+					printf("%*c%s\n", (int)(SPACES - key_size + 1), ' ', escaped_value);
 			}
 			break;
 	}
@@ -206,24 +384,31 @@ static void to_csv(
 	const char *value)
 {
 	(void)level;
-	// FIXME(jweyrich): Escape key/value so they don't break the CSV.
-	// ',' and '\n' ?
+
+	char * const escaped_key = g_format->escape_fn(g_format, key);
+	char * const escaped_value = g_format->escape_fn(g_format, value);
+
 	switch (type) {
 		case OUTPUT_TYPE_SCOPE_OPEN:
-			printf("\n%s\n", key);
+			printf("\n%s\n", escaped_key);
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
 			printf("\n");
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value)
-				printf("%s,%s\n", key, value);
+				printf("%s,%s\n", escaped_key, escaped_value);
 			else if (key)
-				printf("\n%s\n", key);
+				printf("\n%s\n", escaped_key);
 			else if (value)
-				printf(",%s\n", value);
+				printf(",%s\n", escaped_value);
 			break;
 	}
+
+	if (escaped_key != NULL)
+		free(escaped_key);
+	if (escaped_value != NULL)
+		free(escaped_value);
 }
 
 static void to_xml(
@@ -233,13 +418,9 @@ static void to_xml(
 	const char *value)
 {
 	// FIXME(jweyrich): Somehow output the XML root element.
-	// FIXME(jweyrich): Escape key/value so they don't break the XML.
-	// REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
-	// quot  "
-	// amp   &
-	// apos  '
-	// lt    <
-	// gt    >
+
+	char * const escaped_key = g_format->escape_fn(g_format, key);
+	char * const escaped_value = g_format->escape_fn(g_format, value);
 
 	//
 	// Quoting http://www.w3schools.com/xml/xml_elements.asp
@@ -254,9 +435,9 @@ static void to_xml(
 	switch (type) {
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			if (level > 0)
-				printf(INDENT(level, "<scope name=\"%s\">\n"), key);
+				printf(INDENT(level, "<scope name=\"%s\">\n"), escaped_key);
 			else
-				printf("<scope name=\"%s\">\n", key);
+				printf("<scope name=\"%s\">\n", escaped_key);
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
 			if (level > 0)
@@ -267,17 +448,22 @@ static void to_xml(
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value) {
 				if (level > 0)
-					printf(INDENT(level, "<attribute name=\"%s\">%s</attribute>\n"), key, value);
+					printf(INDENT(level, "<attribute name=\"%s\">%s</attribute>\n"), escaped_key, escaped_value);
 				else 
-					printf("<attribute name=\"%s\">%s</attribute>\n", key, value);
+					printf("<attribute name=\"%s\">%s</attribute>\n", escaped_key, escaped_value);
 			} else if (key) {
 				if (level > 0)
-					printf(INDENT(level, "<attribute name=\"%s\">\n"), key);
+					printf(INDENT(level, "<attribute name=\"%s\">\n"), escaped_key);
 				else
-					printf("<attribute name=\"%s\">\n", key);
+					printf("<attribute name=\"%s\">\n", escaped_key);
 			}
 			break;
 	}
+
+	if (escaped_key != NULL)
+		free(escaped_key);
+	if (escaped_value != NULL)
+		free(escaped_value);
 }
 
 static void to_html(
@@ -287,7 +473,7 @@ static void to_html(
 	const char *value)
 {
 	// FIXME(jweyrich): Somehow output the HTML document with a body.
-	// FIXME(jweyrich): Escape key/value so they don't break the HTML.
+
 	// REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
 	// quot		"	U+0022 (34)		HTML 2.0	HTMLspecial
 	// amp		&	U+0026 (38)		HTML 2.0	HTMLspecial
@@ -390,15 +576,18 @@ static void to_html(
 	// yacute	ý	U+00FD (253)	HTML 2.0	HTMLlat1
 	// thorn	þ	U+00FE (254)	HTML 2.0	HTMLlat1
 	// yuml		ÿ	U+00FF (255)	HTML 2.0	HTMLlat1
+
+	char * const escaped_key = g_format->escape_fn(g_format, key);
+	char * const escaped_value = g_format->escape_fn(g_format, value);
 	
 	switch (type) {
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			if (level > 0) {
 				printf(INDENT(level, "<section>\n"));
-				printf(INDENT(level+1, "<h1>%s</h1>\n"), key);
+				printf(INDENT(level+1, "<h1>%s</h1>\n"), escaped_key);
 			} else {
 				printf("<section>\n");
-				printf(INDENT(1, "<h1>%s</h1>\n"), key);
+				printf(INDENT(1, "<h1>%s</h1>\n"), escaped_key);
 			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
@@ -410,25 +599,30 @@ static void to_html(
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value) {
 				if (level > 0)
-					printf(INDENT(level, "<p><span><b>%s</b></span>: <span>%s</span></p>\n"), key, value);
+					printf(INDENT(level, "<p><span><b>%s</b></span>: <span>%s</span></p>\n"), escaped_key, escaped_value);
 				else 
-					printf("<p><span><b>%s</b></span>: <span>%s</span></p>\n", key, value);
+					printf("<p><span><b>%s</b></span>: <span>%s</span></p>\n", escaped_key, escaped_value);
 			} else if (key) {
 				if (level > 0) {
 					putchar('\n');
-					printf(INDENT(level, "<p><span><b>%s</b></span></p>\n"), key);
+					printf(INDENT(level, "<p><span><b>%s</b></span></p>\n"), escaped_key);
 				} else {
 					putchar('\n');
-					printf("<p><span><b>%s</b></span></p>\n", key);
+					printf("<p><span><b>%s</b></span></p>\n", escaped_key);
 				}
 			} else if (value) {
 				if (level > 0)
-					printf(INDENT(level, "<p><span>%s</span></p>\n"), value);
+					printf(INDENT(level, "<p><span>%s</span></p>\n"), escaped_value);
 				else
-					printf("<p><span>%s</span></p>\n", value);
+					printf("<p><span>%s</span></p>\n", escaped_value);
 			}
 			break;
 	}
+
+	if (escaped_key != NULL)
+		free(escaped_key);
+	if (escaped_value != NULL)
+		free(escaped_value);
 }
 
 //
@@ -503,13 +697,13 @@ int output_set_format_by_name(const char *format_name) {
 }
 
 void output_open_scope(const char *scope_name) {
-	const char *key = scope_name;
+		const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
 	const uint16_t level = STACK_COUNT(g_scope_stack);
 
 	if (g_format != NULL)
-		g_format->func(type, level, key, value);
+		g_format->output_fn(type, level, key, value);
 
 	int ret = STACK_PUSH(g_scope_stack, scope_name);
 	if (ret < 0)
@@ -528,7 +722,7 @@ void output_close_scope(void) {
 	const uint16_t level = STACK_COUNT(g_scope_stack);
 
 	if (g_format != NULL)
-		g_format->func(type, level, key, value);
+		g_format->output_fn(type, level, key, value);
 }
 
 void output_keyval(const char *key, const char *value) {
@@ -536,5 +730,5 @@ void output_keyval(const char *key, const char *value) {
 	const uint16_t level = STACK_COUNT(g_scope_stack);
 
 	if (g_format != NULL)
-		g_format->func(type, level, key, value);
+		g_format->output_fn(type, level, key, value);
 }

@@ -28,23 +28,135 @@
 #define STACK_ELEMENT_TYPE const char *
 #include "stack.h"
 
+//
+// Type definitions
+//
+
 typedef enum {
 	OUTPUT_TYPE_SCOPE_OPEN = 1,
 	OUTPUT_TYPE_SCOPE_CLOSE = 2,
 	OUTPUT_TYPE_ATTRIBUTE = 3
 } output_type_e;
 
-static format_e g_format;
+typedef void (*format_func)(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value);
+
+typedef struct {
+	const format_e format;
+	const char *name;
+	const format_func func;
+} format_t;
+
+//
+// Declaration of format specific functions
+//
+
+static void to_text(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value);
+static void to_html(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value);
+static void to_xml(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value);
+static void to_csv(
+	const output_type_e type,
+	const uint16_t level,
+	const char *key,
+	const char *value);
+
+//
+// Global variables
+//
+
+static format_t *g_format = NULL;
 static STACK_TYPE *g_scope_stack = NULL;
-static int g_argc;
-static char **g_argv;
-static char *g_cmdline;
+static int g_argc = 0;
+static char **g_argv = NULL;
+static char *g_cmdline = NULL;
+
+static format_t g_supported_formats[] = {
+	{ FORMAT_TEXT,		"text",	&to_text	},
+	{ FORMAT_HTML,		"html",	&to_html	},
+	{ FORMAT_XML,		"xml",	&to_xml		},
+	{ FORMAT_CSV,		"csv",	&to_csv		},
+	{ FORMAT_INVALID,	NULL,	NULL		}
+};
+
+//
+// Definition of internal functions
+//
+
+static format_t *output_lookup_format(format_e format) {
+	for (size_t i = 0; i < LIBPE_SIZEOF_ARRAY(g_supported_formats); i++) {
+		// TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and POSIX.1-2001, but not to C89 nor C99.
+		if (g_supported_formats[i].format == format)
+			return &g_supported_formats[i];
+	}
+
+	return NULL;
+}
+
+static char *output_join_array_of_strings(char *strings[], size_t count, char delimiter) {
+	if (strings == NULL || strings[0] == NULL)
+		return strdup("");
+
+	// Count how much memory the resulting string is going to need,
+	// considering delimiters for each string. The last delimiter will
+	// be a NULL terminator;
+	size_t result_length = 0;
+	for (size_t i = 0; i < count; i++) {
+		result_length += strlen(strings[i]) + 1;
+	}
+
+	// Allocate the resulting string.
+	char *result = malloc(result_length);
+	if (result == NULL)
+		return NULL; // Return NULL because it failed miserably!
+
+	// Null terminate it.
+	result[--result_length] = '\0';
+
+	// Join all strings.
+	char ** current_string = strings;
+	char * current_char = current_string[0];
+	for (size_t i = 0; i < result_length; i++) {
+		if (*current_char != '\0') {
+			result[i] = *current_char++;
+		} else {
+			// Reached the end of a string. Add a delimiter and move to the next one.
+			result[i] = delimiter;
+			current_string++;
+			current_char = current_string[0];
+		}
+	}
+
+	return result;
+}
+
+//
+// Indentation macros
+//
 
 #define INDENT_TAB_SIZE			4
 #define INDENT_COLUMNS_(level)	(int)((int)(level) * (int)INDENT_TAB_SIZE + 1)
 #define INDENT_FORMAT_			"%*s"
 #define INDENT_ARGS_(level)		INDENT_COLUMNS_(level), " "
 #define INDENT(level, format)	INDENT_FORMAT_ format, INDENT_ARGS_(level)
+
+//
+// Definition of format specific functions
+//
 
 static void to_text(
 	const output_type_e type,
@@ -319,11 +431,16 @@ static void to_html(
 	}
 }
 
+//
+// API
+//
+
 void output(const char *key, const char *value) {
 	output_keyval(key, value);
 }
 
 void output_init(void) {
+	g_format = output_lookup_format(FORMAT_TEXT);
 	g_scope_stack = STACK_ALLOC(15);
 	if (g_scope_stack == NULL)
 		abort();
@@ -338,43 +455,6 @@ void output_term(void) {
 		free(g_scope_stack);
 }
 
-static char *output_join_array_of_strings(char *strings[], size_t count, char delimiter) {
-	if (strings == NULL || strings[0] == NULL)
-		return strdup("");
-
-	// Count how much memory the resulting string is going to need,
-	// considering delimiters for each string. The last delimiter will
-	// be a NULL terminator;
-	size_t result_length = 0;
-	for (size_t i = 0; i < count; i++) {
-		result_length += strlen(strings[i]) + 1;
-	}
-
-	// Allocate the resulting string.
-	char *result = malloc(result_length);
-	if (result == NULL)
-		return NULL; // Return NULL because it failed miserably!
-
-	// Null terminate it.
-	result[--result_length] = '\0';
-
-	// Join all strings.
-	char ** current_string = strings;
-	char * current_char = current_string[0];
-	for (size_t i = 0; i < result_length; i++) {
-		if (*current_char != '\0') {
-			result[i] = *current_char++;
-		} else {
-			// Reached the end of a string. Add a delimiter and move to the next one.
-			result[i] = delimiter;
-			current_string++;
-			current_char = current_string[0];
-		}
-	}
-
-	return result;
-}
-
 void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
@@ -384,24 +464,20 @@ void output_set_cmdline(int argc, char *argv[]) {
 	//printf("cmdline = %s\n", g_cmdline);
 }
 
-format_e format_output(void) {
-	return g_format;
+format_e output_format(void) {
+	return g_format->format;
 }
 
 format_e output_parse_format(const char *format_name) {
-	format_e format;
+	format_e format = FORMAT_INVALID;
 
-	// TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and POSIX.1-2001, but not to C89 nor C99.
-	if (! strcmp(format_name, "text"))
-		format = FORMAT_TEXT;
-	else if (! strcmp(format_name, "xml"))
-		format = FORMAT_XML;
-	else if (! strcmp(format_name, "csv"))
-		format = FORMAT_CSV;
-	else if (! strcmp(format_name, "html"))
-		format = FORMAT_HTML;
-	else
-		format = FORMAT_INVALID;
+	for (size_t i = 0; i < LIBPE_SIZEOF_ARRAY(g_supported_formats); i++) {
+		// TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and POSIX.1-2001, but not to C89 nor C99.
+		if (strcmp(format_name, g_supported_formats[i].name) == 0) {
+			format = g_supported_formats[i].format;
+			break;
+		}
+	}
 
 	return format;
 }
@@ -416,7 +492,7 @@ int output_set_format(const format_e format) {
 		case FORMAT_HTML:
 		case FORMAT_XML:
 		case FORMAT_CSV:
-			g_format = format;
+			g_format = output_lookup_format(format);
 			return 0;
 	}
 }
@@ -432,21 +508,8 @@ void output_open_scope(const char *scope_name) {
 	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
 	const uint16_t level = STACK_COUNT(g_scope_stack);
 
-	switch (g_format) {
-		case FORMAT_CSV:
-			to_csv(type, level, key, value);
-			break;
-		case FORMAT_XML:
-			to_xml(type, level, key, value);
-			break;
-		case FORMAT_HTML:
-			to_html(type, level, key, value);
-			break;
-		default:
-		case FORMAT_TEXT:
-			to_text(type, level, key, value);
-			break;
-	}
+	if (g_format != NULL)
+		g_format->func(type, level, key, value);
 
 	int ret = STACK_PUSH(g_scope_stack, scope_name);
 	if (ret < 0)
@@ -459,48 +522,19 @@ void output_close_scope(void) {
 	if (ret < 0)
 		abort();
 
-	//char key[255];
-	//key[0] = '/';
-	//key[1] = '\0';
-	//bsd_strlcat(key, scope_name, sizeof(key));
 	const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
 	const uint16_t level = STACK_COUNT(g_scope_stack);
 
-	switch (g_format) {
-		case FORMAT_CSV:
-			to_csv(type, level, key, value);
-			break;
-		case FORMAT_XML:
-			to_xml(type, level, key, value);
-			break;
-		case FORMAT_HTML:
-			to_html(type, level, key, value);
-			break;
-		default:
-		case FORMAT_TEXT:
-			break;
-	}
+	if (g_format != NULL)
+		g_format->func(type, level, key, value);
 }
 
 void output_keyval(const char *key, const char *value) {
 	const output_type_e type = OUTPUT_TYPE_ATTRIBUTE;
 	const uint16_t level = STACK_COUNT(g_scope_stack);
 
-	switch (g_format) {
-		case FORMAT_CSV:
-			to_csv(type, level, key, value);
-			break;
-		case FORMAT_XML:
-			to_xml(type, level, key, value);
-			break;
-		case FORMAT_HTML:
-			to_html(type, level, key, value);
-			break;
-		default:
-		case FORMAT_TEXT:
-			to_text(type, level, key, value);
-			break;
-	}
+	if (g_format != NULL)
+		g_format->func(type, level, key, value);
 }

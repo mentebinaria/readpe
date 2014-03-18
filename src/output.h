@@ -33,7 +33,7 @@ typedef enum {
 void output_init(void);
 void output_term(void);
 void output_set_cmdline(int argc, char *argv[]);
-format_e format_output(void);
+format_e output_format(void);
 format_e output_parse_format(const char *format_name);
 int output_set_format(const format_e format);
 int output_set_format_by_name(const char *format_name);

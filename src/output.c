@@ -238,7 +238,6 @@ static const entity_t g_xml_entities[255] = {
 
 // CSV entities ',', '"', '\n'
 // TODO(jweyrich): Escape ',' - Are we going to enclose the str in quotes?
-// TODO(jweyrich): Escape ',' - Are we going to enclose the str in quotes?
 static const entity_t g_csv_entities[255] = {
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	"\\n",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
@@ -474,109 +473,6 @@ static void to_html(
 {
 	// FIXME(jweyrich): Somehow output the HTML document with a body.
 
-	// REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
-	// quot		"	U+0022 (34)		HTML 2.0	HTMLspecial
-	// amp		&	U+0026 (38)		HTML 2.0	HTMLspecial
-	// apos		'	U+0027 (39)		XHTML 1.0	HTMLspecial
-	// lt		<	U+003C (60)		HTML 2.0	HTMLspecial
-	// gt		>	U+003E (62)		HTML 2.0	HTMLspecial
-	// nbsp		 	U+00A0 (160)	HTML 3.2	HTMLlat1
-	// iexcl	¡	U+00A1 (161)	HTML 3.2	HTMLlat1
-	// cent		¢	U+00A2 (162)	HTML 3.2	HTMLlat1
-	// pound	£	U+00A3 (163)	HTML 3.2	HTMLlat1
-	// curren	¤	U+00A4 (164)	HTML 3.2	HTMLlat1
-	// yen		¥	U+00A5 (165)	HTML 3.2	HTMLlat1
-	// brvbar	¦	U+00A6 (166)	HTML 3.2	HTMLlat1
-	// sect		§	U+00A7 (167)	HTML 3.2	HTMLlat1
-	// uml		¨	U+00A8 (168)	HTML 3.2	HTMLlat1
-	// copy		©	U+00A9 (169)	HTML 3.2	HTMLlat1
-	// ordf		ª	U+00AA (170)	HTML 3.2	HTMLlat1
-	// laquo	«	U+00AB (171)	HTML 3.2	HTMLlat1
-	// not		¬	U+00AC (172)	HTML 3.2	HTMLlat1
-	// shy		 	U+00AD (173)	HTML 3.2	HTMLlat1
-	// reg		®	U+00AE (174)	HTML 3.2	HTMLlat1
-	// macr		¯	U+00AF (175)	HTML 3.2	HTMLlat1
-	// deg		°	U+00B0 (176)	HTML 3.2	HTMLlat1
-	// plusmn	±	U+00B1 (177)	HTML 3.2	HTMLlat1
-	// sup2		²	U+00B2 (178)	HTML 3.2	HTMLlat1
-	// sup3		³	U+00B3 (179)	HTML 3.2	HTMLlat1
-	// acute	´	U+00B4 (180)	HTML 3.2	HTMLlat1
-	// micro	µ	U+00B5 (181)	HTML 3.2	HTMLlat1
-	// para		¶	U+00B6 (182)	HTML 3.2	HTMLlat1
-	// middot	·	U+00B7 (183)	HTML 3.2	HTMLlat1
-	// cedil	¸	U+00B8 (184)	HTML 3.2	HTMLlat1
-	// sup1		¹	U+00B9 (185)	HTML 3.2	HTMLlat1
-	// ordm		º	U+00BA (186)	HTML 3.2	HTMLlat1
-	// raquo	»	U+00BB (187)	HTML 3.2	HTMLlat1
-	// frac14	¼	U+00BC (188)	HTML 3.2	HTMLlat1
-	// frac12	½	U+00BD (189)	HTML 3.2	HTMLlat1
-	// frac34	¾	U+00BE (190)	HTML 3.2	HTMLlat1
-	// iquest	¿	U+00BF (191)	HTML 3.2	HTMLlat1
-	// Agrave	À	U+00C0 (192)	HTML 2.0	HTMLlat1
-	// Aacute	Á	U+00C1 (193)	HTML 2.0	HTMLlat1
-	// Acirc	Â	U+00C2 (194)	HTML 2.0	HTMLlat1
-	// Atilde	Ã	U+00C3 (195)	HTML 2.0	HTMLlat1
-	// Auml		Ä	U+00C4 (196)	HTML 2.0	HTMLlat1
-	// Aring	Å	U+00C5 (197)	HTML 2.0	HTMLlat1
-	// AElig	Æ	U+00C6 (198)	HTML 2.0	HTMLlat1
-	// Ccedil	Ç	U+00C7 (199)	HTML 2.0	HTMLlat1
-	// Egrave	È	U+00C8 (200)	HTML 2.0	HTMLlat1
-	// Eacute	É	U+00C9 (201)	HTML 2.0	HTMLlat1
-	// Ecirc	Ê	U+00CA (202)	HTML 2.0	HTMLlat1
-	// Euml		Ë	U+00CB (203)	HTML 2.0	HTMLlat1
-	// Igrave	Ì	U+00CC (204)	HTML 2.0	HTMLlat1
-	// Iacute	Í	U+00CD (205)	HTML 2.0	HTMLlat1
-	// Icirc	Î	U+00CE (206)	HTML 2.0	HTMLlat1
-	// Iuml		Ï	U+00CF (207)	HTML 2.0	HTMLlat1
-	// ETH		Ð	U+00D0 (208)	HTML 2.0	HTMLlat1
-	// Ntilde	Ñ	U+00D1 (209)	HTML 2.0	HTMLlat1
-	// Ograve	Ò	U+00D2 (210)	HTML 2.0	HTMLlat1
-	// Oacute	Ó	U+00D3 (211)	HTML 2.0	HTMLlat1
-	// Ocirc	Ô	U+00D4 (212)	HTML 2.0	HTMLlat1
-	// Otilde	Õ	U+00D5 (213)	HTML 2.0	HTMLlat1
-	// Ouml		Ö	U+00D6 (214)	HTML 2.0	HTMLlat1
-	// times	×	U+00D7 (215)	HTML 3.2	HTMLlat1
-	// Oslash	Ø	U+00D8 (216)	HTML 2.0	HTMLlat1
-	// Ugrave	Ù	U+00D9 (217)	HTML 2.0	HTMLlat1
-	// Uacute	Ú	U+00DA (218)	HTML 2.0	HTMLlat1
-	// Ucirc	Û	U+00DB (219)	HTML 2.0	HTMLlat1
-	// Uuml		Ü	U+00DC (220)	HTML 2.0	HTMLlat1
-	// Yacute	Ý	U+00DD (221)	HTML 2.0	HTMLlat1
-	// THORN	Þ	U+00DE (222)	HTML 2.0	HTMLlat1
-	// szlig	ß	U+00DF (223)	HTML 2.0	HTMLlat1
-	// agrave	à	U+00E0 (224)	HTML 2.0	HTMLlat1
-	// aacute	á	U+00E1 (225)	HTML 2.0	HTMLlat1
-	// acirc	â	U+00E2 (226)	HTML 2.0	HTMLlat1
-	// atilde	ã	U+00E3 (227)	HTML 2.0	HTMLlat1
-	// auml		ä	U+00E4 (228)	HTML 2.0	HTMLlat1
-	// aring	å	U+00E5 (229)	HTML 2.0	HTMLlat1
-	// aelig	æ	U+00E6 (230)	HTML 2.0	HTMLlat1
-	// ccedil	ç	U+00E7 (231)	HTML 2.0	HTMLlat1
-	// egrave	è	U+00E8 (232)	HTML 2.0	HTMLlat1
-	// eacute	é	U+00E9 (233)	HTML 2.0	HTMLlat1
-	// ecirc	ê	U+00EA (234)	HTML 2.0	HTMLlat1
-	// euml		ë	U+00EB (235)	HTML 2.0	HTMLlat1
-	// igrave	ì	U+00EC (236)	HTML 2.0	HTMLlat1
-	// iacute	í	U+00ED (237)	HTML 2.0	HTMLlat1
-	// icirc	î	U+00EE (238)	HTML 2.0	HTMLlat1
-	// iuml		ï	U+00EF (239)	HTML 2.0	HTMLlat1
-	// eth		ð	U+00F0 (240)	HTML 2.0	HTMLlat1
-	// ntilde	ñ	U+00F1 (241)	HTML 2.0	HTMLlat1
-	// ograve	ò	U+00F2 (242)	HTML 2.0	HTMLlat1
-	// oacute	ó	U+00F3 (243)	HTML 2.0	HTMLlat1
-	// ocirc	ô	U+00F4 (244)	HTML 2.0	HTMLlat1
-	// otilde	õ	U+00F5 (245)	HTML 2.0	HTMLlat1
-	// ouml		ö	U+00F6 (246)	HTML 2.0	HTMLlat1
-	// divide	÷	U+00F7 (247)	HTML 3.2	HTMLlat1
-	// oslash	ø	U+00F8 (248)	HTML 2.0	HTMLlat1
-	// ugrave	ù	U+00F9 (249)	HTML 2.0	HTMLlat1
-	// uacute	ú	U+00FA (250)	HTML 2.0	HTMLlat1
-	// ucirc	û	U+00FB (251)	HTML 2.0	HTMLlat1
-	// uuml		ü	U+00FC (252)	HTML 2.0	HTMLlat1
-	// yacute	ý	U+00FD (253)	HTML 2.0	HTMLlat1
-	// thorn	þ	U+00FE (254)	HTML 2.0	HTMLlat1
-	// yuml		ÿ	U+00FF (255)	HTML 2.0	HTMLlat1
-
 	char * const escaped_key = g_format->escape_fn(g_format, key);
 	char * const escaped_value = g_format->escape_fn(g_format, value);
 	
@@ -697,7 +593,7 @@ int output_set_format_by_name(const char *format_name) {
 }
 
 void output_open_scope(const char *scope_name) {
-		const char *key = scope_name;
+	const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
 	const uint16_t level = STACK_COUNT(g_scope_stack);

@@ -49,12 +49,12 @@ typedef struct {
 	STACK_ELEMENT_TYPE *elements;
 } STACK_TYPE;
 
-STACK_TYPE *STACK_API(stack_alloc)(uint16_t capacity);
-void STACK_API(stack_dealloc)(STACK_TYPE *stack);
-uint16_t STACK_API(stack_count)(STACK_TYPE *stack);
-int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity);
-int STACK_API(stack_push)(STACK_TYPE *stack, STACK_ELEMENT_TYPE element);
-int STACK_API(stack_pop)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element);
+static STACK_TYPE *STACK_API(stack_alloc)(uint16_t capacity);
+static void STACK_API(stack_dealloc)(STACK_TYPE *stack);
+static uint16_t STACK_API(stack_count)(STACK_TYPE *stack);
+static int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity);
+static int STACK_API(stack_push)(STACK_TYPE *stack, STACK_ELEMENT_TYPE element);
+static int STACK_API(stack_pop)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element);
 
 // ----------------------------------------------------------------------------
 

@@ -250,6 +250,9 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
+	output_init();
+	output_set_cmdline(argc, argv);
+
 	options_t *options = parse_options(argc, argv); // opcoes
 
 	const char *path = argv[argc-1];
@@ -327,6 +330,8 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	output_term();
 
 	return EXIT_SUCCESS;
 }

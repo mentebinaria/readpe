@@ -130,7 +130,8 @@ static options_t *parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':
-				parse_format(optarg);
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
 				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
@@ -264,8 +265,7 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 	}
 
 	// Print signers
-	if (numcerts > 0)
-		output("Signers", NULL);
+	output_open_scope("Signers");
 	for (int i = 0; i < numcerts; i++) {
 		X509 *cert = sk_X509_value(certs, i);
 		X509_NAME *name = X509_get_subject_name(cert);
@@ -277,9 +277,7 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 			output("Issuer", issuer_name);
 		}
 	}
-	// Close signers (required by our broken XML)
-	if (format == FORMAT_XML && numcerts > 0)
-		output("/Signers", NULL);
+	output_close_scope();
 
 error:
 	if (p7 != NULL)
@@ -306,10 +304,10 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 
 	uint32_t fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
 
-	output("Certificates", NULL);
+	output_open_scope("Certificates");
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
-		output("Certificate", NULL);
+		output_open_scope("Certificate");
 		// Read the size of this WIN_CERTIFICATE
 		uint32_t *dwLength_ptr = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
 		if (LIBPE_IS_PAST_THE_END(ctx, dwLength_ptr, sizeof(uint32_t))) {
@@ -378,13 +376,9 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 			case WIN_CERT_TYPE_EFI_GUID:
 				EXIT_ERROR("WIN_CERT_TYPE_EFI_GUID is not supported");
 		}
-		// Close certificate (required by our broken XML)
-		if (format == FORMAT_XML)
-			output("/Certificate", NULL);
+		output_close_scope(); // Certificate
 	}
-	// Close certificates (required by our broken XML)
-	if (format == FORMAT_XML)
-		output("/Certificates", NULL);
+	output_close_scope(); // Certificates
 }
 
 int main(int argc, char *argv[])
@@ -393,6 +387,9 @@ int main(int argc, char *argv[])
 		usage();
 		exit(EXIT_FAILURE);
 	}
+
+	output_init();
+	output_set_cmdline(argc, argv);
 
 	options_t *options = parse_options(argc, argv); // opcoes
 
@@ -460,6 +457,8 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	output_term();
 
 	return EXIT_SUCCESS;
 }

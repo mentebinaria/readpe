@@ -25,7 +25,7 @@
 
 #define PROGRAM "pehash"
 
-#define HAS_ALGO \
+#define PRINT_HASH_OR_HASHES \
 		if (options->algorithms.alg_name) { \
 			calc_hash(options->algorithms.alg_name, data, data_size, hash_value); \
 			output(options->algorithms.alg_name, hash_value); \
@@ -146,7 +146,8 @@ static options_t *parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':
-				parse_format(optarg);
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
 				break;
 			case 'a':
 				options->algorithms.all = false;
@@ -222,7 +223,6 @@ static void print_basic_hash(const unsigned char *data, size_t size)
 		calc_hash(basic_hashes[i], data, size, hash_value);
 		output(basic_hashes[i], hash_value);
 	}
-	putchar('\n');
 }
 
 int main(int argc, char *argv[])
@@ -231,6 +231,9 @@ int main(int argc, char *argv[])
 		usage();
 		return EXIT_FAILURE;
 	}
+
+	output_init();
+	output_set_cmdline(argc, argv);
 
 	OpenSSL_add_all_digests();
 
@@ -265,8 +268,10 @@ int main(int argc, char *argv[])
 	data_size = pe_filesize(&ctx);
 
 	if (options->all) {
-		output("file", ctx.path);
+		output_open_scope("file");
+		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
+		output_close_scope();
 	}
 
 	if (options->all || options->headers.all || options->headers.dos) {
@@ -274,8 +279,10 @@ int main(int argc, char *argv[])
 		data = (const unsigned char *)dos_hdr;
 		data_size = sizeof(IMAGE_DOS_HEADER);
 
-		output("header", "IMAGE_DOS_HEADER");
-		HAS_ALGO;
+		output_open_scope("header");
+		output("header_name", "IMAGE_DOS_HEADER");
+		PRINT_HASH_OR_HASHES;
+		output_close_scope();
 	}
 
 	if (options->all || options->headers.all || options->headers.coff) {
@@ -283,8 +290,10 @@ int main(int argc, char *argv[])
 		data = (const unsigned char *)coff_hdr;
 		data_size = sizeof(IMAGE_COFF_HEADER);
 
-		output("header", "IMAGE_COFF_HEADER");
-		HAS_ALGO;
+		output_open_scope("header");
+		output("header_name", "IMAGE_COFF_HEADER");
+		PRINT_HASH_OR_HASHES;
+		output_close_scope();
 	}
 	
 	if (options->all || options->headers.all || options->headers.optional) {
@@ -312,8 +321,10 @@ int main(int argc, char *argv[])
             break;
 		}
 
-		output("header", "IMAGE_OPTIONAL_HEADER");
-		HAS_ALGO;
+		output_open_scope("header");
+		output("header_name", "IMAGE_OPTIONAL_HEADER");
+		PRINT_HASH_OR_HASHES;
+		output_close_scope();
 	}
 
 	if (options->all) {
@@ -321,10 +332,12 @@ int main(int argc, char *argv[])
 			data_size = sections[i]->SizeOfRawData; 
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
-			if (data_size)
-				output("section", (char *)sections[i]->Name);
-
-			HAS_ALGO;
+			output_open_scope("section");
+			output("section_name", (char *)sections[i]->Name);
+			if (data_size) {
+				PRINT_HASH_OR_HASHES;
+			}
+			output_close_scope();
 		}
 	} else if (options->sections.name != NULL) {
 		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
@@ -381,6 +394,8 @@ int main(int argc, char *argv[])
 	}
 
 	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
+
+	output_term();
 
 	return EXIT_SUCCESS;
 }

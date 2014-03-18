@@ -76,6 +76,9 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	output_init();
+	output_set_cmdline(argc, argv);
+
 	parse_options(argc, argv); // opcoes
 
 	pe_ctx_t ctx;
@@ -104,6 +107,8 @@ int main(int argc, char *argv[])
 
 	// libera a memoria
 	pe_unload(&ctx);
+
+	output_term();
 	
 	return EXIT_SUCCESS;
 }

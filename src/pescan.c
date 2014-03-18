@@ -78,7 +78,8 @@ static options_t *parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':
-				parse_format(optarg);
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
 				break;
 			case 'v':
 				options->verbose = true;
@@ -458,6 +459,9 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	output_init();
+	output_set_cmdline(argc, argv);
+
 	options_t *options = parse_options(argc, argv); // opcoes
 
 	const char *path = argv[argc-1];
@@ -584,6 +588,8 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	output_term();
 
 	return EXIT_SUCCESS;
 }

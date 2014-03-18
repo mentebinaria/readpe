@@ -22,16 +22,24 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
-void parse_format(const char *optarg);
-void output(const char *field, const char *value);
-
 typedef enum {
+	FORMAT_INVALID = -1,
 	FORMAT_TEXT = 1,
 	FORMAT_HTML = 2,
 	FORMAT_XML = 3,
 	FORMAT_CSV = 4
 } format_e;
 
-extern format_e format;
+void output_init(void);
+void output_term(void);
+void output_set_cmdline(int argc, char *argv[]);
+format_e format_output(void);
+format_e output_parse_format(const char *format_name);
+int output_set_format(const format_e format);
+int output_set_format_by_name(const char *format_name);
+void output_open_scope(const char *scope_name);
+void output_close_scope(void);
+void output(const char *key, const char *value);
+void output_keyval(const char *key, const char *value);
 
 #endif

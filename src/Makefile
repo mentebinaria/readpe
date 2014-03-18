@@ -69,7 +69,6 @@ MANDIR = $(srcdir)/../doc/manpages
 all: $(PROGS)
 
 pesec: LDFLAGS += -lcrypto
-pesec: compat/strlcat.c
 
 pestr: LDFLAGS += -lpcre
 
@@ -85,7 +84,7 @@ pescan: LDFLAGS += -lm
 # Generic rule matching binary names and sources
 
 %: %.c
-	$(CC) $(CFLAGS) $(DFLAGS) output.c malloc_s.c $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) compat/strlcat.c output.c malloc_s.c $^ -o $@ $(LDFLAGS)
 
 install: installdirs
 	for prog in $(PROGS); do \

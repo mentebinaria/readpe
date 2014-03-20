@@ -1,4 +1,3 @@
-
 ####### Compiler options
 
 override LDFLAGS += 
@@ -10,7 +9,7 @@ VERSION = 1.0
 
 ####### Build rules
 
-.PHONY: csv_plugin html_plugin text_plugin xml_plugin
+.PHONY:
 
 plugins: $(PLUGINS)
 

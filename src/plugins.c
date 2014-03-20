@@ -28,17 +28,22 @@
 #include "common.h"
 #include "compat/sys/queue.h"
 #include <stdlib.h>
+#include <dirent.h>
+#include <errno.h>
+#include <unistd.h>
 
-// static int plugin_registered(const char *name) {
-// 	printf("Plugin registered: %s\n", name);
-// }
+// TODO(jweyrich): Move to a proper translation unit.
+int str_ends_with(const char *str, const char *suffix) {
+	if (str == NULL || suffix == NULL)
+		return 0;
 
-static const char *g_libraries[] = {
-	"src/plugins/csv.dylib",
-	"src/plugins/html.dylib",
-	"src/plugins/text.dylib",
-	"src/plugins/xml.dylib"
-};
+	size_t len_str = strlen(str);
+	size_t len_suffix = strlen(suffix);
+	if (len_suffix > len_str)
+		return 0;
+
+	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+}
 
 typedef struct _plugins_entry {
 	dylib_t library;
@@ -106,17 +111,75 @@ static void plugin_unload(plugins_entry_t *entry) {
 }
 #endif
 
-int plugins_load_all(void) {
-	size_t load_count = 0;
-	for (size_t i = 0; i < (sizeof(g_libraries) / sizeof(g_libraries[0])); i++) {
-		const char *path = g_libraries[i];
-		int ret = plugins_load(path);
-		if (ret < 0)
-			return ret;
-		load_count++;
+int plugins_load_all_from_directory(const char *path) {
+	DIR *dir = opendir(path);
+	if (dir == NULL) {
+		fprintf(stderr, "plugins: could not open directory '%s' -- %s\n",
+			path, strerror(errno));
+		return -1;
 	}
-	
+
+	long path_max = pathconf(path, _PC_PATH_MAX);
+	char *relative_path = malloc(path_max);
+	if (relative_path == NULL) {
+		fprintf(stderr, "plugins: allocation failed for relative path");
+		closedir(dir);
+		return -2;
+	}
+
+	size_t load_count = 0;
+	struct dirent *dir_entry;
+	// print all the files and directories within directory
+
+	// SECURITY: Don't use readdir_r because it will introduce a
+	// race condition between the opendir and pathconf calls.
+	// MORE: http://womble.decadent.org.uk/readdir_r-advisory.html
+	// NOTE: readdir is not thread-safe.
+	while ((dir_entry = readdir(dir)) != NULL) {
+		switch (dir_entry->d_type) {
+			default: // Unhandled
+				break;
+			case DT_REG: // Regular file
+			{
+				const char *filename = dir_entry->d_name;
+
+				// TODO(jweyrich): Use macro conditions for each system: .so, .dylib, .dll
+#if defined(__linux__)
+				const bool possible_plugin = str_ends_with(filename, ".so") != 0;
+#elif defined(__APPLE__)
+				const bool possible_plugin = str_ends_with(filename, ".dylib") != 0;
+#elif defined(_WIN32)
+				const bool possible_plugin = str_ends_with(filename, ".dll") != 0;
+#else
+#error Not supported
+#endif
+				if (!possible_plugin)
+					break;
+
+				snprintf(relative_path, path_max, "%s/%s", path, filename);
+				//printf("relative_path = %s\n", relative_path);
+
+				int ret = plugins_load(relative_path);
+				if (ret < 0) {
+					closedir(dir);
+					return ret;
+				}
+				load_count++;
+				break;
+			}
+			case DT_DIR: // Directory
+				break;
+		}
+	}
+
+	closedir(dir);
+
 	return load_count;
+}
+
+int plugins_load_all(void) {
+	const char *path = "src/plugins/";
+	return plugins_load_all_from_directory(path);
 }
 
 void plugins_unload_all(void) {

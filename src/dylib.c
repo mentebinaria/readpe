@@ -41,7 +41,7 @@ int dylib_load(dylib_t *lib, const char *path) {
     lib->handle = dlopen(path, RTLD_LAZY | RTLD_GLOBAL);
     lib->loaded = lib->handle != NULL;
     if (!lib->loaded) {
-        fprintf(stderr, "Failed to load library %s: %s", lib->path, dylib_error(lib));
+        fprintf(stderr, "Failed to load library %s: %s", path, dylib_error(lib));
         return -1;
     }
     lib->path = strdup(path);

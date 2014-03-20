@@ -39,48 +39,33 @@ static int g_argc = 0;
 static char **g_argv = NULL;
 static char *g_cmdline = NULL;
 
-typedef struct _format_t_entry {
+typedef struct _format_entry {
 	const format_t *format;
-	SLIST_ENTRY(_format_t_entry) entries; 
-} format_t_entry_t;
+	SLIST_ENTRY(_format_entry) entries;
+} format_entry_t;
 
-static SLIST_HEAD(_format_t_list, _format_t_entry) g_registered_formats = SLIST_HEAD_INITIALIZER(g_registered_formats);
-
-int output_plugin_register_format(const format_t *format) {
-	format_t_entry_t *entry = malloc(sizeof *entry);
-	if (entry == NULL) {
-		//fprintf(stderr, "output: allocation failed for format entry\n");
-		return -1;
-	}
-
-	memset(entry, 0, sizeof *entry);
-
-	entry->format = format;
-	SLIST_INSERT_HEAD(&g_registered_formats, entry, entries);
-
-	return 0;
-}
-
-void output_plugin_unregister_all_formats(void) {
-	while (!SLIST_EMPTY(&g_registered_formats)) {
-		format_t_entry_t *entry = SLIST_FIRST(&g_registered_formats);
-		SLIST_REMOVE_HEAD(&g_registered_formats, entries);
-		free(entry);
-	}
-}
+static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats = SLIST_HEAD_INITIALIZER(g_registered_formats);
 
 //
 // Definition of internal functions
 //
 
-static const format_t *output_lookup_format_by_id(format_id_t id) {
-	format_t_entry_t *entry;
+static format_entry_t *output_lookup_format_entry_by_id(format_id_t id) {
+	format_entry_t *entry;
 	SLIST_FOREACH(entry, &g_registered_formats, entries) {
 		if (entry->format->id == id)
-			return entry->format;
+			return entry;
 	}
 
 	return NULL;
+}
+
+static const format_t *output_lookup_format_by_id(format_id_t id) {
+	const format_entry_t *entry = output_lookup_format_entry_by_id(id);
+	if (entry == NULL)
+		return NULL;
+
+	return entry->format;
 }
 
 static char *output_join_array_of_strings(char *strings[], size_t count, char delimiter) {
@@ -124,6 +109,39 @@ static char *output_join_array_of_strings(char *strings[], size_t count, char de
 // API
 //
 
+int output_plugin_register_format(const format_t *format) {
+	format_entry_t *entry = malloc(sizeof *entry);
+	if (entry == NULL) {
+		//fprintf(stderr, "output: allocation failed for format entry\n");
+		return -1;
+	}
+
+	memset(entry, 0, sizeof *entry);
+
+	entry->format = format;
+	SLIST_INSERT_HEAD(&g_registered_formats, entry, entries);
+
+	return 0;
+}
+
+void output_plugin_unregister_format(const format_t *format) {
+	format_entry_t *entry = output_lookup_format_entry_by_id(format->id);
+	if (entry == NULL)
+		return;
+
+	SLIST_REMOVE(&g_registered_formats, entry, _format_entry, entries);
+	free(entry);
+}
+
+
+void output_plugin_unregister_all_formats(void) {
+	while (!SLIST_EMPTY(&g_registered_formats)) {
+		format_entry_t *entry = SLIST_FIRST(&g_registered_formats);
+		SLIST_REMOVE_HEAD(&g_registered_formats, entries);
+		free(entry);
+	}
+}
+
 void output(const char *key, const char *value) {
 	output_keyval(key, value);
 }
@@ -160,7 +178,7 @@ const format_t *output_format(void) {
 const format_t *output_parse_format(const char *format_name) {
 	const format_t *format = NULL;
 
-	format_t_entry_t *entry;
+	format_entry_t *entry;
 	SLIST_FOREACH(entry, &g_registered_formats, entries) {
 		// TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and POSIX.1-2001, but not to C89 nor C99.
 		if (strcmp(format_name, entry->format->name) == 0) {
@@ -193,7 +211,7 @@ size_t output_available_formats(char *buffer, size_t size, char separator) {
 
 	memset(buffer, 0, size);
 
-	format_t_entry_t *entry;
+	format_entry_t *entry;
 	SLIST_FOREACH(entry, &g_registered_formats, entries) {
 		if (!truncated) {
 			const char *format_name = entry->format->name;

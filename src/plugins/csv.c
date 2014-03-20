@@ -118,4 +118,5 @@ int plugin_loaded(void) {
 
 void plugin_unloaded(void) {
 	//printf("Unloading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
+	output_plugin_unregister_format(&g_format);
 }

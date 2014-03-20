@@ -45,6 +45,7 @@
 //
 
 int output_plugin_register_format(const format_t *format);
+void output_plugin_unregister_format(const format_t *format);
 void output_plugin_unregister_all_formats(void);
 
 size_t escape_count_chars_ex(const char *str, size_t len, const entity_table_t entities);

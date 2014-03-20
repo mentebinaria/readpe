@@ -25,6 +25,7 @@
 #include "compat/strlcat.h"
 #include "compat/sys/queue.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 //
 // Global variables

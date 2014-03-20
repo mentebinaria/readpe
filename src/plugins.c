@@ -49,7 +49,7 @@ typedef struct _plugins_entry {
 
 static SLIST_HEAD(_plugins_t_list, _plugins_entry) g_loaded_plugins = SLIST_HEAD_INITIALIZER(g_loaded_plugins);
 
-int plugin_load(const char *path) {
+int plugins_load(const char *path) {
 	plugins_entry_t *entry = malloc(sizeof *entry);
 	if (entry == NULL) {
 		fprintf(stderr, "plugin: allocation failed for entry\n");
@@ -110,7 +110,7 @@ int plugins_load_all(void) {
 	size_t load_count = 0;
 	for (size_t i = 0; i < (sizeof(g_libraries) / sizeof(g_libraries[0])); i++) {
 		const char *path = g_libraries[i];
-		int ret = plugin_load(path);
+		int ret = plugins_load(path);
 		if (ret < 0)
 			return ret;
 		load_count++;

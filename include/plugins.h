@@ -24,6 +24,6 @@
 
 #pragma once
 
-int plugin_load(const char *path);
+int plugins_load(const char *path);
 int plugins_load_all(void);
 void plugins_unload_all(void);

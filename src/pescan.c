@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	pescan.c - search for suspicious things in PE files
+	pescan.c - search for suspicious things in PE files.
 
-	Copyright (C) 2013 pev authors
+	Copyright (C) 2013 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include "plugins.h"
 
 #define PROGRAM "pescan"
 
@@ -32,14 +33,16 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("\n%s %s\n%s\n\nUsage: %s OPTIONS FILE\n"
 		"Search for suspicious things in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -v, --verbose                          show more info about items found\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
+		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)
@@ -459,6 +462,11 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
@@ -595,6 +603,8 @@ int main(int argc, char *argv[])
 	}
 
 	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

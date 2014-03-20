@@ -1,7 +1,7 @@
 ####### Platform specifics
 
 # cut is necessary for Cygwin
-PLATFORM_OS := $(shell uname | cut -d_ -f1)
+export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 
@@ -27,46 +27,51 @@ srcdir = $(CURDIR)
 
 ####### Makefile Conventions - Utilities
 
-CC ?= gcc
-LINK = $(CC)
-CHK_DIR_EXISTS = test -d
-CHK_FILE_EXISTS = test -f
-INSTALL = install
-INSTALL_DATA = ${INSTALL} -m 644
-INSTALL_PROGRAM = $(INSTALL)
-SYMLINK = ln -sf
-MKDIR = mkdir -p
-RM = rm -f
-RM_DIR = rm -rf
+export CC ?= gcc
+export LINK = $(CC)
+export CHK_DIR_EXISTS = test -d
+export CHK_FILE_EXISTS = test -f
+export INSTALL = install
+export INSTALL_DATA = ${INSTALL} -m 644
+export INSTALL_PROGRAM = $(INSTALL)
+export SYMLINK = ln -sf
+export MKDIR = mkdir -p
+export RM = rm -f
+export RM_DIR = rm -rf
 ifeq ($(PLATFORM_OS), Darwin)
-	STRIP = strip -x
+	export STRIP = strip -x
 else
-	STRIP = strip --strip-unneeded
+	export STRIP = strip --strip-unneeded
 endif
 
 ####### Compiler options
 
-DEST = $(DESTDIR)$(bindir)
+export DEST = $(DESTDIR)$(bindir)
+
 override LDFLAGS += -L$(LIBPE) -lpe
-override CFLAGS += -I$(LIBPE) -W -Wall -Wextra -std=c99 -pedantic
-override DFLAGS += -D_GNU_SOURCE
+override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic -g3 -O0
+override CPPFLAGS += -D_GNU_SOURCE
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations
 endif
 
 PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres
+PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
-LIBPE = $(srcdir)/../lib/libpe
+export LIBPE = $(srcdir)/../lib/libpe
 LIBUDIS86 = $(srcdir)/../lib/libudis86
 LIBFUZZY = $(srcdir)/../lib/libfuzzy
 MANDIR = $(srcdir)/../doc/manpages
 
 ####### Build rules
 
-.PHONY : install uninstall clean
+.PHONY: plugins install installdirs uninstall clean
 
-all: $(PROGS)
+all: $(PROGS) plugins
+
+plugins:
+	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 pesec: LDFLAGS += -lcrypto
 
@@ -84,7 +89,14 @@ pescan: LDFLAGS += -lm
 # Generic rule matching binary names and sources
 
 %: %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) compat/strlcat.c output.c malloc_s.c $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) \
+		compat/strlcat.c \
+		dylib.c \
+		malloc_s.c \
+		output_plugin.c \
+		output.c \
+		plugins.c \
+		$^ -o $@ $(LDFLAGS)
 
 install: installdirs
 	for prog in $(PROGS); do \
@@ -109,3 +121,4 @@ uninstall:
 
 clean:
 	$(RM) $(PROGS)
+	cd $(PLUGINS_DIR) && $(MAKE) $@

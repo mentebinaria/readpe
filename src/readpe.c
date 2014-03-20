@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2013 pev authors
+	Copyright (C) 2013 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "common.h"
 #include <time.h>
 #include <ctype.h>
+#include "plugins.h"
 
 #define PROGRAM "readpe"
 #define MAX_DLL_NAME 256
@@ -40,10 +41,11 @@ struct options {
 };
 
 static struct options config;
-static int ind;
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s OPTIONS FILE\n"
 		"Show PE file headers\n"
 		"\nExample: %s --header optional winzip.exe\n"
@@ -51,14 +53,14 @@ static void usage(void)
 		" -A, --all                              full output (default)\n"
 		" -H, --all-headers                      print all PE headers\n"
 		" -S, --all-sections                     print all PE sections headers\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -d, --dirs                             show data directories\n"
 		" -h, --header <dos|coff|optional>       show specific header\n"
 		" -i, --imports                          show imported functions\n"
 		" -e, --exports                          show exported functions\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void parse_headers(const char *optarg)
@@ -97,7 +99,8 @@ void parse_options(int argc, char *argv[])
 
 	config.all = true;
 
-	int c;
+	int c, ind;
+
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
@@ -907,6 +910,11 @@ static void print_imports(pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
@@ -994,6 +1002,8 @@ int main(int argc, char *argv[])
 	}
 
 	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

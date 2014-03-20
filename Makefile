@@ -7,8 +7,8 @@ ZIPFILE = pev-$(VERSION)-win32.zip
 # just call each separated Makefile
 all:
 %:
-	cd $(LIBPE_DIR); $(MAKE) $@
-	cd $(PEV_DIR); $(MAKE) $@
+	cd $(LIBPE_DIR) && $(MAKE) $@
+	cd $(PEV_DIR) && $(MAKE) $@
 
 # zip rule only Cygwin targets
 zip:

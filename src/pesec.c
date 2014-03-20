@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	pesec.c - Check for security features in PE files
+	pesec.c - Check for security features in PE files.
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include "compat/strlcat.h"
+#include "plugins.h"
 
 #define PROGRAM "pesec"
 
@@ -41,16 +42,18 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s [OPTIONS] FILE\n"
 		"Check for security features in PE files\n"
 		"\nExample: %s wordpad.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -c, --certoutform <text|pem>           specifies the certificate output format (default: text)\n"
 		" -o, --certout <filename>               specifies the output filename to write certificates to (default: stdout)\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static cert_format_e parse_certoutform(const char *optarg)
@@ -383,12 +386,17 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		exit(EXIT_FAILURE);
 	}
 
-	output_init();
+	output_init(); // Requires plugin for text output.
 	output_set_cmdline(argc, argv);
 
 	options_t *options = parse_options(argc, argv); // opcoes
@@ -459,6 +467,8 @@ int main(int argc, char *argv[])
 	}
 
 	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

@@ -3,7 +3,7 @@
 
 	pehash.c - calculate hashes of PE pieces
 
-	Copyright (C) 2012 - 2013 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "common.h"
 #include <openssl/evp.h>
 #include "../lib/libfuzzy/fuzzy.h"
+#include "plugins.h"
 
 #define PROGRAM "pehash"
 
@@ -54,11 +55,13 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s OPTIONS FILE\n"
 		"Calculate hashes of PE pieces\n"
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>    change output format (default: text)\n"
+		" -f, --format <%s>    change output format (default: text)\n"
 		" -a, --algorithm <algorithm>         generate hash using one of the following algorithms:\n"
 		"                                       md4, md5, ripemd160, sha, sha1, sha224, sha256\n"
 		"                                       sha384, sha512, whirlpool or ssdeep\n\n"
@@ -67,7 +70,7 @@ static void usage(void)
 		" --section-index <section_index>     hash only the section at the specified index (1..n)\n"
 		" -v, --version                       show version and exit\n"
 		" --help                              show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void parse_hash_algorithm(options_t *options, const char *optarg)
@@ -227,6 +230,11 @@ static void print_basic_hash(const unsigned char *data, size_t size)
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
@@ -396,6 +404,8 @@ int main(int argc, char *argv[])
 	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
 
 	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

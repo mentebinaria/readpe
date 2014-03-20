@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	pestr.c - search for [encrypted] strings in PE files
+	pestr.c - search for [encrypted] strings in PE files.
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -250,9 +250,6 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	output_init();
-	output_set_cmdline(argc, argv);
-
 	options_t *options = parse_options(argc, argv); // opcoes
 
 	const char *path = argv[argc-1];
@@ -330,8 +327,6 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
-
-	output_term();
 
 	return EXIT_SUCCESS;
 }

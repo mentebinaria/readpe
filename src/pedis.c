@@ -3,7 +3,7 @@
 	
 	pedis.c - PE disassembler
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,8 +23,11 @@
 #include "../lib/libudis86/udis86.h"
 #include <errno.h>
 #include <limits.h>
+#include "plugins.h"
 
 #define PROGRAM "pedis"
+
+#define SPACES 32 // spaces # for text-based output
 
 #define SYN_ATT 1
 #define SYN_INTEL 0
@@ -43,13 +46,15 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s OPTIONS FILE\n"
 		"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
 		"\nExample: %s -r 0x4c4df putty.exe\n"
 		"\nOptions:\n"
 		" --att                                  set AT&T syntax\n"
 		" -e, --entrypoint                       disassemble entrypoint\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
 		" -i, <number>                           number of instructions to be disassembled\n"
 		" -n, <number>                           number of bytes to be disassembled\n"
@@ -58,7 +63,7 @@ static void usage(void)
 		" -s, --section <section_name>           disassemble entire section given\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)
@@ -278,6 +283,11 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		exit(EXIT_FAILURE);
@@ -368,6 +378,8 @@ int main(int argc, char *argv[])
 	}
 
 	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "output_plugin.h"
 
 // REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
@@ -30,7 +31,7 @@ static const entity_t g_entities[255] = {
 	"\\n",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	NULL,	NULL,	NULL,	NULL,	"\"\"",	NULL,	NULL,	NULL,	NULL,	NULL,
-	NULL,	NULL,	NULL,	NULL,	",",	NULL,	NULL,	NULL,	NULL,	NULL,
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
@@ -55,10 +56,34 @@ static const entity_t g_entities[255] = {
 };
 
 static char *escape_csv(const format_t *format, const char *str) {
-	// TODO(jweyrich): Escape ',' - Are we going to enclose the str in quotes?
-	return escape_ex(str, format->entities_table);
+	if (str == NULL)
+		return NULL;
+	// If `str` contains a line-break, or a double-quote, or a comman,
+	// we escape and enclose the entire `str` with double quotes.
+	return strpbrk(str, "\n\",") != NULL
+		? escape_ex_quoted(str, format->entities_table)
+		: escape_ex(str, format->entities_table);
 }
 
+//
+// The CSV output encloses fields with double quotes if they contain
+// any of the following characters:
+//
+//   a) line-break;
+//   b) double-quote;
+//   c) comma;
+//
+// Apart from the enclosing, any double-quote character found is escaped
+// to 2 double-quote characters.
+//
+// KNOWN BUG:
+//
+//   Our CSV output still doesn't follow the following rule:
+//   > Each record "should" contain the same number of comma-separated
+//   > fields.
+//
+// REFERENCE: http://en.wikipedia.org/wiki/Comma-separated_values
+//
 static void to_format(
 	const format_t *format,
 	const output_type_e type,

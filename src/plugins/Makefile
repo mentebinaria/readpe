@@ -1,7 +1,7 @@
 ####### Compiler options
 
 override LDFLAGS += 
-override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic
+override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic -g3 -O0
 override CPPFLAGS += -D_GNU_SOURCE
 
 PLUGINS = csv html text xml

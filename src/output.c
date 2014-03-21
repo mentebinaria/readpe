@@ -68,7 +68,7 @@ static const format_t *output_lookup_format_by_id(format_id_t id) {
 	return entry->format;
 }
 
-static char *output_join_array_of_strings(char *strings[], size_t count, char delimiter) {
+static char *str_array_join(char *strings[], size_t count, char delimiter) {
 	if (strings == NULL || strings[0] == NULL)
 		return strdup("");
 
@@ -166,7 +166,7 @@ void output_term(void) {
 void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
-	g_cmdline = output_join_array_of_strings(g_argv, g_argc, ' ');
+	g_cmdline = str_array_join(g_argv, g_argc, ' ');
 	if (g_cmdline == NULL)
 		abort();
 	//printf("cmdline = %s\n", g_cmdline);

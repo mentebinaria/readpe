@@ -81,7 +81,7 @@ int plugins_load(const char *path) {
 
 	// Only plugin_initialize_fn and plugin_shutdown_fn are required.
 	if (entry->plugin_initialize_fn == NULL || entry->plugin_shutdown_fn == NULL) {
-		fprintf(stderr, "plugins: incompatible library?\n");
+		fprintf(stderr, "plugins: %s is incompatible with this version.\n", path);
 		dylib_unload(library);
 		free(entry);
 		return -3;

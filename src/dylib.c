@@ -35,7 +35,7 @@ inline const char *dylib_error(dylib_t *lib) {
 
 int dylib_load(dylib_t *lib, const char *path) {
     if (lib->loaded) {
-        fprintf(stderr, "Can't load library because another library is already loaded: %s", lib->path);
+        fprintf(stderr, "Can't load library because it's already loaded: %s", lib->path);
         return -1;
     }
     lib->handle = dlopen(path, RTLD_LAZY | RTLD_GLOBAL);
@@ -69,7 +69,7 @@ int dylib_unload(dylib_t *lib) {
 void *dylib_get_symbol(dylib_t *lib, const char *symbol) {
     void *addr = dlsym(lib->handle, symbol);
     if (addr == NULL) {
-        fprintf(stderr, "Symbol %s not found in %s: %s", symbol, lib->path, dylib_error(lib));
+        fprintf(stderr, "Symbol '%s' not found in '%s': %s\n", symbol, lib->path, dylib_error(lib));
     }
     return addr;
 }

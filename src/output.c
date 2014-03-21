@@ -105,6 +105,14 @@ static char *output_join_array_of_strings(char *strings[], size_t count, char de
 	return result;
 }
 
+static void output_unregister_all_formats(void) {
+	while (!SLIST_EMPTY(&g_registered_formats)) {
+		format_entry_t *entry = SLIST_FIRST(&g_registered_formats);
+		SLIST_REMOVE_HEAD(&g_registered_formats, entries);
+		free(entry);
+	}
+}
+
 //
 // API
 //
@@ -133,15 +141,6 @@ void output_plugin_unregister_format(const format_t *format) {
 	free(entry);
 }
 
-
-void output_plugin_unregister_all_formats(void) {
-	while (!SLIST_EMPTY(&g_registered_formats)) {
-		format_entry_t *entry = SLIST_FIRST(&g_registered_formats);
-		SLIST_REMOVE_HEAD(&g_registered_formats, entries);
-		free(entry);
-	}
-}
-
 void output(const char *key, const char *value) {
 	output_keyval(key, value);
 }
@@ -160,6 +159,8 @@ void output_term(void) {
 	// TODO(jweyrich): Should we loop to pop + close + output every scope?
 	if (g_scope_stack != NULL)
 		free(g_scope_stack);
+
+	output_unregister_all_formats();
 }
 
 void output_set_cmdline(int argc, char *argv[]) {

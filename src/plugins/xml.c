@@ -112,27 +112,36 @@ static void to_format(
 
 // ----------------------------------------------------------------------------
 
-#define PLUGIN_TYPE "output"
-#define PLUGIN_NAME "xml"
 #define FORMAT_ID	4
+#define FORMAT_NAME "xml"
 
 static const format_t g_format = {
 	FORMAT_ID,
-	"xml",
+	FORMAT_NAME,
 	&to_format,
 	&escape,
 	(entity_table_t)g_entities
 };
 
+#define PLUGIN_TYPE "output"
+#define PLUGIN_NAME FORMAT_NAME
+
 int plugin_loaded(void) {
 	//printf("Loading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
+	return 0;
+}
+
+void plugin_unloaded(void) {
+	//printf("Unloading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
+}
+
+int plugin_initialize(void) {
 	int ret = output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
-void plugin_unloaded(void) {
-	//printf("Unloading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
+void plugin_shutdown(void) {
 	output_plugin_unregister_format(&g_format);
 }

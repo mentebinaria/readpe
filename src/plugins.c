@@ -48,6 +48,8 @@ int str_ends_with(const char *str, const char *suffix) {
 typedef struct _plugins_entry {
 	dylib_t library;
 	plugin_loaded_fn_t plugin_loaded_fn;
+	plugin_initialize_fn_t plugin_initialize_fn;
+	plugin_shutdown_fn_t plugin_shutdown_fn;
 	plugin_unloaded_fn_t plugin_unloaded_fn;
 	SLIST_ENTRY(_plugins_entry) entries;
 } plugins_entry_t;
@@ -73,19 +75,34 @@ int plugins_load(const char *path) {
 	}
 
 	entry->plugin_loaded_fn = (plugin_loaded_fn_t)dylib_get_symbol(library, "plugin_loaded");
+	entry->plugin_initialize_fn = (plugin_initialize_fn_t)dylib_get_symbol(library, "plugin_initialize");
+	entry->plugin_shutdown_fn = (plugin_shutdown_fn_t)dylib_get_symbol(library, "plugin_shutdown");
 	entry->plugin_unloaded_fn = (plugin_unloaded_fn_t)dylib_get_symbol(library, "plugin_unloaded");
-	if (entry->plugin_loaded_fn == NULL || entry->plugin_unloaded_fn == NULL) {
+
+	// Only plugin_initialize_fn and plugin_shutdown_fn are required.
+	if (entry->plugin_initialize_fn == NULL || entry->plugin_shutdown_fn == NULL) {
 		fprintf(stderr, "plugins: incompatible library?\n");
 		dylib_unload(library);
 		free(entry);
 		return -3;
 	}
 
-	int loaded = entry->plugin_loaded_fn();
-	if (loaded < 0) {
-		fprintf(stderr, "plugins: plugin didn't load correctly\n");
+	if (entry->plugin_loaded_fn != NULL) {
+		const int loaded = entry->plugin_loaded_fn();
+		if (loaded < 0) {
+			fprintf(stderr, "plugins: plugin didn't load correctly\n");
+			dylib_unload(library);
+			free(entry);
+			return -4;
+		}
+	}
+
+	const int initialized = entry->plugin_initialize_fn();
+	if (initialized < 0) {
+		fprintf(stderr, "plugins: plugin didn't initialize correctly\n");
 		dylib_unload(library);
-		return -4;
+		free(entry);
+		return -5;
 	}
 
 	SLIST_INSERT_HEAD(&g_loaded_plugins, entry, entries);
@@ -95,7 +112,11 @@ int plugins_load(const char *path) {
 static void plugin_unload_without_removal(plugins_entry_t *entry) {
 	dylib_t *library = &entry->library;
 
-	entry->plugin_unloaded_fn();
+	entry->plugin_shutdown_fn();
+
+	if (entry->plugin_unloaded_fn != NULL) {
+		entry->plugin_unloaded_fn();
+	}
 
 	int ret = dylib_unload(library);
 	if (ret < 0) {

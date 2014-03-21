@@ -27,7 +27,11 @@
 #include <stdio.h>
 
 typedef int (*plugin_loaded_fn_t)(void);
+typedef int (*plugin_initialize_fn_t)(void);
+typedef void (*plugin_shutdown_fn_t)(void);
 typedef void (*plugin_unloaded_fn_t)(void);
 
 int plugin_loaded(void);
+int plugin_initialize(void);
+void plugin_shutdown(void);
 void plugin_unloaded(void);

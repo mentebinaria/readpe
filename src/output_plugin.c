@@ -68,7 +68,7 @@ char *escape_ex_quoted(const char *str, const entity_table_t entities) {
 		return strdup("\"\"");
 
 	if (entities == NULL)
-		return strdup_quoted(str); // TODO quote
+		return strdup_quoted(str);
 
 	const size_t old_length = strlen(str);
 	const size_t new_length = escape_count_chars_ex(str, old_length, entities) + 2; // Extra bytes for quotes
@@ -83,9 +83,9 @@ char *escape_ex_quoted(const char *str, const entity_table_t entities) {
 	new_str[new_length - 1] = '"';
 	new_str[new_length] = '\0';
 
-	size_t consumed = 0;
-	// Range from 1 to old_length - 1 because of quotes.
-	for (size_t i = 1; i < old_length - 1; i++) {
+	// `consumed` starts in 1 because of the initial quote.
+	size_t consumed = 1;
+	for (size_t i = 0; i < old_length; i++) {
 		const unsigned char index = (unsigned char)str[i];
 		const entity_t entity = entities[index];
 		if (entity == NULL) {

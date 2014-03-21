@@ -58,8 +58,8 @@ static const entity_t g_entities[255] = {
 static char *escape_csv(const format_t *format, const char *str) {
 	if (str == NULL)
 		return NULL;
-	// If `str` contains a line-break, or a double-quote, or a comman,
-	// we escape and enclose the entire `str` with double quotes.
+	// If `str` contains a line-break, or a double-quote, or a comma,
+	// escape and enclose the entire `str` with double quotes.
 	return strpbrk(str, "\n\",") != NULL
 		? escape_ex_quoted(str, format->entities_table)
 		: escape_ex(str, format->entities_table);

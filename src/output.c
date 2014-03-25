@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	output.c - Symbols and APIs to be used to output data in multiple formats.
 
 	Copyright (C) 2012 - 2014 pev authors
@@ -217,7 +217,7 @@ size_t output_available_formats(char *buffer, size_t size, char separator) {
 		if (!truncated) {
 			const char *format_name = entry->format->name;
 
-			consumed = strlcat(buffer, format_name, size);
+			consumed = bsd_strlcat(buffer, format_name, size);
 			if (consumed > size) {
 				// TODO(jweyrich): Handle truncation.
 				total_available++;

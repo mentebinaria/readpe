@@ -199,7 +199,7 @@ int plugins_load_all_from_directory(const char *path) {
 }
 
 int plugins_load_all(void) {
-	const char *path = "src/plugins/";
+	const char *path = "src/plugins/build/";
 	return plugins_load_all_from_directory(path);
 }
 

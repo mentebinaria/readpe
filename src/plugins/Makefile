@@ -1,57 +1,68 @@
 ####### Compiler options
 
 override LDFLAGS += 
-override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic -g3 -O0
+override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic
 override CPPFLAGS += -D_GNU_SOURCE
 
 PLUGINS = csv html text xml
 VERSION = 1.0
 
+plugins_BUILDDIR = $(CURDIR)/build
+
+csv_srcdir = $(CURDIR)
+csv_SRCS = csv.c
+csv_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${csv_SRCS})))
+csv_LIBNAME = csv_plugin
+
+html_srcdir = $(CURDIR)
+html_SRCS = html.c
+html_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${html_SRCS})))
+html_LIBNAME = html_plugin
+
+text_srcdir = $(CURDIR)
+text_SRCS = text.c
+text_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${text_SRCS})))
+text_LIBNAME = text_plugin
+
+xml_srcdir = $(CURDIR)
+xml_SRCS = xml.c
+xml_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${xml_SRCS})))
+xml_LIBNAME = xml_plugin
+
 ####### Build rules
 
-.PHONY:
+.PHONY: plugins
 
 plugins: $(PLUGINS)
 
-csv_plugin: csv.o
-csv_plugin: LIBNAME = $@
-csv: csv.o csv_plugin
-	@#echo
+csv: LIBNAME = $(csv_LIBNAME)
+csv: $(csv_OBJS)
 
-html_plugin: html.o
-html_plugin: LIBNAME = $@
-html: html.o html_plugin
-	@#echo
+html: LIBNAME = $(html_LIBNAME)
+html: $(html_OBJS)
 
-text_plugin: text.o
-text_plugin: LIBNAME = $@
-text: text.o text_plugin
-	@#echo
+text: LIBNAME = $(text_LIBNAME)
+text: $(text_OBJS)
 
-xml_plugin: xml.o
-xml_plugin: LIBNAME = $@
-xml: xml.o xml_plugin
-	@#echo
+xml: LIBNAME = $(xml_LIBNAME)
+xml: $(xml_OBJS)
 
-%_plugin:
+$(PLUGINS):
 ifeq ($(PLATFORM_OS), Linux)
-	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $<
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $<
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-undefined suppress -fno-common \
 		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
-		$(LDFLAGS) -o $(LIBNAME).dylib $^
+		$(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dylib $^
 else ifeq ($(PLATFORM_OS), CYGWIN)
-	$(LINK) -shared $(LDFLAGS) -o $(LIBNAME).dll $^
+	$(LINK) -shared $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dll $^
 endif
 
-%.o: %.c
+$(plugins_BUILDDIR)/%.o: %.c
 	@$(CHK_DIR_EXISTS) $(dir $@) || $(MKDIR) $(dir $@)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 clean:
-	$(RM) *.o \
-		*.so \
-		*.dylib \
-		*.dll
+	$(RM_DIR) ${plugins_BUILDDIR}

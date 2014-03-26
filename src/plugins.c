@@ -74,10 +74,10 @@ int plugins_load(const char *path) {
 		return -2;
 	}
 
-	entry->plugin_loaded_fn = (plugin_loaded_fn_t)dylib_get_symbol(library, "plugin_loaded");
-	entry->plugin_initialize_fn = (plugin_initialize_fn_t)dylib_get_symbol(library, "plugin_initialize");
-	entry->plugin_shutdown_fn = (plugin_shutdown_fn_t)dylib_get_symbol(library, "plugin_shutdown");
-	entry->plugin_unloaded_fn = (plugin_unloaded_fn_t)dylib_get_symbol(library, "plugin_unloaded");
+	*(void **)(&entry->plugin_loaded_fn) = dylib_get_symbol(library, "plugin_loaded");
+	*(void **)(&entry->plugin_initialize_fn) = dylib_get_symbol(library, "plugin_initialize");
+	*(void **)(&entry->plugin_shutdown_fn) = dylib_get_symbol(library, "plugin_shutdown");
+	*(void **)(&entry->plugin_unloaded_fn) = dylib_get_symbol(library, "plugin_unloaded");
 
 	// Only plugin_initialize_fn and plugin_shutdown_fn are required.
 	if (entry->plugin_initialize_fn == NULL || entry->plugin_shutdown_fn == NULL) {

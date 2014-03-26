@@ -169,7 +169,7 @@ int plugins_load_all_from_directory(const char *path) {
 				const bool possible_plugin = str_ends_with(filename, ".so") != 0;
 #elif defined(__APPLE__)
 				const bool possible_plugin = str_ends_with(filename, ".dylib") != 0;
-#elif defined(_WIN32)
+#elif defined(__CYGWIN__)
 				const bool possible_plugin = str_ends_with(filename, ".dll") != 0;
 #else
 #error Not supported

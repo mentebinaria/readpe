@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	common.h - common defitions for the pev toolkit.
 
 	Copyright (C) 2013 - 2014 pev authors

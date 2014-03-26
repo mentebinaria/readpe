@@ -26,6 +26,10 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef int (*plugin_loaded_fn_t)(void);
 typedef int (*plugin_initialize_fn_t)(void);
 typedef void (*plugin_shutdown_fn_t)(void);
@@ -35,3 +39,7 @@ int plugin_loaded(void);
 int plugin_initialize(void);
 void plugin_shutdown(void);
 void plugin_unloaded(void);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif

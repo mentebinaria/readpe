@@ -21,6 +21,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "plugin.h"
 #include "output.h"
 
@@ -52,3 +56,7 @@ char *escape_ex(const char *str, const entity_table_t entities);
 char *escape_ex_quoted(const char *str, const entity_table_t entities);
 char *escape(const format_t *format, const char *str);
 char *escape_quoted(const format_t *format, const char *str);
+
+#ifdef __cplusplus
+}
+#endif

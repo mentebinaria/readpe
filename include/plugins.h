@@ -24,7 +24,15 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int plugins_load(const char *path);
 int plugins_load_all(void);
 int plugins_load_all_from_directory(const char *path);
 void plugins_unload_all(void);
+
+#ifdef __cplusplus
+}
+#endif

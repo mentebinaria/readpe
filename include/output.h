@@ -22,6 +22,10 @@
 #ifndef OUTPUT_H
 #define OUTPUT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -69,5 +73,9 @@ void output_open_scope(const char *scope_name);
 void output_close_scope(void);
 void output(const char *key, const char *value);
 void output_keyval(const char *key, const char *value);
+
+#ifdef __cplusplus
+} //extern "C"
+#endif
 
 #endif

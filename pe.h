@@ -20,6 +20,10 @@
 #ifndef LIBPE_H
 #define LIBPE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "macros.h"
 #include <inttypes.h>
 #include <stdbool.h>
@@ -128,5 +132,9 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

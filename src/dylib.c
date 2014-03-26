@@ -35,13 +35,13 @@ inline const char *dylib_error(dylib_t *lib) {
 
 int dylib_load(dylib_t *lib, const char *path) {
     if (lib->loaded) {
-        fprintf(stderr, "Can't load library because it's already loaded: %s", lib->path);
+        fprintf(stderr, "Can't load library because it's already loaded: %s\n", lib->path);
         return -1;
     }
     lib->handle = dlopen(path, RTLD_LAZY | RTLD_GLOBAL);
     lib->loaded = lib->handle != NULL;
     if (!lib->loaded) {
-        fprintf(stderr, "Failed to load library %s: %s", path, dylib_error(lib));
+        fprintf(stderr, "Failed to load library %s: %s\n", path, dylib_error(lib));
         return -1;
     }
     lib->path = strdup(path);
@@ -51,12 +51,12 @@ int dylib_load(dylib_t *lib, const char *path) {
 int dylib_unload(dylib_t *lib) {
     int ret;
     if (!lib->loaded || lib->handle == NULL) {
-        fprintf(stderr, "Can't unload library '%s' because it's not loaded", lib->path);
+        fprintf(stderr, "Can't unload library '%s' because it's not loaded\n", lib->path);
         return -1;
     }
     ret = dlclose(lib->handle);
     if (ret != 0) {
-        fprintf(stderr, "Failed to unload library %s: %s", lib->path, dylib_error(lib));
+        fprintf(stderr, "Failed to unload library %s: %s\n", lib->path, dylib_error(lib));
         return -1;
     }
     lib->handle = NULL;

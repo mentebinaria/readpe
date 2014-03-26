@@ -143,7 +143,7 @@ int plugins_load_all_from_directory(const char *path) {
 	long path_max = pathconf(path, _PC_PATH_MAX);
 	char *relative_path = malloc(path_max);
 	if (relative_path == NULL) {
-		fprintf(stderr, "plugins: allocation failed for relative path");
+		fprintf(stderr, "plugins: allocation failed for relative path\n");
 		closedir(dir);
 		return -2;
 	}

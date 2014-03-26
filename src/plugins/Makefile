@@ -49,7 +49,7 @@ xml: $(xml_OBJS)
 
 $(PLUGINS):
 ifeq ($(PLATFORM_OS), Linux)
-	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $<
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-undefined suppress -fno-common \
@@ -62,7 +62,7 @@ endif
 
 $(plugins_BUILDDIR)/%.o: %.c
 	@$(CHK_DIR_EXISTS) $(dir $@) || $(MKDIR) $(dir $@)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $^
 
 clean:
 	$(RM_DIR) ${plugins_BUILDDIR}

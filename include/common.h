@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 	
-	common.h - common defitions for pev toolkit
+	common.h - common defitions for the pev toolkit.
 
-	Copyright (C) 2013 pev authors
+	Copyright (C) 2013 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 #include <pe.h>
 #include "output.h"
 
+#define UNUSED(x)      (void)(sizeof((x)))
+
 #define EXIT_ERROR(msg) \
 { \
 	fprintf(stderr, "%s\n", msg); \
@@ -45,8 +47,6 @@
 "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n" \
 "This is free software: you are free to change and redistribute it.\n" \
 "There is NO WARRANTY, to the extent permitted by law."
-
-#define SPACES 32 // spaces # for text-based output
 
 void *malloc_s(size_t size);
 

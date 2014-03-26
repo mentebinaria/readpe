@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2013 pev authors
+	Copyright (C) 2013 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include "common.h"
 #include <time.h>
 #include <ctype.h>
+#include "plugins.h"
 
 #define PROGRAM "readpe"
 #define MAX_DLL_NAME 256
@@ -40,10 +41,11 @@ struct options {
 };
 
 static struct options config;
-static int ind;
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s OPTIONS FILE\n"
 		"Show PE file headers\n"
 		"\nExample: %s --header optional winzip.exe\n"
@@ -51,14 +53,14 @@ static void usage(void)
 		" -A, --all                              full output (default)\n"
 		" -H, --all-headers                      print all PE headers\n"
 		" -S, --all-sections                     print all PE sections headers\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -d, --dirs                             show data directories\n"
 		" -h, --header <dos|coff|optional>       show specific header\n"
 		" -i, --imports                          show imported functions\n"
 		" -e, --exports                          show exported functions\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void parse_headers(const char *optarg)
@@ -97,7 +99,8 @@ void parse_options(int argc, char *argv[])
 
 	config.all = true;
 
-	int c;
+	int c, ind;
+
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
@@ -139,7 +142,8 @@ void parse_options(int argc, char *argv[])
 				config.exports = true;
 				break;
 			case 'f':
-				parse_format(optarg);
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
 				break;
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
@@ -183,7 +187,7 @@ static void print_sections(pe_ctx_t *ctx)
 	};
 	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
 
-	output("Sections", NULL);
+	output_open_scope("Sections");
 
 	const uint32_t num_sections = pe_sections_count(ctx);
 	if (num_sections == 0 || num_sections > MAX_SECTIONS)
@@ -197,6 +201,7 @@ static void print_sections(pe_ctx_t *ctx)
 
 	for (uint32_t i=0; i < num_sections; i++)
 	{
+		output_open_scope("Section");
 		snprintf(s, MAX_MSG, "%s", sections[i]->Name);
 		output("Name", s);
 
@@ -229,8 +234,10 @@ static void print_sections(pe_ctx_t *ctx)
 #endif
 			}
 		}
-
+		output_close_scope();
 	}
+
+	output_close_scope();
 }
 
 static void print_directories(pe_ctx_t *ctx)
@@ -260,7 +267,7 @@ static void print_directories(pe_ctx_t *ctx)
 	};
 	//static const size_t max_directory_entry = LIBPE_SIZEOF_ARRAY(names);
 #endif
-	output("Data directories", NULL);
+	output_open_scope("Data directories");
 
 	const uint32_t num_directories = pe_directories_count(ctx);
 	if (num_directories == 0 || num_directories > MAX_DIRECTORIES)
@@ -284,6 +291,8 @@ static void print_directories(pe_ctx_t *ctx)
 #endif
 		}
 	}
+
+	output_close_scope();
 }
 
 static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
@@ -316,9 +325,9 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 	if (!header)
 		return;
 
-	output("Optional/Image header", NULL);
-
 	char s[MAX_MSG];
+
+	output_open_scope("Optional/Image header");
 
 	switch (header->type)
 	{
@@ -526,6 +535,8 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			break;
 		}
 	}
+
+	output_close_scope();
 }
 
 static void print_coff_header(IMAGE_COFF_HEADER *header)
@@ -585,7 +596,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	static const size_t max_machine_type = LIBPE_SIZEOF_ARRAY(machineTypeTable);
 #endif
 
-	output("COFF/File header", NULL);
+	output_open_scope("COFF/File header");
 
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	const char *machine = "Unknown machine type";
@@ -633,13 +644,15 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 			output(NULL, pe_image_characteristic_name(flag));
 #endif
 	}
+
+	output_close_scope();
 }
 
 static void print_dos_header(IMAGE_DOS_HEADER *header)
 {
 	char s[MAX_MSG];
 
-	output("DOS Header", NULL);
+	output_open_scope("DOS Header");
 
 	snprintf(s, MAX_MSG, "%#x (MZ)", header->e_magic);
 	output("Magic number", s);
@@ -688,6 +701,8 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 
 	snprintf(s, MAX_MSG, "%#x", header->e_lfanew);
 	output("PE header offset", s);
+
+	output_close_scope();
 }
 
 static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
@@ -771,7 +786,10 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 			}
 		}
 
-		output(NULL, is_ordinal ? hint_str : fname);
+		if (is_ordinal)
+			output("ordinal", hint_str);
+		else
+			output("function_name", fname);
 	}
 }
 
@@ -806,7 +824,8 @@ static void print_exports(pe_ctx_t *ctx)
 
 	ofs = pe_rva2ofs(ctx, rva);
 
-	output("Exported functions", NULL);
+	output_open_scope("Exported functions");
+
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		const uint64_t aux = ofs; // Store current ofs
 
@@ -830,6 +849,8 @@ static void print_exports(pe_ctx_t *ctx)
 
 		output(addr, fname);
 	}
+
+	output_close_scope();
 }
 
 static void print_imports(pe_ctx_t *ctx)
@@ -846,7 +867,7 @@ static void print_imports(pe_ctx_t *ctx)
 
 	uint64_t ofs = pe_rva2ofs(ctx, va);
 
-	output("Imported functions", NULL);
+	output_open_scope("Imported functions");
 
 	while (1) {
 		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
@@ -869,7 +890,8 @@ static void print_imports(pe_ctx_t *ctx)
 		char dll_name[MAX_DLL_NAME];
 		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
 
-		output(dll_name, NULL);
+		output_open_scope("Library");
+		output("name", dll_name);
 
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0)
@@ -879,15 +901,27 @@ static void print_imports(pe_ctx_t *ctx)
 		print_imported_functions(ctx, ofs);
 
 		ofs = aux; // Restore previous ofs
+
+		output_close_scope();
 	}
+
+	output_close_scope();
 }
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
+
+	output_init();
+	output_set_cmdline(argc, argv);
 
 	parse_options(argc, argv); // Opcoes
 
@@ -966,6 +1000,10 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

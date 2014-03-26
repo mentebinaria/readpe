@@ -3,7 +3,7 @@
 	
 	pepack.c - search packers in PE files
 
-	Copyright (C) 2012 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 */
 
 #include "common.h"
+#include "plugins.h"
 
 #define PROGRAM "pepack"
 #define MAX_SIG_SIZE 2048
@@ -30,15 +31,17 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s FILE\n"
 		"Search for packers in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
 		" -d, --database <file>                  use database file (default: ./userdb.txt)\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)
@@ -83,7 +86,9 @@ static options_t *parse_options(int argc, char *argv[])
 				options->dbfile = strdup(optarg);
 				break;
 			case 'f':
-				parse_format(optarg); break;
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
+				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
@@ -227,10 +232,18 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		exit(EXIT_FAILURE);
 	}
+
+	output_init();
+	output_set_cmdline(argc, argv);
 
 	options_t *options = parse_options(argc, argv); // opcoes
 
@@ -289,6 +302,10 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

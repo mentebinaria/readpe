@@ -3,7 +3,7 @@
 
 	ofs2rva.c - convert raw file offset to RVA
 
-	Copyright (C) 2012 - 2013 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,12 +19,9 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "common.h"
 
 #define PROGRAM "ofs2rva"
-
-static int ind;
 
 static void usage(void)
 {
@@ -48,7 +45,8 @@ static void parse_options(int argc, char *argv[])
 		{  NULL,		0,				NULL,  0  }
 	};
 
-	int c;
+	int c, ind;
+
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)

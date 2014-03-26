@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
-	
-	output.c - functions to output results in different formats
 
-	Copyright (C) 2012 pev authors
+	output.c - Symbols and APIs to be used to output data in multiple formats.
+
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,83 +19,258 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <ctype.h>
 #include "output.h"
-#include "common.h"
+#include "output_plugin.h"
+#include "stack.h"
+#include "compat/strlcat.h"
+#include "compat/sys/queue.h"
+#include <stdlib.h>
+#include <stdbool.h>
 
-format_e format;
+//
+// Global variables
+//
 
-void parse_format(const char *optarg)
-{
-	if (! strcmp(optarg, "text"))
-		format = FORMAT_TEXT;
-	else if (! strcmp(optarg, "xml"))
-		format = FORMAT_XML;
-	else if (! strcmp(optarg, "csv"))
-		format = FORMAT_CSV;
-	else if (! strcmp(optarg, "html"))
-		format = FORMAT_HTML;
-	else
-		EXIT_ERROR("invalid format option");
-}
+#define FORMAT_ID_FOR_TEXT 3
 
-void to_text(const char *field, const char *value)
-{
-	size_t field_size = field ? strlen(field) : 0;
-	
-	if (field && value)
-		printf("%s:%*c%s\n", field, (int) (SPACES-field_size), ' ', value);
-	else if (field)
-		printf("\n%s\n", field);
-	else if (value)
-		printf("%*c%s\n", (int) (SPACES-field_size+1), ' ', value);
-}
+static const format_t *g_format = NULL;
+static STACK_TYPE *g_scope_stack = NULL;
+static int g_argc = 0;
+static char **g_argv = NULL;
+static char *g_cmdline = NULL;
 
-void to_csv(const char *field, const char *value)
-{
-	if (field && value)
-		printf("%s,%s\n", field, value);
-	else if (field)
-		printf("\n%s\n", field);
-	else if (value)
-		printf(",%s\n", value);
-}
+typedef struct _format_entry {
+	const format_t *format;
+	SLIST_ENTRY(_format_entry) entries;
+} format_entry_t;
 
-void to_xml(const char *field, const char *value)
-{
-	// TODO output a valid xml
-	if (value && field)
-		printf("<%s>%s</%s>\n", field, value, field);
-	else if (field)
-		printf("<%s>\n", field);
-}
+static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats = SLIST_HEAD_INITIALIZER(g_registered_formats);
 
-void to_html(const char *field, const char *value)
-{
-	// TODO output a valid html
-	if (field && value)
-		printf("<span><b>%s:</b> %s</span><br />\n", field, value);
-	else if (field)
-		printf("\n<p>%s</p>\n", field);
-	else if (value)
-		printf("<span>%s</span><br />\n", value);
-}
+//
+// Definition of internal functions
+//
 
-void output(const char *field, const char *value)
-{
-	switch (format) {
-		case FORMAT_CSV:
-			to_csv(field, value);
-			break;
-		case FORMAT_XML:
-			to_xml(field, value);
-			break;
-		case FORMAT_HTML:
-			to_html(field, value);
-			break;
-		case FORMAT_TEXT:
-		default:
-			to_text(field, value);
-			break;
+static format_entry_t *output_lookup_format_entry_by_id(format_id_t id) {
+	format_entry_t *entry;
+	SLIST_FOREACH(entry, &g_registered_formats, entries) {
+		if (entry->format->id == id)
+			return entry;
 	}
+
+	return NULL;
+}
+
+static const format_t *output_lookup_format_by_id(format_id_t id) {
+	const format_entry_t *entry = output_lookup_format_entry_by_id(id);
+	if (entry == NULL)
+		return NULL;
+
+	return entry->format;
+}
+
+static char *str_array_join(char *strings[], size_t count, char delimiter) {
+	if (strings == NULL || strings[0] == NULL)
+		return strdup("");
+
+	// Count how much memory the resulting string is going to need,
+	// considering delimiters for each string. The last delimiter will
+	// be a NULL terminator;
+	size_t result_length = 0;
+	for (size_t i = 0; i < count; i++) {
+		result_length += strlen(strings[i]) + 1;
+	}
+
+	// Allocate the resulting string.
+	char *result = malloc(result_length);
+	if (result == NULL)
+		return NULL; // Return NULL because it failed miserably!
+
+	// Null terminate it.
+	result[--result_length] = '\0';
+
+	// Join all strings.
+	char ** current_string = strings;
+	char * current_char = current_string[0];
+	for (size_t i = 0; i < result_length; i++) {
+		if (*current_char != '\0') {
+			result[i] = *current_char++;
+		} else {
+			// Reached the end of a string. Add a delimiter and move to the next one.
+			result[i] = delimiter;
+			current_string++;
+			current_char = current_string[0];
+		}
+	}
+
+	return result;
+}
+
+static void output_unregister_all_formats(void) {
+	while (!SLIST_EMPTY(&g_registered_formats)) {
+		format_entry_t *entry = SLIST_FIRST(&g_registered_formats);
+		SLIST_REMOVE_HEAD(&g_registered_formats, entries);
+		free(entry);
+	}
+}
+
+//
+// API
+//
+
+int output_plugin_register_format(const format_t *format) {
+	format_entry_t *entry = malloc(sizeof *entry);
+	if (entry == NULL) {
+		//fprintf(stderr, "output: allocation failed for format entry\n");
+		return -1;
+	}
+
+	memset(entry, 0, sizeof *entry);
+
+	entry->format = format;
+	SLIST_INSERT_HEAD(&g_registered_formats, entry, entries);
+
+	return 0;
+}
+
+void output_plugin_unregister_format(const format_t *format) {
+	format_entry_t *entry = output_lookup_format_entry_by_id(format->id);
+	if (entry == NULL)
+		return;
+
+	SLIST_REMOVE(&g_registered_formats, entry, _format_entry, entries);
+	free(entry);
+}
+
+void output(const char *key, const char *value) {
+	output_keyval(key, value);
+}
+
+void output_init(void) {
+	g_format = output_lookup_format_by_id(FORMAT_ID_FOR_TEXT);
+	g_scope_stack = STACK_ALLOC(15);
+	if (g_scope_stack == NULL)
+		abort();
+}
+
+void output_term(void) {
+	if (g_cmdline != NULL)
+		free(g_cmdline);
+
+	// TODO(jweyrich): Should we loop to pop + close + output every scope?
+	if (g_scope_stack != NULL)
+		free(g_scope_stack);
+
+	output_unregister_all_formats();
+}
+
+void output_set_cmdline(int argc, char *argv[]) {
+	g_argc = argc;
+	g_argv = argv;
+	g_cmdline = str_array_join(g_argv, g_argc, ' ');
+	if (g_cmdline == NULL)
+		abort();
+	//printf("cmdline = %s\n", g_cmdline);
+}
+
+const format_t *output_format(void) {
+	return g_format;
+}
+
+const format_t *output_parse_format(const char *format_name) {
+	const format_t *format = NULL;
+
+	format_entry_t *entry;
+	SLIST_FOREACH(entry, &g_registered_formats, entries) {
+		// TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and POSIX.1-2001, but not to C89 nor C99.
+		if (strcmp(format_name, entry->format->name) == 0) {
+			format = entry->format;
+			break;
+		}
+	}
+
+	return format;
+}
+
+void output_set_format(const format_t *format) {
+	g_format = format;
+}
+
+int output_set_format_by_name(const char *format_name) {
+	const format_t *format = output_parse_format(format_name);
+	if (format == NULL)
+		return -1;
+
+	output_set_format(format);
+
+	return 0;
+}
+
+size_t output_available_formats(char *buffer, size_t size, char separator) {
+	size_t total_available = 0;
+	size_t consumed = 0;
+	bool truncated = false;
+
+	memset(buffer, 0, size);
+
+	format_entry_t *entry;
+	SLIST_FOREACH(entry, &g_registered_formats, entries) {
+		if (!truncated) {
+			const char *format_name = entry->format->name;
+
+			consumed = bsd_strlcat(buffer, format_name, size);
+			if (consumed > size) {
+				// TODO(jweyrich): Handle truncation.
+				total_available++;
+				truncated = true;
+				continue;
+			}
+
+			if (consumed < size - 1) {
+				buffer[consumed++] = separator;
+			}
+		}
+
+		total_available++;
+	}
+
+	buffer[consumed - 1] = '\0';
+
+	return total_available;
+}
+
+void output_open_scope(const char *scope_name) {
+	const char *key = scope_name;
+	const char *value = NULL;
+	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
+	const uint16_t level = STACK_COUNT(g_scope_stack);
+
+	if (g_format != NULL)
+		g_format->output_fn(g_format, type, level, key, value);
+
+	int ret = STACK_PUSH(g_scope_stack, (void *)scope_name);
+	if (ret < 0)
+		abort();
+}
+
+void output_close_scope(void) {
+	const char *scope_name = NULL;
+	int ret = STACK_POP(g_scope_stack, (void *)&scope_name);
+	if (ret < 0)
+		abort();
+
+	const char *key = scope_name;
+	const char *value = NULL;
+	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
+	const uint16_t level = STACK_COUNT(g_scope_stack);
+
+	if (g_format != NULL)
+		g_format->output_fn(g_format, type, level, key, value);
+}
+
+void output_keyval(const char *key, const char *value) {
+	const output_type_e type = OUTPUT_TYPE_ATTRIBUTE;
+	const uint16_t level = STACK_COUNT(g_scope_stack);
+
+	if (g_format != NULL)
+		g_format->output_fn(g_format, type, level, key, value);
 }

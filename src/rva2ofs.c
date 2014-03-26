@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	rva2ofs.c - convert RVA to raw file offset
+	rva2ofs.c - convert RVA to raw file offset.
 
-	Copyright (C) 2012 - 2013 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 #include "common.h"
 
 #define PROGRAM "rva2ofs"
-
-static int ind;
 
 static void usage(void)
 {
@@ -47,7 +45,8 @@ static void parse_options(int argc, char *argv[])
 		{  NULL,		0,				NULL,  0  }
 	};
 
-	int c;
+	int c, ind;
+
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
 	{
 		if (c < 0)
@@ -103,6 +102,6 @@ int main(int argc, char *argv[])
 
 	// libera a memoria
 	pe_unload(&ctx);
-	
+
 	return EXIT_SUCCESS;
 }

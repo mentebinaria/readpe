@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	pescan.c - search for suspicious things in PE files
+	pescan.c - search for suspicious things in PE files.
 
-	Copyright (C) 2013 pev authors
+	Copyright (C) 2013 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include "plugins.h"
 
 #define PROGRAM "pescan"
 
@@ -32,14 +33,16 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("\n%s %s\n%s\n\nUsage: %s OPTIONS FILE\n"
 		"Search for suspicious things in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>       change output format (default: text)\n"
+		" -f, --format <%s>       change output format (default: text)\n"
 		" -v, --verbose                          show more info about items found\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM);
+		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)
@@ -78,7 +81,8 @@ static options_t *parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':
-				parse_format(optarg);
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
 				break;
 			case 'v':
 				options->verbose = true;
@@ -298,9 +302,12 @@ static void print_strange_sections(pe_ctx_t *ctx)
 
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
 
+	output_open_scope("sections");
+
 	bool aux = false;
 	for (uint16_t i=0; i < num_sections; i++, aux=false)
 	{
+		output_open_scope("section");
 		memset(&value, 0, sizeof(value));
 
 		if (!strisprint((const char *)sections[i]->Name))
@@ -321,7 +328,9 @@ static void print_strange_sections(pe_ctx_t *ctx)
 			strncpy(value, "normal", 7);
 
 		output((const char *)sections[i]->Name, value);
+		output_close_scope();
 	}
+	output_close_scope();
 }
 
 static bool normal_imagebase(pe_ctx_t *ctx)
@@ -453,10 +462,18 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
+
+	output_init();
+	output_set_cmdline(argc, argv);
 
 	options_t *options = parse_options(argc, argv); // opcoes
 
@@ -565,15 +582,15 @@ int main(int argc, char *argv[])
 
 	output("TLS directory", value);
 
-	// section analysis
-	print_strange_sections(&ctx);
-
 	// invalid timestamp
 	IMAGE_COFF_HEADER *coff = pe_coff(&ctx);
 	if (coff == NULL)
 		EXIT_ERROR("unable to read coff header");
 
 	print_timestamp(&ctx, options);
+
+	// section analysis
+	print_strange_sections(&ctx);
 
 	// libera a memoria
 	free_options(options);
@@ -584,6 +601,10 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

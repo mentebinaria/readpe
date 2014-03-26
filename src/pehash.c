@@ -3,7 +3,7 @@
 
 	pehash.c - calculate hashes of PE pieces
 
-	Copyright (C) 2012 - 2013 pev authors
+	Copyright (C) 2012 - 2014 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,10 +22,11 @@
 #include "common.h"
 #include <openssl/evp.h>
 #include "../lib/libfuzzy/fuzzy.h"
+#include "plugins.h"
 
 #define PROGRAM "pehash"
 
-#define HAS_ALGO \
+#define PRINT_HASH_OR_HASHES \
 		if (options->algorithms.alg_name) { \
 			calc_hash(options->algorithms.alg_name, data, data_size, hash_value); \
 			output(options->algorithms.alg_name, hash_value); \
@@ -54,11 +55,13 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s OPTIONS FILE\n"
 		"Calculate hashes of PE pieces\n"
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <text|csv|xml|html>    change output format (default: text)\n"
+		" -f, --format <%s>    change output format (default: text)\n"
 		" -a, --algorithm <algorithm>         generate hash using one of the following algorithms:\n"
 		"                                       md4, md5, ripemd160, sha, sha1, sha224, sha256\n"
 		"                                       sha384, sha512, whirlpool or ssdeep\n\n"
@@ -67,7 +70,7 @@ static void usage(void)
 		" --section-index <section_index>     hash only the section at the specified index (1..n)\n"
 		" -v, --version                       show version and exit\n"
 		" --help                              show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void parse_hash_algorithm(options_t *options, const char *optarg)
@@ -146,7 +149,8 @@ static options_t *parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':
-				parse_format(optarg);
+				if (output_set_format_by_name(optarg) < 0)
+					EXIT_ERROR("invalid format option");
 				break;
 			case 'a':
 				options->algorithms.all = false;
@@ -222,15 +226,22 @@ static void print_basic_hash(const unsigned char *data, size_t size)
 		calc_hash(basic_hashes[i], data, size, hash_value);
 		output(basic_hashes[i], hash_value);
 	}
-	putchar('\n');
 }
 
 int main(int argc, char *argv[])
 {
+	int ret = plugins_load_all();
+	if (ret < 0) {
+		exit(EXIT_FAILURE);
+	}
+
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
+
+	output_init();
+	output_set_cmdline(argc, argv);
 
 	OpenSSL_add_all_digests();
 
@@ -265,8 +276,10 @@ int main(int argc, char *argv[])
 	data_size = pe_filesize(&ctx);
 
 	if (options->all) {
-		output("file", ctx.path);
+		output_open_scope("file");
+		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
+		output_close_scope();
 	}
 
 	if (options->all || options->headers.all || options->headers.dos) {
@@ -274,8 +287,10 @@ int main(int argc, char *argv[])
 		data = (const unsigned char *)dos_hdr;
 		data_size = sizeof(IMAGE_DOS_HEADER);
 
-		output("header", "IMAGE_DOS_HEADER");
-		HAS_ALGO;
+		output_open_scope("header");
+		output("header_name", "IMAGE_DOS_HEADER");
+		PRINT_HASH_OR_HASHES;
+		output_close_scope();
 	}
 
 	if (options->all || options->headers.all || options->headers.coff) {
@@ -283,8 +298,10 @@ int main(int argc, char *argv[])
 		data = (const unsigned char *)coff_hdr;
 		data_size = sizeof(IMAGE_COFF_HEADER);
 
-		output("header", "IMAGE_COFF_HEADER");
-		HAS_ALGO;
+		output_open_scope("header");
+		output("header_name", "IMAGE_COFF_HEADER");
+		PRINT_HASH_OR_HASHES;
+		output_close_scope();
 	}
 	
 	if (options->all || options->headers.all || options->headers.optional) {
@@ -312,8 +329,10 @@ int main(int argc, char *argv[])
             break;
 		}
 
-		output("header", "IMAGE_OPTIONAL_HEADER");
-		HAS_ALGO;
+		output_open_scope("header");
+		output("header_name", "IMAGE_OPTIONAL_HEADER");
+		PRINT_HASH_OR_HASHES;
+		output_close_scope();
 	}
 
 	if (options->all) {
@@ -321,10 +340,12 @@ int main(int argc, char *argv[])
 			data_size = sections[i]->SizeOfRawData; 
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
-			if (data_size)
-				output("section", (char *)sections[i]->Name);
-
-			HAS_ALGO;
+			output_open_scope("section");
+			output("section_name", (char *)sections[i]->Name);
+			if (data_size) {
+				PRINT_HASH_OR_HASHES;
+			}
+			output_close_scope();
 		}
 	} else if (options->sections.name != NULL) {
 		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
@@ -381,6 +402,10 @@ int main(int argc, char *argv[])
 	}
 
 	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
+
+	output_term();
+
+	plugins_unload_all();
 
 	return EXIT_SUCCESS;
 }

@@ -182,6 +182,7 @@ int plugins_load_all_from_directory(const char *path) {
 
 				int ret = plugins_load(relative_path);
 				if (ret < 0) {
+					free(relative_path);
 					closedir(dir);
 					return ret;
 				}
@@ -193,6 +194,7 @@ int plugins_load_all_from_directory(const char *path) {
 		}
 	}
 
+	free(relative_path);
 	closedir(dir);
 
 	return load_count;

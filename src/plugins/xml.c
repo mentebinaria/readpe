@@ -58,7 +58,7 @@ static const entity_t g_entities[255] = {
 	"<document cmdline=\"%s\">\n"
 
 #define TEMPLATE_DOCUMENT_CLOSE \
-	"</document>"
+	"</document>\n"
 
 static void to_format(
 	const format_t *format,

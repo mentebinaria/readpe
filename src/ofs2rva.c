@@ -69,6 +69,8 @@ static void parse_options(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+	//PEV_INITIALIZE();
+
 	if (argc != 3) {
 		usage();
 		return EXIT_FAILURE;
@@ -102,6 +104,8 @@ int main(int argc, char *argv[])
 
 	// libera a memoria
 	pe_unload(&ctx);
+
+	//PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

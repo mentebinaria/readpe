@@ -89,13 +89,17 @@ pescan: LDFLAGS += -lm
 # Generic rule matching binary names and sources
 
 %: %.c
+	@# NOTE: The order of translation units here is EXTREMELY IMPORTANT.
+	@#       If you're compiling with gcc, you don't have to worry, but other
+	@#		compilers like clang (default on Mac OS X) do not respect the
+	@#		priorities defined in `__attribute__((constructor (priority)))`.
 	$(CC) $(CFLAGS) $(CPPFLAGS) \
 		compat/strlcat.c \
 		dylib.c \
 		malloc_s.c \
+		plugins.c \
 		output_plugin.c \
 		output.c \
-		plugins.c \
 		$^ -o $@ $(LDFLAGS)
 
 install: installdirs

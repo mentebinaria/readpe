@@ -684,12 +684,13 @@ _error:
 
 int main(int argc, char **argv)
 {
+	PEV_INITIALIZE();
+
 	if (argc < 3) {
 		usage();
 		exit(EXIT_FAILURE);
 	}
 
-	output_init();
 	output_set_cmdline(argc, argv);
 
 	options_t *options = parse_options(argc, argv); // opcoes
@@ -747,7 +748,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	output_term();
+	PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

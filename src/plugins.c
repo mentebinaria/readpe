@@ -213,3 +213,23 @@ void plugins_unload_all(void) {
 		free(entry);
 	}
 }
+
+#include "compat/gnuc_attr_ctor_prios.h"
+
+#if defined(__GNUC__)
+__attribute__((constructor (ATTR_CTOR_PRIO_PLUGINS)))
+#endif
+static void initializer(void) {
+	//printf("plugins\n");
+	int ret = plugins_load_all();
+	if (ret < 0)
+		exit(EXIT_FAILURE);
+}
+
+#if defined(__GNUC__)
+__attribute__((destructor (ATTR_CTOR_PRIO_PLUGINS)))
+#endif
+static void finalizer(void) {
+	//printf("~plugins\n");
+	plugins_unload_all();
+}

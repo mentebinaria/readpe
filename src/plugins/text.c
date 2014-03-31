@@ -64,17 +64,17 @@ static void to_format(
 			if (key && value) {
 				if (level > 0)
 					printf(INDENT(level, "%s:%*c%s\n"), escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
-				else 
+				else
 					printf("%s:%*c%s\n", escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
 			} else if (key) {
 				if (level > 0)
 					printf(INDENT(level, "\n%s\n"), escaped_key);
-				else 
+				else
 					printf("\n%s\n", escaped_key);
 			} else if (value) {
 				if (level > 0)
 					printf(INDENT(level, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', escaped_value);
-				else 
+				else
 					printf("%*c%s\n", (int)(SPACES - key_size + 1), ' ', escaped_value);
 			}
 			break;

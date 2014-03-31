@@ -108,7 +108,7 @@ static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 		"\xb8\x01\x4c"       // mov ax, 0x4c01
 		"\xcd\x21"           // int 0x21
 		"This program cannot be run in DOS mode.\r\r\n$";
-	
+
 	const size_t dos_stub_size = sizeof(dos_stub) - 1; // -1 to ignore ending null
 
 	const IMAGE_DOS_HEADER *dos = pe_dos(ctx);

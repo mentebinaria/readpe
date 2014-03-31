@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	pedis.c - PE disassembler
 
 	Copyright (C) 2012 - 2014 pev authors
@@ -169,10 +169,10 @@ static options_t *parse_options(int argc, char *argv[])
 	return options;
 }
 
-static char *insert_spaces(const char *s) 
+static char *insert_spaces(const char *s)
 {
 	size_t size;
-	char *new; 
+	char *new;
 
 	size = strlen(s);
 
@@ -185,18 +185,18 @@ static char *insert_spaces(const char *s)
 	memset(new, 0, size+1);
 
 	for (unsigned int i=0, j=0, pos=0; i < size; i++)
-	{   
+	{
 		if (pos==2)
-		{   
+		{
 			new[i] = ' ';
 			pos=0;
-		}   
+		}
 		else
-		{   
+		{
 			new[i] = s[j++];
 			pos++;
-		}   
-	}   
+		}
+	}
 	return new;
 }
 
@@ -210,7 +210,7 @@ static bool is_ret_instruction(unsigned char opcode)
 		case 0xca: // retf
 		//case 0xcb: // retf
 			return true;
-		
+
 		default:
 			return false;
 	}
@@ -238,7 +238,7 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 
 		mnic = ud_obj->mnemonic;
 		op_t = ud_obj->operand ? ud_obj->operand[0].type : 0;
-		
+
 		snprintf(ofs, MAX_MSG, "%"PRIx64, (options->offset_is_rva ? ctx->pe.imagebase : 0) + offset + ud_insn_off(ud_obj));
 		bytes = insert_spaces(ud_insn_hex(ud_obj));
 
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
 
 	ud_t ud_obj; // libudis86 object
 	ud_init(&ud_obj);
-	
+
 	uint8_t mode_bits = 0;
 	switch (optional->type) {
 		default:
@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
 		usage();
 		return EXIT_FAILURE;
 	}
-	
+
 	if (!offset) {
 		fprintf(stderr, "unable to reach file offset (%#"PRIx64")\n", offset);
 		return EXIT_FAILURE;

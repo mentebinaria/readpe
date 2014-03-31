@@ -83,7 +83,7 @@ static void parse_hash_algorithm(options_t *options, const char *optarg)
 	const EVP_MD *md = EVP_get_digestbyname(optarg);
 	if (md == NULL)
 		EXIT_ERROR("The requested algorithm is not supported");
-	
+
 	options->algorithms.alg_name = strdup(optarg);
 }
 
@@ -118,7 +118,7 @@ static options_t *parse_options(int argc, char *argv[])
 	options_t *options = malloc_s(sizeof(options_t));
 	memset(options, 0, sizeof(options_t));
 
-	// parameters for getopt_long() function 
+	// parameters for getopt_long() function
 	static const char short_options[] = "f:a:h:s:v";
 
 	static const struct option long_options[] = {
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
 		PRINT_HASH_OR_HASHES;
 		output_close_scope();
 	}
-	
+
 	if (options->all || options->headers.all || options->headers.optional) {
       const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
       switch (opt_hdr->type) {
@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
             if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
                // TODO: Should we report something?
                break;
-            }   
+            }
             data = (const unsigned char *)opt_hdr->_32;
             data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
             break;
@@ -325,7 +325,7 @@ int main(int argc, char *argv[])
             if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
                // TODO: Should we report something?
                break;
-            }   
+            }
             data = (const unsigned char *)opt_hdr->_64;
             data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
             break;
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
 
 	if (options->all) {
 		for (unsigned int i=0; i<c; i++) {
-			data_size = sections[i]->SizeOfRawData; 
+			data_size = sections[i]->SizeOfRawData;
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
 			output_open_scope("section");

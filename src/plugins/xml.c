@@ -105,7 +105,7 @@ static void to_format(
 			if (key && value) {
 				if (level > 0)
 					printf(INDENT(level, "<attribute name=\"%s\">%s</attribute>\n"), escaped_key, escaped_value);
-				else 
+				else
 					printf("<attribute name=\"%s\">%s</attribute>\n", escaped_key, escaped_value);
 			} else if (key) {
 				if (level > 0)

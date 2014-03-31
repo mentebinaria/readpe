@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	pestr.c - search for [encrypted] strings in PE files.
 
 	Copyright (C) 2012 - 2014 pev authors
@@ -157,7 +157,7 @@ static bool ishostname(const char *s, const encoding_t encoding)
 	const char *domains[] = {
 ".asia", ".jobs", ".mobi", ".travel", ".xxx",
 ".aero", ".arpa", ".biz", ".com", ".coop", ".edu", ".gov", ".info", ".int", ".jus", ".mil",
-".museum", ".name", ".net", ".org", ".pro", ".ac", ".ad", ".ae", ".af", ".ag", 
+".museum", ".name", ".net", ".org", ".pro", ".ac", ".ad", ".ae", ".af", ".ag",
 ".ai", ".al", ".am", ".an", ".ao", ".aq", ".ar", ".as", ".at", ".au", ".aw", ".az", ".ba",
 ".bb", ".bd", ".be", ".bf", ".bg", ".bh", ".bi", ".bj", ".bm", ".bn", ".bo", ".br", ".bs",
 ".bt", ".bv", ".bw", ".by", ".bz", ".ca", ".cc", ".cd", ".cf", ".cg", ".ch", ".ci", ".ck",
@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
 
 		pe_raw_offset++;
 	}
-	
+
 	// libera a memoria
 	free_options(options);
 

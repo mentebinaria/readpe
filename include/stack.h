@@ -119,7 +119,7 @@ int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity) {
 
 	const size_t element_size = sizeof(STACK_ELEMENT_TYPE);
 	const size_t new_size = capacity * element_size;
-	
+
 	STACK_ELEMENT_TYPE *temp = realloc(stack->elements, new_size);
 	if (temp == NULL) {
 		fprintf(stderr, "stack: failed to allocate requested capacity\n");
@@ -134,7 +134,7 @@ int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity) {
 
 int STACK_API(stack_push)(STACK_TYPE *stack, STACK_ELEMENT_TYPE element) {
 	assert(stack != NULL);
-	
+
 	// Stack is full?
 	if (stack->used >= stack->capacity) {
 		// TODO(jweyrich): We could call `stack_grow` instead of failing miserably. Make this behavior adjustable?

@@ -942,6 +942,8 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
+	output_open_document();
+
 	// dos header
 	if (config.dos || config.all_headers || config.all) {
 		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
@@ -993,6 +995,8 @@ int main(int argc, char *argv[])
 			print_sections(&ctx);
 		else { EXIT_ERROR("unable to read sections"); }
 	}
+
+	output_close_document();
 
 	// free
 	err = pe_unload(&ctx);

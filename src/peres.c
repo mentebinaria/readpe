@@ -712,6 +712,8 @@ int main(int argc, char **argv)
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
+	output_open_document();
+
 	NODE_PERES *node = discoveryNodesPeres(&ctx);
 	if (node == NULL) {
 		fprintf(stderr, "this file has no resources\n");
@@ -730,6 +732,8 @@ int main(int argc, char **argv)
 		if (options->statistics)
 			showStatistics(node);
 	}
+
+	output_close_document();
 
 	freeNodes(node);
 

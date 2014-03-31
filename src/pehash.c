@@ -275,6 +275,8 @@ int main(int argc, char *argv[])
 	data = ctx.map_addr;
 	data_size = pe_filesize(&ctx);
 
+	output_open_document();
+
 	if (options->all) {
 		output_open_scope("file");
 		output("filepath", ctx.path);
@@ -392,6 +394,8 @@ int main(int argc, char *argv[])
 			print_basic_hash(data, data_size);
 		}
 	}
+
+	output_close_document();
 
 	// free
 	free_options(options);

@@ -137,6 +137,7 @@ int STACK_API(stack_push)(STACK_TYPE *stack, STACK_ELEMENT_TYPE element) {
 	
 	// Stack is full?
 	if (stack->used >= stack->capacity) {
+		// TODO(jweyrich): We could call `stack_grow` instead of failing miserably. Make this behavior adjustable?
 		fprintf(stderr, "stack: stack is full - failed to push\n");
 		return -1;
 	}

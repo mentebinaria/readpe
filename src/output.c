@@ -33,6 +33,7 @@
 
 #define FORMAT_ID_FOR_TEXT 3
 
+static bool g_is_document_open = false;
 static const format_t *g_format = NULL;
 static STACK_TYPE *g_scope_stack = NULL;
 static int g_argc = 0;
@@ -163,12 +164,18 @@ void output_term(void) {
 	output_unregister_all_formats();
 }
 
+const char *output_cmdline(void) {
+	return g_cmdline;
+}
+
 void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
 	g_cmdline = str_array_join(g_argv, g_argc, ' ');
-	if (g_cmdline == NULL)
+	if (g_cmdline == NULL) {
+		fprintf(stderr, "output: allocation failed for str_array_join\n");
 		abort();
+	}
 	//printf("cmdline = %s\n", g_cmdline);
 }
 
@@ -238,14 +245,53 @@ size_t output_available_formats(char *buffer, size_t size, char separator) {
 	return total_available;
 }
 
-void output_open_scope(const char *scope_name) {
-	const char *key = scope_name;
+void output_open_document(void) {
+	output_open_document_with_name(NULL);
+}
+
+void output_open_document_with_name(const char *document_name) {
+	assert(g_format != NULL);
+	// Cannot open a new document while there's one already open.
+	assert(!g_is_document_open);
+
+	const char *key = document_name;
 	const char *value = NULL;
-	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
-	const uint16_t level = STACK_COUNT(g_scope_stack);
+	const output_type_e type = OUTPUT_TYPE_DOCUMENT_OPEN;
+	const uint16_t level = 0;
 
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, level, key, value);
+
+	g_is_document_open = true;
+}
+
+void output_close_document(void) {
+	assert(g_format != NULL);
+	// Closing a document without first opening it is an error.
+	assert(g_is_document_open);
+
+	const char *key = NULL;
+	const char *value = NULL;
+	const output_type_e type = OUTPUT_TYPE_DOCUMENT_CLOSE;
+	const uint16_t level = 0;
+
+	if (g_format != NULL)
+		g_format->output_fn(g_format, type, level, key, value);
+
+	g_is_document_open = false;
+}
+
+void output_open_scope(const char *scope_name) {
+	assert(g_format != NULL);
+
+	const char *key = scope_name;
+	const char *value = NULL;
+	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
+	const uint16_t doc_level = g_is_document_open ? 1 : 0;
+	const uint16_t scope_level = STACK_COUNT(g_scope_stack);
+
+	if (g_format != NULL)
+		g_format->output_fn(g_format, type, doc_level + scope_level, key, value);
 
 	int ret = STACK_PUSH(g_scope_stack, (void *)scope_name);
 	if (ret < 0)
@@ -253,24 +299,32 @@ void output_open_scope(const char *scope_name) {
 }
 
 void output_close_scope(void) {
+	assert(g_format != NULL);
+
 	const char *scope_name = NULL;
 	int ret = STACK_POP(g_scope_stack, (void *)&scope_name);
-	if (ret < 0)
+	if (ret < 0) {
+		fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
 		abort();
+	}
 
 	const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
-	const uint16_t level = STACK_COUNT(g_scope_stack);
+	const uint16_t doc_level = g_is_document_open ? 1 : 0;
+	const uint16_t scope_level = STACK_COUNT(g_scope_stack);
 
 	if (g_format != NULL)
-		g_format->output_fn(g_format, type, level, key, value);
+		g_format->output_fn(g_format, type, doc_level + scope_level, key, value);
 }
 
 void output_keyval(const char *key, const char *value) {
+	assert(g_format != NULL);
+
 	const output_type_e type = OUTPUT_TYPE_ATTRIBUTE;
-	const uint16_t level = STACK_COUNT(g_scope_stack);
+	const uint16_t doc_level = g_is_document_open ? 1 : 0;
+	const uint16_t scope_level = STACK_COUNT(g_scope_stack);
 
 	if (g_format != NULL)
-		g_format->output_fn(g_format, type, level, key, value);
+		g_format->output_fn(g_format, type, doc_level + scope_level, key, value);
 }

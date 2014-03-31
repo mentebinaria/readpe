@@ -26,10 +26,12 @@
 
 #define SPACES 32 // spaces # for text-based output
 
+int g_num_opened_documents = 0;
+
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	const uint16_t level,
+	uint16_t level,
 	const char *key,
 	const char *value)
 {
@@ -37,8 +39,16 @@ static void to_format(
 
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
-	
+
+	level -= g_num_opened_documents;
+
 	switch (type) {
+		case OUTPUT_TYPE_DOCUMENT_OPEN:
+			g_num_opened_documents++;
+			break;
+		case OUTPUT_TYPE_DOCUMENT_CLOSE:
+			g_num_opened_documents--;
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			if (level > 0) {
 				putchar('\n');

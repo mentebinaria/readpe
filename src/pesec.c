@@ -435,6 +435,8 @@ int main(int argc, char *argv[])
 			break;
 	}
 
+	output_open_document();
+
 	char field[MAX_MSG];
 
 	// aslr
@@ -455,6 +457,8 @@ int main(int argc, char *argv[])
 
 	// certificados
 	parse_certificates(options, &ctx);
+
+	output_close_document();
 
 	// libera a memoria
 	free_options(options);

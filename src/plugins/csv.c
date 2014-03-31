@@ -87,7 +87,7 @@ static char *escape_csv(const format_t *format, const char *str) {
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	const uint16_t level,
+	uint16_t level,
 	const char *key,
 	const char *value)
 {
@@ -97,6 +97,10 @@ static void to_format(
 	char * const escaped_value = format->escape_fn(format, value);
 
 	switch (type) {
+		case OUTPUT_TYPE_DOCUMENT_OPEN:
+			break;
+		case OUTPUT_TYPE_DOCUMENT_CLOSE:
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			printf("\n%s\n", escaped_key);
 			break;

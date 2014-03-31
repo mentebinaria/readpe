@@ -361,11 +361,15 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	output_open_document();
+
 	ud_set_syntax(&ud_obj, options->syntax ? UD_SYN_ATT : UD_SYN_INTEL);
 	ud_set_input_buffer(&ud_obj, ctx.map_addr, pe_filesize(&ctx));
 	//ud_set_input_file(&ud_obj, ctx.stream);
 	ud_input_skip(&ud_obj, offset);
 	disassemble_offset(&ctx, options, &ud_obj, offset);
+
+	output_close_document();
 
 	// libera a memoria
 	free_options(options);

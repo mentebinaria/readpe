@@ -54,10 +54,16 @@ static const entity_t g_entities[255] = {
 	NULL,	NULL,	NULL,	NULL,	NULL,
 };
 
+#define TEMPLATE_DOCUMENT_OPEN \
+	"<document cmdline=\"%s\">\n"
+
+#define TEMPLATE_DOCUMENT_CLOSE \
+	"</document>"
+
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	const uint16_t level,
+	uint16_t level,
 	const char *key,
 	const char *value)
 {
@@ -77,6 +83,12 @@ static void to_format(
 	//     Names cannot contain spaces
 	//
 	switch (type) {
+		case OUTPUT_TYPE_DOCUMENT_OPEN:
+			printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
+			break;
+		case OUTPUT_TYPE_DOCUMENT_CLOSE:
+			printf(TEMPLATE_DOCUMENT_CLOSE);
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			if (level > 0)
 				printf(INDENT(level, "<scope name=\"%s\">\n"), escaped_key);

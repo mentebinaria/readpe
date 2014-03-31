@@ -292,7 +292,11 @@ int main(int argc, char *argv[])
 	else
 		snprintf(value, MAX_MSG, "no packer found");
 
+	output_open_document();
+
 	output("packer", value);
+
+	output_close_document();
 
 	if (dbfile != NULL)
 		fclose(dbfile);

@@ -32,9 +32,11 @@ extern "C" {
 typedef int format_id_t;
 
 typedef enum {
-	OUTPUT_TYPE_SCOPE_OPEN = 1,
-	OUTPUT_TYPE_SCOPE_CLOSE = 2,
-	OUTPUT_TYPE_ATTRIBUTE = 3
+	OUTPUT_TYPE_DOCUMENT_OPEN	= 1,
+	OUTPUT_TYPE_DOCUMENT_CLOSE	= 2,
+	OUTPUT_TYPE_SCOPE_OPEN		= 3,
+	OUTPUT_TYPE_SCOPE_CLOSE		= 4,
+	OUTPUT_TYPE_ATTRIBUTE		= 5
 } output_type_e;
 
 struct _format_t; // Forward declaration
@@ -42,7 +44,7 @@ struct _format_t; // Forward declaration
 typedef void (*output_fn)(
 	const struct _format_t *format,
 	const output_type_e type,
-	const uint16_t level,
+	uint16_t level,
 	const char *key,
 	const char *value);
 
@@ -63,12 +65,16 @@ typedef struct _format_t {
 
 void output_init(void); // IMPORTANT: Requires the text plugin to be already loaded.
 void output_term(void);
+const char *output_cmdline(void);
 void output_set_cmdline(int argc, char *argv[]);
 const format_t *output_format(void);
 const format_t *output_parse_format(const char *format_name);
 void output_set_format(const format_t *format);
 int output_set_format_by_name(const char *format_name);
 size_t output_available_formats(char *buffer, size_t size, char separator);
+void output_open_document(void);
+void output_open_document_with_name(const char *document_name);
+void output_close_document(void);
 void output_open_scope(const char *scope_name);
 void output_close_scope(void);
 void output(const char *key, const char *value);

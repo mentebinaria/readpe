@@ -495,6 +495,8 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
+	output_open_document();
+
 	// File entropy
 	const double entropy = calculate_entropy_file(&ctx);
 
@@ -591,6 +593,8 @@ int main(int argc, char *argv[])
 
 	// section analysis
 	print_strange_sections(&ctx);
+
+	output_close_document();
 
 	// libera a memoria
 	free_options(options);

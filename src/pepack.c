@@ -1,6 +1,6 @@
 /*
 	pev - the PE file analyzer toolkit
-	
+
 	pepack.c - search packers in PE files
 
 	Copyright (C) 2012 - 2014 pev authors
@@ -108,34 +108,38 @@ static options_t *parse_options(int argc, char *argv[])
 */
 static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 {
-	unsigned char packer = '0';
-	IMAGE_SECTION_HEADER *sec = pe_rva2section(ctx, entrypoint);
-
-   // we count the flags for the section and if there is more than
-   // 2 it means we don't have the mew_packer
-   unsigned int invalid_flags[] = { 0x20000000, 0x40000000, 0x80000000 };
-
-	if (!sec)
+	IMAGE_SECTION_HEADER *section = pe_rva2section(ctx, entrypoint);
+	if (section == NULL)
 		return false;
+
+	// we count the flags for the section and if there is more than
+	// 2 it means we don't have the mew_packer
+	const SectionCharacteristics invalid_flags[] = {
+		IMAGE_SCN_MEM_EXECUTE,
+		IMAGE_SCN_MEM_READ,
+		IMAGE_SCN_MEM_WRITE
+	};
 
 	// MEW never leave EP in .text section
-	if (!memcmp(sec->Name, ".text", 5))
+	if (memcmp(section->Name, ".text", 5) == 0)
 		return false;
 
-	for (unsigned int j=0; j < LIBPE_SIZEOF_ARRAY(invalid_flags); j++)
-	{
-		if (sec->Characteristics & invalid_flags[j])
-			packer++;
+	unsigned short flags_count = 0;
+
+	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(invalid_flags); i++) {
+		if (section->Characteristics & invalid_flags[i])
+			flags_count++;
 	}
 
-   return packer < '3';
+	return flags_count < 3;
 }
 
 static bool loaddb(FILE **fp, const options_t *options)
 {
 	const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
 
-	*fp = fopen(dbfile, "r");	
+	*fp = fopen(dbfile, "r");
+	// FIXME(jweyrich): Granted read permission to the informed dbfile, this will succeed even if it's a directory!
 	if (!*fp) {
 		// TODO(jweyrich): This might change - Should we use a config.h with a constant from $(SHAREDIR)?
 		*fp = fopen("/usr/share/pev/userdb.txt", "r");
@@ -147,10 +151,10 @@ static bool loaddb(FILE **fp, const options_t *options)
 static bool match_peid_signature(const unsigned char *data, char *sig)
 {
 	unsigned char byte_str[3], byte;
-	
+
 	// add null terminator
 	byte_str[2] = '\0';
-	
+
 	while (*sig)
 	{
 		// ignore '=' and blank spaces
@@ -191,15 +195,15 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 	{
 		// line length
 		size_t len = strlen(buff);
-		
+
 		// ifgore comments and blank lines
 		if (*buff == ';' || *buff == '\n' || *buff == '\r')
 			continue;
-		
+
 		// remove newline from buffer
 		if (*(buff+len-1) == '\n')
 			*(buff+len-1) = '\0';
-		
+
 		// removing carriage return, if present
 		if (*(buff+len-2) == '\r')
 		{
@@ -207,7 +211,7 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 			//*(buff+len-1) = '\0';
 			len--; // update line length
 		}
-		
+
 		// line have [packer name]? Fill packer_name pointer
 		if (*buff == '[' && *(buff+len-2) == ']')
 		{
@@ -215,7 +219,7 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 			strncpy(packer_name, buff+1, packer_name_len);
 			packer_name[packer_name_len-1] = '\0'; // Guarantee it's Null-terminated.
 		}
-		
+
 		// check if signature match
 		if (!strncasecmp(buff, "signature", 9))
 		{
@@ -265,19 +269,19 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	uint64_t ep_offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);
+	const uint64_t ep_offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);
 	if (ep_offset == 0)
 		EXIT_ERROR("unable to get entrypoint offset");
-	
-	// TODO(jweyrich): Create a new API to retrieve map_addr.
-	// TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)` instead?
-	const unsigned char *pe_data = ctx.map_addr;
-	
+
 	FILE *dbfile = NULL;
 	if (!loaddb(&dbfile, options))
 		fprintf(stderr, "warning: without valid database file, %s will search in generic mode only\n", PROGRAM);
-	
+
 	char value[MAX_MSG];
+
+	// TODO(jweyrich): Create a new API to retrieve map_addr.
+	// TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)` instead?
+	const unsigned char *pe_data = ctx.map_addr;
 
 	// packer by signature
 	if (compare_signature(pe_data, ep_offset, dbfile, value, sizeof(value)))
@@ -287,10 +291,10 @@ int main(int argc, char *argv[])
 		snprintf(value, MAX_MSG, "generic");
 	else
 		snprintf(value, MAX_MSG, "no packer found");
-	
+
 	output("packer", value);
 
-	if (dbfile)
+	if (dbfile != NULL)
 		fclose(dbfile);
 
 	// libera a memoria

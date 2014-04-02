@@ -19,8 +19,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef OUTPUT_H
-#define OUTPUT_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -82,6 +81,4 @@ void output_keyval(const char *key, const char *value);
 
 #ifdef __cplusplus
 } //extern "C"
-#endif
-
 #endif

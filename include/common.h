@@ -19,8 +19,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef COMMON_H
-#define COMMON_H 1
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,4 +49,22 @@
 
 void *malloc_s(size_t size);
 
-#endif
+#if defined(__GNUC__)
+#  define PEV_INITIALIZE()
+#  define PEV_FINALIZE()
+#else // if defined(__GNUC__)
+#  define PEV_INITIALIZE() \
+		do { \
+			int ret = plugins_load_all(); \
+			if (ret < 0) { \
+				exit(EXIT_FAILURE); \
+			} \
+			output_init(); /* Requires plugin for text output. */ \
+		} while (0)
+
+#  define PEV_FINALIZE() \
+		do { \
+			output_term(); \
+			plugins_unload_all(); \
+		} while (0)
+#endif // if defined(__GNUC__)

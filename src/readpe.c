@@ -910,17 +910,13 @@ static void print_imports(pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
-	int ret = plugins_load_all();
-	if (ret < 0) {
-		exit(EXIT_FAILURE);
-	}
+	PEV_INITIALIZE();
 
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
 
-	output_init();
 	output_set_cmdline(argc, argv);
 
 	parse_options(argc, argv); // Opcoes
@@ -1005,9 +1001,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	output_term();
-
-	plugins_unload_all();
+	PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

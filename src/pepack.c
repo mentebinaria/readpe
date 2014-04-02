@@ -236,17 +236,13 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 
 int main(int argc, char *argv[])
 {
-	int ret = plugins_load_all();
-	if (ret < 0) {
-		exit(EXIT_FAILURE);
-	}
+	PEV_INITIALIZE();
 
 	if (argc < 2) {
 		usage();
 		exit(EXIT_FAILURE);
 	}
 
-	output_init();
 	output_set_cmdline(argc, argv);
 
 	options_t *options = parse_options(argc, argv); // opcoes
@@ -311,9 +307,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	output_term();
-
-	plugins_unload_all();
+	PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

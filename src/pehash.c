@@ -230,17 +230,13 @@ static void print_basic_hash(const unsigned char *data, size_t size)
 
 int main(int argc, char *argv[])
 {
-	int ret = plugins_load_all();
-	if (ret < 0) {
-		exit(EXIT_FAILURE);
-	}
+	PEV_INITIALIZE();
 
 	if (argc < 2) {
 		usage();
 		return EXIT_FAILURE;
 	}
 
-	output_init();
 	output_set_cmdline(argc, argv);
 
 	OpenSSL_add_all_digests();
@@ -407,9 +403,7 @@ int main(int argc, char *argv[])
 
 	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
 
-	output_term();
-
-	plugins_unload_all();
+	PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

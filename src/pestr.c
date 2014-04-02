@@ -245,6 +245,8 @@ static void printb(
 
 int main(int argc, char *argv[])
 {
+	//PEV_INITIALIZE();
+
 	if (argc < 2) {
 		usage();
 		exit(EXIT_FAILURE);
@@ -327,6 +329,8 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
+
+	//PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

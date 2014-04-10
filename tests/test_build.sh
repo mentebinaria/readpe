@@ -41,7 +41,7 @@ cd $TESTS_DIR
 
 # Darwin output of `wc` and `ls -lh` is somewhat different, therefore we need to pipe it through `xargs`
 # before piping to `cut`.
-echo -e "\nReport: $report_file, $(wc -l $report_file | xargs | cut -d' ' -f1) lines, \
+echo -e "\nReport: $TESTS_DIR/$report_file, $(wc -l $report_file | xargs | cut -d' ' -f1) lines, \
 $(ls -lh $report_file | xargs | cut -d' ' -f5)."
 
 popd

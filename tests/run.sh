@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ROOT_DIR=.
+INC_DIR=include
 SRC_DIR=src
 TOOLS_DIR=$SRC_DIR
 TESTS_DIR=tests
@@ -11,7 +12,7 @@ now=$(date +"%F_%H-%M")
 arch=$(uname -m)
 so=$(uname -s) # We use `-s` because `-o` is not supported on Mac OS X
 so=${so#*/}
-version=$(sed -n 's/^.*VERSION \"\([0-9]\.[0-9]*\)\"/\1/p' $SRC_DIR/common.h)
+version=$(sed -n 's/^.*VERSION \"\([0-9]\.[0-9]*\)\"/\1/p' $INC_DIR/common.h)
 
 test_build()
 {

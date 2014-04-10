@@ -23,7 +23,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <pcre.h>
+#include "regex.h"
+#include "compat/sys/queue.h" // Available on Linux and BSD-based systems as <sys/queue.h>
 
 #define PROGRAM "pestr"
 #define BUFSIZE 4
@@ -147,13 +148,62 @@ typedef enum {
 	ENCODING_UNICODE = 1
 } encoding_t;
 
-static bool ishostname(const char *s, const encoding_t encoding)
-{
-	const char *patterns[] = {
+typedef struct regex_entry {
+	regex_t regex;
+	SLIST_ENTRY(regex_entry) entries;
+} regex_entry_t;
+
+typedef SLIST_HEAD(, regex_entry) regex_list_t;
+
+static void free_hostname_patterns(regex_list_t *regex_list_head) {
+	if (regex_list_head == NULL)
+		return;
+
+	while (!SLIST_EMPTY(regex_list_head)) {
+		regex_entry_t *entry = SLIST_FIRST(regex_list_head);
+		SLIST_REMOVE_HEAD(regex_list_head, entries);
+		free(entry);
+	}
+
+	free(regex_list_head);
+}
+
+static regex_list_t *compile_hostname_patterns(encoding_t encoding) {
+	static const char *patterns[] = {
 		"^[a-zA-Z]{3,}://.*$", // protocol://
 		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
 	};
 
+	int pcre_options = 0;
+
+	if (encoding == ENCODING_UNICODE) {
+		//pcre_options |= PCRE_UTF8;
+#ifdef PCRE_UCP
+		pcre_options |= PCRE_UCP;
+#endif
+	}
+
+	regex_list_t *regex_list_head = malloc_s(sizeof(regex_list_t));
+	SLIST_INIT(regex_list_head);
+
+	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
+		regex_entry_t *entry = malloc(sizeof(regex_entry_t));
+		regex_init_with_pattern(&entry->regex, patterns[i], pcre_options);
+		SLIST_INSERT_HEAD(regex_list_head, entry, entries);
+
+		int ret = regex_compile(&entry->regex);
+		if (ret < 0) {
+			free_hostname_patterns(regex_list_head);
+			regex_list_head = NULL;
+			EXIT_ERROR("regex compilation failed");
+		}
+	}
+
+	return regex_list_head;
+}
+
+static bool ishostname(const char *s, const encoding_t encoding, regex_list_t *regex_list_head)
+{
 	const char *domains[] = {
 ".asia", ".jobs", ".mobi", ".travel", ".xxx",
 ".aero", ".arpa", ".biz", ".com", ".coop", ".edu", ".gov", ".info", ".int", ".jus", ".mil",
@@ -193,16 +243,9 @@ static bool ishostname(const char *s, const encoding_t encoding)
 
 	int ovector[OVECCOUNT];
 
-	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
-		const char *err;
-		int errofs;
-		pcre *re = pcre_compile(patterns[i], (encoding == ENCODING_UNICODE) ? PCRE_UCP : 0, &err, &errofs, NULL);
-		if (!re)
-			EXIT_ERROR("regex compilation failed");
-
-		int rc = pcre_exec(re, NULL, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
-		pcre_free(re);
-
+	regex_entry_t *entry;
+	SLIST_FOREACH(entry, regex_list_head, entries) {
+		int rc = regex_exec(&entry->regex, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
 		if (rc > 0)
 			return true;
 	}
@@ -283,6 +326,9 @@ int main(int argc, char *argv[])
 	uint32_t ascii = 0;
 	uint32_t utf = 0;
 
+	regex_list_t *hostname_patterns_ascii = compile_hostname_patterns(ENCODING_ASCII);
+	regex_list_t *hostname_patterns_unicode = compile_hostname_patterns(ENCODING_UNICODE);
+
 	while (pe_raw_offset < pe_size) {
 		const uint8_t byte = pe_raw_data[pe_raw_offset];
 
@@ -300,14 +346,14 @@ int main(int argc, char *argv[])
 		} else {
 			if (ascii >= (options->strsize ? options->strsize : 4)) {
 				if (options->net) {
-					if (ishostname((char *) buff, ENCODING_ASCII))
+					if (ishostname((char *) buff, ENCODING_ASCII, hostname_patterns_ascii))
 						printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
 				} else {
 					printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
 				}
 			} else if (utf >= (options->strsize ? options->strsize : 4)) {
 				if (options->net) {
-					if (ishostname((char *) buff, ENCODING_UNICODE))
+					if (ishostname((char *) buff, ENCODING_UNICODE, hostname_patterns_unicode))
 						printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
 				} else {
 					printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
@@ -321,6 +367,8 @@ int main(int argc, char *argv[])
 	}
 
 	// libera a memoria
+	free_hostname_patterns(hostname_patterns_ascii);
+	free_hostname_patterns(hostname_patterns_unicode);
 	free_options(options);
 
 	// free

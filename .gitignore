@@ -29,5 +29,5 @@ src/peres
 tests/samples
 tests/*.exe
 tests/*.bin
-html*
+tests/*.log
 tests/running_report

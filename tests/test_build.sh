@@ -14,9 +14,13 @@ report()
 	fi
 }
 
-report_status() { [ "$1" -eq 0 ] && report '>>> SUCCESS' || report '>>> FAILED'; }
+report_status()
+{
+	[ "$1" -eq 0 ] && report '>>> SUCCESS' || report '>>> FAILED';
+}
 
-cd ..
+pushd $ROOT_DIR
+
 report \
 "pev test report
 ----------------
@@ -32,8 +36,12 @@ pipe=${PIPESTATUS[0]}
 [ "$pipe" -eq 0 ] && echo ok || echo failed
 report_status $pipe
 
-mv "$report_file" tests/
-cd tests
+mv "$report_file" $TESTS_DIR
+cd $TESTS_DIR
 
-echo -e "\nReport: $report_file, $(wc -l $report_file | cut -d' ' -f1) lines, \
-$(ls -lh $report_file | cut -d' ' -f5)."
+# Darwin output of `wc` and `ls -lh` is somewhat different, therefore we need to pipe it through `xargs`
+# before piping to `cut`.
+echo -e "\nReport: $report_file, $(wc -l $report_file | xargs | cut -d' ' -f1) lines, \
+$(ls -lh $report_file | xargs | cut -d' ' -f5)."
+
+popd

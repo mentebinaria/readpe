@@ -1,46 +1,53 @@
 #!/bin/bash
 
+ROOT_DIR=.
+SRC_DIR=src
+TOOLS_DIR=$SRC_DIR
+TESTS_DIR=tests
+REPORTS_DIR=$TESTS_DIR/running_report
+
+
 now=$(date +"%F_%H-%M")
 arch=$(uname -m)
-so=$(uname -o)
+so=$(uname -s) # We use `-s` because `-o` is not supported on Mac OS X
 so=${so#*/}
-version=$(sed -n 's/^.*VERSION \"\([0-9]\.[0-9]*\)\"/\1/p' ../src/common.h)
+version=$(sed -n 's/^.*VERSION \"\([0-9]\.[0-9]*\)\"/\1/p' $SRC_DIR/common.h)
 
 test_build()
 {
-	. test_build.sh	
+	. $TESTS_DIR/test_build.sh	
 }
 
 run_pepack()
 {
     echo "--------- pepack ----------"
-    if [ ! -d running_report/pepack ]
+    if [ ! -d $REPORTS_DIR/pepack ]
     then
-        mkdir running_report/pepack
+        mkdir $REPORTS_DIR/pepack
     fi
     echo -n "Testing pepack... "
-    if ../src/pepack $1 > running_report/pepack/${now}_pepack_default
+    if $TOOLS_DIR/pepack $1 > $REPORTS_DIR/pepack/${now}_pepack_default
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pepack -f csv... "
-    if ../src/pepack -f csv $1 > running_report/pepack/${now}_pepack_f_csv
+    if $TOOLS_DIR/pepack -f csv $1 > $REPORTS_DIR/pepack/${now}_pepack_f_csv
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pepack -f xml..."
-    if ../src/pepack -f xml $1 > running_report/pepack/${now}_pepack_f_xml
+    if $TOOLS_DIR/pepack -f xml $1 > $REPORTS_DIR/pepack/${now}_pepack_f_xml
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pepack -f html... "
-    if ../src/pepack -f html $1 > running_report/pepack/${now}_pepack_f_html
+    if $TOOLS_DIR/pepack -f html $1 > $REPORTS_DIR/pepack/${now}_pepack_f_html
     then 
         echo "OK"
     else
@@ -51,61 +58,61 @@ run_pepack()
 run_pehash()
 {
     echo "---------- pehash ----------"
-    if [ ! -d running_report/pehash ]
+    if [ ! -d $REPORTS_DIR/pehash ]
     then
-        mkdir running_report/pehash
+        mkdir $REPORTS_DIR/pehash
     fi
     echo -n "Testing pehash... "
-    if ../src/pehash $1 > running_report/pehash/${now}_pehash_default
+    if $TOOLS_DIR/pehash $1 > $REPORTS_DIR/pehash/${now}_pehash_default
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash -f csv... "
-    if ../src/pehash -f csv $1 > running_report/pehash/${now}_pehash_f_cvs
+    if $TOOLS_DIR/pehash -f csv $1 > $REPORTS_DIR/pehash/${now}_pehash_f_cvs
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash -f xml... "
-    if ../src/pehash -f xml $1 > running_report/pehash/${now}_pehash_f_xml
+    if $TOOLS_DIR/pehash -f xml $1 > $REPORTS_DIR/pehash/${now}_pehash_f_xml
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash -f html... "
-    if ../src/pehash -f html $1 > running_report/pehash/${now}_pehash_f_html
+    if $TOOLS_DIR/pehash -f html $1 > $REPORTS_DIR/pehash/${now}_pehash_f_html
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash -h dos... "
-    if ../src/pehash -h dos $1 > running_report/pehash/${now}_pehash_h_dos
+    if $TOOLS_DIR/pehash -h dos $1 > $REPORTS_DIR/pehash/${now}_pehash_h_dos
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash -a sha512... "
-    if ../src/pehash -a sha512 $1 > running_report/pehash/${now}_pehash_a_sha512
+    if $TOOLS_DIR/pehash -a sha512 $1 > $REPORTS_DIR/pehash/${now}_pehash_a_sha512
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash -s '.text'... "
-    if ../src/pehash -s '.text' $1 > running_report/pehash/${now}_pehash_s_text
+    if $TOOLS_DIR/pehash -s '.text' $1 > $REPORTS_DIR/pehash/${now}_pehash_s_text
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pehash --section-index 1... "
-    if ../src/pehash --section-index 1 $1 > running_report/pehash/${now}_pehash_section-index_1
+    if $TOOLS_DIR/pehash --section-index 1 $1 > $REPORTS_DIR/pehash/${now}_pehash_section-index_1
     then 
         echo "OK"
     else
@@ -116,40 +123,40 @@ run_pehash()
 run_pescan()
 {
     echo "---------- pescan ----------"
-    if [ ! -d running_report/pescan ]
+    if [ ! -d $REPORTS_DIR/pescan ]
     then
-        mkdir running_report/pescan
+        mkdir $REPORTS_DIR/pescan
     fi
     echo -n "Testing pescan... "
-    if ../src/pescan $1 > running_report/pescan/${now}_pescan_default
+    if $TOOLS_DIR/pescan $1 > $REPORTS_DIR/pescan/${now}_pescan_default
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pescan -f csv... "
-    if ../src/pescan -f csv $1 > running_report/pescan/${now}_pescan_f_csv
+    if $TOOLS_DIR/pescan -f csv $1 > $REPORTS_DIR/pescan/${now}_pescan_f_csv
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pescan -f xml... "
-    if ../src/pescan -f xml $1 > running_report/pescan/${now}_pescan_f_xml
+    if $TOOLS_DIR/pescan -f xml $1 > $REPORTS_DIR/pescan/${now}_pescan_f_xml
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pescan -f html... "
-    if ../src/pescan -f html $1 > running_report/pescan/${now}_pescan_f_html
+    if $TOOLS_DIR/pescan -f html $1 > $REPORTS_DIR/pescan/${now}_pescan_f_html
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pescan -v... "
-    if ../src/pescan -v $1 > running_report/pescan/${now}_pescan_v
+    if $TOOLS_DIR/pescan -v $1 > $REPORTS_DIR/pescan/${now}_pescan_v
     then 
         echo "OK"
     else
@@ -161,40 +168,40 @@ run_pestr()
 {
 
     echo "---------- pestr ----------"
-    if [ ! -d running_report/pestr ]
+    if [ ! -d $REPORTS_DIR/pestr ]
     then
-        mkdir running_report/pestr
+        mkdir $REPORTS_DIR/pestr
     fi
     echo -n "Testing pestr ... "
-    if ../src/pestr $1 > running_report/pestr/${now}_pestr_default
+    if $TOOLS_DIR/pestr $1 > $REPORTS_DIR/pestr/${now}_pestr_default
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pestr -n 5 ... "
-    if ../src/pestr -n 5 $1 > running_report/pestr/${now}_pestr_n_5
+    if $TOOLS_DIR/pestr -n 5 $1 > $REPORTS_DIR/pestr/${now}_pestr_n_5
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pestr -o ... "
-    if ../src/pestr -o $1 > running_report/pestr/${now}_pestr_o
+    if $TOOLS_DIR/pestr -o $1 > $REPORTS_DIR/pestr/${now}_pestr_o
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pestr -s ... "
-    if ../src/pestr -s $1 > running_report/pestr/${now}_pestr_s
+    if $TOOLS_DIR/pestr -s $1 > $REPORTS_DIR/pestr/${now}_pestr_s
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pestr --net ... "
-    if ../src/pestr --net $1 > running_report/pestr/${now}_pestr_net
+    if $TOOLS_DIR/pestr --net $1 > $REPORTS_DIR/pestr/${now}_pestr_net
     then 
         echo "OK"
     else
@@ -205,26 +212,26 @@ run_pestr()
 run_peres()
 {
     echo "---------- peres ----------"
-    if [ ! -d running_report/peres ]
+    if [ ! -d $REPORTS_DIR/peres ]
     then
-        mkdir running_report/peres
+        mkdir $REPORTS_DIR/peres
     fi
     echo -n "Testing peres -i ... "
-    if ../src/peres -i $1 > running_report/peres/${now}_peres_i
+    if $TOOLS_DIR/peres -i $1 > $REPORTS_DIR/peres/${now}_peres_i
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing peres -s ... "
-    if ../src/peres -s $1 > running_report/peres/${now}_peres_s
+    if $TOOLS_DIR/peres -s $1 > $REPORTS_DIR/peres/${now}_peres_s
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing peres -x ... "
-    if ../src/peres -x $1 > running_report/peres/${now}_peres_x
+    if $TOOLS_DIR/peres -x $1 > $REPORTS_DIR/peres/${now}_peres_x
     then 
         if [ -d resources ]
         then
@@ -237,7 +244,7 @@ run_peres()
         echo "NOK"
     fi
     echo -n "Testing peres -a ... "
-    if ../src/peres -a $1 > running_report/peres/${now}_peres_a
+    if $TOOLS_DIR/peres -a $1 > $REPORTS_DIR/peres/${now}_peres_a
     then 
         if [ -d resources ]
         then
@@ -253,47 +260,47 @@ run_peres()
 run_pesec()
 {
     echo "---------- pesec ----------"
-    if [ ! -d running_report/pesec ]
+    if [ ! -d $REPORTS_DIR/pesec ]
     then
-        mkdir running_report/pesec
+        mkdir $REPORTS_DIR/pesec
     fi
     echo -n "Testing pesec... "
-    if ../src/pesec $1 > running_report/pesec/${now}_pesec_default
+    if $TOOLS_DIR/pesec $1 > $REPORTS_DIR/pesec/${now}_pesec_default
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pesec -f csv... "
-    if ../src/pesec -f csv $1 > running_report/pesec/${now}_pesec_f_csv
+    if $TOOLS_DIR/pesec -f csv $1 > $REPORTS_DIR/pesec/${now}_pesec_f_csv
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pesec -f xml... "
-    if ../src/pesec -f xml $1 > running_report/pesec/${now}_pesec_f_xml
+    if $TOOLS_DIR/pesec -f xml $1 > $REPORTS_DIR/pesec/${now}_pesec_f_xml
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pesec -f html... "
-    if ../src/pesec -f html $1 > running_report/pesec/${now}_pesec_f_html
+    if $TOOLS_DIR/pesec -f html $1 > $REPORTS_DIR/pesec/${now}_pesec_f_html
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pesec -c pem... "
-    if ../src/pesec -c pem $1 > running_report/pesec/${now}_pesec_c_pem
+    if $TOOLS_DIR/pesec -c pem $1 > $REPORTS_DIR/pesec/${now}_pesec_c_pem
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing pesec -o tmp_cert... "
-    if ../src/pesec -o tmp_cert $1 > running_report/pesec/${now}_pesec_o_tmp_cert
+    if $TOOLS_DIR/pesec -o tmp_cert $1 > $REPORTS_DIR/pesec/${now}_pesec_o_tmp_cert
     then 
         if [ -f tmp_cert -a -s tmp_cert ]
         then
@@ -311,75 +318,75 @@ run_readpe()
 {
 
     echo "---------- readpe ----------"
-    if [ ! -d running_report/readpe ]
+    if [ ! -d $REPORTS_DIR/readpe ]
     then
-        mkdir running_report/readpe
+        mkdir $REPORTS_DIR/readpe
     fi
     echo -n "Testing readpe... "
-    if ../src/readpe $1 > running_report/readpe/${now}_readpe_default
+    if $TOOLS_DIR/readpe $1 > $REPORTS_DIR/readpe/${now}_readpe_default
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -f csv... "
-    if ../src/readpe -f csv $1 > running_report/readpe/${now}_readpe_f_cvs
+    if $TOOLS_DIR/readpe -f csv $1 > $REPORTS_DIR/readpe/${now}_readpe_f_cvs
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -f xml... "
-    if ../src/readpe -f xml $1 > running_report/readpe/${now}_readpe_f_xml
+    if $TOOLS_DIR/readpe -f xml $1 > $REPORTS_DIR/readpe/${now}_readpe_f_xml
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -f html... "
-    if ../src/readpe -f html $1 > running_report/readpe/${now}_readpe_f_html
+    if $TOOLS_DIR/readpe -f html $1 > $REPORTS_DIR/readpe/${now}_readpe_f_html
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -H ... "
-    if ../src/readpe -H $1 > running_report/readpe/${now}_readpe_H
+    if $TOOLS_DIR/readpe -H $1 > $REPORTS_DIR/readpe/${now}_readpe_H
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -S ... "
-    if ../src/readpe -S $1 > running_report/readpe/${now}_readpe_S
+    if $TOOLS_DIR/readpe -S $1 > $REPORTS_DIR/readpe/${now}_readpe_S
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -d ... "
-    if ../src/readpe -d $1 > running_report/readpe/${now}_readpe_d
+    if $TOOLS_DIR/readpe -d $1 > $REPORTS_DIR/readpe/${now}_readpe_d
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -h dos ... "
-    if ../src/readpe -h dos $1 > running_report/readpe/${now}_readpe_h_dos
+    if $TOOLS_DIR/readpe -h dos $1 > $REPORTS_DIR/readpe/${now}_readpe_h_dos
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -i ... "
-    if ../src/readpe -i $1 > running_report/readpe/${now}_readpe_i
+    if $TOOLS_DIR/readpe -i $1 > $REPORTS_DIR/readpe/${now}_readpe_i
     then 
         echo "OK"
     else
         echo "NOK"
     fi
     echo -n "Testing readpe -e ... "
-    if ../src/readpe -e $1 > running_report/readpe/${now}_readpe_e
+    if $TOOLS_DIR/readpe -e $1 > $REPORTS_DIR/readpe/${now}_readpe_e
     then 
         echo "OK"
     else
@@ -389,9 +396,9 @@ run_readpe()
 
 test_pe32()
 {
-    if [ ! -d running_report ]
+    if [ ! -d $REPORTS_DIR ]
     then
-        mkdir running_report
+        mkdir -p $REPORTS_DIR
     fi
     run_pepack $1
     run_pehash $1
@@ -407,7 +414,19 @@ test_pe64()
 	echo 'coming soon...'
 }
 
+clean()
+{
+    if [ -d $REPORTS_DIR ]
+    then
+        rm -rf $REPORTS_DIR
+    fi
+
+    rm -rf $TESTS_DIR/*.log
+}
+
 case "$1" in
+    "clean")
+        clean ;;
 	"build")
 		test_build ;;
 	"pe32")
@@ -421,6 +440,11 @@ case "$1" in
 	"pe64")
 		test_pe64 ;;
 	*)
-		echo 'tell me what to do...'
+        echo "illegal option -- $1"
+		echo "usage: run.sh <option>"
+        echo "       run.sh clean"
+        echo "       run.sh build"
+        echo "       run.sh pe32 <binary_file_for_testing>"
+        echo "       run.sh pe64 <binary_file_to_testing>"
 		exit 1 ;;
 esac

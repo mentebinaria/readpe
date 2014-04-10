@@ -30,3 +30,5 @@ src/plugins/build/
 tests/samples
 tests/*.exe
 tests/*.bin
+tests/*.log
+tests/running_report

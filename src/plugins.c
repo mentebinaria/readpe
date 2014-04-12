@@ -263,7 +263,7 @@ int load_config(void) {
 		return loadconfig("pev.conf", loadconfig_cb);
 	}
 
-	snprintf(buff, sizeof(buff), "%s/%s", get_homedir(), "/.config/pev/pev.conf");
+	snprintf(buff, sizeof(buff), "%s/%s", get_homedir(), "/.config/pev.conf");
 	ret = file_is_readable(buff);
 
 	if (ret >= 0) {

@@ -94,6 +94,7 @@ pescan: LDFLAGS += -lm
 	@#		priorities defined in `__attribute__((constructor (priority)))`.
 	$(CC) $(CFLAGS) $(CPPFLAGS) \
 		compat/strlcat.c \
+		config.c \
 		dylib.c \
 		malloc_s.c \
 		plugins.c \

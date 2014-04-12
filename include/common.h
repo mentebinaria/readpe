@@ -29,7 +29,9 @@
 #include <getopt.h>
 
 #include <pe.h>
+#include "config.h"
 #include "output.h"
+#include "plugins.h"
 
 #define UNUSED(x)      (void)(sizeof((x)))
 
@@ -49,34 +51,17 @@
 
 void *malloc_s(size_t size);
 
-#if defined(__GNUC__)
-#  define PEV_INITIALIZE() \
-		do { \
-			load_config(); \
-			int ret = plugins_load_all(); \
-			if (ret < 0) \
-				exit(EXIT_FAILURE); \
-			output_init(); /* Requires plugin for text output. */ \
-		} while (0)
-#  define PEV_FINALIZE() \
+#define PEV_INITIALIZE() \
 	do { \
-			output_term(); \
-		 plugins_unload_all(); \
-		} while (0)
-#else // if defined(__GNUC__)
-#  define PEV_INITIALIZE() \
-		do { \
-			load_config(); \
-			int ret = plugins_load_all(); \
-			if (ret < 0) { \
-				exit(EXIT_FAILURE); \
-			} \
-			output_init(); /* Requires plugin for text output. */ \
-		} while (0)
+		pev_load_config(); \
+		int ret = plugins_load_all(); \
+		if (ret < 0) \
+			exit(EXIT_FAILURE); \
+		output_init(); /* Requires plugin for text output. */ \
+	} while (0)
 
-#  define PEV_FINALIZE() \
-		do { \
-			output_term(); \
-			plugins_unload_all(); \
-		} while (0)
-#endif // if defined(__GNUC__)
+#define PEV_FINALIZE() \
+	do { \
+		output_term(); \
+		plugins_unload_all(); \
+	} while (0)

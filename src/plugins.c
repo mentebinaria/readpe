@@ -30,12 +30,8 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <sys/types.h>
-#include <pwd.h>
-#include "utils.h"
+#include "config.h"
 
 // TODO(jweyrich): Move to a proper translation unit.
 int str_ends_with(const char *str, const char *suffix) {
@@ -205,75 +201,9 @@ int plugins_load_all_from_directory(const char *path) {
 	return load_count;
 }
 
-int file_is_readable(const char *path) {
-   // Open the file.
-   const int fd = open(path, O_RDWR);
-   if (fd == -1) {
-      //perror("open");
-      return LIBPE_E_OPEN_FAILED;
-   }   
-
-   // Stat the fd to retrieve the file informations.
-   // If file is a symlink, fstat will stat the pointed file, not the link.
-   struct stat stat;
-   int ret = fstat(fd, &stat);
-   if (ret == -1) {
-      close(fd);
-      //perror("fstat");
-      return LIBPE_E_FSTAT_FAILED;
-   }
-
-   // Check if we're dealing with a regular file.
-   if (!S_ISREG(stat.st_mode)) {
-      close(fd);
-      //fprintf(stderr, "%s is not a file\n", ctx->path);
-      return LIBPE_E_NOT_A_FILE;
-   }
-	close(fd);
-	return LIBPE_E_OK;
-}
-
-char *get_homedir(void) {
-	const char *homeDir = getenv("HOME");
-
-	if (!homeDir) {
-		errno = 0;
-		struct passwd* pwd = getpwuid(getuid());
-		if (pwd)
-			homeDir = pwd->pw_dir;
-	}
-
-	return homeDir;
-}
-
-char *g_plugins_path = "/usr/lib/pev/plugins";
-
-void loadconfig_cb(const char *name, const char *value) {
-	// FIXME memory leak
-	if (!strcmp("plugins_dir", name))
-		g_plugins_path = strdup(value);
-}
-
-int load_config(void) {
-	char buff[PATH_MAX];
-
-	int ret = file_is_readable("pev.conf");
-
-	if (ret >= 0) {
-		return loadconfig("pev.conf", loadconfig_cb);
-	}
-
-	snprintf(buff, sizeof(buff), "%s/%s", get_homedir(), "/.config/pev.conf");
-	ret = file_is_readable(buff);
-
-	if (ret >= 0) {
-		return loadconfig(buff, loadconfig_cb);
-	}
-	return -1;
-}
-
 int plugins_load_all(void) {
-	return plugins_load_all_from_directory(g_plugins_path);
+	const char *plugins_path = pev_plugins_path();
+	return plugins_load_all_from_directory(plugins_path);
 }
 
 void plugins_unload_all(void) {
@@ -284,27 +214,3 @@ void plugins_unload_all(void) {
 		free(entry);
 	}
 }
-
-#include "compat/gnuc_attr_ctor_prios.h"
-
-/*
-#if defined(__GNUC__)
-__attribute__((constructor (ATTR_CTOR_PRIO_PLUGINS)))
-#endif
-
-static void initializer(void) {
-	//printf("plugins\n");
-	int ret = plugins_load_all();
-	if (ret < 0)
-		exit(EXIT_FAILURE);
-}
-
-#if defined(__GNUC__)
-__attribute__((destructor (ATTR_CTOR_PRIO_PLUGINS)))
-#endif
-
-static void finalizer(void) {
-	//printf("~plugins\n");
-	plugins_unload_all();
-}
-*/

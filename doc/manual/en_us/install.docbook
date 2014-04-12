@@ -72,7 +72,7 @@ run the following in terminal:</para>
 </section>
 
 <section id="source">
-<title>From the source code</title>
+<title>From the sources</title>
 
 <para>
 Go to <ulink url="http://pev.sourceforge.net" />, and download the tarball
@@ -143,7 +143,7 @@ In order to compile any pev binary you should compile and install libpe first.
 </section>
 
 <section id="compwin">
-<title>Compiling in Windows (through Cygwin)</title>
+<title>Compiling in Windows (via Cygwin)</title>
 
 <para>The first step is to download and install <ulink
 url="http://cygwin.com/">Cygwin</ulink>. During the installation process,
@@ -222,7 +222,7 @@ not yet. If you'd like to give a try, go ahead! ;)
 <section id="compat">
 <title>Output retro-compatibility</title>
 <para>
-For the version 0.70 the output format of readpe changed a little bit. If you have some
+As of version 0.70 the output format of readpe changed a little bit. If you have some
 scripts calling pev and parsing the old 0.60 output format, you can define
 a macro called LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06 before compilation, just like this:</para>
 

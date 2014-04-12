@@ -3,6 +3,7 @@
   <!ENTITY info SYSTEM "info.docbook">
   <!ENTITY pev SYSTEM "pev.docbook">
   <!ENTITY install SYSTEM "install.docbook">
+  <!ENTITY configuration SYSTEM "configuration.docbook">
   <!ENTITY basic-usage SYSTEM "basic-usage.docbook">
   <!ENTITY advanced-features SYSTEM "advanced-features.docbook">
   <!ENTITY tools SYSTEM "tools.docbook">
@@ -14,6 +15,7 @@
 &info;
 &pev;
 &install;
+&configuration;
 &basic-usage;
 &advanced-features;
 &tools;

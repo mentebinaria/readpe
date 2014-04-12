@@ -40,7 +40,7 @@
 }
 
 #define MAX_MSG 80
-#define VERSION "0.70"
+#define VERSION "0.71"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
 #define COPY \
 "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n" \

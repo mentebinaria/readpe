@@ -201,13 +201,6 @@ run_pestr()
     else
         echo "NOK"
     fi
-    echo -n "Testing pestr --net ... "
-    if $TOOLS_DIR/pestr --net $1 > $REPORTS_DIR/pestr/${now}_pestr_net
-    then 
-        echo "OK"
-    else
-        echo "NOK"
-    fi
 }
 
 run_peres()

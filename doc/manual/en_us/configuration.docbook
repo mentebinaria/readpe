@@ -1,0 +1,21 @@
+<chapter id="configuration">
+<title>Configuration</title>
+
+<sect1 id="plugins">
+<title>Plugins</title>
+
+<para>
+So far we support only a single plugins path option in <emphasis>pev.conf</emphasis> file
+with the following structure:
+</para>
+
+<screen>
+plugins_dir=/usr/lib/pev/plugins
+</screen>
+
+<para>All pev binaries will look for a <emphasis>pev.conf</emphasis> file in their current directory first (Windows
+reasons) and a <emphasis>$HOME/.config/pev.conf</emphasis> file after to get the plugins path. If it cannot find
+both files, <emphasis>/usr/lib/pev/plugins</emphasis> is used.</para>
+</sect1>
+
+</chapter>

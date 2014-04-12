@@ -1,6 +1,35 @@
 <chapter id="tools">
 <title>Included tools</title>
 
+<sect1 id="cpload">
+<title>cpload</title>
+<screen>
+Usage: cpload [-m MESSAGE] FILE
+Load .cpl (Control Panel Item) files for debugging
+
+Example: cpload -m init notafiscal.cpl
+
+Options:
+
+If -m is present, MESSAGE should be:
+
+	Option		Message
+	------------------------------
+	init		CPL_INIT
+	getcount	CPL_GETCOUNT
+	inquire		CPL_INQUIRE
+	select		CPL_SELECT
+	dblclk		CPL_DBLCLK
+	stop		CPL_STOP
+	exit		CPL_EXIT
+	newinquire	CPL_NEWINQUIRE
+	startwparms	CPL_STARTWPARMS
+	setup		CPL_SETUP
+
+Otherwise, cpload will send all messages to CPlApplet()
+</screen>
+</sect1>
+
 <sect1 id="ofs2rva">
 <title>ofs2rva</title>
 <screen>
@@ -142,8 +171,7 @@ Options:
  -n, --min-length                       set minimun string length (default: 4)
  -o, --offset                           show string offset in file
  -s, --section                          show string section, if exists
- --net                                  show network-related strings (IPs, hostnames etc)
- -v, --version                          show version and exit
+  -v, --version                          show version and exit
  --help                                 show this help and exit
 </screen>
 </sect1>

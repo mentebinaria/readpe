@@ -20,4 +20,6 @@
 #pragma once
 
 typedef void (*callback_t)(const char *name, const char *value);
-int loadconfig(const char *path, callback_t cb);
+
+int pe_is_file_readable(const char *path);
+int pe_load_config(const char *path, callback_t cb);

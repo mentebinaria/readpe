@@ -18,39 +18,70 @@
 */
 
 #include "utils.h"
+#include "error.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
-int loadconfig(const char *path, callback_t cb)
-{
+int pe_is_file_readable(const char *path) {
+	// Open the file.
+	const int fd = open(path, O_RDWR);
+	if (fd == -1) {
+		//perror("open");
+		return LIBPE_E_OPEN_FAILED;
+	}
+
+	// Stat the fd to retrieve the file informations.
+	// If file is a symlink, fstat will stat the pointed file, not the link.
+	struct stat stat;
+	int ret = fstat(fd, &stat);
+	if (ret == -1) {
+		close(fd);
+		//perror("fstat");
+		return LIBPE_E_FSTAT_FAILED;
+	}
+
+	// Check if we're dealing with a regular file.
+	if (!S_ISREG(stat.st_mode)) {
+		close(fd);
+		//fprintf(stderr, "%s is not a file\n", path);
+		return LIBPE_E_NOT_A_FILE;
+	}
+
+	close(fd);
+
+	return LIBPE_E_OK;
+}
+
+int pe_load_config(const char *path, callback_t cb) {
 	FILE *fp = fopen(path, "r");
-	puts(path);
+	if (fp == NULL)
+		return -1;
 
-   if (fp == NULL)
-      return -1;
+	char line[1024];
 
-   char line[1024];
-   while (fgets(line, sizeof(line), fp))
-   {
-      // comments
-      if (*line == '#')
-         continue;
+	while (fgets(line, sizeof(line), fp)) {
+		// comments
+		if (*line == '#')
+			continue;
 
-      // remove newline
-      for (int i=0; i < sizeof(line); i++)
-      {
-         if (line[i] == '\n' || i == sizeof(line)-1)
-         {
-            line[i] = '\0';
-            break;
-         }
-      }
-      const char *param = strtok(line, "=");
-      const char *value = strtok(NULL, "=");
+		// remove newline
+		for (size_t i=0; i < sizeof(line); i++) {
+			if (line[i] == '\n' || i == sizeof(line) - 1) {
+				line[i] = '\0';
+				break;
+			}
+		}
+		const char *param = strtok(line, "=");
+		const char *value = strtok(NULL, "=");
 
 		cb(param, value);
-   }
+	}
+
 	fclose(fp);
+
 	return 0;
 }

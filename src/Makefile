@@ -75,8 +75,6 @@ plugins:
 
 pesec: LDFLAGS += -lcrypto
 
-pestr: LDFLAGS += -lpcre
-
 pehash: CFLAGS += -I$(LIBFUZZY)
 pehash: $(LIBFUZZY)/*.c
 pehash: LDFLAGS += -lssl -lcrypto

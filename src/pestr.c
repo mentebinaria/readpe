@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	pestr.c - search for [encrypted] strings in PE files.
+	pestr.c - search for strings in PE files.
 
 	Copyright (C) 2012 - 2014 pev authors
 
@@ -23,20 +23,15 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include "regex.h"
-#include "compat/sys/queue.h" // Available on Linux and BSD-based systems as <sys/queue.h>
 
 #define PROGRAM "pestr"
 #define BUFSIZE 4
-#define OVECCOUNT 30
 #define LINE_BUFFER 32768
 
 typedef struct {
 	unsigned short strsize;
 	bool offset;
 	bool section;
-	bool functions;
-	bool net;
 } options_t;
 
 static void usage(void)
@@ -48,7 +43,6 @@ static void usage(void)
 		" -n, --min-length                       set minimun string length (default: 4)\n"
 		" -o, --offset                           show string offset in file\n"
 		" -s, --section                          show string section, if exists\n"
-		" --net                                  show network-related strings (IPs, hostnames etc)\n"
 		" -v, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
@@ -68,16 +62,14 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "fosn:v";
+	static const char short_options[] = "osn:v";
 
 	static const struct option long_options[] = {
-		{ "functions",       no_argument,        NULL, 'f' },
 		{ "offset",          no_argument,        NULL, 'o' },
 		{ "section",         no_argument,        NULL, 's' },
 		{ "min-length",      required_argument,  NULL, 'n' },
 		{ "help",            no_argument,        NULL,  1  },
 		{ "version",         no_argument,        NULL,  3  },
-		{ "net",             no_argument,        NULL,  2  },
 		{ NULL,              0,                  NULL,  0  }
 	};
 
@@ -92,23 +84,6 @@ static options_t *parse_options(int argc, char *argv[])
 			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
-			case 2:
-				options->net = true;
-				break;
-			case 'f':
-				//options->functions = true;
-				EXIT_ERROR("not implemented yet");
-				break;
-			case 'n':
-			{
-				unsigned long value = strtoul(optarg, NULL, 0);
-				if (value == ULONG_MAX && errno == ERANGE) {
-					fprintf(stderr, "The original (nonnegated) value would overflow");
-					exit(EXIT_FAILURE);
-				}
-				options->strsize = (unsigned char)value;
-				break;
-			}
 			case 'o':
 				options->offset = true;
 				break;
@@ -123,10 +98,10 @@ static options_t *parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
-
 	return options;
 }
 
+// TODO Move it to libpe
 static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
 {
 	IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
@@ -141,116 +116,6 @@ static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
 	}
 
 	return NULL;
-}
-
-typedef enum {
-	ENCODING_ASCII = 0,
-	ENCODING_UNICODE = 1
-} encoding_t;
-
-typedef struct regex_entry {
-	regex_t regex;
-	SLIST_ENTRY(regex_entry) entries;
-} regex_entry_t;
-
-typedef SLIST_HEAD(, regex_entry) regex_list_t;
-
-static void free_hostname_patterns(regex_list_t *regex_list_head) {
-	if (regex_list_head == NULL)
-		return;
-
-	while (!SLIST_EMPTY(regex_list_head)) {
-		regex_entry_t *entry = SLIST_FIRST(regex_list_head);
-		SLIST_REMOVE_HEAD(regex_list_head, entries);
-		free(entry);
-	}
-
-	free(regex_list_head);
-}
-
-static regex_list_t *compile_hostname_patterns(encoding_t encoding) {
-	static const char *patterns[] = {
-		"^[a-zA-Z]{3,}://.*$", // protocol://
-		"[1-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:?" // ipv4
-	};
-
-	int pcre_options = 0;
-
-	if (encoding == ENCODING_UNICODE) {
-		//pcre_options |= PCRE_UTF8;
-#ifdef PCRE_UCP
-		pcre_options |= PCRE_UCP;
-#endif
-	}
-
-	regex_list_t *regex_list_head = malloc_s(sizeof(regex_list_t));
-	SLIST_INIT(regex_list_head);
-
-	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(patterns); i++) {
-		regex_entry_t *entry = malloc(sizeof(regex_entry_t));
-		regex_init_with_pattern(&entry->regex, patterns[i], pcre_options);
-		SLIST_INSERT_HEAD(regex_list_head, entry, entries);
-
-		int ret = regex_compile(&entry->regex);
-		if (ret < 0) {
-			free_hostname_patterns(regex_list_head);
-			regex_list_head = NULL;
-			EXIT_ERROR("regex compilation failed");
-		}
-	}
-
-	return regex_list_head;
-}
-
-static bool ishostname(const char *s, const encoding_t encoding, regex_list_t *regex_list_head)
-{
-	const char *domains[] = {
-".asia", ".jobs", ".mobi", ".travel", ".xxx",
-".aero", ".arpa", ".biz", ".com", ".coop", ".edu", ".gov", ".info", ".int", ".jus", ".mil",
-".museum", ".name", ".net", ".org", ".pro", ".ac", ".ad", ".ae", ".af", ".ag",
-".ai", ".al", ".am", ".an", ".ao", ".aq", ".ar", ".as", ".at", ".au", ".aw", ".az", ".ba",
-".bb", ".bd", ".be", ".bf", ".bg", ".bh", ".bi", ".bj", ".bm", ".bn", ".bo", ".br", ".bs",
-".bt", ".bv", ".bw", ".by", ".bz", ".ca", ".cc", ".cd", ".cf", ".cg", ".ch", ".ci", ".ck",
-".cl", ".cm", ".cn", ".co", ".cr", ".cu", ".cv", ".cx", ".cy", ".cz", ".de", ".dj", ".dk",
-".dm", ".do", ".dz", ".ec", ".ee", ".eg", ".er", ".es", ".et", ".eu", ".fi", ".fj", ".fk",
-".fm", ".fo", ".fr", ".ga", ".gb", ".gd", ".ge", ".gf", ".gg", ".gh", ".gi", ".gl", ".gm",
-".gn", ".gp", ".gq", ".gr", ".gs", ".gt", ".gu", ".gw", ".gy", ".hk", ".hm", ".hn", ".hr",
-".ht", ".hu", ".id", ".ie", ".il", ".im", ".in", ".io", ".iq", ".ir", ".is", ".it", ".je",
-".jm", ".jo", ".jp", ".ke", ".kg", ".kh", ".ki", ".km", ".kn", ".kr", ".kw", ".ky", ".kz",
-".la", ".lb", ".lc", ".li", ".lk", ".lr", ".ls", ".lt", ".lu", ".lv", ".ly", ".ma", ".mc",
-".md", ".me", ".mg", ".mh", ".mk", ".ml", ".mm", ".mn", ".mo", ".mp", ".mq", ".mr", ".ms",
-".mt", ".mu", ".mv", ".mw", ".mx", ".my", ".mz", ".nb", ".nc", ".ne", ".nf", ".ng", ".ni",
-".nl", ".no", ".np", ".nr", ".nu", ".nz", ".om", ".pa", ".pe", ".pf", ".pg", ".ph", ".pk",
-".pl", ".pm", ".pn", ".pr", ".ps", ".pt", ".pw", ".py", ".qa", ".re", ".ro", ".ru", ".rw",
-".sa", ".sb", ".sc", ".sd", ".se", ".sg", ".sh", ".si", ".sj", ".sk", ".sl", ".sm", ".sn",
-".so", ".sr", ".ss", ".st", ".su", ".sv", ".sy", ".sz", ".tc", ".td", ".tf", ".tg", ".th",
-".tj", ".tk", ".tl", ".tm", ".tn", ".to", ".tr", ".tt", ".tv", ".tw", ".tz", ".ua", ".ug",
-".uk", ".um", ".us", ".uy", ".uz", ".va", ".vc", ".ve", ".vg", ".vi", ".vn", ".vu", ".wf",
-".ws", ".ye", ".yt", ".yu", ".za", ".zm", ".zw"
-	};
-
-	if (!isalnum((int) *s))
-		return false;
-
-	const size_t s_len = strlen(s);
-
-	for (size_t i=0; i < LIBPE_SIZEOF_ARRAY(domains); i++) {
-		// TODO: unicode equivalent
-		const char *p = s + (s_len - strlen(domains[i]));
-		if (strcasestr(p, domains[i]))
-			return true;
-	}
-
-	int ovector[OVECCOUNT];
-
-	regex_entry_t *entry;
-	SLIST_FOREACH(entry, regex_list_head, entries) {
-		int rc = regex_exec(&entry->regex, s, LINE_BUFFER, 0, 0, ovector, OVECCOUNT);
-		if (rc > 0)
-			return true;
-	}
-
-	return false;
 }
 
 static void printb(
@@ -269,14 +134,9 @@ static void printb(
 		printf("%s\t", s ? s : "[none]");
 	}
 
-	if (options->functions) {
-		uint64_t rva = pe_ofs2rva(ctx, offset);
-		printf("%#"PRIx64"\t", rva); // snprintf takes care of Null-termination.
-	}
-
 	// print the string
 	while (pos < length) {
-		if (bytes[pos] == '\0') { // unicode printing
+		if (bytes[pos] == '\0') { // utf-8 printing
 			pos++;
 			continue;
 		}
@@ -288,8 +148,6 @@ static void printb(
 
 int main(int argc, char *argv[])
 {
-	//PEV_INITIALIZE();
-
 	if (argc < 2) {
 		usage();
 		exit(EXIT_FAILURE);
@@ -326,9 +184,6 @@ int main(int argc, char *argv[])
 	uint32_t ascii = 0;
 	uint32_t utf = 0;
 
-	regex_list_t *hostname_patterns_ascii = compile_hostname_patterns(ENCODING_ASCII);
-	regex_list_t *hostname_patterns_unicode = compile_hostname_patterns(ENCODING_UNICODE);
-
 	while (pe_raw_offset < pe_size) {
 		const uint8_t byte = pe_raw_data[pe_raw_offset];
 
@@ -345,19 +200,9 @@ int main(int argc, char *argv[])
 			continue;
 		} else {
 			if (ascii >= (options->strsize ? options->strsize : 4)) {
-				if (options->net) {
-					if (ishostname((char *) buff, ENCODING_ASCII, hostname_patterns_ascii))
-						printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
-				} else {
-					printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
-				}
+				printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
 			} else if (utf >= (options->strsize ? options->strsize : 4)) {
-				if (options->net) {
-					if (ishostname((char *) buff, ENCODING_UNICODE, hostname_patterns_unicode))
-						printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
-				} else {
-					printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
-				}
+				printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
 			}
 			ascii = utf = buff_index = 0;
 			memset(buff, 0, LINE_BUFFER);
@@ -367,8 +212,6 @@ int main(int argc, char *argv[])
 	}
 
 	// libera a memoria
-	free_hostname_patterns(hostname_patterns_ascii);
-	free_hostname_patterns(hostname_patterns_unicode);
 	free_options(options);
 
 	// free
@@ -377,8 +220,6 @@ int main(int argc, char *argv[])
 		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
-
-	//PEV_FINALIZE();
 
 	return EXIT_SUCCESS;
 }

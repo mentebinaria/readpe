@@ -14,6 +14,5 @@ all:
 zip:
 	zip -j $(ZIPFILE) lib/libpe/libpe.dll \
 	/usr/bin/cygwin1.dll \
-	/usr/bin/cygpcre-1.dll \
 	/usr/bin/cygcrypto-1.0.0.dll /usr/bin/cygz.dll /usr/bin/cyggcc_s-1.dll \
 	src/*.exe changelog license readme

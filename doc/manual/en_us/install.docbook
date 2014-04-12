@@ -100,7 +100,6 @@ Make sure you have the following dependencies installed and working properly:
 <simplelist>
 <member><ulink url="https://github.com/merces/libpe">libpe</ulink> (included if you've used the --recursive option of git command)</member>
 <member>libssl (used for pehash and pesec)</member>
-<member>libpcre (used for pestr)</member>
 <member>gcc</member>
 <member>make</member>
 </simplelist>
@@ -156,7 +155,6 @@ you must select at minimum the following packages for installation:</para>
 <member>make</member>
 <member>zip</member>
 <member>openssl-devel</member>
-<member>libpcre-devel</member>
 </simplelist>
 
 <para>
@@ -190,14 +188,14 @@ compiling in OS X:</para>
 <para>For MacPorts, use:</para>
 
 <screen>
-<prompt>$ </prompt><command>sudo port install pcre</command>
+<prompt>$ </prompt><command>sudo port install &lt;pkgname&gt;</command>
 <prompt>$ </prompt><command>make CFLAGS="-I/opt/local/include"</command>
 </screen>
 
 <para>For Homebrew, use:</para>
 
 <screen>
-<prompt>$ </prompt><command>brew install pcre</command>
+<prompt>$ </prompt><command>brew install &lt;pkgname&gt;</command>
 <prompt>$ </prompt><command>make CFLAGS="-I/opt/local/include"</command>
 </screen>
 

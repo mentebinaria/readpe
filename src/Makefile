@@ -91,40 +91,40 @@ plugins:
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 ofs2rva: $(pev_BUILDDIR)/ofs2rva.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: $(LIBUDIS86)/libudis86/*.c
 pedis: $(pev_BUILDDIR)/pedis.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBUDIS86)/libudis86/*.c
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS) $(pev_COMMON_DEPS) $(CFLAGS) $(CPPFLAGS) $(LIBUDIS86)/libudis86/*.c
 
 pehash: LDFLAGS += -lssl -lcrypto
 pehash: CFLAGS += -I$(LIBFUZZY)
 pehash: $(pev_BUILDDIR)/pehash.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBFUZZY)/*.c
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS) $(pev_COMMON_DEPS) $(CFLAGS) $(CPPFLAGS) $(LIBFUZZY)/*.c
 
 pepack: $(pev_BUILDDIR)/pepack.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 peres: $(pev_BUILDDIR)/peres.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 pescan: LDFLAGS += -lm
 pescan: $(pev_BUILDDIR)/pescan.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 pesec: LDFLAGS += -lcrypto
 pesec: $(pev_BUILDDIR)/pesec.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 pestr: $(pev_BUILDDIR)/pestr.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
-	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
 
 # Generic rule matching sources
 

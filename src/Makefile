@@ -5,25 +5,26 @@ export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 
-prefix = /usr
-exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
-sbindir = $(exec_prefix)/sbin
-libexecdir = $(exec_prefix)/libexec
-datarootdir = $(prefix)/share
 datadir = $(datarootdir)
-sysconfdir = $(prefix)/etc
-localstatedir = $(prefix)/var
-includedir = $(prefix)/include
+datarootdir = $(prefix)/share
 docdir = $(datarootdir)/doc/pev
+exec_prefix = $(prefix)
+includedir = $(prefix)/include
 infodir = $(datarootdir)/info
 libdir = $(exec_prefix)/lib
+libexecdir = $(exec_prefix)/libexec
 localedir = $(datarootdir)/locale
-mandir = $(datarootdir)/man
+localstatedir = $(prefix)/var
 man1dir = $(mandir)/man1
-manext = .1
 man1ext = .1
+mandir = $(datarootdir)/man
+manext = .1
+prefix = /usr
+sbindir = $(exec_prefix)/sbin
 srcdir = $(CURDIR)
+sysconfdir = $(prefix)/etc
+export pluginsdir = $(libdir)/pev/plugins
 
 ####### Makefile Conventions - Utilities
 
@@ -109,17 +110,20 @@ install: installdirs
 	done
 	# TODO: Should we copy it anyway if it already exists?
 	@$(CHK_FILE_EXISTS) $(SHAREDIR)/userdb.txt || cp $(srcdir)/userdb.txt $(SHAREDIR)
+	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 installdirs:
 	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
 	@$(CHK_DIR_EXISTS) $(man1dir) || $(MKDIR) $(man1dir)
 	@$(CHK_DIR_EXISTS) $(SHAREDIR) || $(MKDIR) $(SHAREDIR)
+	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)
 
 uninstall:
 	for prog in $(PROGS); do \
 		$(RM) $(DEST)/$$prog; \
 		$(RM) $(man1dir)/$$prog$(man1ext).gz; \
 	done
+	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 clean:
 	$(RM) $(PROGS)

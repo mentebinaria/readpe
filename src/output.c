@@ -329,6 +329,7 @@ void output_keyval(const char *key, const char *value) {
 		g_format->output_fn(g_format, type, doc_level + scope_level, key, value);
 }
 
+/*
 #include "compat/gnuc_attr_ctor_prios.h"
 
 #if defined(__GNUC__)
@@ -346,3 +347,4 @@ static void finalizer(void) {
 	//printf("~output\n");
 	output_term();
 }
+*/

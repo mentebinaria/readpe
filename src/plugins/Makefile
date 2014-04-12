@@ -66,3 +66,14 @@ $(plugins_BUILDDIR)/%.o: %.c
 
 clean:
 	$(RM_DIR) ${plugins_BUILDDIR}
+
+###
+
+install:
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(csv_LIBNAME).* $(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(pluginsdir)
+
+uninstall:
+	$(RM) $(pluginsdir)/*

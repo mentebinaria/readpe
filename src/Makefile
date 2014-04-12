@@ -22,7 +22,7 @@ mandir = $(datarootdir)/man
 manext = .1
 prefix = /usr
 sbindir = $(exec_prefix)/sbin
-srcdir = $(CURDIR)
+srcdir = .
 sysconfdir = $(prefix)/etc
 export pluginsdir = $(libdir)/pev/plugins
 
@@ -57,6 +57,8 @@ ifeq ($(PLATFORM_OS), Darwin)
 	override CFLAGS += -Wno-deprecated-declarations
 endif
 
+SRC_DIRS = $(srcdir) $(srcdir)/compat $(srcdir)/../lib/libfuzzy
+
 PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
@@ -64,6 +66,20 @@ export LIBPE = $(srcdir)/../lib/libpe
 LIBUDIS86 = $(srcdir)/../lib/libudis86
 LIBFUZZY = $(srcdir)/../lib/libfuzzy
 MANDIR = $(srcdir)/../doc/manpages
+
+export pev_BUILDDIR = ./build
+pev_SRCS_FILTER = $(wildcard ${dir}/*.c)
+pev_SRCS = $(foreach dir, ${SRC_DIRS}, ${pev_SRCS_FILTER})
+pev_OBJS = $(addprefix ${pev_BUILDDIR}/, $(addsuffix .o, $(basename ${pev_SRCS})))
+
+export pev_COMMON_DEPS = \
+	$(pev_BUILDDIR)/compat/strlcat.o \
+	$(pev_BUILDDIR)/config.o \
+	$(pev_BUILDDIR)/dylib.o \
+	$(pev_BUILDDIR)/malloc_s.o \
+	$(pev_BUILDDIR)/plugins.o \
+	$(pev_BUILDDIR)/output_plugin.o \
+	$(pev_BUILDDIR)/output.o
 
 ####### Build rules
 
@@ -74,37 +90,51 @@ all: $(PROGS) plugins
 plugins:
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
-pesec: LDFLAGS += -lcrypto
-
-pehash: CFLAGS += -I$(LIBFUZZY)
-pehash: $(LIBFUZZY)/*.c
-pehash: LDFLAGS += -lssl -lcrypto
+ofs2rva: $(pev_BUILDDIR)/ofs2rva.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
 
 pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: $(LIBUDIS86)/libudis86/*.c
+pedis: $(pev_BUILDDIR)/pedis.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBUDIS86)/libudis86/*.c
+
+pehash: LDFLAGS += -lssl -lcrypto
+pehash: CFLAGS += -I$(LIBFUZZY)
+pehash: $(pev_BUILDDIR)/pehash.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBFUZZY)/*.c
+
+pepack: $(pev_BUILDDIR)/pepack.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+
+peres: $(pev_BUILDDIR)/peres.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
 
 pescan: LDFLAGS += -lm
+pescan: $(pev_BUILDDIR)/pescan.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
 
-# Generic rule matching binary names and sources
+pesec: LDFLAGS += -lcrypto
+pesec: $(pev_BUILDDIR)/pesec.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
 
-%: %.c
-	@# NOTE: The order of translation units here is EXTREMELY IMPORTANT.
-	@#       If you're compiling with gcc, you don't have to worry, but other
-	@#		compilers like clang (default on Mac OS X) do not respect the
-	@#		priorities defined in `__attribute__((constructor (priority)))`.
-	$(CC) $(CFLAGS) $(CPPFLAGS) \
-		compat/strlcat.c \
-		config.c \
-		dylib.c \
-		malloc_s.c \
-		plugins.c \
-		output_plugin.c \
-		output.c \
-		$^ -o $@ $(LDFLAGS)
+pestr: $(pev_BUILDDIR)/pestr.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+
+readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+
+rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
+	$(CC) $(pev_COMMON_DEPS) $< -o $(pev_BUILDDIR)/$@ $(LDFLAGS)
+
+# Generic rule matching sources
+
+$(pev_BUILDDIR)/%.o: %.c
+	@$(CHK_DIR_EXISTS) $(dir $@) || $(MKDIR) $(dir $@)
+	$(CC) -c -o $@ $< $(CFLAGS) $(CPPFLAGS) $(INCPATH)
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) -m 755 $$prog $(DEST); \
+		$(INSTALL_PROGRAM) -m 755 $(pev_BUILDDIR)/$$prog $(DEST); \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
 			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
@@ -127,5 +157,6 @@ uninstall:
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 clean:
+	$(RM_DIR) $(pev_BUILDDIR)
 	$(RM) $(PROGS)
 	cd $(PLUGINS_DIR) && $(MAKE) $@

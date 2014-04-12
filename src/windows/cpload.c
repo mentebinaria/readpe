@@ -103,6 +103,9 @@ int main(int argc, char* argv[])
 
 			if (!strncmp(msg, msgs[i], strlen(msgs[i])))
 			{
+				if (IsDebuggerPresent())
+					__asm__("int $3");
+
 				printf("sending %s message...\n", msgs[i]);
 				if (i == CPL_INQUIRE)
 					_cplapplet(NULL, CPL_INQUIRE, 0, &cplinfo); // lParam1 is applet # - lParam2 is ptr to CPLINFO struct
@@ -118,6 +121,9 @@ int main(int argc, char* argv[])
 	}
 	else // send all messages
 	{
+		if (IsDebuggerPresent())
+			__asm__("int $3");
+
 		_cplapplet(NULL, CPL_INIT, NULL, NULL);
 		_cplapplet(NULL, CPL_GETCOUNT, NULL, NULL);
 		_cplapplet(NULL, CPL_INQUIRE, 0, &cplinfo); // lParam1 is applet # - lParam2 is ptr to CPLINFO struct

@@ -1,6 +1,5 @@
 ####### Compiler options
 
-override LDFLAGS +=
 override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic
 override CPPFLAGS += -D_GNU_SOURCE
 

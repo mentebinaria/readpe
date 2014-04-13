@@ -66,7 +66,7 @@ libpe_OBJS = $(addprefix ${libpe_BUILDDIR}/, $(addsuffix .o, $(basename ${libpe_
 
 all: libpe
 
-libpe: CPPFLAGS += -D_GNU_SOURCE
+libpe: CPPFLAGS += -D_GNU_SOURCE -D_XOPEN_SOURCE=500
 libpe: $(libpe_OBJS)
 ifeq ($(PLATFORM_OS), Linux)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^

@@ -50,7 +50,7 @@ endif
 export DEST = $(DESTDIR)$(bindir)
 
 override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
-override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
+override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
 override CPPFLAGS += -D_GNU_SOURCE
 
 ifeq ($(PLATFORM_OS), Darwin)

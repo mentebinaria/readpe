@@ -90,6 +90,16 @@ static options_t *parse_options(int argc, char *argv[])
 			case 's':
 				options->section = true;
 				break;
+			case 'n':
+			{
+				unsigned long value = strtoul(optarg, NULL, 0);
+				if (value == ULONG_MAX && errno == ERANGE) {
+					fprintf(stderr, "The original (nonnegated) value would overflow");
+					exit(EXIT_FAILURE);
+				}
+				options->strsize = (unsigned char)value;
+				break;
+			}
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);

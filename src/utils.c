@@ -19,12 +19,66 @@
 
 #include "utils.h"
 #include "error.h"
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+char *str_inplace_ltrim(char *str) {
+	char *ptr = str;
+
+	while (*ptr != '\0' && isspace(*ptr))
+		ptr++;
+
+	return ptr;
+}
+
+char *str_inplace_rtrim(char *str) {
+	const size_t length = strlen(str);
+	char *ptr = str + length - 1;
+
+	while (ptr != str && isspace(*ptr))
+		ptr--;
+
+	 // Return a pointer 1 character beyond the last non-space character.
+	return ptr + 1;
+}
+
+char *str_inplace_trim(char *str) {
+	char *begin = str_inplace_ltrim(str);
+	char *end = str_inplace_rtrim(str);
+	*end = '\0';
+	return begin;
+}
+
+#if 0
+char *str_inplace_trim_test(char *str) {
+	char *begin = str;
+
+	// leading spaces
+	while (*begin != '\0' && isspace(*begin))
+		begin++;
+
+	if (*begin == '\0') // nothing left?
+		return begin;
+
+	// Trailing spaces
+	const size_t length = strlen(begin);
+	char *end = begin + length - 1;
+	while (end != begin && isspace(*end))
+		end--;
+
+	end++; // Move to space
+
+	// Overwrite space with null terminator
+	*end = '\0';
+
+	return str;
+}
+#endif
 
 int pe_is_file_readable(const char *path) {
 	// Open the file.
@@ -63,7 +117,7 @@ int pe_load_config(const char *path, callback_t cb) {
 
 	char line[1024];
 
-	while (fgets(line, sizeof(line), fp)) {
+	while (fgets(line, sizeof(line), fp) != NULL) {
 		// comments
 		if (*line == '#')
 			continue;
@@ -75,10 +129,14 @@ int pe_load_config(const char *path, callback_t cb) {
 				break;
 			}
 		}
-		const char *param = strtok(line, "=");
-		const char *value = strtok(NULL, "=");
 
-		cb(param, value);
+		char *param = strtok(line, "=");
+		char *value = strtok(NULL, "=");
+		const char *trimmed_param = str_inplace_trim(param);
+		const char *trimmed_value = str_inplace_trim(value);
+
+		//printf("DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
+		cb(trimmed_param, trimmed_value);
 	}
 
 	fclose(fp);

@@ -51,10 +51,15 @@ export DEST = $(DESTDIR)$(bindir)
 
 override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
-override CPPFLAGS += -D_GNU_SOURCE -D_XOPEN_SOURCE=500
+override CPPFLAGS += -D_GNU_SOURCE
+
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations
+endif
+
+ifeq ($(PLATFORM_OS), CYGWIN)
+	override CPPFLAGS += -D_XOPEN_SOURCE=600
 endif
 
 SRC_DIRS = $(srcdir) $(srcdir)/compat $(srcdir)/../lib/libfuzzy

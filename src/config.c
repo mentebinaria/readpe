@@ -35,26 +35,22 @@
 #include <pwd.h>
 #include <unistd.h>
 
+#define DEFAULT_CONFIG_FILENAME	"pev.conf"
+
 #if defined(__CYGWIN__) // Set current directory as default
-#define DEFAULT_CONFIG_PATH		"pev.conf"
+#define DEFAULT_CONFIG_PATH		DEFAULT_CONFIG_FILENAME
 #define DEFAULT_PLUGINS_PATH	"plugins"
 #else
-#define DEFAULT_CONFIG_PATH		".config/pev.conf"
+#define DEFAULT_CONFIG_PATH		".config/" DEFAULT_CONFIG_FILENAME
 #define DEFAULT_PLUGINS_PATH	"/usr/lib/pev/plugins"
 #endif
 
-static const char *g_plugins_path = DEFAULT_PLUGINS_PATH;
+static const char *g_plugins_path = NULL;
 
 const char *pev_plugins_path(void) {
+	if (g_plugins_path == NULL)
+		g_plugins_path = strdup(DEFAULT_PLUGINS_PATH);
 	return g_plugins_path;
-}
-
-static void pev_load_config_cb(const char *name, const char *value) {
-	// FIXME memory leak
-	//printf("%s=%s\n", name, value);
-	if (!strcmp("plugins_dir", name)){
-		g_plugins_path = strdup(value);
-	}
 }
 
 // IMPORTANT: This is not thread-safe - not reentrant.
@@ -69,12 +65,20 @@ static const char *get_homedir(void) {
 	return pwd == NULL ? NULL : pwd->pw_dir;
 }
 
+static void pev_load_config_cb(const char *name, const char *value) {
+	//printf("%s=%s\n", name, value);
+	if (!strcmp("plugins_dir", name)) {
+		// FIXME memory leak
+		g_plugins_path = strdup(value);
+	}
+}
+
 int pev_load_config(void) {
 	char buff[PATH_MAX];
 
-	int ret = pe_is_file_readable("pev.conf");
+	int ret = pe_is_file_readable(DEFAULT_CONFIG_FILENAME);
 	if (ret == LIBPE_E_OK) {
-		return pe_load_config("pev.conf", pev_load_config_cb);
+		return pe_load_config(DEFAULT_CONFIG_FILENAME, pev_load_config_cb);
 	}
 
 	snprintf(buff, sizeof(buff), "%s/%s", get_homedir(), DEFAULT_CONFIG_PATH);

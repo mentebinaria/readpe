@@ -3,7 +3,7 @@
 ROOT_DIR=.
 INC_DIR=include
 SRC_DIR=src
-TOOLS_DIR=$SRC_DIR
+TOOLS_DIR=$SRC_DIR/build
 TESTS_DIR=tests
 REPORTS_DIR=$TESTS_DIR/running_report
 

@@ -51,7 +51,7 @@ export DEST = $(DESTDIR)$(bindir)
 
 override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
-override CPPFLAGS += -D_GNU_SOURCE
+override CPPFLAGS += -D_GNU_SOURCE -D_XOPEN_SOURCE=500
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations
@@ -72,7 +72,7 @@ pev_SRCS_FILTER = $(wildcard ${dir}/*.c)
 pev_SRCS = $(foreach dir, ${SRC_DIRS}, ${pev_SRCS_FILTER})
 pev_OBJS = $(addprefix ${pev_BUILDDIR}/, $(addsuffix .o, $(basename ${pev_SRCS})))
 
-export pev_COMMON_DEPS = \
+pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/compat/strlcat.o \
 	$(pev_BUILDDIR)/config.o \
 	$(pev_BUILDDIR)/dylib.o \

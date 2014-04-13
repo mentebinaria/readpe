@@ -11,7 +11,14 @@ all:
 
 # Cygwin only
 zip:
-	zip -j $(ZIPFILE) lib/libpe/libpe.dll \
-	/usr/bin/cygwin1.dll \
-	/usr/bin/cygcrypto-1.0.0.dll /usr/bin/cygz.dll /usr/bin/cyggcc_s-1.dll \
-	src/*.exe README.md
+	mkdir -p pevwin/plugins
+	cp src/build/plugins/*.dll pevwin/plugins/
+	echo 'plugins_dir=plugins' > pevwin/pev.conf
+	cp lib/libpe/libpe.dll pevwin/
+	cp /usr/bin/cygwin1.dll pevwin/
+	cp /usr/bin/cygcrypto-1.0.0.dll pevwin/
+	cp /usr/bin/cygz.dll pevwin/
+	cp README.md pevwin/
+	cp src/build/*.exe pevwin/
+	zip -jr $(ZIPFILE) pevwin
+	rm -rf pevwin

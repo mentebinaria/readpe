@@ -35,8 +35,13 @@
 #include <pwd.h>
 #include <unistd.h>
 
+#if defined(__CYGWIN__) // Set current directory as default
+#define DEFAULT_CONFIG_PATH		"pev.conf"
+#define DEFAULT_PLUGINS_PATH	"plugins"
+#else
 #define DEFAULT_CONFIG_PATH		".config/pev.conf"
 #define DEFAULT_PLUGINS_PATH	"/usr/lib/pev/plugins"
+#endif
 
 static const char *g_plugins_path = DEFAULT_PLUGINS_PATH;
 
@@ -46,8 +51,10 @@ const char *pev_plugins_path(void) {
 
 static void pev_load_config_cb(const char *name, const char *value) {
 	// FIXME memory leak
-	if (!strcmp("plugins_dir", name))
+	//printf("%s=%s\n", name, value);
+	if (!strcmp("plugins_dir", name)){
 		g_plugins_path = strdup(value);
+	}
 }
 
 // IMPORTANT: This is not thread-safe - not reentrant.
@@ -79,4 +86,3 @@ int pev_load_config(void) {
 
 	return -1;
 }
-

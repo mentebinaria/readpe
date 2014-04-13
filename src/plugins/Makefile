@@ -3,8 +3,6 @@
 override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic
 override CPPFLAGS += -D_GNU_SOURCE
 
-PLUGIN_DEPS = $(addprefix ../, $(pev_COMMON_DEPS))
-
 PLUGINS = csv html text xml
 VERSION = 1.0
 
@@ -50,15 +48,15 @@ xml: $(xml_OBJS)
 
 $(PLUGINS):
 ifeq ($(PLATFORM_OS), Linux)
-	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) $(PLUGIN_DEPS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-undefined suppress -fno-common \
 		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
-		$(LDFLAGS) $(PLUGIN_DEPS) -o ${plugins_BUILDDIR}/$(LIBNAME).dylib $^
+		$(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dylib $^
 else ifeq ($(PLATFORM_OS), CYGWIN)
-	$(LINK) -shared $(LDFLAGS) $(PLUGIN_DEPS) -o ${plugins_BUILDDIR}/$(LIBNAME).dll $^
+	$(LINK) -shared $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dll $^
 endif
 
 $(plugins_BUILDDIR)/%.o: %.c

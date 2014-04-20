@@ -21,5 +21,9 @@
 
 typedef void (*callback_t)(const char *name, const char *value);
 
+char *str_inplace_ltrim(char *str);
+char *str_inplace_rtrim(char *str);
+char *str_inplace_trim(char *str);
+
 int pe_is_file_readable(const char *path);
 int pe_load_config(const char *path, callback_t cb);

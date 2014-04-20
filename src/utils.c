@@ -43,19 +43,16 @@ char *str_inplace_rtrim(char *str) {
 	while (ptr != str && isspace(*ptr))
 		ptr--;
 
-	 // Return a pointer 1 character beyond the last non-space character.
-	return ptr + 1;
+	// Move back to space.
+	ptr++;
+
+	// Replace it with '\0'.
+	*ptr = '\0';
+
+	return str;
 }
 
 char *str_inplace_trim(char *str) {
-	char *begin = str_inplace_ltrim(str);
-	char *end = str_inplace_rtrim(str);
-	*end = '\0';
-	return begin;
-}
-
-#if 0
-char *str_inplace_trim_test(char *str) {
 	char *begin = str;
 
 	// leading spaces
@@ -76,9 +73,8 @@ char *str_inplace_trim_test(char *str) {
 	// Overwrite space with null terminator
 	*end = '\0';
 
-	return str;
+	return begin;
 }
-#endif
 
 int pe_is_file_readable(const char *path) {
 	// Open the file.

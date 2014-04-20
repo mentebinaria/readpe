@@ -1,6 +1,6 @@
 ####### Compiler options
 
-override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fpic
+override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
 override CPPFLAGS += -D_GNU_SOURCE
 
 PLUGINS = csv html text xml
@@ -51,7 +51,7 @@ ifeq ($(PLATFORM_OS), Linux)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
-		-undefined suppress -fno-common \
+		-undefined dynamic_lookup -fno-common \
 		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		$(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dylib $^

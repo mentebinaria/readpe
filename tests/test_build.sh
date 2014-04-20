@@ -2,7 +2,7 @@
 
 report_file=${now}_${so}_${arch}_$(basename $0 .sh).log
 
-report()
+function report
 {
 	if [ -z "$1" ]; then
 		while read l; do
@@ -14,7 +14,7 @@ report()
 	fi
 }
 
-report_status()
+function report_status
 {
 	[ "$1" -eq 0 ] && report '>>> SUCCESS' || report '>>> FAILED';
 }

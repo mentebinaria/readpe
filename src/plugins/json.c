@@ -27,6 +27,8 @@
 #define SPACES 32 // spaces # for text-based output
 
 
+int num = 0;
+
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
@@ -50,27 +52,36 @@ static void to_format(
 			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			
-				if((level %2)==1) {	
-				printf("\"%s\":{", escaped_key);
+				if((level %2)==1)
+				{
+					num = 0;	//restart because would be the first section
+					printf(",\n\"%s\":{", escaped_key);
 				}
 			
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
-				if((level %2)==1) {	
-				printf("},");
+				if((level %2)==1)
+				{	
+					printf("}");
 				}
 			
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value) {
-				printf("\"%s\":\t \"%s\",\n", escaped_key, escaped_value);
-			} else if (key) {
-				
+				if(num==0)
+				{
+					printf("\"%s\":\t \"%s\"", escaped_key, escaped_value);
+				}
+				else
+				{
+					printf(",\n\"%s\":\t \"%s\"", escaped_key, escaped_value);
+				}
+			} else if (key)
+				{
 					printf("\"%s\":{", escaped_key);
 				}
 			
-			//if is last line print without coma			
-			//printf("\"%s\":\t \"%s\"\n", escaped_key, escaped_value);
+			num++;
 			break;
 	}
 

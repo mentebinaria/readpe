@@ -26,56 +26,41 @@
 
 #define SPACES 32 // spaces # for text-based output
 
-int g_num_opened_documents = 0;
-
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	uint16_t level,
+	const output_scope_t *scope,
 	const char *key,
 	const char *value)
 {
-	size_t key_size = key ? strlen(key) : 0;
+	static int indent = 0;
 
+	size_t key_size = key ? strlen(key) : 0;
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
 
-	level -= g_num_opened_documents;
-
 	switch (type) {
-		case OUTPUT_TYPE_DOCUMENT_OPEN:
-			g_num_opened_documents++;
-			break;
-		case OUTPUT_TYPE_DOCUMENT_CLOSE:
-			g_num_opened_documents--;
-			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
-			if (level > 0) {
-				putchar('\n');
-				printf(INDENT(level, "%s\n"), escaped_key);
-			} else {
-				putchar('\n');
-				printf("%s\n", escaped_key);
+			switch (scope->type) {
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					putchar('\n');
+					printf(INDENT(indent++, "%s\n"), escaped_key);
+					break;
 			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
+			indent--;
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value) {
-				if (level > 0)
-					printf(INDENT(level, "%s:%*c%s\n"), escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
-				else
-					printf("%s:%*c%s\n", escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
+				printf(INDENT(indent, "%s:%*c%s\n"), escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
 			} else if (key) {
-				if (level > 0)
-					printf(INDENT(level, "\n%s\n"), escaped_key);
-				else
-					printf("\n%s\n", escaped_key);
+				printf(INDENT(indent, "\n%s\n"), escaped_key);
 			} else if (value) {
-				if (level > 0)
-					printf(INDENT(level, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', escaped_value);
-				else
-					printf("%*c%s\n", (int)(SPACES - key_size + 1), ' ', escaped_value);
+				printf(INDENT(indent, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', escaped_value);
 			}
 			break;
 	}

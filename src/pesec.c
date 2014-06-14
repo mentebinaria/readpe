@@ -262,7 +262,7 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 	}
 
 	// Print signers
-	output_open_scope("Signers");
+	output_open_scope("Signers", OUTPUT_SCOPE_TYPE_ARRAY);
 	for (int i = 0; i < numcerts; i++) {
 		X509 *cert = sk_X509_value(certs, i);
 		X509_NAME *name = X509_get_subject_name(cert);
@@ -301,10 +301,10 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 
 	uint32_t fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
 
-	output_open_scope("Certificates");
+	output_open_scope("Certificates", OUTPUT_SCOPE_TYPE_ARRAY);
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
-		output_open_scope("Certificate");
+		output_open_scope("Certificate", OUTPUT_SCOPE_TYPE_OBJECT);
 		// Read the size of this WIN_CERTIFICATE
 		uint32_t *dwLength_ptr = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
 		if (LIBPE_IS_PAST_THE_END(ctx, dwLength_ptr, sizeof(uint32_t))) {

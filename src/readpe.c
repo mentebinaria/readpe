@@ -187,7 +187,7 @@ static void print_sections(pe_ctx_t *ctx)
 	};
 	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
 
-	output_open_scope("Sections");
+	output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	const uint32_t num_sections = pe_sections_count(ctx);
 	if (num_sections == 0 || num_sections > MAX_SECTIONS)
@@ -201,7 +201,7 @@ static void print_sections(pe_ctx_t *ctx)
 
 	for (uint32_t i=0; i < num_sections; i++)
 	{
-		output_open_scope("Section");
+		output_open_scope("Section", OUTPUT_SCOPE_TYPE_OBJECT);
 		snprintf(s, MAX_MSG, "%s", sections[i]->Name);
 		output("Name", s);
 
@@ -267,7 +267,7 @@ static void print_directories(pe_ctx_t *ctx)
 	};
 	//static const size_t max_directory_entry = LIBPE_SIZEOF_ARRAY(names);
 #endif
-	output_open_scope("Data directories");
+	output_open_scope("Data directories", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	const uint32_t num_directories = pe_directories_count(ctx);
 	if (num_directories == 0 || num_directories > MAX_DIRECTORIES)
@@ -292,7 +292,7 @@ static void print_directories(pe_ctx_t *ctx)
 		}
 	}
 
-	output_close_scope();
+	output_close_scope(); // Data directories
 }
 
 static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
@@ -327,7 +327,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 	char s[MAX_MSG];
 
-	output_open_scope("Optional/Image header");
+	output_open_scope("Optional/Image header", OUTPUT_SCOPE_TYPE_OBJECT);
 
 	switch (header->type)
 	{
@@ -596,7 +596,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	static const size_t max_machine_type = LIBPE_SIZEOF_ARRAY(machineTypeTable);
 #endif
 
-	output_open_scope("COFF/File header");
+	output_open_scope("COFF/File header", OUTPUT_SCOPE_TYPE_OBJECT);
 
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	const char *machine = "Unknown machine type";
@@ -652,7 +652,7 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 {
 	char s[MAX_MSG];
 
-	output_open_scope("DOS Header");
+	output_open_scope("DOS Header", OUTPUT_SCOPE_TYPE_OBJECT);
 
 	snprintf(s, MAX_MSG, "%#x (MZ)", header->e_magic);
 	output("Magic number", s);
@@ -789,7 +789,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 		if (is_ordinal)
 			output("ordinal", hint_str);
 		else
-			output("function_name", fname);
+			output("name", fname);
 	}
 }
 
@@ -824,7 +824,7 @@ static void print_exports(pe_ctx_t *ctx)
 
 	ofs = pe_rva2ofs(ctx, rva);
 
-	output_open_scope("Exported functions");
+	output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		const uint64_t aux = ofs; // Store current ofs
@@ -867,7 +867,7 @@ static void print_imports(pe_ctx_t *ctx)
 
 	uint64_t ofs = pe_rva2ofs(ctx, va);
 
-	output_open_scope("Imported functions");
+	output_open_scope("Imported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	while (1) {
 		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
@@ -885,27 +885,34 @@ static void print_imports(pe_ctx_t *ctx)
 		ofs = pe_rva2ofs(ctx, id->Name);
 		if (ofs == 0)
 			break;
+
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 		// TODO: Validate if it's ok to read dll_name_ptr+N
 		char dll_name[MAX_DLL_NAME];
 		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
 
-		output_open_scope("Library");
+		output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("name", dll_name);
 
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
-		if (ofs == 0)
+		if (ofs == 0) {
+			output_close_scope(); // Library
 			break;
+		}
+
+		output_open_scope("Functions", OUTPUT_SCOPE_TYPE_ARRAY);
 
 		// Search for DLL imported functions
 		print_imported_functions(ctx, ofs);
 
+		output_close_scope(); // Functions
+
 		ofs = aux; // Restore previous ofs
 
-		output_close_scope();
+		output_close_scope(); // Library
 	}
 
-	output_close_scope();
+	output_close_scope(); // Imported functions
 }
 
 int main(int argc, char *argv[])

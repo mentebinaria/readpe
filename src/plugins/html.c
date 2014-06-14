@@ -70,58 +70,73 @@ static const entity_t g_entities[255] = {
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	uint16_t level,
+	const output_scope_t *scope,
 	const char *key,
 	const char *value)
 {
-	// FIXME(jweyrich): Somehow output the HTML document with a body.
+	static int indent = 0;
 
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
 
 	switch (type) {
-		case OUTPUT_TYPE_DOCUMENT_OPEN:
-			printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
-			break;
-		case OUTPUT_TYPE_DOCUMENT_CLOSE:
-			printf(TEMPLATE_DOCUMENT_CLOSE);
-			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
-			if (level > 0) {
-				printf(INDENT(level, "<section>\n"));
-				printf(INDENT(level+1, "<h1>%s</h1>\n"), escaped_key);
-			} else {
-				printf("<section>\n");
-				printf(INDENT(1, "<h1>%s</h1>\n"), escaped_key);
+			switch (scope->type) {
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
+					indent++;
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					printf(INDENT(indent++, "<div class=\"object\">\n"));
+					printf(INDENT(indent,   "<h2>%s</h2>\n"), escaped_key);
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf(INDENT(indent++, "<div class=\"array\">\n"));
+					printf(INDENT(indent,   "<h2>%s</h2>\n"), escaped_key);
+					printf(INDENT(indent++, "<ul>\n"));
+					break;
 			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
-			if (level > 0)
-				printf(INDENT(level, "</section>\n"));
-			else
-				printf("</section>\n");
-			break;
-		case OUTPUT_TYPE_ATTRIBUTE:
-			if (key && value) {
-				if (level > 0)
-					printf(INDENT(level, "<p><span><b>%s</b></span>: <span>%s</span></p>\n"), escaped_key, escaped_value);
-				else
-					printf("<p><span><b>%s</b></span>: <span>%s</span></p>\n", escaped_key, escaped_value);
-			} else if (key) {
-				if (level > 0) {
-					putchar('\n');
-					printf(INDENT(level, "<p><span><b>%s</b></span></p>\n"), escaped_key);
-				} else {
-					putchar('\n');
-					printf("<p><span><b>%s</b></span></p>\n", escaped_key);
-				}
-			} else if (value) {
-				if (level > 0)
-					printf(INDENT(level, "<p><span>%s</span></p>\n"), escaped_value);
-				else
-					printf("<p><span>%s</span></p>\n", escaped_value);
+			if (indent <= 0) {
+				fprintf(stderr, "html: programming error? indent is <= 0");
+				abort();
+			}
+			switch (scope->type) {
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(TEMPLATE_DOCUMENT_CLOSE);
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					printf(INDENT(--indent, "</div>\n"));
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf(INDENT(--indent, "</ul>\n"));
+					printf(INDENT(--indent, "</div>\n"));
+					break;
 			}
 			break;
+		case OUTPUT_TYPE_ATTRIBUTE:
+		{
+			const char * wrap_el = NULL;
+			switch (scope->type) {
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					wrap_el = "p";
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					wrap_el = "li";
+					break;
+			}
+			if (key && value) {
+				printf(INDENT(indent, "<%s><span class=\"key\"><b>%s</b></span>: <span class=\"value\">%s</span></%s>\n"), wrap_el, escaped_key, escaped_value, wrap_el);
+			} else if (key) {
+				putchar('\n');
+				printf(INDENT(indent, "<%s><span class=\"key\"><b>%s</b></span></%s>\n"), wrap_el, escaped_key, wrap_el);
+			} else if (value) {
+				printf(INDENT(indent, "<%s><span class=\"value\">%s</span></%s>\n"), wrap_el, escaped_value, wrap_el);
+			}
+			break;
+		}
 	}
 
 	if (escaped_key != NULL)

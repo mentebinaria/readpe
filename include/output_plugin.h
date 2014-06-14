@@ -39,9 +39,9 @@ extern "C" {
 //
 
 #define INDENT_TAB_SIZE			4
-#define INDENT_COLUMNS_(level)	(int)((int)(level) * (int)INDENT_TAB_SIZE + 1)
+#define INDENT_COLUMNS_(level)	(int)((int)(level) * (int)INDENT_TAB_SIZE)
 #define INDENT_FORMAT_			"%*s"
-#define INDENT_ARGS_(level)		INDENT_COLUMNS_(level), " "
+#define INDENT_ARGS_(level)		INDENT_COLUMNS_(level), ""
 #define INDENT(level, format)	INDENT_FORMAT_ format, INDENT_ARGS_(level)
 
 //

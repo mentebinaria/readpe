@@ -63,10 +63,12 @@ static const entity_t g_entities[255] = {
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	uint16_t level,
+	const output_scope_t *scope,
 	const char *key,
 	const char *value)
 {
+	static int indent = 0;
+
 	// FIXME(jweyrich): Somehow output the XML root element.
 
 	char * const escaped_key = format->escape_fn(format, key);
@@ -83,35 +85,42 @@ static void to_format(
 	//     Names cannot contain spaces
 	//
 	switch (type) {
-		case OUTPUT_TYPE_DOCUMENT_OPEN:
-			printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
-			break;
-		case OUTPUT_TYPE_DOCUMENT_CLOSE:
-			printf(TEMPLATE_DOCUMENT_CLOSE);
-			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
-			if (level > 0)
-				printf(INDENT(level, "<scope name=\"%s\">\n"), escaped_key);
-			else
-				printf("<scope name=\"%s\">\n", escaped_key);
+			switch (scope->type) {
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
+					indent++;
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					printf(INDENT(indent++, "<object name=\"%s\">\n"), escaped_key);
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf(INDENT(indent++, "<array name=\"%s\">\n"), escaped_key);
+					break;
+			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
-			if (level > 0)
-				printf(INDENT(level, "</scope>\n"));
-			else
-				printf("</scope>\n");
+			if (indent <= 0) {
+				fprintf(stderr, "xml: programming error? indent is <= 0");
+				abort();
+			}
+			switch (scope->type) {
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(TEMPLATE_DOCUMENT_CLOSE);
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					printf(INDENT(--indent, "</object>\n"));
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf(INDENT(--indent, "</array>\n"));
+					break;
+			}
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value) {
-				if (level > 0)
-					printf(INDENT(level, "<attribute name=\"%s\">%s</attribute>\n"), escaped_key, escaped_value);
-				else
-					printf("<attribute name=\"%s\">%s</attribute>\n", escaped_key, escaped_value);
+				printf(INDENT(indent, "<attribute name=\"%s\">%s</attribute>\n"), escaped_key, escaped_value);
 			} else if (key) {
-				if (level > 0)
-					printf(INDENT(level, "<attribute name=\"%s\">\n"), escaped_key);
-				else
-					printf("<attribute name=\"%s\">\n", escaped_key);
+				printf(INDENT(indent, "<attribute name=\"%s\">\n"), escaped_key);
 			}
 			break;
 	}

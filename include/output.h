@@ -31,19 +31,29 @@ extern "C" {
 typedef int format_id_t;
 
 typedef enum {
-	OUTPUT_TYPE_DOCUMENT_OPEN	= 1,
-	OUTPUT_TYPE_DOCUMENT_CLOSE	= 2,
-	OUTPUT_TYPE_SCOPE_OPEN		= 3,
-	OUTPUT_TYPE_SCOPE_CLOSE		= 4,
-	OUTPUT_TYPE_ATTRIBUTE		= 5
+	OUTPUT_TYPE_SCOPE_OPEN		= 1,
+	OUTPUT_TYPE_SCOPE_CLOSE		= 2,
+	OUTPUT_TYPE_ATTRIBUTE		= 3
 } output_type_e;
+
+typedef enum {
+	OUTPUT_SCOPE_TYPE_DOCUMENT	= 1,
+	OUTPUT_SCOPE_TYPE_OBJECT	= 2,
+	OUTPUT_SCOPE_TYPE_ARRAY		= 3
+} output_scope_type_e;
+
+typedef struct {
+	const char *name;
+	output_scope_type_e type;
+	uint16_t level;
+} output_scope_t;
 
 struct _format_t; // Forward declaration
 
 typedef void (*output_fn)(
 	const struct _format_t *format,
 	const output_type_e type,
-	uint16_t level,
+	const output_scope_t *scope,
 	const char *key,
 	const char *value);
 
@@ -74,7 +84,7 @@ size_t output_available_formats(char *buffer, size_t size, char separator);
 void output_open_document(void);
 void output_open_document_with_name(const char *document_name);
 void output_close_document(void);
-void output_open_scope(const char *scope_name);
+void output_open_scope(const char *scope_name, output_scope_type_e type);
 void output_close_scope(void);
 void output(const char *key, const char *value);
 void output_keyval(const char *key, const char *value);

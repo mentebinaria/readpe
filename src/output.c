@@ -157,8 +157,8 @@ void output_term(void) {
 	if (g_cmdline != NULL)
 		free(g_cmdline);
 
-	const uint16_t scope_level = STACK_COUNT(g_scope_stack);
-	if (scope_level > 0) {
+	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
+	if (scope_depth > 0) {
 		fprintf(stderr, "output: terminating the output while there are open scopes will cause memory leaks");
 	}
 
@@ -293,7 +293,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 	const char *key = scope_name;
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
-	const uint16_t scope_level = STACK_COUNT(g_scope_stack);
+	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
 
 	output_scope_t * const scope = malloc(sizeof *scope);
 	if (scope == NULL)
@@ -301,9 +301,15 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 
 	scope->name = scope_name == NULL ? NULL : strdup(scope_name);
 	scope->type = scope_type;
-	scope->level = scope_level + 1;
+	scope->depth = scope_depth + 1;
 
-	//printf("DEBUG: output_open_scope: scope_level=%d\n", STACK_COUNT(g_scope_stack));
+	if (scope_depth > 0) {
+		output_scope_t * const parent_scope = malloc(sizeof *parent_scope);
+		STACK_PEEK(g_scope_stack, (void *)&parent_scope);
+		scope->parent_type = parent_scope->type;
+	}
+
+	//printf("DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 
@@ -326,7 +332,7 @@ void output_close_scope(void) {
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
 
-	//printf("DEBUG: output_open_scope: scope_level=%d\n", STACK_COUNT(g_scope_stack));
+	//printf("DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 }
@@ -334,10 +340,10 @@ void output_close_scope(void) {
 void output_keyval(const char *key, const char *value) {
 	assert(g_format != NULL);
 
-	const uint16_t scope_level = STACK_COUNT(g_scope_stack);
+	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
 	const output_scope_t *scope = NULL;
 
-	if (scope_level > 0)
+	if (scope_depth > 0)
 		STACK_PEEK(g_scope_stack, (void *)&scope);
 
 	const output_type_e type = OUTPUT_TYPE_ATTRIBUTE;

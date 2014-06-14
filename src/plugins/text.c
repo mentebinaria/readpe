@@ -35,19 +35,32 @@ static void to_format(
 {
 	static int indent = 0;
 
-	size_t key_size = key ? strlen(key) : 0;
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
 
 	switch (type) {
+		default:
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
+					if (key) {
+						printf(INDENT(indent++, "%s\n"), escaped_key);
+					} else {
+						indent++;
+					}
+					break;
 				case OUTPUT_SCOPE_TYPE_ARRAY:
-					putchar('\n');
-					printf(INDENT(indent++, "%s\n"), escaped_key);
+					//putchar('\n');
+					if (key) {
+						printf(INDENT(indent++, "%s\n"), escaped_key);
+					} else {
+						indent++;
+					}
 					break;
 			}
 			break;
@@ -55,14 +68,17 @@ static void to_format(
 			indent--;
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
+		{
+			const size_t key_size = key ? strlen(key) : 0;
 			if (key && value) {
 				printf(INDENT(indent, "%s:%*c%s\n"), escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
 			} else if (key) {
-				printf(INDENT(indent, "\n%s\n"), escaped_key);
+				printf(INDENT(indent, "%s\n"), escaped_key);
 			} else if (value) {
 				printf(INDENT(indent, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', escaped_value);
 			}
 			break;
+		}
 	}
 
 	if (escaped_key != NULL)

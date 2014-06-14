@@ -85,8 +85,12 @@ static void to_format(
 	//     Names cannot contain spaces
 	//
 	switch (type) {
+		default:
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
 					indent++;
@@ -105,6 +109,8 @@ static void to_format(
 				abort();
 			}
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					printf(TEMPLATE_DOCUMENT_CLOSE);
 					break;
@@ -121,6 +127,8 @@ static void to_format(
 				printf(INDENT(indent, "<attribute name=\"%s\">%s</attribute>\n"), escaped_key, escaped_value);
 			} else if (key) {
 				printf(INDENT(indent, "<attribute name=\"%s\">\n"), escaped_key);
+			} else if (value) {
+				printf(INDENT(indent, "<attribute>%s</attribute>\n"), value);
 			}
 			break;
 	}

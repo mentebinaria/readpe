@@ -328,9 +328,9 @@ static void print_strange_sections(pe_ctx_t *ctx)
 			strncpy(value, "normal", 7);
 
 		output((const char *)sections[i]->Name, value);
-		output_close_scope();
+		output_close_scope(); // section
 	}
-	output_close_scope();
+	output_close_scope(); // sections
 }
 
 static bool normal_imagebase(pe_ctx_t *ctx)

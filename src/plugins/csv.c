@@ -95,8 +95,12 @@ static void to_format(
 	char * const escaped_value = format->escape_fn(format, value);
 
 	switch (type) {
+		default:
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
@@ -107,6 +111,8 @@ static void to_format(
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:

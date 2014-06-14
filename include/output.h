@@ -31,12 +31,14 @@ extern "C" {
 typedef int format_id_t;
 
 typedef enum {
+	OUTPUT_TYPE_SCOPE_UNKNOWN	= 0,
 	OUTPUT_TYPE_SCOPE_OPEN		= 1,
 	OUTPUT_TYPE_SCOPE_CLOSE		= 2,
 	OUTPUT_TYPE_ATTRIBUTE		= 3
 } output_type_e;
 
 typedef enum {
+	OUTPUT_SCOPE_TYPE_UNKNOWN	= 0,
 	OUTPUT_SCOPE_TYPE_DOCUMENT	= 1,
 	OUTPUT_SCOPE_TYPE_OBJECT	= 2,
 	OUTPUT_SCOPE_TYPE_ARRAY		= 3
@@ -45,7 +47,8 @@ typedef enum {
 typedef struct {
 	const char *name;
 	output_scope_type_e type;
-	uint16_t level;
+	uint16_t depth;
+	output_scope_type_e parent_type;
 } output_scope_t;
 
 struct _format_t; // Forward declaration

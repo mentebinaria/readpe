@@ -19,6 +19,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,62 +27,85 @@
 
 #define SPACES 32 // spaces # for text-based output
 
-
-int num = 0;
-
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	uint16_t level,
+	const output_scope_t *scope,
 	const char *key,
 	const char *value)
 {
-	size_t key_size = key ? strlen(key) : 0;
+	static int indent = 0;
+	static int num_attr = 0;
 
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
-
-	
+	const bool is_within_array = scope->parent_type == OUTPUT_SCOPE_TYPE_ARRAY;
 
 	switch (type) {
-		case OUTPUT_TYPE_DOCUMENT_OPEN:
-			printf("{\n");
-			break;
-		case OUTPUT_TYPE_DOCUMENT_CLOSE:
-			printf("}");
+		default:
 			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
-			
-				if((level %2)==1)
-				{
-					num = 0;	//restart because would be the first section
-					printf(",\n\"%s\":{", escaped_key);
-				}
-			
+			switch (scope->type) {
+				default:
+					break;
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(INDENT(indent++, "{"));
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					if (num_attr > 0)
+						putchar(',');
+					putchar('\n');
+					// NOTE: We don't want duplicate keys inside the array.
+					if (key && !is_within_array)
+						printf(INDENT(indent++, "\"%s\": {"), escaped_key);
+					else
+						printf(INDENT(indent++, "{"));
+					num_attr = 0;
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					if (num_attr > 0)
+						putchar(',');
+					putchar('\n');
+					// NOTE: We don't want duplicate keys inside the array.
+					if (key && !is_within_array)
+						printf(INDENT(indent++, "\"%s\": ["), escaped_key);
+					else
+						printf(INDENT(indent++, "["));
+					num_attr = 0;
+					break;
+			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
-				if((level %2)==1)
-				{	
-					printf("}");
-				}
-			
+			if (indent <= 0) {
+				fprintf(stderr, "json: programming error? indent is <= 0");
+				abort();
+			}
+			putchar('\n');
+			switch (scope->type) {
+				default:
+					break;
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(INDENT(--indent, "}"));
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					printf(INDENT(--indent, "}"));
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf(INDENT(--indent, "]"));
+					break;
+			}
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
-			if (key && value) {
-				if(num==0)
-				{
-					printf("\"%s\":\t \"%s\"", escaped_key, escaped_value);
-				}
-				else
-				{
-					printf(",\n\"%s\":\t \"%s\"", escaped_key, escaped_value);
-				}
-			} else if (key)
-				{
-					printf("\"%s\":{", escaped_key);
-				}
-			
-			num++;
+			if (num_attr > 0)
+				putchar(',');
+			putchar('\n');
+			if (key && value)
+				printf(INDENT(indent, "\"%s\": \"%s\""), escaped_key, escaped_value);
+			else if (key)
+				printf(INDENT(indent, "\"%s\""), escaped_key);
+			else if (value)
+				printf(INDENT(indent, "\"%s\""), escaped_value);
+			num_attr++;
 			break;
 	}
 

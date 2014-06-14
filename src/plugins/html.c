@@ -19,6 +19,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "output_plugin.h"
@@ -78,55 +79,63 @@ static void to_format(
 
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
+	const bool is_within_array = scope->parent_type == OUTPUT_SCOPE_TYPE_ARRAY;
 
 	switch (type) {
+		default:
+			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
+		{
+			// NOTE: HTML doesn't allow `div` inside `ul`. If we're inside a `ul`, it
+			// 		 means the parent is an array, so we can safely replace `div` by `li`.
+			const char * wrap_el = is_within_array ? "li" : "div";
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
 					indent++;
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
-					printf(INDENT(indent++, "<div class=\"object\">\n"));
+					printf(INDENT(indent++, "<%s class=\"object\">\n"), wrap_el);
 					printf(INDENT(indent,   "<h2>%s</h2>\n"), escaped_key);
 					break;
 				case OUTPUT_SCOPE_TYPE_ARRAY:
-					printf(INDENT(indent++, "<div class=\"array\">\n"));
+					printf(INDENT(indent++, "<%s class=\"array\">\n"), wrap_el);
 					printf(INDENT(indent,   "<h2>%s</h2>\n"), escaped_key);
 					printf(INDENT(indent++, "<ul>\n"));
 					break;
 			}
 			break;
+		}
 		case OUTPUT_TYPE_SCOPE_CLOSE:
+		{
 			if (indent <= 0) {
 				fprintf(stderr, "html: programming error? indent is <= 0");
 				abort();
 			}
+			// NOTE: HTML doesn't allow `div` inside `ul`. If we're inside a `ul`, it
+			// 		 means the parent is an array, so we can safely replace `div` by `li`.
+			const char * wrap_el = is_within_array ? "li" : "div";
 			switch (scope->type) {
+				default:
+					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					printf(TEMPLATE_DOCUMENT_CLOSE);
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
-					printf(INDENT(--indent, "</div>\n"));
+					printf(INDENT(--indent, "</%s>\n"), wrap_el);
 					break;
 				case OUTPUT_SCOPE_TYPE_ARRAY:
 					printf(INDENT(--indent, "</ul>\n"));
-					printf(INDENT(--indent, "</div>\n"));
+					printf(INDENT(--indent, "</%s>\n"), wrap_el);
 					break;
 			}
 			break;
+		}
 		case OUTPUT_TYPE_ATTRIBUTE:
 		{
-			const char * wrap_el = NULL;
-			switch (scope->type) {
-				case OUTPUT_SCOPE_TYPE_DOCUMENT:
-				case OUTPUT_SCOPE_TYPE_OBJECT:
-					wrap_el = "p";
-					break;
-				case OUTPUT_SCOPE_TYPE_ARRAY:
-					wrap_el = "li";
-					break;
-			}
+			const char * wrap_el = scope->type == OUTPUT_SCOPE_TYPE_ARRAY ? "li" : "p";
 			if (key && value) {
 				printf(INDENT(indent, "<%s><span class=\"key\"><b>%s</b></span>: <span class=\"value\">%s</span></%s>\n"), wrap_el, escaped_key, escaped_value, wrap_el);
 			} else if (key) {

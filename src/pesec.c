@@ -262,19 +262,21 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 	}
 
 	// Print signers
-	output_open_scope("Signers", OUTPUT_SCOPE_TYPE_ARRAY);
+	output_open_scope("signers", OUTPUT_SCOPE_TYPE_ARRAY);
 	for (int i = 0; i < numcerts; i++) {
 		X509 *cert = sk_X509_value(certs, i);
 		X509_NAME *name = X509_get_subject_name(cert);
 
 		int issuer_name_len = X509_NAME_get_text_by_NID(name, NID_commonName, NULL, 0);
 		if (issuer_name_len > 0) {
+			output_open_scope("signer", OUTPUT_SCOPE_TYPE_OBJECT);
 			char issuer_name[issuer_name_len + 1];
 			X509_NAME_get_text_by_NID(name, NID_commonName, issuer_name, issuer_name_len + 1);
 			output("Issuer", issuer_name);
+			output_close_scope(); // signer
 		}
 	}
-	output_close_scope();
+	output_close_scope(); // signers
 
 error:
 	if (p7 != NULL)
@@ -301,13 +303,14 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 
 	uint32_t fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
 
-	output_open_scope("Certificates", OUTPUT_SCOPE_TYPE_ARRAY);
+	output_open_scope("certificates", OUTPUT_SCOPE_TYPE_ARRAY);
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
-		output_open_scope("Certificate", OUTPUT_SCOPE_TYPE_OBJECT);
+		output_open_scope("certificate", OUTPUT_SCOPE_TYPE_OBJECT);
 		// Read the size of this WIN_CERTIFICATE
 		uint32_t *dwLength_ptr = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
 		if (LIBPE_IS_PAST_THE_END(ctx, dwLength_ptr, sizeof(uint32_t))) {
+			output_close_scope(); // certificate
 			// TODO: Should we report something?
 			return;
 		}
@@ -316,6 +319,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 
 		WIN_CERTIFICATE *cert = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
 		if (LIBPE_IS_PAST_THE_END(ctx, cert, dwLength)) {
+			output_close_scope(); // certificate
 			// TODO: Should we report something?
 			return;
 		}
@@ -373,9 +377,9 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 			case WIN_CERT_TYPE_EFI_GUID:
 				EXIT_ERROR("WIN_CERT_TYPE_EFI_GUID is not supported");
 		}
-		output_close_scope(); // Certificate
+		output_close_scope(); // certificate
 	}
-	output_close_scope(); // Certificates
+	output_close_scope(); // certificates
 }
 
 int main(int argc, char *argv[])

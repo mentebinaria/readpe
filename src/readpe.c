@@ -202,6 +202,7 @@ static void print_sections(pe_ctx_t *ctx)
 	for (uint32_t i=0; i < num_sections; i++)
 	{
 		output_open_scope("Section", OUTPUT_SCOPE_TYPE_OBJECT);
+
 		snprintf(s, MAX_MSG, "%s", sections[i]->Name);
 		output("Name", s);
 
@@ -224,6 +225,8 @@ static void print_sections(pe_ctx_t *ctx)
 		snprintf(s, MAX_MSG, "%#x", sections[i]->Characteristics);
 		output("Characteristics", s);
 
+		output_open_scope("Characteristic Names", OUTPUT_SCOPE_TYPE_ARRAY);
+
 		for (size_t j=0; j < max_flags; j++) {
 			if (sections[i]->Characteristics & valid_flags[j]) {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
@@ -234,10 +237,13 @@ static void print_sections(pe_ctx_t *ctx)
 #endif
 			}
 		}
-		output_close_scope();
+
+		output_close_scope(); // Characteristic Names
+
+		output_close_scope(); // Section
 	}
 
-	output_close_scope();
+	output_close_scope(); // Sections
 }
 
 static void print_directories(pe_ctx_t *ctx)
@@ -281,6 +287,7 @@ static void print_directories(pe_ctx_t *ctx)
 
 	for (uint32_t i=0; i < num_directories; i++) {
 		if (directories[i]->Size) {
+			output_open_scope("Directory", OUTPUT_SCOPE_TYPE_OBJECT);
 			snprintf(s, MAX_MSG, "%#x (%d bytes)",
 					directories[i]->VirtualAddress,
 					directories[i]->Size);
@@ -289,6 +296,7 @@ static void print_directories(pe_ctx_t *ctx)
 #else
 			output(pe_directory_name(i), s);
 #endif
+			output_close_scope(); // Directory
 		}
 	}
 
@@ -415,10 +423,14 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			output("DLL characteristics", s);
 
 #ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			output_open_scope("DLL characteristics names", OUTPUT_SCOPE_TYPE_ARRAY);
+
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 				if (header->_32->DllCharacteristics & flag)
 					output(NULL, pe_image_dllcharacteristic_name(flag));
 			}
+
+			output_close_scope(); // DLL characteristics names
 #endif
 
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfStackReserve);
@@ -515,10 +527,14 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			output("DLL characteristics", s);
 
 #ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			output_open_scope("DLL characteristics names", OUTPUT_SCOPE_TYPE_ARRAY);
+
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 				if (header->_64->DllCharacteristics & flag)
 					output(NULL, pe_image_dllcharacteristic_name(flag));
 			}
+
+			output_close_scope(); // DLL characteristics names
 #endif
 
 			snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfStackReserve);
@@ -536,7 +552,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		}
 	}
 
-	output_close_scope();
+	output_close_scope(); // Optional/Image heade
 }
 
 static void print_coff_header(IMAGE_COFF_HEADER *header)
@@ -636,6 +652,8 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%#x", header->Characteristics);
 	output("Characteristics", s);
 
+	output_open_scope("Characteristics names", OUTPUT_SCOPE_TYPE_ARRAY);
+
 	for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 		if (header->Characteristics & flag)
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
@@ -645,7 +663,9 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 #endif
 	}
 
-	output_close_scope();
+	output_close_scope(); // Characteristics names
+
+	output_close_scope(); // COFF/File header
 }
 
 static void print_dos_header(IMAGE_DOS_HEADER *header)
@@ -702,7 +722,7 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 	snprintf(s, MAX_MSG, "%#x", header->e_lfanew);
 	output("PE header offset", s);
 
-	output_close_scope();
+	output_close_scope(); // DOS Header
 }
 
 static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
@@ -786,10 +806,14 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 			}
 		}
 
+		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
+
 		if (is_ordinal)
-			output("ordinal", hint_str);
+			output("Ordinal", hint_str);
 		else
-			output("name", fname);
+			output("Name", fname);
+
+		output_close_scope(); // Function
 	}
 }
 
@@ -847,10 +871,14 @@ static void print_exports(pe_ctx_t *ctx)
 		char fname[300];
 		strncpy(fname, fname_ptr, sizeof(fname)-1);
 
+		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
+
 		output(addr, fname);
+
+		output_close_scope(); // Function
 	}
 
-	output_close_scope();
+	output_close_scope(); // Exported functions
 }
 
 static void print_imports(pe_ctx_t *ctx)
@@ -892,7 +920,7 @@ static void print_imports(pe_ctx_t *ctx)
 		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
 
 		output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
-		output("name", dll_name);
+		output("Name", dll_name);
 
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0) {

@@ -88,6 +88,13 @@ char *str_inplace_trim(char *str) {
 	return begin;
 }
 
+int round_up(int num_to_round, int multiple)
+{
+	if (multiple == 0)
+		return 0;
+	return (num_to_round + multiple - 1) / multiple * multiple;
+}
+
 int pe_is_file_readable(const char *path) {
 	// Open the file.
 	const int fd = open(path, O_RDWR);

@@ -26,6 +26,7 @@
 #include <openssl/x509.h>
 #include "compat/strlcat.h"
 #include "plugins.h"
+#include "utils.h"
 
 #define PROGRAM "pesec"
 
@@ -180,13 +181,6 @@ static bool stack_cookies(pe_ctx_t *ctx)
 	}
 
 	return found == sizeof(mvs2010);
-}
-
-static int round_up(int numToRound, int multiple)
-{
-	if (multiple == 0)
-		return 0;
-	return (numToRound + multiple - 1) / multiple * multiple;
 }
 
 static void print_certificate(BIO *out, cert_format_e format, X509 *cert)

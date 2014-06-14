@@ -27,6 +27,7 @@
 #include "dylib.h"
 #include "common.h"
 #include "compat/sys/queue.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>

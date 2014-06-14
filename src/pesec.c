@@ -339,7 +339,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 		}
 		output("Type", value);
 
-		fileOffset += round_up(cert->dwLength, 8); // Offset to the next certificate.
+		fileOffset += utils_round_up(cert->dwLength, 8); // Offset to the next certificate.
 
 		if (fileOffset - directory->VirtualAddress > directory->Size)
 			EXIT_ERROR("either the attribute certificate table or the Size field is corrupted");

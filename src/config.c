@@ -21,7 +21,7 @@
 
 #include "config.h"
 #include "error.h" // from libpe
-#include "utils.h" // from libpe
+#include "utils.h"
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -76,16 +76,16 @@ static void pev_load_config_cb(const char *name, const char *value) {
 int pev_load_config(void) {
 	char buff[PATH_MAX];
 
-	int ret = pe_is_file_readable(DEFAULT_CONFIG_FILENAME);
+	int ret = utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
 	if (ret == LIBPE_E_OK) {
-		return pe_load_config(DEFAULT_CONFIG_FILENAME, pev_load_config_cb);
+		return utils_load_config(DEFAULT_CONFIG_FILENAME, pev_load_config_cb);
 	}
 
 	snprintf(buff, sizeof(buff), "%s/%s", get_homedir(), DEFAULT_CONFIG_PATH);
-	ret = pe_is_file_readable(buff);
+	ret = utils_is_file_readable(buff);
 
 	if (ret == LIBPE_E_OK) {
-		return pe_load_config(buff, pev_load_config_cb);
+		return utils_load_config(buff, pev_load_config_cb);
 	}
 
 	return -1;

@@ -21,13 +21,13 @@
 
 #include <stdbool.h>
 
-typedef void (*callback_t)(const char *name, const char *value);
+typedef void (*utils_load_config_callback_t)(const char *name, const char *value);
 
-bool str_ends_with(const char *str, const char *suffix);
-char *str_inplace_ltrim(char *str);
-char *str_inplace_rtrim(char *str);
-char *str_inplace_trim(char *str);
+bool utils_str_ends_with(const char *str, const char *suffix);
+char *utils_str_inplace_ltrim(char *str);
+char *utils_str_inplace_rtrim(char *str);
+char *utils_str_inplace_trim(char *str);
 
-int round_up(int num_to_round, int multiple);
-int pe_is_file_readable(const char *path);
-int pe_load_config(const char *path, callback_t cb);
+int utils_round_up(int num_to_round, int multiple);
+int utils_is_file_readable(const char *path);
+int utils_load_config(const char *path, utils_load_config_callback_t cb);

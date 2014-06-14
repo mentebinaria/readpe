@@ -155,11 +155,11 @@ int plugins_load_all_from_directory(const char *path) {
 
 				// TODO(jweyrich): Use macro conditions for each system: .so, .dylib, .dll
 #if defined(__linux__)
-				const bool possible_plugin = str_ends_with(filename, ".so") != 0;
+				const bool possible_plugin = utils_str_ends_with(filename, ".so") != 0;
 #elif defined(__APPLE__)
-				const bool possible_plugin = str_ends_with(filename, ".dylib") != 0;
+				const bool possible_plugin = utils_str_ends_with(filename, ".dylib") != 0;
 #elif defined(__CYGWIN__)
-				const bool possible_plugin = str_ends_with(filename, ".dll") != 0;
+				const bool possible_plugin = utils_str_ends_with(filename, ".dll") != 0;
 #else
 #error Not supported
 #endif

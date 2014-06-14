@@ -27,7 +27,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-bool str_ends_with(const char *str, const char *suffix) {
+bool utils_str_ends_with(const char *str, const char *suffix) {
 	if (str == NULL || suffix == NULL)
 		return 0;
 
@@ -39,7 +39,7 @@ bool str_ends_with(const char *str, const char *suffix) {
 	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
-char *str_inplace_ltrim(char *str) {
+char *utils_str_inplace_ltrim(char *str) {
 	char *ptr = str;
 
 	while (*ptr != '\0' && isspace(*ptr))
@@ -48,7 +48,7 @@ char *str_inplace_ltrim(char *str) {
 	return ptr;
 }
 
-char *str_inplace_rtrim(char *str) {
+char *utils_str_inplace_rtrim(char *str) {
 	const size_t length = strlen(str);
 	char *ptr = str + length - 1;
 
@@ -64,7 +64,7 @@ char *str_inplace_rtrim(char *str) {
 	return str;
 }
 
-char *str_inplace_trim(char *str) {
+char *utils_str_inplace_trim(char *str) {
 	char *begin = str;
 
 	// leading spaces
@@ -88,14 +88,13 @@ char *str_inplace_trim(char *str) {
 	return begin;
 }
 
-int round_up(int num_to_round, int multiple)
-{
+int utils_round_up(int num_to_round, int multiple) {
 	if (multiple == 0)
 		return 0;
 	return (num_to_round + multiple - 1) / multiple * multiple;
 }
 
-int pe_is_file_readable(const char *path) {
+int utils_is_file_readable(const char *path) {
 	// Open the file.
 	const int fd = open(path, O_RDWR);
 	if (fd == -1) {
@@ -125,7 +124,7 @@ int pe_is_file_readable(const char *path) {
 	return LIBPE_E_OK;
 }
 
-int pe_load_config(const char *path, callback_t cb) {
+int utils_load_config(const char *path, utils_load_config_callback_t cb) {
 	FILE *fp = fopen(path, "r");
 	if (fp == NULL)
 		return -1;
@@ -147,8 +146,8 @@ int pe_load_config(const char *path, callback_t cb) {
 
 		char *param = strtok(line, "=");
 		char *value = strtok(NULL, "=");
-		const char *trimmed_param = str_inplace_trim(param);
-		const char *trimmed_value = str_inplace_trim(value);
+		const char *trimmed_param = utils_str_inplace_trim(param);
+		const char *trimmed_value = utils_str_inplace_trim(value);
 
 		//printf("DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
 		cb(trimmed_param, trimmed_value);

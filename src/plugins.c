@@ -33,19 +33,6 @@
 #include <sys/types.h>
 #include "config.h"
 
-// TODO(jweyrich): Move to a proper translation unit.
-int str_ends_with(const char *str, const char *suffix) {
-	if (str == NULL || suffix == NULL)
-		return 0;
-
-	size_t len_str = strlen(str);
-	size_t len_suffix = strlen(suffix);
-	if (len_suffix > len_str)
-		return 0;
-
-	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
-}
-
 typedef struct _plugins_entry {
 	dylib_t library;
 	plugin_loaded_fn_t plugin_loaded_fn;

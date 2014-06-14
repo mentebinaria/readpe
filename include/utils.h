@@ -21,6 +21,7 @@
 
 typedef void (*callback_t)(const char *name, const char *value);
 
+bool str_ends_with(const char *str, const char *suffix);
 char *str_inplace_ltrim(char *str);
 char *str_inplace_rtrim(char *str);
 char *str_inplace_trim(char *str);

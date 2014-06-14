@@ -27,6 +27,18 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+bool str_ends_with(const char *str, const char *suffix) {
+	if (str == NULL || suffix == NULL)
+		return 0;
+
+	size_t len_str = strlen(str);
+	size_t len_suffix = strlen(suffix);
+	if (len_suffix > len_str)
+		return 0;
+
+	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+}
+
 char *str_inplace_ltrim(char *str) {
 	char *ptr = str;
 

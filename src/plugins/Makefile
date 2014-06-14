@@ -3,7 +3,7 @@
 override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
 override CPPFLAGS += -D_GNU_SOURCE
 
-PLUGINS = csv html text xml
+PLUGINS = csv html text xml json
 VERSION = 1.0
 
 plugins_BUILDDIR = ../$(pev_BUILDDIR)/plugins
@@ -28,6 +28,11 @@ xml_SRCS = xml.c
 xml_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${xml_SRCS})))
 xml_LIBNAME = xml_plugin
 
+json_srcdir = $(CURDIR)
+json_SRCS = json.c
+json_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${json_SRCS})))
+json_LIBNAME = json_plugin
+
 ####### Build rules
 
 .PHONY: plugins
@@ -45,6 +50,9 @@ text: $(text_OBJS)
 
 xml: LIBNAME = $(xml_LIBNAME)
 xml: $(xml_OBJS)
+
+json: LIBNAME = $(json_LIBNAME)
+json: $(json_OBJS)
 
 $(PLUGINS):
 ifeq ($(PLATFORM_OS), Linux)
@@ -73,6 +81,7 @@ install:
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(pluginsdir)
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(pluginsdir)
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(pluginsdir)
 
 uninstall:
 	$(RM) $(pluginsdir)/*

@@ -47,6 +47,7 @@
 #define STACK_GROW(stack_ptr, capacity)		STACK_API(stack_grow)(stack_ptr, capacity)
 #define STACK_PUSH(stack_ptr, element)		STACK_API(stack_push)(stack_ptr, element)
 #define STACK_POP(stack_ptr, element_ptr)	STACK_API(stack_pop)(stack_ptr, element_ptr)
+#define STACK_PEEK(stack_ptr, element_ptr)	STACK_API(stack_peek)(stack_ptr, element_ptr)
 
 typedef struct {
 	uint16_t capacity;
@@ -60,6 +61,7 @@ static uint16_t STACK_API(stack_count)(STACK_TYPE *stack);
 static int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity);
 static int STACK_API(stack_push)(STACK_TYPE *stack, STACK_ELEMENT_TYPE element);
 static int STACK_API(stack_pop)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element);
+static int STACK_API(stack_peek)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element);
 
 // ----------------------------------------------------------------------------
 
@@ -158,6 +160,22 @@ int STACK_API(stack_pop)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element) {
 
 	if (element != NULL) {
 		*element = stack->elements[--stack->used];
+	}
+
+	return 0;
+}
+
+int STACK_API(stack_peek)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element) {
+	assert(stack != NULL);
+
+	// Stack is empty?
+	if (stack->used == 0) {
+		fprintf(stderr, "stack: stack is empty - failed to peek\n");
+		return -1;
+	}
+
+	if (element != NULL) {
+		*element = stack->elements[stack->used - 1];
 	}
 
 	return 0;

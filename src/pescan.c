@@ -302,12 +302,12 @@ static void print_strange_sections(pe_ctx_t *ctx)
 
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
 
-	output_open_scope("sections");
+	output_open_scope("sections", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	bool aux = false;
 	for (uint16_t i=0; i < num_sections; i++, aux=false)
 	{
-		output_open_scope("section");
+		output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
 		memset(&value, 0, sizeof(value));
 
 		if (!strisprint((const char *)sections[i]->Name))
@@ -328,9 +328,9 @@ static void print_strange_sections(pe_ctx_t *ctx)
 			strncpy(value, "normal", 7);
 
 		output((const char *)sections[i]->Name, value);
-		output_close_scope();
+		output_close_scope(); // section
 	}
-	output_close_scope();
+	output_close_scope(); // sections
 }
 
 static bool normal_imagebase(pe_ctx_t *ctx)

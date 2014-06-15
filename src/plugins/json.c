@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	text.c - Principal implementation file for the TEXT output plugin
+	json.c - Principal implementation file for the JSON output plugin
 
 	Copyright (C) 2012 - 2014 pev authors
 
@@ -19,6 +19,7 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,9 +35,11 @@ static void to_format(
 	const char *value)
 {
 	static int indent = 0;
+	static int num_attr = 0;
 
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
+	const bool is_within_array = scope->parent_type == OUTPUT_SCOPE_TYPE_ARRAY;
 
 	switch (type) {
 		default:
@@ -46,39 +49,64 @@ static void to_format(
 				default:
 					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(INDENT(indent++, "{"));
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
-					if (key) {
-						printf(INDENT(indent++, "%s\n"), escaped_key);
-					} else {
-						indent++;
-					}
+					if (num_attr > 0)
+						putchar(',');
+					putchar('\n');
+					// NOTE: We don't want duplicate keys inside the array.
+					if (key && !is_within_array)
+						printf(INDENT(indent++, "\"%s\": {"), escaped_key);
+					else
+						printf(INDENT(indent++, "{"));
+					num_attr = 0;
 					break;
 				case OUTPUT_SCOPE_TYPE_ARRAY:
-					//putchar('\n');
-					if (key) {
-						printf(INDENT(indent++, "%s\n"), escaped_key);
-					} else {
-						indent++;
-					}
+					if (num_attr > 0)
+						putchar(',');
+					putchar('\n');
+					// NOTE: We don't want duplicate keys inside the array.
+					if (key && !is_within_array)
+						printf(INDENT(indent++, "\"%s\": ["), escaped_key);
+					else
+						printf(INDENT(indent++, "["));
+					num_attr = 0;
 					break;
 			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
-			indent--;
-			break;
-		case OUTPUT_TYPE_ATTRIBUTE:
-		{
-			const size_t key_size = key ? strlen(key) : 0;
-			if (key && value) {
-				printf(INDENT(indent, "%s:%*c%s\n"), escaped_key, (int)(SPACES - key_size), ' ', escaped_value);
-			} else if (key) {
-				printf(INDENT(indent, "%s\n"), escaped_key);
-			} else if (value) {
-				printf(INDENT(indent, "%*c%s\n"), (int)(SPACES - key_size + 1), ' ', escaped_value);
+			if (indent <= 0) {
+				fprintf(stderr, "json: programming error? indent is <= 0");
+				abort();
+			}
+			putchar('\n');
+			switch (scope->type) {
+				default:
+					break;
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					printf(INDENT(--indent, "}"));
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					printf(INDENT(--indent, "}"));
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf(INDENT(--indent, "]"));
+					break;
 			}
 			break;
-		}
+		case OUTPUT_TYPE_ATTRIBUTE:
+			if (num_attr > 0)
+				putchar(',');
+			putchar('\n');
+			if (key && value)
+				printf(INDENT(indent, "\"%s\": \"%s\""), escaped_key, escaped_value);
+			else if (key)
+				printf(INDENT(indent, "\"%s\""), escaped_key);
+			else if (value)
+				printf(INDENT(indent, "\"%s\""), escaped_value);
+			num_attr++;
+			break;
 	}
 
 	if (escaped_key != NULL)
@@ -89,8 +117,8 @@ static void to_format(
 
 // ----------------------------------------------------------------------------
 
-#define FORMAT_ID	3
-#define FORMAT_NAME "text"
+#define FORMAT_ID	6
+#define FORMAT_NAME "json"
 
 static const format_t g_format = {
 	FORMAT_ID,

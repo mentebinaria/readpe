@@ -274,21 +274,23 @@ int main(int argc, char *argv[])
 	output_open_document();
 
 	if (options->all) {
-		output_open_scope("file");
+		output_open_scope("file", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
-		output_close_scope();
+		output_close_scope(); // file
 	}
+
+	output_open_scope("headers", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	if (options->all || options->headers.all || options->headers.dos) {
 		const IMAGE_DOS_HEADER *dos_hdr = pe_dos(&ctx);
 		data = (const unsigned char *)dos_hdr;
 		data_size = sizeof(IMAGE_DOS_HEADER);
 
-		output_open_scope("header");
+		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("header_name", "IMAGE_DOS_HEADER");
 		PRINT_HASH_OR_HASHES;
-		output_close_scope();
+		output_close_scope(); // header
 	}
 
 	if (options->all || options->headers.all || options->headers.coff) {
@@ -296,10 +298,10 @@ int main(int argc, char *argv[])
 		data = (const unsigned char *)coff_hdr;
 		data_size = sizeof(IMAGE_COFF_HEADER);
 
-		output_open_scope("header");
+		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("header_name", "IMAGE_COFF_HEADER");
 		PRINT_HASH_OR_HASHES;
-		output_close_scope();
+		output_close_scope(); // header
 	}
 
 	if (options->all || options->headers.all || options->headers.optional) {
@@ -327,24 +329,28 @@ int main(int argc, char *argv[])
             break;
 		}
 
-		output_open_scope("header");
+		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("header_name", "IMAGE_OPTIONAL_HEADER");
 		PRINT_HASH_OR_HASHES;
-		output_close_scope();
+		output_close_scope(); // header
 	}
 
+	output_close_scope(); // headers
+
 	if (options->all) {
+		output_open_scope("sections", OUTPUT_SCOPE_TYPE_ARRAY);
 		for (unsigned int i=0; i<c; i++) {
 			data_size = sections[i]->SizeOfRawData;
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
-			output_open_scope("section");
+			output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
 			output("section_name", (char *)sections[i]->Name);
 			if (data_size) {
 				PRINT_HASH_OR_HASHES;
 			}
-			output_close_scope();
+			output_close_scope(); // section
 		}
+		output_close_scope(); // sections
 	} else if (options->sections.name != NULL) {
 		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
 		if (section == NULL) {

@@ -87,25 +87,39 @@ static char *escape_csv(const format_t *format, const char *str) {
 static void to_format(
 	const format_t *format,
 	const output_type_e type,
-	uint16_t level,
+	const output_scope_t *scope,
 	const char *key,
 	const char *value)
 {
-	(void)level;
-
 	char * const escaped_key = format->escape_fn(format, key);
 	char * const escaped_value = format->escape_fn(format, value);
 
 	switch (type) {
-		case OUTPUT_TYPE_DOCUMENT_OPEN:
-			break;
-		case OUTPUT_TYPE_DOCUMENT_CLOSE:
+		default:
 			break;
 		case OUTPUT_TYPE_SCOPE_OPEN:
-			printf("\n%s\n", escaped_key);
+			switch (scope->type) {
+				default:
+					break;
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf("\n%s\n", escaped_key);
+					break;
+			}
 			break;
 		case OUTPUT_TYPE_SCOPE_CLOSE:
-			printf("\n");
+			switch (scope->type) {
+				default:
+					break;
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					printf("\n");
+					break;
+			}
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (key && value)

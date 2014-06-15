@@ -24,6 +24,7 @@
 #include "stack.h"
 #include "compat/strlcat.h"
 #include "compat/sys/queue.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -51,7 +52,7 @@ static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats = SLIST_HE
 // Definition of internal functions
 //
 
-static format_entry_t *output_lookup_format_entry_by_id(format_id_t id) {
+static format_entry_t *_lookup_format_entry_by_id(format_id_t id) {
 	format_entry_t *entry;
 	SLIST_FOREACH(entry, &g_registered_formats, entries) {
 		if (entry->format->id == id)
@@ -61,52 +62,15 @@ static format_entry_t *output_lookup_format_entry_by_id(format_id_t id) {
 	return NULL;
 }
 
-static const format_t *output_lookup_format_by_id(format_id_t id) {
-	const format_entry_t *entry = output_lookup_format_entry_by_id(id);
+static const format_t *_lookup_format_by_id(format_id_t id) {
+	const format_entry_t *entry = _lookup_format_entry_by_id(id);
 	if (entry == NULL)
 		return NULL;
 
 	return entry->format;
 }
 
-static char *str_array_join(char *strings[], size_t count, char delimiter) {
-	if (strings == NULL || strings[0] == NULL)
-		return strdup("");
-
-	// Count how much memory the resulting string is going to need,
-	// considering delimiters for each string. The last delimiter will
-	// be a NULL terminator;
-	size_t result_length = 0;
-	for (size_t i = 0; i < count; i++) {
-		result_length += strlen(strings[i]) + 1;
-	}
-
-	// Allocate the resulting string.
-	char *result = malloc(result_length);
-	if (result == NULL)
-		return NULL; // Return NULL because it failed miserably!
-
-	// Null terminate it.
-	result[--result_length] = '\0';
-
-	// Join all strings.
-	char ** current_string = strings;
-	char * current_char = current_string[0];
-	for (size_t i = 0; i < result_length; i++) {
-		if (*current_char != '\0') {
-			result[i] = *current_char++;
-		} else {
-			// Reached the end of a string. Add a delimiter and move to the next one.
-			result[i] = delimiter;
-			current_string++;
-			current_char = current_string[0];
-		}
-	}
-
-	return result;
-}
-
-static void output_unregister_all_formats(void) {
+static void _unregister_all_formats(void) {
 	while (!SLIST_EMPTY(&g_registered_formats)) {
 		format_entry_t *entry = SLIST_FIRST(&g_registered_formats);
 		SLIST_REMOVE_HEAD(&g_registered_formats, entries);
@@ -134,7 +98,7 @@ int output_plugin_register_format(const format_t *format) {
 }
 
 void output_plugin_unregister_format(const format_t *format) {
-	format_entry_t *entry = output_lookup_format_entry_by_id(format->id);
+	format_entry_t *entry = _lookup_format_entry_by_id(format->id);
 	if (entry == NULL)
 		return;
 
@@ -147,7 +111,7 @@ void output(const char *key, const char *value) {
 }
 
 void output_init(void) {
-	g_format = output_lookup_format_by_id(FORMAT_ID_FOR_TEXT);
+	g_format = _lookup_format_by_id(FORMAT_ID_FOR_TEXT);
 	g_scope_stack = STACK_ALLOC(15);
 	if (g_scope_stack == NULL)
 		abort();
@@ -166,7 +130,7 @@ void output_term(void) {
 	if (g_scope_stack != NULL)
 		free(g_scope_stack);
 
-	output_unregister_all_formats();
+	_unregister_all_formats();
 }
 
 const char *output_cmdline(void) {
@@ -176,9 +140,9 @@ const char *output_cmdline(void) {
 void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
-	g_cmdline = str_array_join(g_argv, g_argc, ' ');
+	g_cmdline = utils_str_array_join(g_argv, g_argc, ' ');
 	if (g_cmdline == NULL) {
-		fprintf(stderr, "output: allocation failed for str_array_join\n");
+		fprintf(stderr, "output: allocation failed for utils_str_array_join\n");
 		abort();
 	}
 	//printf("cmdline = %s\n", g_cmdline);

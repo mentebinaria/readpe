@@ -230,7 +230,8 @@ static void print_basic_hash(const unsigned char *data, size_t size)
 
 int main(int argc, char *argv[])
 {
-	PEV_INITIALIZE();
+	pev_config_t config;
+	PEV_INITIALIZE(&config);
 
 	if (argc < 2) {
 		usage();
@@ -401,6 +402,7 @@ int main(int argc, char *argv[])
 
 	// free
 	free_options(options);
+
 	err = pe_unload(&ctx);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);
@@ -409,7 +411,7 @@ int main(int argc, char *argv[])
 
 	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
 
-	PEV_FINALIZE();
+	PEV_FINALIZE(&config);
 
 	return EXIT_SUCCESS;
 }

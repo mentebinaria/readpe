@@ -236,7 +236,8 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 
 int main(int argc, char *argv[])
 {
-	PEV_INITIALIZE();
+	pev_config_t config;
+	PEV_INITIALIZE(&config);
 
 	if (argc < 2) {
 		usage();
@@ -307,7 +308,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	PEV_FINALIZE();
+	PEV_FINALIZE(&config);
 
 	return EXIT_SUCCESS;
 }

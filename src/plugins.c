@@ -189,9 +189,8 @@ int plugins_load_all_from_directory(const char *path) {
 	return load_count;
 }
 
-int plugins_load_all(void) {
-	const char *plugins_path = pev_plugins_path();
-	return plugins_load_all_from_directory(plugins_path);
+int plugins_load_all(pev_config_t *config) {
+	return plugins_load_all_from_directory(config->plugins_path);
 }
 
 void plugins_unload_all(void) {

@@ -19,12 +19,14 @@
 
 #include "utils.h"
 #include "error.h"
+#include <errno.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <pwd.h>
 #include <unistd.h>
 
 bool utils_str_ends_with(const char *str, const char *suffix) {
@@ -88,6 +90,44 @@ char *utils_str_inplace_trim(char *str) {
 	return begin;
 }
 
+char *utils_str_array_join(char *strings[], size_t count, char delimiter) {
+	if (strings == NULL || strings[0] == NULL)
+		return strdup("");
+
+	// Count how much memory the resulting string is going to need,
+	// considering delimiters for each string. The last delimiter will
+	// be a NULL terminator;
+	size_t result_length = 0;
+	for (size_t i = 0; i < count; i++) {
+		result_length += strlen(strings[i]) + 1;
+	}
+
+	// Allocate the resulting string.
+	char *result = malloc(result_length);
+	if (result == NULL)
+		return NULL; // Return NULL because it failed miserably!
+
+	// Null terminate it.
+	result[--result_length] = '\0';
+
+	// Join all strings.
+	char ** current_string = strings;
+	char * current_char = current_string[0];
+	for (size_t i = 0; i < result_length; i++) {
+		if (*current_char != '\0') {
+			result[i] = *current_char++;
+		} else {
+			// Reached the end of a string. Add a delimiter and move to the next one.
+			result[i] = delimiter;
+			current_string++;
+			current_char = current_string[0];
+		}
+	}
+
+	return result;
+}
+
+
 int utils_round_up(int num_to_round, int multiple) {
 	if (multiple == 0)
 		return 0;
@@ -124,36 +164,14 @@ int utils_is_file_readable(const char *path) {
 	return LIBPE_E_OK;
 }
 
-int utils_load_config(const char *path, utils_load_config_callback_t cb) {
-	FILE *fp = fopen(path, "r");
-	if (fp == NULL)
-		return -1;
+// IMPORTANT: This is not thread-safe - not reentrant.
+const char *utils_get_homedir(void) {
+	const char *homedir = getenv("HOME");
+	if (homedir != NULL)
+		return homedir;
 
-	char line[1024];
+	errno = 0;
+	struct passwd *pwd = getpwuid(getuid());
 
-	while (fgets(line, sizeof(line), fp) != NULL) {
-		// comments
-		if (*line == '#')
-			continue;
-
-		// remove newline
-		for (size_t i=0; i < sizeof(line); i++) {
-			if (line[i] == '\n' || i == sizeof(line) - 1) {
-				line[i] = '\0';
-				break;
-			}
-		}
-
-		char *param = strtok(line, "=");
-		char *value = strtok(NULL, "=");
-		const char *trimmed_param = utils_str_inplace_trim(param);
-		const char *trimmed_value = utils_str_inplace_trim(value);
-
-		//printf("DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
-		cb(trimmed_param, trimmed_value);
-	}
-
-	fclose(fp);
-
-	return 0;
+	return pwd == NULL ? NULL : pwd->pw_dir;
 }

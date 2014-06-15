@@ -22,7 +22,6 @@
 #include "config.h"
 #include "error.h" // from libpe
 #include "utils.h"
-#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #if defined(__linux__)
@@ -32,8 +31,6 @@
 #elif defined(__CYGWIN__)
 #include <limits.h>
 #endif
-#include <pwd.h>
-#include <unistd.h>
 
 #define DEFAULT_CONFIG_FILENAME	"pev.conf"
 
@@ -45,48 +42,93 @@
 #define DEFAULT_PLUGINS_PATH	"/usr/lib/pev/plugins"
 #endif
 
-static const char *g_plugins_path = NULL;
-
-const char *pev_plugins_path(void) {
-	if (g_plugins_path == NULL)
-		g_plugins_path = strdup(DEFAULT_PLUGINS_PATH);
-	return g_plugins_path;
-}
-
-// IMPORTANT: This is not thread-safe - not reentrant.
-static const char *get_homedir(void) {
-	const char *homedir = getenv("HOME");
-	if (homedir != NULL)
-		return homedir;
-
-	errno = 0;
-	struct passwd *pwd = getpwuid(getuid());
-
-	return pwd == NULL ? NULL : pwd->pw_dir;
-}
-
-static void pev_load_config_cb(const char *name, const char *value) {
+static bool _load_config_cb(pev_config_t * const config, const char *name, const char *value) {
 	//printf("%s=%s\n", name, value);
+
 	if (!strcmp("plugins_dir", name)) {
-		// FIXME memory leak
-		g_plugins_path = strdup(value);
+		config->plugins_path = strdup(value);
+		return true;
 	}
+
+	return false;
 }
 
-int pev_load_config(void) {
+static int _load_config_and_parse(pev_config_t * const config, const char *path, pev_config_parse_callback_t pev_cb) {
+	FILE *fp = fopen(path, "r");
+	if (fp == NULL)
+		return -1;
+
+	char line[1024];
+
+	while (fgets(line, sizeof(line), fp) != NULL) {
+		// comments
+		if (*line == '#')
+			continue;
+
+		// remove newline
+		for (size_t i=0; i < sizeof(line); i++) {
+			if (line[i] == '\n' || i == sizeof(line) - 1) {
+				line[i] = '\0';
+				break;
+			}
+		}
+
+		char *param = strtok(line, "=");
+		char *value = strtok(NULL, "=");
+		const char *trimmed_param = utils_str_inplace_trim(param);
+		const char *trimmed_value = utils_str_inplace_trim(value);
+
+		//printf("DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
+		const bool processed = pev_cb(config, trimmed_param, trimmed_value);
+
+		if (!processed && config->user_defined.parse_callback != NULL)
+			config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
+	}
+
+	fclose(fp);
+
+	return 0;
+}
+
+int pev_load_config(pev_config_t * const config) {
 	char buff[PATH_MAX];
 
 	int ret = utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
 	if (ret == LIBPE_E_OK) {
-		return utils_load_config(DEFAULT_CONFIG_FILENAME, pev_load_config_cb);
+		ret = _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME, _load_config_cb);
+		if (ret < 0)
+			return ret;
 	}
 
-	snprintf(buff, sizeof(buff), "%s/%s", get_homedir(), DEFAULT_CONFIG_PATH);
+	snprintf(buff, sizeof(buff), "%s/%s", utils_get_homedir(), DEFAULT_CONFIG_PATH);
 	ret = utils_is_file_readable(buff);
 
 	if (ret == LIBPE_E_OK) {
-		return utils_load_config(buff, pev_load_config_cb);
+		ret = _load_config_and_parse(config, buff, _load_config_cb);
+		if (ret < 0)
+			return ret;
 	}
 
-	return -1;
+	//
+	// Default values
+	//
+	if (config->plugins_path == NULL)
+		config->plugins_path = strdup(DEFAULT_PLUGINS_PATH);
+
+	return 0;
+}
+
+void pev_cleanup_config(pev_config_t * const config) {
+	if (config == NULL)
+		return;
+
+	if (config->user_defined.data != NULL) {
+		if (config->user_defined.cleanup_callback != NULL)
+			config->user_defined.cleanup_callback(config->user_defined.data);
+	}
+
+	if (config->plugins_path != NULL) {
+		free(config->plugins_path);
+		config->plugins_path = NULL;
+	}
 }

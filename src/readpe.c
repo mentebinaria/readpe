@@ -28,7 +28,7 @@
 #define MAX_DLL_NAME 256
 #define MAX_FUNCTION_NAME 512
 
-struct options {
+typedef struct {
 	bool all;
 	bool dos;
 	bool coff;
@@ -38,9 +38,7 @@ struct options {
 	bool exports;
 	bool all_headers;
 	bool all_sections;
-};
-
-static struct options config;
+} options_t;
 
 static void usage(void)
 {
@@ -63,20 +61,31 @@ static void usage(void)
 		PROGRAM, PROGRAM, formats);
 }
 
-static void parse_headers(const char *optarg)
+static void parse_headers(options_t *options, const char *optarg)
 {
 	if (!strcmp(optarg, "dos"))
-		config.dos = true;
+		options->dos = true;
 	else if (!strcmp(optarg, "coff"))
-		config.coff = true;
+		options->coff = true;
 	else if (!strcmp(optarg, "optional"))
-		config.opt = true;
+		options->opt = true;
 	else
 		EXIT_ERROR("invalid header option");
 }
 
-void parse_options(int argc, char *argv[])
+static void free_options(options_t *options)
 {
+	if (options == NULL)
+		return;
+
+	free(options);
+}
+
+static options_t *parse_options(int argc, char *argv[])
+{
+	options_t *options = malloc_s(sizeof(options_t));
+	memset(options, 0, sizeof(options_t));
+
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "AHSh:dief:v";
 
@@ -94,10 +103,7 @@ void parse_options(int argc, char *argv[])
 		{  NULL,              0,                 NULL,  0  }
 	};
 
-	// setting all fields to false
-	memset(&config, false, sizeof(config));
-
-	config.all = true;
+	options->all = true;
 
 	int c, ind;
 
@@ -112,34 +118,34 @@ void parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'A':
-				config.all = true;
+				options->all = true;
 				break;
 			case 'H':
-				config.all = false;
-				config.all_headers = true;
+				options->all = false;
+				options->all_headers = true;
 				break;
 			case 'd':
-				config.all = false;
-				config.dirs = true;
+				options->all = false;
+				options->dirs = true;
 				break;
 			case 'S':
-				config.all = false;
-				config.all_sections = true;
+				options->all = false;
+				options->all_sections = true;
 				break;
 			case 'v':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'h':
-				config.all = false;
-				parse_headers(optarg);
+				options->all = false;
+				parse_headers(options, optarg);
 				break;
 			case 'i':
-				config.all = false;
-				config.imports = true;
+				options->all = false;
+				options->imports = true;
 				break;
 			case 'e':
-				config.all = false;
-				config.exports = true;
+				options->all = false;
+				options->exports = true;
 				break;
 			case 'f':
 				if (output_set_format_by_name(optarg) < 0)
@@ -150,6 +156,8 @@ void parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	return options;
 }
 
 static void print_sections(pe_ctx_t *ctx)
@@ -945,7 +953,8 @@ static void print_imports(pe_ctx_t *ctx)
 
 int main(int argc, char *argv[])
 {
-	PEV_INITIALIZE();
+	pev_config_t config;
+	PEV_INITIALIZE(&config);
 
 	if (argc < 2) {
 		usage();
@@ -954,7 +963,7 @@ int main(int argc, char *argv[])
 
 	output_set_cmdline(argc, argv);
 
-	parse_options(argc, argv); // Opcoes
+	options_t *options = parse_options(argc, argv); // opcoes
 
 	pe_ctx_t ctx;
 
@@ -976,7 +985,7 @@ int main(int argc, char *argv[])
 	output_open_document();
 
 	// dos header
-	if (config.dos || config.all_headers || config.all) {
+	if (options->dos || options->all_headers || options->all) {
 		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
 		if (header_ptr)
 			print_dos_header(header_ptr);
@@ -984,7 +993,7 @@ int main(int argc, char *argv[])
 	}
 
 	// coff/file header
-	if (config.coff || config.all_headers || config.all) {
+	if (options->coff || options->all_headers || options->all) {
 		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
 		if (header_ptr)
 			print_coff_header(header_ptr);
@@ -992,7 +1001,7 @@ int main(int argc, char *argv[])
 	}
 
 	// optional header
-	if (config.opt || config.all_headers || config.all) {
+	if (options->opt || options->all_headers || options->all) {
 		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
 		if (header_ptr)
 			print_optional_header(header_ptr);
@@ -1000,34 +1009,37 @@ int main(int argc, char *argv[])
 	}
 
 	// directories
-	if (config.dirs || config.all) {
+	if (options->dirs || options->all) {
 		if (pe_directories(&ctx) != NULL)
 			print_directories(&ctx);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// imports
-	if (config.imports || config.all) {
+	if (options->imports || options->all) {
 		if (pe_directories(&ctx) != NULL)
 			print_imports(&ctx);
 		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
 	}
 
 	// exports
-	if (config.exports || config.all) {
+	if (options->exports || options->all) {
 		if (pe_directories(&ctx) != NULL)
 			print_exports(&ctx);
 		else { EXIT_ERROR("unable to read directories from optional header"); }
 	}
 
 	// sections
-	if (config.all_sections || config.all) {
+	if (options->all_sections || options->all) {
 		if (pe_sections(&ctx) != NULL)
 			print_sections(&ctx);
 		else { EXIT_ERROR("unable to read sections"); }
 	}
 
 	output_close_document();
+
+	// libera a memoria
+	free_options(options);
 
 	// free
 	err = pe_unload(&ctx);
@@ -1036,7 +1048,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	PEV_FINALIZE();
+	PEV_FINALIZE(&config);
 
 	return EXIT_SUCCESS;
 }

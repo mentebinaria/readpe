@@ -20,14 +20,16 @@
 #pragma once
 
 #include <stdbool.h>
-
-typedef void (*utils_load_config_callback_t)(const char *name, const char *value);
+#include <stddef.h>
 
 bool utils_str_ends_with(const char *str, const char *suffix);
 char *utils_str_inplace_ltrim(char *str);
 char *utils_str_inplace_rtrim(char *str);
 char *utils_str_inplace_trim(char *str);
+char *utils_str_array_join(char *strings[], size_t count, char delimiter);
 
 int utils_round_up(int num_to_round, int multiple);
 int utils_is_file_readable(const char *path);
-int utils_load_config(const char *path, utils_load_config_callback_t cb);
+
+// IMPORTANT: This is not thread-safe - not reentrant.
+const char *utils_get_homedir(void);

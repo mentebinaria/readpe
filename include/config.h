@@ -30,7 +30,6 @@ typedef void (*pev_config_cleanup_callback_t)(void *data);
 typedef struct _pev_config_t {
 	char *plugins_path;
 	struct {
-	void *user_defined;
 		pev_config_parse_callback_t parse_callback;
 		pev_config_cleanup_callback_t cleanup_callback;
 		void *data;

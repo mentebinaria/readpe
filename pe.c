@@ -45,7 +45,8 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 	}
 
 	// Open the file.
-	const int fd = open(ctx->path, O_RDWR);
+	int oflag = options & LIBPE_OPT_OPEN_RW ? O_RDWR : O_RDONLY;
+	const int fd = open(ctx->path, oflag);
 	if (fd == -1) {
 		//perror("open");
 		return LIBPE_E_OPEN_FAILED;
@@ -72,8 +73,11 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 	ctx->map_size = stat.st_size;
 
 	// Create the virtual memory mapping.
-	ctx->map_addr = mmap(NULL, ctx->map_size, PROT_READ|PROT_WRITE,
-		MAP_SHARED, fd, 0);
+	int mprot = options & LIBPE_OPT_OPEN_RW ? PROT_READ|PROT_WRITE /* Pages may be written */ : PROT_READ;
+	// MAP_SHARED makes updates to the mapping visible to other processes that map this file.
+	// The file may not actually be updated until msync(2) or munmap() is called.
+	int mflags = options & LIBPE_OPT_OPEN_RW ? MAP_SHARED : MAP_PRIVATE;
+	ctx->map_addr = mmap(NULL, ctx->map_size, mprot, mflags, fd, 0);
 	if (ctx->map_addr == MAP_FAILED) {
 		close(fd);
 		//perror("mmap");

@@ -143,7 +143,7 @@ $(pev_BUILDDIR)/%.o: %.c
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog ; \
+		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(bindir); \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
 			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
@@ -153,7 +153,7 @@ install: installdirs
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(DESTDIR) || $(MKDIR) $(DESTDIR)
+	@$(CHK_DIR_EXISTS) $(bindir) || $(MKDIR) $(bindir)
 	@$(CHK_DIR_EXISTS) $(man1dir) || $(MKDIR) $(man1dir)
 	@$(CHK_DIR_EXISTS) $(SHAREDIR) || $(MKDIR) $(SHAREDIR)
 	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)

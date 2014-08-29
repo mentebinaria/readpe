@@ -10,25 +10,24 @@ else
 	prefix = $(DESTDIR)
 endif
 
-bindir = $(exec_prefix)/bin
-datadir = $(datarootdir)
-datarootdir = $(prefix)/share
-docdir = $(datarootdir)/doc/pev
 exec_prefix = $(prefix)
+sysconfdir = $(prefix)/etc
 includedir = $(prefix)/include
-infodir = $(datarootdir)/info
+datarootdir = $(prefix)/share
+localstatedir = $(prefix)/var
+bindir = $(exec_prefix)/bin
 libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
+sbindir = $(exec_prefix)/sbin
+datadir = $(datarootdir)
+docdir = $(datarootdir)/doc/pev
+infodir = $(datarootdir)/info
 localedir = $(datarootdir)/locale
-localstatedir = $(prefix)/var
 man1dir = $(mandir)/man1
 man1ext = .1
 mandir = $(datarootdir)/man
 manext = .1
-prefix = /usr
-sbindir = $(exec_prefix)/sbin
 srcdir = .
-sysconfdir = $(prefix)/etc
 export pluginsdir = $(libdir)/pev/plugins
 
 export DEST = $(DESTDIR)$(bindir)

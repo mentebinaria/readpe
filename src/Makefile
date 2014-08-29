@@ -85,7 +85,6 @@ pev_COMMON_DEPS = \
 
 ####### Compiler options
 
-export DEST = $(DESTDIR)$(bindir)
 
 override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
@@ -144,7 +143,7 @@ $(pev_BUILDDIR)/%.o: %.c
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(DEST); \
+		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog ; \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
 			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
@@ -154,14 +153,14 @@ install: installdirs
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
+	@$(CHK_DIR_EXISTS) $(DESTDIR) || $(MKDIR) $(DESTDIR)
 	@$(CHK_DIR_EXISTS) $(man1dir) || $(MKDIR) $(man1dir)
 	@$(CHK_DIR_EXISTS) $(SHAREDIR) || $(MKDIR) $(SHAREDIR)
 	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)
 
 uninstall:
 	for prog in $(PROGS); do \
-		$(RM) $(DEST)/$$prog; \
+		$(RM) $(DESTDIR)/$$prog; \
 		$(RM) $(man1dir)/$$prog$(man1ext).gz; \
 	done
 	cd $(PLUGINS_DIR) && $(MAKE) $@

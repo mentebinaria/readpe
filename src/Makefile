@@ -18,10 +18,10 @@ datadir = $(datarootdir)
 docdir = $(datarootdir)/doc/pev
 infodir = $(datarootdir)/info
 localedir = $(datarootdir)/locale
-man1dir = $(mandir)/man1
-man1ext = .1
 mandir = $(datarootdir)/man
 manext = .1
+man1dir = $(mandir)/man1
+man1ext = .1
 srcdir = .
 export pluginsdir = $(libdir)/pev/plugins
 

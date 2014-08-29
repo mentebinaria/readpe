@@ -4,6 +4,11 @@
 export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
+ifndef DESTDIR
+	prefix = /usr
+else
+	prefix = $(DESTDIR)
+endif
 
 exec_prefix = $(prefix)
 sysconfdir = $(prefix)/etc

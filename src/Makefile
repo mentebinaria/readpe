@@ -30,12 +30,6 @@ man1ext = .1
 srcdir = .
 export pluginsdir = $(libdir)/pev/plugins
 
-export DEST = $(DESTDIR)$(bindir)
-
-override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
-override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
-override CPPFLAGS += -D_GNU_SOURCE
-
 ####### Makefile Conventions - Utilities
 
 export CC ?= gcc
@@ -88,6 +82,14 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
 	$(pev_BUILDDIR)/output.o
+
+####### Compiler options
+
+export DEST = $(DESTDIR)$(bindir)
+
+override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
+override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+override CPPFLAGS += -D_GNU_SOURCE
 
 ####### Build rules
 

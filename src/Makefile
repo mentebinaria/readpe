@@ -26,6 +26,12 @@ srcdir = .
 sysconfdir = $(prefix)/etc
 export pluginsdir = $(libdir)/pev/plugins
 
+export DEST = $(DESTDIR)$(bindir)
+
+override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
+override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+override CPPFLAGS += -D_GNU_SOURCE
+
 ####### Makefile Conventions - Utilities
 
 export CC ?= gcc
@@ -44,14 +50,6 @@ ifeq ($(PLATFORM_OS), Darwin)
 else
 	export STRIP = strip --strip-unneeded
 endif
-
-####### Compiler options
-
-export DEST = $(DESTDIR)$(bindir)
-
-override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
-override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
-override CPPFLAGS += -D_GNU_SOURCE
 
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7

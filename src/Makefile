@@ -5,7 +5,7 @@ export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 ifndef DESTDIR
-	prefix = /usr
+	prefix = /usr/local
 else
 	prefix = $(DESTDIR)
 endif

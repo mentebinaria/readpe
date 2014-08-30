@@ -4,26 +4,30 @@
 export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
+ifndef DESTDIR
+	prefix = /usr/local
+else
+	prefix = $(DESTDIR)
+endif
 
-bindir = $(exec_prefix)/bin
-datadir = $(datarootdir)
-datarootdir = $(prefix)/share
-docdir = $(datarootdir)/doc/pev
 exec_prefix = $(prefix)
+sysconfdir = $(prefix)/etc
 includedir = $(prefix)/include
-infodir = $(datarootdir)/info
+datarootdir = $(prefix)/share
+localstatedir = $(prefix)/var
+bindir = $(exec_prefix)/usr/bin
 libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
+sbindir = $(exec_prefix)/sbin
+datadir = $(datarootdir)
+docdir = $(datarootdir)/doc/pev
+infodir = $(datarootdir)/info
 localedir = $(datarootdir)/locale
-localstatedir = $(prefix)/var
-man1dir = $(mandir)/man1
-man1ext = .1
 mandir = $(datarootdir)/man
 manext = .1
-prefix = /usr
-sbindir = $(exec_prefix)/sbin
+man1dir = $(mandir)/man1
+man1ext = .1
 srcdir = .
-sysconfdir = $(prefix)/etc
 export pluginsdir = $(libdir)/pev/plugins
 
 ####### Makefile Conventions - Utilities
@@ -44,14 +48,6 @@ ifeq ($(PLATFORM_OS), Darwin)
 else
 	export STRIP = strip --strip-unneeded
 endif
-
-####### Compiler options
-
-export DEST = $(DESTDIR)$(bindir)
-
-override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
-override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
-override CPPFLAGS += -D_GNU_SOURCE
 
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
@@ -86,6 +82,13 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
 	$(pev_BUILDDIR)/output.o
+
+####### Compiler options
+
+
+override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
+override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+override CPPFLAGS += -D_GNU_SOURCE
 
 ####### Build rules
 
@@ -140,7 +143,7 @@ $(pev_BUILDDIR)/%.o: %.c
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(DEST); \
+		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(bindir); \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
 			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
@@ -150,14 +153,14 @@ install: installdirs
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
+	@$(CHK_DIR_EXISTS) $(bindir) || $(MKDIR) $(bindir)
 	@$(CHK_DIR_EXISTS) $(man1dir) || $(MKDIR) $(man1dir)
 	@$(CHK_DIR_EXISTS) $(SHAREDIR) || $(MKDIR) $(SHAREDIR)
 	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)
 
 uninstall:
 	for prog in $(PROGS); do \
-		$(RM) $(DEST)/$$prog; \
+		$(RM) $(DESTDIR)/$$prog; \
 		$(RM) $(man1dir)/$$prog$(man1ext).gz; \
 	done
 	cd $(PLUGINS_DIR) && $(MAKE) $@

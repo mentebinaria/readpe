@@ -5,30 +5,24 @@ export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 
-srcdir = .
-prefix = /usr/local
-
 exec_prefix = $(prefix)
 sysconfdir = $(prefix)/etc
 includedir = $(prefix)/include
 datarootdir = $(prefix)/share
 localstatedir = $(prefix)/var
-
 bindir = $(exec_prefix)/bin
 libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
 sbindir = $(exec_prefix)/sbin
-
 datadir = $(datarootdir)
 docdir = $(datarootdir)/doc/pev
 infodir = $(datarootdir)/info
 localedir = $(datarootdir)/locale
-
 mandir = $(datarootdir)/man
 manext = .1
 man1dir = $(mandir)/man1
 man1ext = .1
-
+srcdir = .
 export pluginsdir = $(libdir)/pev/plugins
 
 ####### Makefile Conventions - Utilities
@@ -51,6 +45,8 @@ else
 endif
 
 ####### Compiler options
+
+export DEST = $(DESTDIR)$(bindir)
 
 override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
@@ -143,30 +139,26 @@ $(pev_BUILDDIR)/%.o: %.c
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(DESTDIR)$(bindir); \
+		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(DEST); \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
-			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(DESTDIR)$(man1dir)/$$prog$(man1ext).gz || \
+			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
 	done
 
-	$(INSTALL_DATA) $(srcdir)/userdb.txt $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) $(srcdir)/userdb.txt $(SHAREDIR)
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(DESTDIR) || $(MKDIR) $(DESTDIR)
-	@$(CHK_DIR_EXISTS) $(DESTDIR)$(bindir) || $(MKDIR) $(DESTDIR)$(bindir)
-	@$(CHK_DIR_EXISTS) $(DESTDIR)$(man1dir) || $(MKDIR) $(DESTDIR)$(man1dir)
-	@$(CHK_DIR_EXISTS) $(DESTDIR)$(SHAREDIR) || $(MKDIR) $(DESTDIR)$(SHAREDIR)
-	@$(CHK_DIR_EXISTS) $(DESTDIR)$(pluginsdir) || $(MKDIR) $(DESTDIR)$(pluginsdir)
+	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
+	@$(CHK_DIR_EXISTS) $(man1dir) || $(MKDIR) $(man1dir)
+	@$(CHK_DIR_EXISTS) $(SHAREDIR) || $(MKDIR) $(SHAREDIR)
+	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)
 
 uninstall:
 	for prog in $(PROGS); do \
-		$(RM) $(DESTDIR)$(bindir)/$$prog; \
-		$(RM) $(DESTDIR)$(man1dir)/$$prog$(man1ext).gz; \
+		$(RM) $(DEST)/$$prog; \
+		$(RM) $(man1dir)/$$prog$(man1ext).gz; \
 	done
-	$(RM_DIR) $(DESTDIR)$(SHAREDIR)
-	$(RM_DIR) $(DESTDIR)$(docdir)
-	$(RM_DIR) $(DESTDIR)$(pluginsdir)
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 clean:

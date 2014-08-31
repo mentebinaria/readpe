@@ -5,25 +5,34 @@ PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 
-prefix = /usr
-exec_prefix = $(prefix)
-bindir = $(exec_prefix)/bin
-sbindir = $(exec_prefix)/sbin
-libexecdir = $(exec_prefix)/libexec
-datarootdir = $(prefix)/share
-datadir = $(datarootdir)
-sysconfdir = $(prefix)/etc
-localstatedir = $(prefix)/var
-includedir = $(prefix)/include
-docdir = $(datarootdir)/doc/libpe
-infodir = $(datarootdir)/info
-libdir = $(exec_prefix)/lib
-localedir = $(datarootdir)/locale
-mandir = $(datarootdir)/man
-man1dir = $(mandir)/man1
-manext = .1
-man1ext = .1
+ifndef DESTDIR
+	prefix = /usr/local
+else
+	prefix = $(DESTDIR)
+endif
+
 srcdir = .
+
+exec_prefix = $(prefix)
+sysconfdir = $(prefix)/etc
+includedir = $(prefix)/include
+datarootdir = $(prefix)/share
+localstatedir = $(prefix)/var
+
+bindir = $(exec_prefix)/bin
+libdir = $(exec_prefix)/lib
+libexecdir = $(exec_prefix)/libexec
+sbindir = $(exec_prefix)/sbin
+
+datadir = $(datarootdir)
+docdir = $(datarootdir)/doc/pev
+infodir = $(datarootdir)/info
+localedir = $(datarootdir)/locale
+
+mandir = $(datarootdir)/man
+manext = .1
+man1dir = $(mandir)/man1
+man1ext = .1
 
 ####### Makefile Conventions - Utilities
 
@@ -46,7 +55,6 @@ endif
 
 ####### Compiler options
 
-DEST = $(DESTDIR)$(libdir)
 override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c
 ifneq ($(PLATFORM_OS), CYGWIN)
 	override CFLAGS += -fPIC
@@ -88,19 +96,19 @@ $(libpe_BUILDDIR)/%.o: %.c
 
 install: installdirs
 ifeq ($(PLATFORM_OS), Linux)
-	$(INSTALL_DATA) $(LIBNAME).so $(DEST)/$(LIBNAME).so.$(VERSION)
-	cd $(DEST); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
-	cd $(DEST); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
+	$(INSTALL_DATA) $(LIBNAME).so $(libdir)/$(LIBNAME).so.$(VERSION)
+	cd $(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
+	cd $(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), Darwin)
-	$(INSTALL_DATA) $(LIBNAME).dylib $(DEST)/$(LIBNAME).$(VERSION).dylib
-	cd $(DEST); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
-	cd $(DEST); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).1.dylib
+	$(INSTALL_DATA) $(LIBNAME).dylib $(libdir)/$(LIBNAME).$(VERSION).dylib
+	cd $(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
+	cd $(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).1.dylib
 else ifeq ($(PLATFORM_OS), CYGWIN)
 	# TODO
 endif
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(DEST) || $(MKDIR) $(DEST)
+	@$(CHK_DIR_EXISTS) $(libdir) || $(MKDIR) $(libdir)
 
 strip-binaries:
 ifeq ($(PLATFORM_OS), Linux)
@@ -114,8 +122,8 @@ endif
 install-strip: strip-binaries install
 
 uninstall:
-	$(RM) $(DEST)/$(LIBNAME).so* \
-		$(DEST)/$(LIBNAME)*.dylib
+	$(RM) $(libdir)/$(LIBNAME).so* \
+		$(libdir)/$(LIBNAME)*.dylib
 
 clean:
 	$(RM_DIR) $(libpe_BUILDDIR)

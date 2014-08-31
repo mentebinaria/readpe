@@ -76,12 +76,15 @@ clean:
 
 ###
 
-install:
+install: installdirs
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(csv_LIBNAME).* $(pluginsdir)
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(pluginsdir)
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(pluginsdir)
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(pluginsdir)
 	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(pluginsdir)
 
+installdirs:
+	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)
+
 uninstall:
-	$(RM) $(pluginsdir)/*
+	$(RM_DIR) $(pluginsdir)

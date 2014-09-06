@@ -22,7 +22,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pev_api.h"
 #include "output_plugin.h"
+
+const pev_api_t *g_pev_api = NULL;
 
 // REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
 // CSV entities ',', '"', '\n'
@@ -61,8 +64,8 @@ static char *escape_csv(const format_t *format, const char *str) {
 	// If `str` contains a line-break, or a double-quote, or a comma,
 	// escape and enclose the entire `str` with double quotes.
 	return strpbrk(str, "\n\",") != NULL
-		? escape_ex_quoted(str, format->entities_table)
-		: escape_ex(str, format->entities_table);
+		? g_pev_api->output->escape_ex_quoted(str, format->entities_table)
+		: g_pev_api->output->escape_ex(str, format->entities_table);
 }
 
 //
@@ -162,13 +165,14 @@ void plugin_unloaded(void) {
 	//printf("Unloading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
 }
 
-int plugin_initialize(void) {
-	int ret = output_plugin_register_format(&g_format);
+int plugin_initialize(const pev_api_t *api) {
+	g_pev_api = api;
+	int ret = g_pev_api->output->output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
 void plugin_shutdown(void) {
-	output_plugin_unregister_format(&g_format);
+	g_pev_api->output->output_plugin_unregister_format(&g_format);
 }

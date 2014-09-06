@@ -21,12 +21,12 @@
 
 #pragma once
 
+#include "plugin.h"
+#include "output.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "plugin.h"
-#include "output.h"
 
 //
 // Type definitions
@@ -48,14 +48,18 @@ extern "C" {
 // Public API specific for output plugins.
 //
 
-int output_plugin_register_format(const format_t *format);
-void output_plugin_unregister_format(const format_t *format);
+typedef struct _output_plugin_api {
+	const char * (* output_cmdline)(void);
+	int (* output_plugin_register_format)(const format_t *format);
+	void (* output_plugin_unregister_format)(const format_t *format);
+	size_t (* escape_count_chars_ex)(const char *str, size_t len, const entity_table_t entities);
+	char * (* escape_ex)(const char *str, const entity_table_t entities);
+	char * (* escape_ex_quoted)(const char *str, const entity_table_t entities);
+	char * (* escape)(const format_t *format, const char *str);
+	char * (* escape_quoted)(const format_t *format, const char *str);
+} output_plugin_api_t;
 
-size_t escape_count_chars_ex(const char *str, size_t len, const entity_table_t entities);
-char *escape_ex(const char *str, const entity_table_t entities);
-char *escape_ex_quoted(const char *str, const entity_table_t entities);
-char *escape(const format_t *format, const char *str);
-char *escape_quoted(const format_t *format, const char *str);
+output_plugin_api_t *output_plugin_api_ptr(void);
 
 #ifdef __cplusplus
 }

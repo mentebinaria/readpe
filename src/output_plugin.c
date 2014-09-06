@@ -144,3 +144,21 @@ char *escape(const format_t *format, const char *str) {
 char *escape_quoted(const format_t *format, const char *str) {
 	return escape_ex_quoted(str, format->entities_table);
 }
+
+// These 2 are implemented in `output.c`.
+extern int output_plugin_register_format(const format_t *format);
+extern void output_plugin_unregister_format(const format_t *format);
+
+output_plugin_api_t *output_plugin_api_ptr(void) {
+	static output_plugin_api_t api = {
+		.output_cmdline = output_cmdline,
+		.output_plugin_register_format = output_plugin_register_format,
+		.output_plugin_unregister_format = output_plugin_unregister_format,
+		.escape_count_chars_ex = escape_count_chars_ex,
+		.escape_ex = escape_ex,
+		.escape_ex_quoted = escape_ex_quoted,
+		.escape = escape,
+		.escape_quoted = escape_quoted
+	};
+	return &api;
+}

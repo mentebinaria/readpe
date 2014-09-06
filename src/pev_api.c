@@ -22,26 +22,20 @@
 	THE SOFTWARE.
 */
 
-#pragma once
+#include "pev_api.h"
+#include "output_plugin.h"
+#include <stdbool.h>
+#include <string.h>
 
-#include <stdio.h>
+pev_api_t *pev_api_ptr(void) {
+	static bool initialized = false;
+	static pev_api_t api;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+	if (!initialized) {
+		initialized = true;
+		memset(&api, 0, sizeof(api));
+		api.output = output_plugin_api_ptr();
+	}
 
-struct _pev_api_t;
-
-typedef int (*plugin_loaded_fn_t)(void);
-typedef int (*plugin_initialize_fn_t)(const struct _pev_api_t *api);
-typedef void (*plugin_shutdown_fn_t)(void);
-typedef void (*plugin_unloaded_fn_t)(void);
-
-int plugin_loaded(void);
-int plugin_initialize(const struct _pev_api_t *api);
-void plugin_shutdown(void);
-void plugin_unloaded(void);
-
-#ifdef __cplusplus
-} //extern "C"
-#endif
+	return &api;
+}

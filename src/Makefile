@@ -57,7 +57,7 @@ endif
 
 ####### Compiler options
 
-override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
+override LDFLAGS += -L$(LIBPE) -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
 override CPPFLAGS += -D_GNU_SOURCE
 
@@ -93,7 +93,8 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/utils.o \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
-	$(pev_BUILDDIR)/output.o
+	$(pev_BUILDDIR)/output.o \
+	$(pev_BUILDDIR)/pev_api.o
 
 ####### Build rules
 

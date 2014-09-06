@@ -24,24 +24,20 @@
 
 #pragma once
 
-#include <stdio.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct _pev_api_t;
+struct _output_plugin_api; // from output_plugin.h
 
-typedef int (*plugin_loaded_fn_t)(void);
-typedef int (*plugin_initialize_fn_t)(const struct _pev_api_t *api);
-typedef void (*plugin_shutdown_fn_t)(void);
-typedef void (*plugin_unloaded_fn_t)(void);
+typedef struct _pev_api_t {
+	struct _output_plugin_api *output;
+} pev_api_t;
 
-int plugin_loaded(void);
-int plugin_initialize(const struct _pev_api_t *api);
-void plugin_shutdown(void);
-void plugin_unloaded(void);
+pev_api_t *pev_api_ptr(void);
 
 #ifdef __cplusplus
 } //extern "C"
 #endif
+
+

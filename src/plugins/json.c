@@ -23,9 +23,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pev_api.h"
 #include "output_plugin.h"
 
-#define SPACES 32 // spaces # for text-based output
+const pev_api_t *g_pev_api = NULL;
+
+static char *escape_json(const format_t *format, const char *str) {
+	return g_pev_api->output->escape(format, str);
+}
 
 static void to_format(
 	const format_t *format,
@@ -124,7 +129,7 @@ static const format_t g_format = {
 	FORMAT_ID,
 	FORMAT_NAME,
 	&to_format,
-	&escape,
+	&escape_json,
 	NULL
 };
 
@@ -140,13 +145,14 @@ void plugin_unloaded(void) {
 	//printf("Unloading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
 }
 
-int plugin_initialize(void) {
-	int ret = output_plugin_register_format(&g_format);
+int plugin_initialize(const pev_api_t *api) {
+	g_pev_api = api;
+	int ret = g_pev_api->output->output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
 void plugin_shutdown(void) {
-	output_plugin_unregister_format(&g_format);
+	g_pev_api->output->output_plugin_unregister_format(&g_format);
 }

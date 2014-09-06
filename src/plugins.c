@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include "config.h"
+#include "pev_api.h"
 
 typedef struct _plugins_entry {
 	dylib_t library;
@@ -86,7 +87,8 @@ int plugins_load(const char *path) {
 		}
 	}
 
-	const int initialized = entry->plugin_initialize_fn();
+	const pev_api_t *pev_api = pev_api_ptr();
+	const int initialized = entry->plugin_initialize_fn(pev_api);
 	if (initialized < 0) {
 		fprintf(stderr, "plugins: plugin didn't initialize correctly\n");
 		dylib_unload(library);

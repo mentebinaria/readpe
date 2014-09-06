@@ -22,7 +22,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "pev_api.h"
 #include "output_plugin.h"
+
+const pev_api_t *g_pev_api = NULL;
 
 // REFERENCE: http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
 // HTML entities '"', '&', '\'', '<', '>', ...
@@ -54,6 +57,10 @@ static const entity_t g_entities[255] = {
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
 	NULL,	NULL,	NULL,	NULL,	NULL,
 };
+
+static char *escape_html(const format_t *format, const char *str) {
+	return g_pev_api->output->escape(format, str);
+}
 
 #define TEMPLATE_DOCUMENT_OPEN \
 	"<!DOCTYPE html>\n" \
@@ -93,7 +100,7 @@ static void to_format(
 				default:
 					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
-					printf(TEMPLATE_DOCUMENT_OPEN, output_cmdline());
+					printf(TEMPLATE_DOCUMENT_OPEN, g_pev_api->output->output_cmdline());
 					indent++;
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
@@ -163,7 +170,7 @@ static const format_t g_format = {
 	FORMAT_ID,
 	FORMAT_NAME,
 	&to_format,
-	&escape,
+	&escape_html,
 	(entity_table_t)g_entities
 };
 
@@ -179,13 +186,14 @@ void plugin_unloaded(void) {
 	//printf("Unloading %s plugin %s\n", PLUGIN_TYPE, PLUGIN_NAME);
 }
 
-int plugin_initialize(void) {
-	int ret = output_plugin_register_format(&g_format);
+int plugin_initialize(const pev_api_t *api) {
+	g_pev_api = api;
+	int ret = g_pev_api->output->output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
 void plugin_shutdown(void) {
-	output_plugin_unregister_format(&g_format);
+	g_pev_api->output->output_plugin_unregister_format(&g_format);
 }

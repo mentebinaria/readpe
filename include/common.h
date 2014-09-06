@@ -52,8 +52,8 @@
 void *malloc_s(size_t size);
 
 #define PEV_INITIALIZE(config) \
-	memset(config, 0, sizeof(*config)); \
 	do { \
+		memset(config, 0, sizeof(*config)); \
 		pev_load_config(config); \
 		int ret = plugins_load_all(config); \
 		if (ret < 0) \

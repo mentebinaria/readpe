@@ -5,13 +5,8 @@ export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
 
-ifndef DESTDIR
-	prefix = /usr/local
-else
-	prefix = $(DESTDIR)
-endif
-
 srcdir = .
+prefix = /usr/local
 
 exec_prefix = $(prefix)
 sysconfdir = $(prefix)/etc
@@ -34,7 +29,7 @@ manext = .1
 man1dir = $(mandir)/man1
 man1ext = .1
 
-export pluginsdir = $(libdir)/pev/plugins
+export pluginsdir = $(DESTDIR)$(libdir)/pev/plugins
 
 ####### Makefile Conventions - Utilities
 
@@ -149,26 +144,27 @@ $(pev_BUILDDIR)/%.o: %.c
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(bindir); \
+		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(DESTDIR)$(bindir); \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
-			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(man1dir)/$$prog$(man1ext).gz || \
+			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(DESTDIR)$(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
 	done
 
-	$(INSTALL_DATA) $(srcdir)/userdb.txt $(SHAREDIR)
+	$(INSTALL_DATA) $(srcdir)/userdb.txt $(DESTDIR)$(SHAREDIR)
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(bindir) || $(MKDIR) $(bindir)
-	@$(CHK_DIR_EXISTS) $(man1dir) || $(MKDIR) $(man1dir)
-	@$(CHK_DIR_EXISTS) $(SHAREDIR) || $(MKDIR) $(SHAREDIR)
+	@$(CHK_DIR_EXISTS) $(DESTDIR) || $(MKDIR) $(DESTDIR)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(bindir) || $(MKDIR) $(DESTDIR)$(bindir)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(man1dir) || $(MKDIR) $(DESTDIR)$(man1dir)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(SHAREDIR) || $(MKDIR) $(DESTDIR)$(SHAREDIR)
 
 uninstall:
 	for prog in $(PROGS); do \
-		$(RM) $(bindir)/$$prog; \
-		$(RM) $(man1dir)/$$prog$(man1ext).gz; \
+		$(RM) $(DESTDIR)$(bindir)/$$prog; \
+		$(RM) $(DESTDIR)$(man1dir)/$$prog$(man1ext).gz; \
 	done
-	$(RM_DIR) $(SHAREDIR)
+	$(RM_DIR) $(DESTDIR)$(SHAREDIR)
 	cd $(PLUGINS_DIR) && $(MAKE) $@
 
 clean:

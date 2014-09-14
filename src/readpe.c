@@ -1008,25 +1008,37 @@ int main(int argc, char *argv[])
 		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
 	}
 
+	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
+	bool directories_warned = false;
+
 	// directories
 	if (options->dirs || options->all) {
-		if (pe_directories(&ctx) != NULL)
+		if (directories != NULL)
 			print_directories(&ctx);
-		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
+		else if (!directories_warned) {
+			fprintf(stderr, "directories not found\n");
+			directories_warned = true;
+		}
 	}
 
 	// imports
 	if (options->imports || options->all) {
-		if (pe_directories(&ctx) != NULL)
+		if (directories != NULL)
 			print_imports(&ctx);
-		else { EXIT_ERROR("unable to read the Directories entry from Optional header"); }
+		else if (!directories_warned) {
+			fprintf(stderr, "directories not found\n");
+			directories_warned = true;
+		}
 	}
 
 	// exports
 	if (options->exports || options->all) {
-		if (pe_directories(&ctx) != NULL)
+		if (directories != NULL)
 			print_exports(&ctx);
-		else { EXIT_ERROR("unable to read directories from optional header"); }
+		else if (!directories_warned) {
+			fprintf(stderr, "directories not found\n");
+			directories_warned = true;
+		}
 	}
 
 	// sections

@@ -23,6 +23,11 @@ libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
 sbindir = $(exec_prefix)/sbin
 
+datadir = $(datarootdir)
+docdir = $(datarootdir)/doc/pev
+infodir = $(datarootdir)/info
+localedir = $(datarootdir)/locale
+
 mandir = $(datarootdir)/man
 manext = .1
 man1dir = $(mandir)/man1

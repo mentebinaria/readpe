@@ -1,6 +1,7 @@
 ####### Compiler options
 
 override CFLAGS += -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
+override LDFLAGS += -L../../lib/libpe
 override CPPFLAGS += -D_GNU_SOURCE
 
 PLUGINS = csv html text xml json

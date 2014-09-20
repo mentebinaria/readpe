@@ -4,7 +4,6 @@
 export PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 ####### Makefile Conventions - Directory variables
-
 ifndef DESTDIR
 	prefix = /usr/local
 else
@@ -23,11 +22,6 @@ bindir = $(exec_prefix)/bin
 libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
 sbindir = $(exec_prefix)/sbin
-
-datadir = $(datarootdir)
-docdir = $(datarootdir)/doc/pev
-infodir = $(datarootdir)/info
-localedir = $(datarootdir)/locale
 
 mandir = $(datarootdir)/man
 manext = .1
@@ -61,6 +55,7 @@ override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
 override CPPFLAGS += -D_GNU_SOURCE
 
+=======
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations
@@ -94,6 +89,13 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
 	$(pev_BUILDDIR)/output.o
+
+####### Compiler options
+
+
+override LDFLAGS += -L$(LIBPE) -rdynamic -lpe -ldl
+override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+override CPPFLAGS += -D_GNU_SOURCE
 
 ####### Build rules
 
@@ -164,7 +166,7 @@ installdirs:
 
 uninstall:
 	for prog in $(PROGS); do \
-		$(RM) $(bindir)/$$prog; \
+		$(RM) $(DESTDIR)/$$prog; \
 		$(RM) $(man1dir)/$$prog$(man1ext).gz; \
 	done
 	$(RM_DIR) $(SHAREDIR)

@@ -118,8 +118,10 @@ void output_init(void) {
 }
 
 void output_term(void) {
-	if (g_cmdline != NULL)
+	if (g_cmdline != NULL) {
 		free(g_cmdline);
+		g_cmdline = NULL;
+	}
 
 	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
 	if (scope_depth > 0) {
@@ -140,6 +142,10 @@ const char *output_cmdline(void) {
 void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
+
+	if (g_cmdline != NULL)
+		free(g_cmdline);
+
 	g_cmdline = utils_str_array_join(g_argv, g_argc, ' ');
 	if (g_cmdline == NULL) {
 		fprintf(stderr, "output: allocation failed for utils_str_array_join\n");

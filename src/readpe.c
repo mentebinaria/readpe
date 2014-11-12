@@ -857,27 +857,78 @@ static void print_exports(pe_ctx_t *ctx)
 	ofs = pe_rva2ofs(ctx, rva);
 
 	output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
+	// If `NumberOfNames == 0` then all functions are exported by ordinal.
+	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
+	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
+		fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
+		output_close_scope(); // Exported functions
+	}
 
-	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
-		const uint64_t aux = ofs; // Store current ofs
+	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
+	uint64_t offset_to_AddressOfNames = pe_rva2ofs(ctx, exp->AddressOfNames);
+	uint64_t offset_to_AddressOfNameOrdinals = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
 
-		ofs = exp->AddressOfFunctions + sizeof(uint32_t) * i;
-		uint32_t *faddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		if (LIBPE_IS_PAST_THE_END(ctx, faddr_ptr, sizeof(uint32_t))) {
+	//
+	// The format of IMAGE_EXPORT_DIRECTORY can be seen in http://i.msdn.microsoft.com/dynimg/IC60608.gif
+	//
+
+	// We want to use `NumberOfFunctions` for looping as it's the total number of functions/symbols
+	// exported by the module. On the other hand, `NumberOfNames` is the number of
+	// functions/symbols exported by name only.
+	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
+		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
+		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
+
+		uint64_t entry_va_list_ptr = offset_to_AddressOfFunctions + sizeof(uint32_t) * i;
+		uint32_t *entry_va_list = LIBPE_PTR_ADD(ctx->map_addr, entry_va_list_ptr);
+
+		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
+		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
+		
+		// printf("ctx->map_addr = %p\n", ctx->map_addr);
+		// printf("ctx->map_end = %p\n", ctx->map_end);
+		// printf("entry_ordinal_list = %p\n", entry_ordinal_list);
+		// printf("entry_va_list = %p\n", entry_va_list);
+		// printf("entry_name_list = %p\n", entry_name_list);
+
+		if (LIBPE_IS_PAST_THE_END(ctx, entry_ordinal_list, sizeof(uint32_t))) {
 			// TODO: Should we report something?
 			break;
 		}
-		const uint32_t faddr = *faddr_ptr;
 
-		ofs = aux; // Restore previous ofs
+		if (LIBPE_IS_PAST_THE_END(ctx, entry_va_list, sizeof(uint32_t))) {
+			// TODO: Should we report something?
+			break;
+		}
 
-		char addr[30];
-		snprintf(addr, 30, "%#x", faddr);
+		if (LIBPE_IS_PAST_THE_END(ctx, entry_name_list, sizeof(uint32_t))) {
+			// TODO: Should we report something?
+			break;
+		}
 
-		const char *fname_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		// TODO: Validate if it's ok to read fname_ptr+N
-		char fname[300];
-		strncpy(fname, fname_ptr, sizeof(fname)-1);
+		// Add `Base` to the element of `AddressOfNameOrdinals` array to get the correct ordinal..
+		//const uint16_t entry_ordinal = exp->Base + *entry_ordinal_list;
+		const uint32_t entry_va = *entry_va_list;
+		const uint32_t entry_name_rva = *entry_name_list;
+		const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
+		const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
+
+		// Validate whether it's ok to access at least 1 byte after entry_name.
+		// It might be '\0', for example.
+		if (LIBPE_IS_PAST_THE_END(ctx, entry_name, 1)) {
+			// TODO: Should we report something?
+			break;
+		}
+
+		//printf("ord=%d, va=%x, name=%s\n", entry_ordinal, entry_va, entry_name);
+
+		// Declared as 11 bytes so that it can store the hexadecimal representation of the maximum
+		// possible value of an uint32_t variable, 0xFFFFFFFF.
+		char addr[11] = { 0 };
+		sprintf(addr, "%#x", entry_va);
+		
+		char fname[300] = { 0 };
+		strncpy(fname, entry_name, sizeof(fname)-1);
 
 		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
 

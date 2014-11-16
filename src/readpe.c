@@ -980,7 +980,13 @@ static void print_imports(pe_ctx_t *ctx)
 			break;
 
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		// TODO: Validate if it's ok to read dll_name_ptr+N
+		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
+		// It might be '\0', for example.
+		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+			// TODO: Should we report something?
+			break;
+		}
+
 		char dll_name[MAX_DLL_NAME];
 		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
 		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.

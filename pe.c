@@ -28,6 +28,11 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 
+bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size) {
+	const uintptr_t end = (uintptr_t)LIBPE_PTR_ADD(ptr, size);
+	return ptr >= ctx->map_addr && end <= ctx->map_end;
+}
+
 pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path) {
 	return pe_load_file_ext(ctx, path, 0);
 }
@@ -154,7 +159,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
 		ctx->pe.dos_hdr->e_lfanew);
-	if (LIBPE_IS_PAST_THE_END(ctx, signature_ptr, sizeof(uint32_t)))
+	if (!pe_can_read(ctx, signature_ptr, sizeof(uint32_t)))
 		return LIBPE_E_INVALID_LFANEW;
 
 	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
@@ -171,8 +176,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
 		LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
-	if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.coff_hdr,
-		sizeof(IMAGE_COFF_HEADER)))
+	if (!pe_can_read(ctx, ctx->pe.coff_hdr, sizeof(IMAGE_COFF_HEADER)))
 		return LIBPE_E_MISSING_COFF_HEADER;
 
 	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
@@ -183,7 +187,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	// Figure out whether it's a PE32 or PE32+.
 	uint16_t *opt_type_ptr = ctx->pe.optional_hdr_ptr;
-	if (LIBPE_IS_PAST_THE_END(ctx, opt_type_ptr,
+	if (!pe_can_read(ctx, opt_type_ptr,
 		LIBPE_SIZEOF_MEMBER(IMAGE_OPTIONAL_HEADER, type)))
 		return LIBPE_E_MISSING_OPTIONAL_HEADER;
 
@@ -196,7 +200,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			//fprintf(stderr, "ROM image is not supported\n");
 			return LIBPE_E_UNSUPPORTED_IMAGE;
 		case MAGIC_PE32:
-			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
+			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
 				sizeof(IMAGE_OPTIONAL_HEADER_32)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
 			ctx->pe.optional_hdr._32 = ctx->pe.optional_hdr_ptr;
@@ -207,7 +211,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			ctx->pe.imagebase = ctx->pe.optional_hdr._32->ImageBase;
 			break;
 		case MAGIC_PE64:
-			if (LIBPE_IS_PAST_THE_END(ctx, ctx->pe.optional_hdr_ptr,
+			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
 				sizeof(IMAGE_OPTIONAL_HEADER_64)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
 			ctx->pe.optional_hdr._64 = ctx->pe.optional_hdr_ptr;
@@ -232,8 +236,10 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
 		ctx->pe.optional_hdr.length);
 	// If there are no directories, sections_ptr will point right
-	// after the OPTIONAL header.
-	ctx->pe.sections_ptr = ctx->pe.directories_ptr;
+	// after the OPTIONAL header, otherwise, it will point right
+	// after the directories.
+	ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.directories_ptr,
+		ctx->pe.num_directories * sizeof(IMAGE_DATA_DIRECTORY));
 
 	if (ctx->pe.num_directories > 0) {
 		ctx->pe.directories = malloc(ctx->pe.num_directories
@@ -243,9 +249,6 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 		for (uint32_t i = 0; i < ctx->pe.num_directories; i++) {
 			ctx->pe.directories[i] = LIBPE_PTR_ADD(ctx->pe.directories_ptr,
 				i * sizeof(IMAGE_DATA_DIRECTORY));
-			// Calculate sections' start address.
-			ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.sections_ptr,
-				sizeof(IMAGE_DATA_DIRECTORY));
 		}
 	} else {
 		ctx->pe.directories_ptr = NULL;

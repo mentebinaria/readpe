@@ -104,6 +104,7 @@ typedef struct {
 } pe_ctx_t;
 
 // General functions
+bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size);
 pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path);
 pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
 pe_err_e pe_unload(pe_ctx_t *ctx);

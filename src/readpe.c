@@ -749,7 +749,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 			case MAGIC_PE32:
 			{
 				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (LIBPE_IS_PAST_THE_END(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
 					// TODO: Should we report something?
 					return;
 				}
@@ -767,7 +767,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 				} else {
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (LIBPE_IS_PAST_THE_END(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 						// TODO: Should we report something?
 						return;
 					}
@@ -782,7 +782,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 			case MAGIC_PE64:
 			{
 				const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (LIBPE_IS_PAST_THE_END(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
 					// TODO: Should we report something?
 					return;
 				}
@@ -800,7 +800,7 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (LIBPE_IS_PAST_THE_END(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 						// TODO: Should we report something?
 						return;
 					}
@@ -841,14 +841,14 @@ static void print_exports(pe_ctx_t *ctx)
 
 	ofs = pe_rva2ofs(ctx, va);
 	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	if (LIBPE_IS_PAST_THE_END(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
+	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
 		// TODO: Should we report something?
 		return;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	if (LIBPE_IS_PAST_THE_END(ctx, rva_ptr, sizeof(uint32_t))) {
+	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
 		// TODO: Should we report something?
 		return;
 	}
@@ -884,24 +884,24 @@ static void print_exports(pe_ctx_t *ctx)
 
 		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
 		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
-		
+
 		// printf("ctx->map_addr = %p\n", ctx->map_addr);
 		// printf("ctx->map_end = %p\n", ctx->map_end);
 		// printf("entry_ordinal_list = %p\n", entry_ordinal_list);
 		// printf("entry_va_list = %p\n", entry_va_list);
 		// printf("entry_name_list = %p\n", entry_name_list);
 
-		if (LIBPE_IS_PAST_THE_END(ctx, entry_ordinal_list, sizeof(uint32_t))) {
+		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint32_t))) {
 			// TODO: Should we report something?
 			break;
 		}
 
-		if (LIBPE_IS_PAST_THE_END(ctx, entry_va_list, sizeof(uint32_t))) {
+		if (!pe_can_read(ctx, entry_va_list, sizeof(uint32_t))) {
 			// TODO: Should we report something?
 			break;
 		}
 
-		if (LIBPE_IS_PAST_THE_END(ctx, entry_name_list, sizeof(uint32_t))) {
+		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
 			// TODO: Should we report something?
 			break;
 		}
@@ -915,7 +915,7 @@ static void print_exports(pe_ctx_t *ctx)
 
 		// Validate whether it's ok to access at least 1 byte after entry_name.
 		// It might be '\0', for example.
-		if (LIBPE_IS_PAST_THE_END(ctx, entry_name, 1)) {
+		if (!pe_can_read(ctx, entry_name, 1)) {
 			// TODO: Should we report something?
 			break;
 		}
@@ -958,7 +958,7 @@ static void print_imports(pe_ctx_t *ctx)
 
 	while (1) {
 		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		if (LIBPE_IS_PAST_THE_END(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
 			// TODO: Should we report something?
 			return;
 		}

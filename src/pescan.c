@@ -119,7 +119,7 @@ static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 
 	// dos stub starts at e_cparhdr shifted by 4
 	const char *dos_stub_ptr = LIBPE_PTR_ADD(ctx->map_addr, *stub_offset);
-	if (LIBPE_IS_PAST_THE_END(ctx, dos_stub_ptr, dos_stub_size)) {
+	if (!pe_can_read(ctx, dos_stub_ptr, dos_stub_size)) {
 		EXIT_ERROR("unable to seek in file");
 	}
 
@@ -196,7 +196,7 @@ static int pe_get_tls_callbacks(pe_ctx_t *ctx, const options_t *options)
 				case MAGIC_PE32:
 				{
 					const IMAGE_TLS_DIRECTORY32 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-					if (LIBPE_IS_PAST_THE_END(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
+					if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
 						// TODO: Should we report something?
 						return 0;
 					}
@@ -210,7 +210,7 @@ static int pe_get_tls_callbacks(pe_ctx_t *ctx, const options_t *options)
 				case MAGIC_PE64:
 				{
 					const IMAGE_TLS_DIRECTORY64 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-					if (LIBPE_IS_PAST_THE_END(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
+					if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
 						// TODO: Should we report something?
 						return 0;
 					}
@@ -231,7 +231,7 @@ static int pe_get_tls_callbacks(pe_ctx_t *ctx, const options_t *options)
 			do
 			{
 				const uint32_t *funcaddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (LIBPE_IS_PAST_THE_END(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
+				if (!pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
 					// TODO: Should we report something?
 					return 0;
 				}

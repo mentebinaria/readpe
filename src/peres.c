@@ -366,7 +366,7 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node)
 	const uint64_t offsetData = pe_rva2ofs(ctx, dataEntryNode->resource.dataEntry->offsetToData);
 	const size_t dataEntrySize = dataEntryNode->resource.dataEntry->size;
 	const char *buffer = LIBPE_PTR_ADD(ctx->map_addr, offsetData);
-	if (LIBPE_IS_PAST_THE_END(ctx, buffer, dataEntrySize)) {
+	if (!pe_can_read(ctx, buffer, dataEntrySize)) {
 		// TODO: Should we report something?
 		return;
 	}
@@ -551,7 +551,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 
 	uintptr_t offset = resourceDirOffset;
 	void *ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-	if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
+	if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 		// TODO: Should we report something?
 		return NULL;
 	}
@@ -569,7 +569,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		offsetDirectory1 += (i == 1) ? 16 : 8;
 		offset = resourceDirOffset + offsetDirectory1;
 		ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-		if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
+		if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
 			// TODO: Should we report something?
 			goto _error;
 		}
@@ -587,7 +587,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		{
 			offset = resourceDirOffset + lastDirectoryEntryNodeAtLevel1->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
 			ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-			if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
+			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 				// TODO: Should we report something?
 				goto _error;
 			}
@@ -604,7 +604,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 				offsetDirectory2 += (j == 1) ? 16 : 8;
 				offset = resourceDirOffset + lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, RDT_LEVEL1)->resource.directoryEntry->DirectoryData.data.OffsetToDirectory + offsetDirectory2;
 				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-				if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
+				if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
 					// TODO: Should we report something?
 					goto _error;
 				}
@@ -617,7 +617,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 
 				offset = resourceDirOffset + node->resource.directoryEntry->DirectoryData.data.OffsetToDirectory; // posiciona em 0x72
 				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-				if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
+				if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 					// TODO: Should we report something?
 					goto _error;
 				}
@@ -634,7 +634,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 									lastNodeByTypeAndLevel(node, RDT_RESOURCE_DIRECTORY, RDT_LEVEL3)->resource.resourceDirectory->NumberOfIdEntries); y++)
 				{
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
+					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
 						// TODO: Should we report something?
 						goto _error;
 					}
@@ -646,7 +646,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 
 					offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
+					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
 						// TODO: Should we report something?
 						goto _error;
 					}
@@ -658,7 +658,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 
 					offset = resourceDirOffset + node->lastNode->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (LIBPE_IS_PAST_THE_END(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
+					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
 						// TODO: Should we report something?
 						goto _error;
 					}

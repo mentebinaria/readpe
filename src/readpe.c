@@ -774,6 +774,8 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 
 					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
 					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+					fname[sizeof(fname) - 1] = '\0';
 					//size_t fname_len = strlen(fname);
 				}
 				ofs += sizeof(IMAGE_THUNK_DATA32);
@@ -807,6 +809,8 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 
 					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
 					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+					fname[sizeof(fname) - 1] = '\0';
 					//size_t fname_len = strlen(fname);
 				}
 				ofs += sizeof(IMAGE_THUNK_DATA64);
@@ -926,9 +930,11 @@ static void print_exports(pe_ctx_t *ctx)
 		// possible value of an uint32_t variable, 0xFFFFFFFF.
 		char addr[11] = { 0 };
 		sprintf(addr, "%#x", entry_va);
-		
+
 		char fname[300] = { 0 };
 		strncpy(fname, entry_name, sizeof(fname)-1);
+		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+		fname[sizeof(fname) - 1] = '\0';
 
 		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
 
@@ -977,6 +983,8 @@ static void print_imports(pe_ctx_t *ctx)
 		// TODO: Validate if it's ok to read dll_name_ptr+N
 		char dll_name[MAX_DLL_NAME];
 		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
+		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+		dll_name[sizeof(dll_name) - 1] = '\0';
 
 		output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("Name", dll_name);

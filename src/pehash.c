@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "ROM image is not supported\n");
             break;
          case MAGIC_PE32:
-            if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
+            if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
                // TODO: Should we report something?
                break;
             }
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
             data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
             break;
          case MAGIC_PE64:
-            if (LIBPE_IS_PAST_THE_END(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
+            if (!pe_can_read(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
                // TODO: Should we report something?
                break;
             }
@@ -374,7 +374,7 @@ int main(int argc, char *argv[])
 			// printf("map_addr = %p\n", ctx.map_addr);
 			// printf("section_data_ptr = %p\n", section_data_ptr);
 			// printf("SizeOfRawData = %u\n", section_ptr->SizeOfRawData);
-			if (LIBPE_IS_PAST_THE_END(&ctx, section_data_ptr, section_ptr->SizeOfRawData)) {
+			if (!pe_can_read(&ctx, section_data_ptr, section_ptr->SizeOfRawData)) {
 				EXIT_ERROR("The requested section has an invalid size");
 			}
 			data = (const unsigned char *)section_data_ptr;

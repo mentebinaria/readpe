@@ -312,7 +312,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 	{
 		// Read the size of this WIN_CERTIFICATE
 		uint32_t *dwLength_ptr = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
-		if (LIBPE_IS_PAST_THE_END(ctx, dwLength_ptr, sizeof(uint32_t))) {
+		if (!pe_can_read(ctx, dwLength_ptr, sizeof(uint32_t))) {
 			output_close_scope(); // certificates
 			// TODO: Should we report something?
 			return;
@@ -321,7 +321,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 		uint32_t dwLength = *(uint32_t *)dwLength_ptr;
 
 		WIN_CERTIFICATE *cert = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
-		if (LIBPE_IS_PAST_THE_END(ctx, cert, dwLength)) {
+		if (!pe_can_read(ctx, cert, dwLength)) {
 			output_close_scope(); // certificates
 			// TODO: Should we report something?
 			return;

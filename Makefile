@@ -76,6 +76,8 @@ endif
 libpe: $(libpe_OBJS)
 ifeq ($(PLATFORM_OS), Linux)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), NetBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
@@ -94,6 +96,10 @@ ifeq ($(PLATFORM_OS), Linux)
 	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
+else ifeq ($(PLATFORM_OS), NetBSD)
+	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
+	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(INSTALL_DATA) $(LIBNAME).dylib $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION).dylib
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
@@ -108,6 +114,8 @@ installdirs:
 
 strip-binaries:
 ifeq ($(PLATFORM_OS), Linux)
+	$(STRIP) $(LIBNAME).so
+else ifeq ($(PLATFORM_OS), NetBSD)
 	$(STRIP) $(LIBNAME).so
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(STRIP) $(LIBNAME).dylib

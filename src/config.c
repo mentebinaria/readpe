@@ -26,6 +26,8 @@
 #include <string.h>
 #if defined(__linux__)
 #include <linux/limits.h>
+#elif defined(__NetBSD__)
+#include <limits.h>
 #elif defined(__APPLE__)
 #include <sys/syslimits.h>
 #elif defined(__CYGWIN__)

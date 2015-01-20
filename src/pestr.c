@@ -197,12 +197,12 @@ int main(int argc, char *argv[])
 	while (pe_raw_offset < pe_size) {
 		const uint8_t byte = pe_raw_data[pe_raw_offset];
 
-		if (isprint(byte)) {
+		if (isprint(byte) && buff_index < LINE_BUFFER) {
 			ascii++;
 			buff[buff_index++] = byte;
 			pe_raw_offset++;
 			continue;
-		} else if (ascii == 1 && byte == '\0') {
+		} else if (ascii == 1 && byte == '\0' && buff_index < LINE_BUFFER) {
 			utf++;
 			buff[buff_index++] = byte;
 			ascii = 0;

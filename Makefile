@@ -1,6 +1,5 @@
 LIBPE_DIR = lib/libpe
 PEV_DIR = src
-MAKE = make
 VERSION = 0.71
 ZIPFILE = pev-$(VERSION)-win32.zip
 

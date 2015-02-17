@@ -938,7 +938,31 @@ static void print_exports(pe_ctx_t *ctx)
 
 		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
 
-		output(addr, fname);
+		// Check whether the exported function is forwarded.
+		// It's forwarded if its RVA is inside the exports section.
+		if (entry_va >= va && entry_va <= va + dir->Size)
+		{
+			// When a symbol is forwarded, its RVA points to a string containing
+			// the name of the DLL and symbol to which it is forwarded.
+			const uint64_t fw_entry_name_ofs = pe_rva2ofs(ctx, entry_va);
+			const char *fw_entry_name = LIBPE_PTR_ADD(ctx->map_addr, fw_entry_name_ofs);
+
+			// Validate whether it's ok to access at least 1 byte after fw_entry_name.
+			// It might be '\0', for example.
+			if (!pe_can_read(ctx, fw_entry_name, 1)) {
+				// TODO: Should we report something?
+				break;
+			}
+
+			char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
+			snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
+
+			output(addr, fname_forwarded);
+		}
+		else
+		{
+			output(addr, fname);
+		}
 
 		output_close_scope(); // Function
 	}

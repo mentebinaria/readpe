@@ -1,4 +1,8 @@
 /*
+    libpe - the PE library
+
+    Copyright (C) 2010 - 2015 libpe authors
+    
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify

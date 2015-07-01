@@ -99,6 +99,7 @@ static void to_format(
 					printf(INDENT(--indent, "]"));
 					break;
 			}
+			num_attr++;
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
 			if (num_attr > 0)

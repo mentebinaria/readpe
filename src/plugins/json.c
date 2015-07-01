@@ -55,8 +55,10 @@ static void to_format(
 					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
 					printf(INDENT(indent++, "{"));
+					num_attr = 0;
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
+					// Already printed an attribute in the same scope?
 					if (num_attr > 0)
 						putchar(',');
 					putchar('\n');
@@ -68,6 +70,7 @@ static void to_format(
 					num_attr = 0;
 					break;
 				case OUTPUT_SCOPE_TYPE_ARRAY:
+					// Already printed an attribute in the same scope?
 					if (num_attr > 0)
 						putchar(',');
 					putchar('\n');
@@ -99,9 +102,12 @@ static void to_format(
 					printf(INDENT(--indent, "]"));
 					break;
 			}
+			// Increment the number of attributes because this scope is itself an
+			// attribute.
 			num_attr++;
 			break;
 		case OUTPUT_TYPE_ATTRIBUTE:
+			// Already printed an attribute in the same scope?
 			if (num_attr > 0)
 				putchar(',');
 			putchar('\n');

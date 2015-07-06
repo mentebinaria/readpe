@@ -75,14 +75,13 @@ static void usage(void)
 
 static void parse_hash_algorithm(options_t *options, const char *optarg)
 {
-	if (strcmp(optarg, "ssdeep") == 0) {
+	if (strcmp("ssdeep", optarg) == 0) {
 		options->algorithms.ssdeep = true;
-		return;
+	} else {
+		const EVP_MD *md = EVP_get_digestbyname(optarg);
+		if (md == NULL)
+			EXIT_ERROR("The requested algorithm is not supported");
 	}
-
-	const EVP_MD *md = EVP_get_digestbyname(optarg);
-	if (md == NULL)
-		EXIT_ERROR("The requested algorithm is not supported");
 
 	options->algorithms.alg_name = strdup(optarg);
 }
@@ -154,7 +153,6 @@ static options_t *parse_options(int argc, char *argv[])
 				break;
 			case 'a':
 				options->algorithms.all = false;
-				options->all = false;
 				parse_hash_algorithm(options, optarg);
 				break;
 			case 's':
@@ -192,7 +190,7 @@ static options_t *parse_options(int argc, char *argv[])
 
 static void calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
 {
-	if (strncmp(alg_name, "ssdeep", 6) == 0) {
+	if (strcmp("ssdeep", alg_name) == 0) {
 		fuzzy_hash_buf(data, size, output);
 		return;
 	}

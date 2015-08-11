@@ -317,20 +317,33 @@ uint64_t pe_rva2ofs(const pe_ctx_t *ctx, uint64_t rva) {
 	if (rva == 0 || ctx->pe.sections == NULL)
 		return 0;
 
+	// Find out which section the given RVA belongs
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
 		if (ctx->pe.sections[i] == NULL)
 			return 0;
 
+		// Use SizeOfRawData if VirtualSize == 0
+		size_t section_size = ctx->pe.sections[i]->Misc.VirtualSize;
+		if (section_size == 0)
+			section_size = ctx->pe.sections[i]->SizeOfRawData;
+
 		if (ctx->pe.sections[i]->VirtualAddress <= rva) {
-			if ((ctx->pe.sections[i]->VirtualAddress + 
-			 ctx->pe.sections[i]->Misc.VirtualSize) > rva) {
+			if ((ctx->pe.sections[i]->VirtualAddress + section_size) > rva) {
 			 	rva -= ctx->pe.sections[i]->VirtualAddress;
 				rva += ctx->pe.sections[i]->PointerToRawData;
 				return rva;
 			}
 		}
 	}
-	return 0;
+
+	// Handle PE with a single section
+	if (ctx->pe.num_sections == 1) {
+	 	rva -= ctx->pe.sections[1]->VirtualAddress;
+		rva += ctx->pe.sections[1]->PointerToRawData;
+		return rva;
+	}
+
+	return rva; // PE with no sections, return RVA
 }
 
 // Returns the RVA for a given offset

@@ -342,6 +342,10 @@ int main(int argc, char *argv[])
 			data_size = sections[i]->SizeOfRawData;
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
+			if (!pe_can_read(&ctx, data, data_size)) {
+				EXIT_ERROR("Unable to read section data");
+			}
+
 			output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
 			output("section_name", (char *)sections[i]->Name);
 			if (data_size) {

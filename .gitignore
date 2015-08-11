@@ -32,3 +32,5 @@ tests/*.exe
 tests/*.bin
 tests/*.log
 tests/running_report
+*/build/*
+.DS_Store

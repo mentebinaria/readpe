@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	uint16_t ofs = (uint16_t)strtol(argv[1], NULL, 0);
+	uint64_t ofs = (uint64_t)strtol(argv[1], NULL, 0);
 
 	if (!ofs)
 		EXIT_ERROR("invalid offset");

@@ -312,16 +312,23 @@ IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva) {
 	return NULL;
 }
 
+// Converts a RVA (Relative Virtual Address) to a raw file offset
 uint64_t pe_rva2ofs(const pe_ctx_t *ctx, uint64_t rva) {
 	if (rva == 0 || ctx->pe.sections == NULL)
 		return 0;
 
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		if (rva >= ctx->pe.sections[i]->VirtualAddress &&
-			rva < (ctx->pe.sections[i]->VirtualAddress
-				+ ctx->pe.sections[i]->SizeOfRawData))
-			return rva - ctx->pe.sections[i]->VirtualAddress
-				+ ctx->pe.sections[i]->PointerToRawData;
+		if (ctx->pe.sections[i] == NULL)
+			return 0;
+
+		if (ctx->pe.sections[i]->VirtualAddress <= rva) {
+			if ((ctx->pe.sections[i]->VirtualAddress + 
+			 ctx->pe.sections[i]->Misc.VirtualSize) > rva) {
+			 	rva -= ctx->pe.sections[i]->VirtualAddress;
+				rva += ctx->pe.sections[i]->PointerToRawData;
+				return rva;
+			}
+		}
 	}
 	return 0;
 }
@@ -332,12 +339,17 @@ uint64_t pe_ofs2rva(const pe_ctx_t *ctx, uint64_t ofs) {
 		return 0;
 
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		// If offset points within this section, return its VA
-		if (ofs >= ctx->pe.sections[i]->PointerToRawData &&
-			ofs < (ctx->pe.sections[i]->PointerToRawData
-				+ ctx->pe.sections[i]->SizeOfRawData))
-			return ctx->pe.sections[i]->VirtualAddress > 0 ? ofs +
-				ctx->pe.sections[i]->VirtualAddress : ofs + ctx->pe.imagebase;
+		if (ctx->pe.sections[i] == NULL)
+			return 0;
+
+		if (ctx->pe.sections[i]->PointerToRawData <= ofs) {
+			if ((ctx->pe.sections[i]->PointerToRawData + 
+			 ctx->pe.sections[i]->SizeOfRawData) > ofs) {
+			 	ofs -= ctx->pe.sections[i]->PointerToRawData;
+				ofs += ctx->pe.sections[i]->VirtualAddress;
+				return ofs;
+			}
+		}
 	}
 	return 0;
 }

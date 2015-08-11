@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	rva2ofs.c - convert RVA to raw file offset.
+	rva2ofs.c - converts RVA to raw file offset
 
-	Copyright (C) 2012 - 2014 pev authors
+	Copyright (C) 2012 - 2015 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	uint64_t rva = (uint64_t)strtol(argv[1], NULL, 0);
+	uint64_t rva = (uint64_t)strtoll(argv[1], NULL, 0);
 
 	if (!rva)
 		EXIT_ERROR("invalid RVA");
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	printf("%#"PRIx64"\n", pe_rva2ofs(&ctx, rva));
+	printf("%#llx\n", pe_rva2ofs(&ctx, rva));
 
 	// libera a memoria
 	pe_unload(&ctx);

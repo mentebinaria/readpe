@@ -981,7 +981,6 @@ static void print_imports(pe_ctx_t *ctx)
 		fprintf(stderr, "import directory not found\n");
 		return;
 	}
-
 	uint64_t ofs = pe_rva2ofs(ctx, va);
 
 	output_open_scope("Imported functions", OUTPUT_SCOPE_TYPE_ARRAY);
@@ -990,6 +989,7 @@ static void print_imports(pe_ctx_t *ctx)
 		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
 			// TODO: Should we report something?
+			output_close_scope();
 			return;
 		}
 

@@ -1,7 +1,8 @@
 LIBPE_DIR = lib/libpe
 PEV_DIR = src
 VERSION = 0.80
-ZIPFILE = pev-$(VERSION)-win32.zip
+ZIPDIR = pev-$(VERSION)-win32
+ZIPFILE = $(ZIPDIR).zip
 
 all:
 %:
@@ -10,14 +11,18 @@ all:
 
 # Cygwin only
 zip:
-	mkdir -p pevwin/plugins
-	cp src/build/plugins/*.dll pevwin/plugins/
-	echo 'plugins_dir=plugins' > pevwin/pev.conf
-	cp lib/libpe/libpe.dll pevwin/
-	cp /usr/bin/cygwin1.dll pevwin/
-	cp /usr/bin/cygcrypto-1.0.0.dll pevwin/
-	cp /usr/bin/cygz.dll pevwin/
-	cp README.md pevwin/
-	cp src/build/*.exe pevwin/
-	zip -jr $(ZIPFILE) pevwin
-	rm -rf pevwin
+win:
+	cd $(PEV_DIR)/windows && $(MAKE) 
+	mkdir -p $(ZIPDIR)/plugins
+	cp src/build/plugins/*.dll $(ZIPDIR)/plugins/
+	echo 'plugins_dir=plugins' > $(ZIPDIR)/pev.conf
+	cp lib/libpe/libpe.dll $(ZIPDIR)/
+	cp /usr/bin/cygwin1.dll $(ZIPDIR)/
+	cp /usr/bin/cygcrypto-1.0.0.dll $(ZIPDIR)/
+	cp /usr/bin/cygz.dll $(ZIPDIR)/
+	cp README.md $(ZIPDIR)/
+	cp $(PEV_DIR)/build/*.exe $(ZIPDIR)/
+	cp $(PEV_DIR)/windows/run.bat $(ZIPDIR)/
+	zip -r $(ZIPFILE) $(ZIPDIR)/*
+	rm -rf $(ZIPDIR)
+

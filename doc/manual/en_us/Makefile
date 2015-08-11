@@ -6,7 +6,7 @@ FOXSL=/usr/share/xml/docbook/stylesheet/nwalsh/fo/docbook.xsl
 SRC=manual.docbook
 HTML_DIR=html
 PDF_DIR=pdf
-VERSION=0.71
+VERSION=0.80
 
 html:
 	mkdir -p $(HTML_DIR)

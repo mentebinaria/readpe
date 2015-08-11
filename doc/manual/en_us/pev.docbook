@@ -43,7 +43,7 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.71 - April 13, 2014
+pev 0.80 - ?
  ! Missing full/English documentation.
  * pestr: --net option removed (we may readd this in the future).
  + Basic plugins support.

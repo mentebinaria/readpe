@@ -10,19 +10,19 @@ all:
 	cd $(PEV_DIR) && $(MAKE) $@
 
 # Cygwin only
-zip:
 win:
-	cd $(PEV_DIR)/windows && $(MAKE) 
+	cd $(PEV_DIR)/windows && $(MAKE)
 	mkdir -p $(ZIPDIR)/plugins
 	cp src/build/plugins/*.dll $(ZIPDIR)/plugins/
-	echo 'plugins_dir=plugins' > $(ZIPDIR)/pev.conf
+	echo -ne "plugins_dir=plugins\r\n" > $(ZIPDIR)/pev.conf
+	cp $(PEV_DIR)/userdb.txt $(ZIPDIR)
 	cp lib/libpe/libpe.dll $(ZIPDIR)/
 	cp /usr/bin/cygwin1.dll $(ZIPDIR)/
 	cp /usr/bin/cygcrypto-1.0.0.dll $(ZIPDIR)/
 	cp /usr/bin/cygz.dll $(ZIPDIR)/
+	cp /usr/bin/cyggcc_s-1.dll $(ZIPDIR)/
 	cp README.md $(ZIPDIR)/
 	cp $(PEV_DIR)/build/*.exe $(ZIPDIR)/
 	cp $(PEV_DIR)/windows/run.bat $(ZIPDIR)/
 	zip -r $(ZIPFILE) $(ZIPDIR)/*
 	rm -rf $(ZIPDIR)
-

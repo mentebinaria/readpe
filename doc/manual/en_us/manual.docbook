@@ -7,6 +7,7 @@
   <!ENTITY basic-usage SYSTEM "basic-usage.docbook">
   <!ENTITY advanced-features SYSTEM "advanced-features.docbook">
   <!ENTITY tools SYSTEM "tools.docbook">
+  <!ENTITY faq SYSTEM "faq.docbook">
   <!ENTITY license SYSTEM "../../fdl-1.3.xml">
 ]>
 
@@ -19,6 +20,7 @@
 &basic-usage;
 &advanced-features;
 &tools;
+&faq;
 &license;
 
 </book>

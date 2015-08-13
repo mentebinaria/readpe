@@ -338,8 +338,8 @@ uint64_t pe_rva2ofs(const pe_ctx_t *ctx, uint64_t rva) {
 
 	// Handle PE with a single section
 	if (ctx->pe.num_sections == 1) {
-	 	rva -= ctx->pe.sections[1]->VirtualAddress;
-		rva += ctx->pe.sections[1]->PointerToRawData;
+		rva -= ctx->pe.sections[0]->VirtualAddress;
+		rva += ctx->pe.sections[0]->PointerToRawData;
 		return rva;
 	}
 

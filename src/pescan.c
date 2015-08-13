@@ -3,7 +3,7 @@
 
 	pescan.c - search for suspicious things in PE files.
 
-	Copyright (C) 2013 - 2014 pev authors
+	Copyright (C) 2013 - 2015 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ static void usage(void)
 		"Search for suspicious things in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -f, --format <%s>       change output format (default: text)\n"
+		" -f, --format <%s>  change output format (default: text)\n"
 		" -v, --verbose                          show more info about items found\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM, formats);

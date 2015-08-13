@@ -3,7 +3,7 @@
 
 	pedis.c - PE disassembler
 
-	Copyright (C) 2012 - 2014 pev authors
+	Copyright (C) 2012 - 2015 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ static void usage(void)
 		"\nOptions:\n"
 		" --att                                  set AT&T syntax\n"
 		" -e, --entrypoint                       disassemble entrypoint\n"
-		" -f, --format <%s>       change output format (default: text)\n"
+		" -f, --format <%s>  change output format (default: text)\n"
 		" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
 		" -i, <number>                           number of instructions to be disassembled\n"
 		" -n, <number>                           number of bytes to be disassembled\n"

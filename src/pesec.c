@@ -3,7 +3,7 @@
 
 	pesec.c - Check for security features in PE files.
 
-	Copyright (C) 2012 - 2014 pev authors
+	Copyright (C) 2012 - 2015 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@ static void usage(void)
 		"Check for security features in PE files\n"
 		"\nExample: %s wordpad.exe\n"
 		"\nOptions:\n"
-		" -f, --format <%s>       change output format (default: text)\n"
+		" -f, --format <%s>  change output format (default: text)\n"
 		" -c, --certoutform <text|pem>           specifies the certificate output format (default: text)\n"
 		" -o, --certout <filename>               specifies the output filename to write certificates to (default: stdout)\n"
 		" -v, --version                          show version and exit\n"

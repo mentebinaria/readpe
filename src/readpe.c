@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2013 - 2014 pev authors
+	Copyright (C) 2013 - 2015 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ static void usage(void)
 		" -A, --all                              full output (default)\n"
 		" -H, --all-headers                      print all PE headers\n"
 		" -S, --all-sections                     print all PE sections headers\n"
-		" -f, --format <%s>       change output format (default: text)\n"
+		" -f, --format <%s>  change output format (default: text)\n"
 		" -d, --dirs                             show data directories\n"
 		" -h, --header <dos|coff|optional>       show specific header\n"
 		" -i, --imports                          show imported functions\n"

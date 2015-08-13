@@ -3,7 +3,7 @@
 
 	pestr.c - search for strings in PE files.
 
-	Copyright (C) 2012 - 2014 pev authors
+	Copyright (C) 2012 - 2015 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

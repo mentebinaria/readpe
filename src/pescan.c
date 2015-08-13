@@ -35,14 +35,14 @@ static void usage(void)
 {
 	static char formats[255];
 	output_available_formats(formats, sizeof(formats), '|');
-	printf("\n%s %s\n%s\n\nUsage: %s OPTIONS FILE\n"
+	printf("Usage: %s OPTIONS FILE\n"
 		"Search for suspicious things in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s>       change output format (default: text)\n"
 		" -v, --verbose                          show more info about items found\n"
 		" --help                                 show this help and exit\n",
-		PROGRAM, TOOLKIT, COPY, PROGRAM, PROGRAM, formats);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)

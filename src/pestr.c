@@ -37,7 +37,7 @@ typedef struct {
 static void usage(void)
 {
 	printf("Usage: %s OPTIONS FILE\n"
-		"Search for [encrypted] strings in PE files\n"
+		"Search for strings in PE files\n"
 		"\nExample: %s acrobat.exe\n"
 		"\nOptions:\n"
 		" -n, --min-length                       set minimun string length (default: 4)\n"

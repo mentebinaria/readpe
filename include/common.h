@@ -7,7 +7,7 @@
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
+	the Free Software Foundation, either version 2 of the License, or
 	(at your option) any later version.
 
 	This program is distributed in the hope that it will be useful,
@@ -45,7 +45,7 @@
 #define VERSION "0.80"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
 #define COPY \
-"License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n" \
+"License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.\n" \
 "This is free software: you are free to change and redistribute it.\n" \
 "There is NO WARRANTY, to the extent permitted by law."
 

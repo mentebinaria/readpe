@@ -70,7 +70,7 @@ Can I use pev with my project?
 </question>
 <answer>
 <para>
-Yes, as long as you respect GPLv3 terms for pev tools and LGPLv3 terms for libpe.
+Yes, as long as you respect GPLv2 terms for pev tools and LGPLv3 terms for libpe.
 </para>
 </answer>
 </qandaentry>

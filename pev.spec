@@ -1,7 +1,7 @@
 Name:           pev
 Version:        0.70
 Release:        1
-License:        GPL3
+License:        GPL2
 URL:            http://pev.sf.net/
 Requires:       readline
 BuildRequires:  pcre-devel openssl-devel

@@ -2,19 +2,11 @@
 <title>Download and installation</title>
 
 <para>
-You can download the ready for use binaries for pev that we call
-pre-compiled binaries. This is the easiest way to start using pev,
-although you may want to compile it in your environment if you feel
-comfortable but that will require you to install dependencies,
-some libraries headers and some programs to do the job.
+You can download the easy-to-install packages for pev that we call pre-compiled binaries. This is the easiest way to start using pev, although you may want to compile it in your environment if you feel comfortable but that will require you to install dependencies, some libraries headers and some programs too.
 </para>
 
 <para>
-If you choose to use the pre-compiled binaries (recommended for beginners), you
-only need to download it from our download page. There pre-compiled binaries for
-Windows, Linux packages in DEB and RPM format and Mac OS X. Linux users can also
-use their packaging manager to install pev. Look for it in your repository but
-make sure you have the latest pev version available first. ;)
+If you choose to use the pre-compiled binaries (recommended for beginners), you just need to download its package from our download page. There are pre-compiled binaries for Windows and DEB and RPM packages for Linux. OS X users can use MacPorts to install pev, while Linux users can also opt out for using the native package manager.
 </para>
 
 <section id="binary">
@@ -39,29 +31,30 @@ For Red Hat based flavors, download the RPM package and run:
 <prompt>$ </prompt><command>sudo rpm -i pev-x.xx.rpm</command>
 </screen>
 
-<para>For installing through your distribution repository, please check
-its documentation.</para>
+<para>To install pev using the package manager of your Linux distro, please check its documentation.</para>
 
 </section>
 
 <section id="binwin">
 <title>On Windows</title>
 <para>
-Just download the ZIP package and uncompress it in any directory you want.
-You should be ready for using pev after that, calling the binaries from the Command Prompt.
-You can also consider adding the pev's directory to PATH variable to make use of pev easier.
+Just download the ZIP package and uncompress it in any directory you want. There is a handy script called run.bat that you can use to open a Command Prompt window in pev's directory. This script also configures the environment for proper working of pev toolkit. You can also consider adding the pev's directory to PATH variable to make use of pev tools even easier.
 </para>
 
-<tip><para>You don't need Cygwin for running pev in Windows. Cygwin is only needed if you
-intent to compile pev by your own.</para></tip>
+<para>After running the script you should see a window like this:</para>
+<imageobject>
+	<imagedata fileref="figures/runbat.png" format="PNG" />
+</imageobject>
+
+<tip><para>You DO NOT need Cygwin for running pev in Windows. Cygwin is only needed if you want to compile pev toolkit by your own.</para></tip>
 
 </section>
 
 <section id="binmac">
 <title>On Mac OS X</title>
-<para>You can download the provided PKG or, for
-<ulink url="http://www.macports.org/">macports</ulink> users, you can
-run the following in terminal:</para>
+<para>
+If you haven't, please install <ulink url="http://www.macports.org/">MacPorts</ulink> first, then open a Terminal window and run the following command:
+</para>
 
 <screen>
 <prompt>$ </prompt><command>sudo port install pev</command>

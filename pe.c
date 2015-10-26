@@ -127,17 +127,12 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 		fclose(ctx->stream);
 	}
 
-	if (ctx->path != NULL) {
-		free(ctx->path);
-	}
+	free(ctx->path);
+
 
 	// Dealloc internal pointers.
-	if (ctx->pe.directories != NULL) {
-		free(ctx->pe.directories);
-	}
-	if (ctx->pe.sections != NULL) {
-		free(ctx->pe.sections);
-	}
+	free(ctx->pe.directories);
+	free(ctx->pe.sections);
 
 	// Dealloc the virtual mapping.
 	if (ctx->map_addr != NULL) {

@@ -1,0 +1,34 @@
+.TH RVA2OFS 1
+.SH NAME
+unlznt1 - uncompress LZNT1 data
+
+.SH SYNOPSIS
+.B unlznt1
+.IR file
+
+.SH DESCRIPTION
+unlznt1 uncompress LZNT1 data files (eventually found in malware)
+.PP
+\&\fIfile\fR is any readable file.
+
+.SH OPTIONS
+
+.TP
+.BR \-v ", " \-\-version
+show program version and exit.
+
+.TP
+.BR \-\-help
+show help.
+
+.SH EXAMPLES
+Uncompress a file named \fBdumped\fP:
+.IP
+$ unlznt1 dumped
+
+.SH REPORTING BUGS
+Please, check the latest development code and report at https://github.com/merces/pev/issues
+
+.SH COPYRIGHT
+Copyright © 2015 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

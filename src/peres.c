@@ -138,20 +138,18 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "a:x:i:s:v";
+	static const char short_options[] = "a:x:f:i:s:v";
 
 	static const struct option long_options[] = {
 		{ "all",		required_argument,	NULL, 'a' },
 		{ "extract",	no_argument,		NULL, 'x' },
-		{ "format",     required_argument, NULL, 'f' },
+		{ "format",     required_argument,  NULL, 'f' },
 		{ "info",		no_argument,		NULL, 'i' },
 		{ "statistics",	no_argument,		NULL, 's' },
 		{ "version",	no_argument,		NULL, 'v' },
 		{ "help",		no_argument,		NULL,  1  },
 		{ NULL,			0,					NULL,  0  }
 	};
-
-	//memset(&config, false, sizeof(config));
 
 	int c, ind;
 
@@ -459,7 +457,6 @@ static void showVersion(pe_ctx_t *ctx, const NODE_PERES *node)
 	int count = 0;
 	const NODE_PERES *dataEntryNode;
 	uint32_t nameOffset;
-	const RESOURCE_ENTRY *resourceEntry;
 	bool found = false;
 
 	while (node->lastNode != NULL) {
@@ -607,9 +604,9 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		return NULL;
 
 	uint64_t resourceDirOffset = pe_rva2ofs(ctx, resourceDirectory->VirtualAddress);
-	char s[MAX_MSG];
+	/*char s[MAX_MSG];
 
-	/*if (resourceDirectory->Size != 0) {
+	if (resourceDirectory->Size != 0) {
 		snprintf(s, MAX_MSG, "%#x (%d bytes)",
 				resourceDirectory->VirtualAddress,
 				resourceDirectory->Size);

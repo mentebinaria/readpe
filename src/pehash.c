@@ -3,7 +3,7 @@
 
 	pehash.c - calculate hashes of PE pieces
 
-	Copyright (C) 2012 - 2015 pev authors
+	Copyright (C) 2012 - 2017 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -35,26 +35,19 @@
 
 #include "common.h"
 #include <openssl/evp.h>
+#include <openssl/md5.h>
 #include "../lib/libfuzzy/fuzzy.h"
 #include "plugins.h"
+#include "utlist.h"
 
 #define PROGRAM "pehash"
 
-#define PRINT_HASH_OR_HASHES \
-		if (options->algorithms.alg_name) { \
-			calc_hash(options->algorithms.alg_name, data, data_size, hash_value); \
-			output(options->algorithms.alg_name, hash_value); \
-		} else { \
-			print_basic_hash(data, data_size); \
-		}
+#define IMPHASH_FLAVOR_MANDIANT 1
+#define IMPHASH_FLAVOR_PEFILE 2
 
 typedef struct {
 	bool all;
-	struct {
-		bool all;
-		char *alg_name;
-		bool ssdeep;
-	} algorithms;
+	bool content;
 	struct {
 		bool all;
 		bool dos;
@@ -76,28 +69,15 @@ static void usage(void)
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s> change output format (default: text)\n"
-		" -a, --algorithm <algorithm>           calculate hash using one of the following algorithms:\n"
-		"                                       md4, md5, ripemd160, sha, sha1, sha224, sha256\n"
-		"                                       sha384, sha512, whirlpool or ssdeep\n\n"
+		" -a, --all                             hash file, sections and headers with all available hash algorithms:\n"
+		"                                       md5, sha1, sha256, sha512, sdeep and imphash (Mandiant and pefile)\n\n"
+		" -c, --content                         hash only the file content (default)\n"
 		" -h, --header <dos|coff|optional>      hash only the header with the specified name\n"
 		" -s, --section <section_name>          hash only the section with the specified name\n"
 		" --section-index <section_index>       hash only the section at the specified index (1..n)\n"
-		" -v, --version                         show version and exit\n"
+		" -V, --version                         show version and exit\n"
 		" --help                                show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
-}
-
-static void parse_hash_algorithm(options_t *options, const char *optarg)
-{
-	if (strcmp("ssdeep", optarg) == 0) {
-		options->algorithms.ssdeep = true;
-	} else {
-		const EVP_MD *md = EVP_get_digestbyname(optarg);
-		if (md == NULL)
-			EXIT_ERROR("The requested algorithm is not supported");
-	}
-
-	options->algorithms.alg_name = strdup(optarg);
 }
 
 static void parse_header_name(options_t *options, const char *optarg)
@@ -117,9 +97,6 @@ static void free_options(options_t *options)
 	if (options == NULL)
 		return;
 
-	if (options->algorithms.alg_name != NULL)
-		free(options->algorithms.alg_name);
-
 	if (options->sections.name != NULL)
 		free(options->sections.name);
 
@@ -132,23 +109,22 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	// parameters for getopt_long() function
-	static const char short_options[] = "f:a:h:s:v";
+	static const char short_options[] = "f:a:c:h:s:V";
 
 	static const struct option long_options[] = {
 		{ "help",          no_argument,         NULL,  1  },
 		{ "format",        required_argument,   NULL, 'f' },
-		{ "algorithm",     required_argument,   NULL, 'a' },
+		{ "all",           no_argument,         NULL, 'a' },
+		{ "content",       no_argument,         NULL, 'c' },
 		{ "header",        required_argument,   NULL, 'h' },
 		{ "section-name",  required_argument,   NULL, 's' },
 		{ "section-index", required_argument,   NULL,  2  },
-		{ "version",       no_argument,         NULL, 'v' },
+		{ "version",       no_argument,         NULL, 'V' },
 		{  NULL,           0,                   NULL,  0  }
 	};
 
-	// Default options.
-	options->algorithms.all = true;
-	options->headers.all = true;
-	options->all = true;
+	// Setting the default option
+	options->content = true;
 
 	int c, ind;
 	while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
@@ -166,8 +142,11 @@ static options_t *parse_options(int argc, char *argv[])
 					EXIT_ERROR("invalid format option");
 				break;
 			case 'a':
-				options->algorithms.all = false;
-				parse_hash_algorithm(options, optarg);
+				options->all = true;
+				break;
+			case 'c': // default
+				options->all = false; //TODO remover?
+				options->content = true;
 				break;
 			case 's':
 				options->all = false;
@@ -183,7 +162,7 @@ static options_t *parse_options(int argc, char *argv[])
 					EXIT_ERROR("Bad argument for section-index,");
 				}
 				break;
-			case 'v':
+			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'h':
@@ -208,6 +187,7 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
 		fuzzy_hash_buf(data, size, output);
 		return;
 	}
+
 	const EVP_MD *md = EVP_get_digestbyname(alg_name);
 	//assert(md != NULL); // We already checked this in parse_hash_algorithm()
 
@@ -228,16 +208,242 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
 
 static void print_basic_hash(const unsigned char *data, size_t size)
 {
-	char *basic_hashes[] = { "md5", "sha1", "ssdeep" };
+	char *basic_hashes[] = { "md5", "sha1", "sha256", "sha512", "ssdeep" };
 	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
 	if (!data || !size)
 		return;
 
-	for (int i=0; i < 3; i++) {
+	for (int i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
 		calc_hash(basic_hashes[i], data, size, hash_value);
 		output(basic_hashes[i], hash_value);
 	}
+}
+
+typedef struct element {
+    char *dll_name;
+    char *function_name;
+    //struct element *prev; /* needed for a doubly-linked list only */
+    struct element *next; /* needed for singly- or doubly-linked lists */
+} element;
+
+static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, struct element **head, int flavor)
+{
+	uint64_t ofs = offset;
+
+	char hint_str[16];
+	char fname[MAX_FUNCTION_NAME];
+	bool is_ordinal;
+
+	memset(hint_str, 0, sizeof(hint_str));
+	memset(fname, 0, sizeof(fname));
+
+	while (1) {
+		switch (ctx->pe.optional_hdr.type) {
+			case MAGIC_PE32:
+			{
+				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+					// TODO: Should we report something?
+					return;
+				}
+
+				// Type punning
+				const uint32_t thunk_type = *(uint32_t *)thunk;
+				if (thunk_type == 0)
+					return;
+
+				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+
+				if (is_ordinal) {
+					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
+						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+				} else {
+					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+						// TODO: Should we report something?
+						return;
+					}
+
+					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
+					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+					fname[sizeof(fname) - 1] = '\0';
+					//size_t fname_len = strlen(fname);
+				}
+				ofs += sizeof(IMAGE_THUNK_DATA32);
+				break;
+			}
+			case MAGIC_PE64:
+			{
+				const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+					// TODO: Should we report something?
+					return;
+				}
+
+				// Type punning
+				const uint64_t thunk_type = *(uint64_t *)thunk;
+				if (thunk_type == 0)
+					return;
+
+				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+
+				if (is_ordinal) {
+					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu64,
+						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+				} else {
+					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+						// TODO: Should we report something?
+						return;
+					}
+
+					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
+					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+					fname[sizeof(fname) - 1] = '\0';
+					//size_t fname_len = strlen(fname);
+				}
+				ofs += sizeof(IMAGE_THUNK_DATA64);
+				break;
+			}
+		}
+
+		if (!dll_name)
+			continue;
+
+		// Beginning of imphash logic - that's the weirdest thing I've even seen...
+
+		for (int i=0; i < strlen(dll_name); i++)
+			dll_name[i] = tolower(dll_name[i]);
+
+		// Imphash pefile's algorithm looks explicitally by ".dll", not any file extension
+		char *aux = strstr(dll_name, ".dll");
+
+		if (aux)
+			*aux = '\0';
+		
+		for (int i=0; i < strlen(fname); i++)
+			fname[i] = tolower(fname[i]);
+
+		struct element *el = (struct element *) malloc(sizeof(struct element));
+
+		el->dll_name = strdup(dll_name);
+
+		if (flavor == IMPHASH_FLAVOR_MANDIANT) {
+			el->function_name = strdup(is_ordinal ? hint_str : fname);
+		}
+		else if (flavor == IMPHASH_FLAVOR_PEFILE) { 
+			if ( (strcmp(dll_name, "ws2_32") == 0 || strcmp(dll_name, "oleaut32") == 0) && is_ordinal) {
+				fprintf(stderr, "WARNING! pev does not follow fully support pefile's imphash implementation. " \
+					"You may want to check Ero Carrera's pefile imphash results for this file.\n.");
+			}
+			else {
+				char ord[MAX_FUNCTION_NAME];
+				memset(ord, 0, MAX_FUNCTION_NAME);
+
+				if (is_ordinal) {
+					snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
+					el->function_name = strdup(ord);
+				} else {
+					el->function_name = strdup(fname);
+				}
+			}
+		}
+
+		LL_APPEND(*head, el);
+	}
+}
+
+static void imphash(pe_ctx_t *ctx, int flavor)
+{
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	if (dir == NULL)
+		return;
+
+	const uint64_t va = dir->VirtualAddress;
+	if (va == 0) {
+		fprintf(stderr, "import directory not found\n");
+		return;
+	}
+	uint64_t ofs = pe_rva2ofs(ctx, va);
+	element *elt, *tmp, *head = NULL;
+	int count = 0;
+
+	while (1) {
+		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+			// TODO: Should we report something?
+			output_close_scope();
+			return;
+		}
+
+		if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
+			break;
+
+		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
+		const uint64_t aux = ofs; // Store current ofs
+
+		ofs = pe_rva2ofs(ctx, id->Name);
+		if (ofs == 0)
+			break;
+
+		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
+		// It might be '\0', for example.
+		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+			// TODO: Should we report something?
+			break;
+		}
+
+		char dll_name[MAX_DLL_NAME];
+		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
+		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+		dll_name[sizeof(dll_name) - 1] = '\0';
+
+		//output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
+		//output("Name", dll_name);
+
+		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
+		if (ofs == 0) {
+			output_close_scope(); // Library
+			break;
+		}
+
+		imphash_load_imported_functions(ctx, ofs, dll_name, &head, flavor);
+		ofs = aux; // Restore previous ofs
+	}
+
+	LL_COUNT(head, elt, count);
+	//printf("%d number of elements in list outside\n", count);
+
+	size_t imphash_string_size = sizeof(char) * count * MAX_DLL_NAME + MAX_FUNCTION_NAME;
+
+	char *imphash_string = (char *) malloc_s(imphash_string_size);
+
+	memset(imphash_string, 0, imphash_string_size);
+
+	LL_FOREACH_SAFE(head, elt, tmp) \ 
+		sprintf(imphash_string, "%s%s.%s,", imphash_string, elt->dll_name, elt->function_name); \
+		LL_DELETE(head, elt);
+
+	free(elt);
+
+	imphash_string_size = strlen(imphash_string);
+	imphash_string[imphash_string_size-1] = '\0'; // remove the last comma sign
+
+	//puts(imphash_string); // DEBUG
+
+	char imphash[32];
+	calc_hash("md5", imphash_string, strlen(imphash_string), imphash);
+	free(imphash_string);
+	if (flavor == IMPHASH_FLAVOR_MANDIANT)
+		output("imphash (Mandiant)", imphash);
+	else if (flavor == IMPHASH_FLAVOR_PEFILE)
+		output("imphash (pefile)", imphash);
 }
 
 int main(int argc, char *argv[])
@@ -286,38 +492,60 @@ int main(int argc, char *argv[])
 
 	output_open_document();
 
+	if (options->headers.all || options->headers.dos || options->headers.coff || options->headers.optional ||
+		options->sections.name || options->sections.index) {
+		options->all = false;
+		options->content = false;
+	}
+
 	if (options->all) {
+		options->content = true;
+		options->headers.all = true;
+	}
+
+	if (options->content) {
 		output_open_scope("file", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
+		imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
+		imphash(&ctx, IMPHASH_FLAVOR_PEFILE);
 		output_close_scope(); // file
+		if (!options->all) // whole file content only
+			goto BYE;
 	}
 
-	output_open_scope("headers", OUTPUT_SCOPE_TYPE_ARRAY);
+	if (options->headers.all) {
+		options->headers.dos = true;
+		options->headers.coff = true;
+		options->headers.optional = true;
+	}
 
-	if (options->all || options->headers.all || options->headers.dos) {
+	if (options->headers.all || options->headers.dos || options->headers.coff || options->headers.optional)
+		output_open_scope("headers", OUTPUT_SCOPE_TYPE_ARRAY);
+
+	if (options->headers.all || options->headers.dos) {
 		const IMAGE_DOS_HEADER *dos_hdr = pe_dos(&ctx);
 		data = (const unsigned char *)dos_hdr;
 		data_size = sizeof(IMAGE_DOS_HEADER);
 
 		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("header_name", "IMAGE_DOS_HEADER");
-		PRINT_HASH_OR_HASHES;
+		print_basic_hash(data, data_size);
 		output_close_scope(); // header
 	}
 
-	if (options->all || options->headers.all || options->headers.coff) {
+	if (options->headers.all || options->headers.coff) {
 		const IMAGE_COFF_HEADER *coff_hdr = pe_coff(&ctx);
 		data = (const unsigned char *)coff_hdr;
 		data_size = sizeof(IMAGE_COFF_HEADER);
 
 		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("header_name", "IMAGE_COFF_HEADER");
-		PRINT_HASH_OR_HASHES;
+		print_basic_hash(data, data_size);
 		output_close_scope(); // header
 	}
 
-	if (options->all || options->headers.all || options->headers.optional) {
+	if (options->headers.all || options->headers.optional) {
       const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
       switch (opt_hdr->type) {
          case MAGIC_ROM:
@@ -344,14 +572,17 @@ int main(int argc, char *argv[])
 
 		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("header_name", "IMAGE_OPTIONAL_HEADER");
-		PRINT_HASH_OR_HASHES;
+		print_basic_hash(data, data_size);
 		output_close_scope(); // header
 	}
 
-	output_close_scope(); // headers
+	if (options->headers.all || options->headers.dos || options->headers.coff || options->headers.optional)
+		output_close_scope(); // headers
+
+	if (options->all || options->sections.name || options->sections.index)
+		output_open_scope("sections", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	if (options->all) {
-		output_open_scope("sections", OUTPUT_SCOPE_TYPE_ARRAY);
 		for (unsigned int i=0; i<c; i++) {
 			data_size = sections[i]->SizeOfRawData;
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
@@ -363,11 +594,11 @@ int main(int argc, char *argv[])
 			output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
 			output("section_name", (char *)sections[i]->Name);
 			if (data_size) {
-				PRINT_HASH_OR_HASHES;
+				print_basic_hash(data, data_size);
 			}
 			output_close_scope(); // section
 		}
-		output_close_scope(); // sections
+		//output_close_scope(); // sections
 	} else if (options->sections.name != NULL) {
 		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
 		if (section == NULL) {
@@ -402,18 +633,16 @@ int main(int argc, char *argv[])
 	}
 
 	if (!options->all && data != NULL) {
-		char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
-
-		if (options->algorithms.all && options->all) {
-			print_basic_hash(data, data_size);
-		} else if (options->algorithms.alg_name != NULL) {
-			calc_hash(options->algorithms.alg_name, data, data_size, hash_value);
-			output(options->algorithms.alg_name, hash_value);
-		} else {
-			print_basic_hash(data, data_size);
-		}
+		output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
+		output("section_name", options->sections.name);
+		print_basic_hash(data, data_size);
+		output_close_scope();
 	}
 
+	if (options->all || options->sections.name || options->sections.index)
+		output_close_scope();
+
+	BYE:
 	output_close_document();
 
 	// free
@@ -426,8 +655,6 @@ int main(int argc, char *argv[])
 	}
 
 	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
-
 	PEV_FINALIZE(&config);
-
 	return EXIT_SUCCESS;
 }

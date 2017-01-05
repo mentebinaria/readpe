@@ -8,18 +8,18 @@ pehash - calculate hashes of PE pieces
 .IR pefile
 
 .SH DESCRIPTION
-pehash uses libssl and libfuzzy to calculate PE file hashes. It's part of pev analysis toolkit.
+pehash uses libssl, libfuzzy and other magic to calculate PE file hashes. It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
 .SH OPTIONS
 .TP
-.BR \-A ", " \-\-all
-calculate and show basic hashes of file, headers and sections (default).
+.BR \-a ", " \-\-all
+hash file, sections and headers with all available hash algorithms.
 
 .TP
-.BR \-a ", " \-\-algorithm\ <md4|md5|ripemd160|sha|sha1|sha224|sha256|sha384|sha512|whirlpool|ssdeep>
-hash with the specified algorithm only.
+.BR \-c ", " \-\-content
+hash only the file content (default)
 
 .TP
 .BR \-f ", " \-\-format\ <text|csv|xml|html>
@@ -38,7 +38,7 @@ hash only the section with the specified name.
 hash only the section at the specified index (1..n).
 
 .TP
-.BR \-v ", " \-\-version
+.BR \-V ", " \-\-version
 show program version and exit.
 
 .TP
@@ -48,11 +48,11 @@ show help.
 .SH EXAMPLES
 Check all supported checksums of \fBputty.exe\fP file:
 .IP
-$ pehash putty.exe
+$ pehash -a putty.exe
 
 .SH REPORTING BUGS
 Please, check the latest development code and report at https://github.com/merces/pev/issues
 
 .SH COPYRIGHT
-Copyright © 2013 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright © 2017 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

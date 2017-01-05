@@ -41,6 +41,7 @@
 #include <string.h>
 #include <strings.h>
 #include <getopt.h>
+#include <ctype.h>
 
 #include <pe.h>
 #include "config.h"
@@ -55,6 +56,8 @@
 	exit(1); \
 }
 
+#define MAX_DLL_NAME 256
+#define MAX_FUNCTION_NAME 512
 #define MAX_MSG 80
 #define VERSION "0.80"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"

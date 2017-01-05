@@ -10,8 +10,8 @@ analyze binaries, specially suspicious ones.</para>
 <title>History</title>
 
 <para>
-pev has born in 2010 from a simple need: a program to find out the version (File Version) of
-a PE32 file and that could be run in Linux. This version number is stored in
+pev was born back in 2010 from a simple need: a program to find out the version (File Version) of
+a PE32 file and that could run in Linux. This version number is stored in
 Resources (.rsrc) section but at the time we've decided to simply search for
 the string in the whole binary, without any optimization.
 </para>
@@ -19,15 +19,16 @@ the string in the whole binary, without any optimization.
 
 <para>
 Later on we've decided to parse the PE32 file until reach .rsrc section and
-get the File Version field. In order to do that, we realized we must parse the
-entire file and we thought if we could print out all the fields and values as well...
+get the File Version field. In order to do that, we realized we had to parse the
+entire file and we thought if we could print out all the fields and values we went
+through as well.
 </para>
 
 <para>
-Until version 0.40, pev was an unique program for parse the PE headers and sections
-(now readpe is responsible for this). In version 0.50 we focused on malware analysis
+Until version 0.40, pev was an unique program to parse the PE headers and sections
+(now readpe is responsible for this). In version 0.50 we focused on binary analysis
 and splitted pev into various programs beyond a library, called libpe. Currently
-all pev programs use libpe.
+most of pev toolkit programs depends on libpe.
 </para>
 
 </sect1>
@@ -44,13 +45,14 @@ Legend:
 ! Known issue / missing feature
 
 pev 0.80 - ?
- ! Missing full/English documentation.
+ ! Missing documentation for libpe.
  * pestr: --net option removed (we may readd this in the future).
  + Basic plugins support.
  + cpload: new tool for CPL file debugging (Windows only).
  + Fixed: pestr: unable to handle too big strings.
  + Fixed: valid XML and HTML output formats (Jan Seidl)
  + Support for pev.conf configuration file.
+ + peres can now output the PE File Version with -v option.
 
 pev 0.70 - December 26, 2013
  ! Missing full/English documentation.

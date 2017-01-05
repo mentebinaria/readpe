@@ -47,7 +47,7 @@ Size of heap space to commit:    0x1000
 <tip><para>The Magic Number is 0x10b for PE32 files and 0x20b for PE32+ files.</para></tip>
 
 <para>
-In order to pass some pev tools output you can set use the -f / --format option. The following
+In order to parse pev tools output you can use the -f / --format option. The following
 example will output the <emphasis>DOS Header</emphasis> in HTML:
 </para>
 
@@ -260,7 +260,7 @@ by included libssdeep.
 </sect1>
 
 <sect1 id="suspicious">
-<title>Handling with suspicious files</title>
+<title>Analyzing suspicious files</title>
 <para>
 Suspicious files are nice. We could probably think about lots of suspicious
 characteristics that PE files may have and all we know is on pescan:

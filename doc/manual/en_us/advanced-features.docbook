@@ -7,8 +7,7 @@
 <para>
 Not all binaries are suspicious. You might have some normal binaries to study,
 finding vulnerabilities on it, etc. You can use pesec to check security features
-in PE files. It can be useful for programmers, vulnerabilities researchers, programmers,
-etc. Have a look:
+in PE files. It may be useful for programmers or vulnerability researchers. Have a look:
 </para>
 
 <screen>
@@ -23,8 +22,8 @@ Stack cookies (EXPERIMENTAL):    yes
 <para>
 Currently pesec can discover if the PE file has ASLR (Address Space Layout Randomization),
 DEP (Data Execution Prevention) / NX (No eXecutable bit), SEH (Structured Exception Handling)
-and Stack Cookies as known as Canary. If you want to use pesec, you probably know what these
-protection schemes are. ;)
+and Stack Cookies, as known as Canary, enabled. If you want to use pesec, you probably
+know what these protection schemes are. ;)
 </para>
 
 <para>
@@ -38,9 +37,8 @@ have plans to extend this support. Stay tuned!
 <title>Disassembling</title>
 
 <para>
-pedis is a full disassembler that can be used to
-lots of different purposes. Let's suppose you find
-the following output from pescan first:
+pedis is a full disassembler that can be used for different purposes. Let's say
+you find the following output from pescan first:
 </para>
 
 <screen>

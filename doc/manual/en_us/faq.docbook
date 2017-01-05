@@ -6,6 +6,19 @@
 <qandaentry>
 <question>
 <para>
+How can I get the File Version from PE files like I'm used to do with previous versions of pev?
+</para>
+</question>
+<answer>
+<para>
+Use -v swtich of peres tool.
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+<para>
 Can my machine be infected when analyzing malware with pev tools?
 </para>
 </question>

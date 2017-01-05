@@ -33,6 +33,8 @@ static void exit_error(char * msg)
 	exit(EXIT_FAILURE);
 }
 
+/* Function to get machine type from machine type code
+provided by coff.Machine field */
 char * getmachinename(WORD Machine)
 {
 	char *machines[] = 
@@ -52,16 +54,145 @@ char * getmachinename(WORD Machine)
 	 "Power PC with floating point support",
 	 "MIPS little endian",
 	 "Hitachi SH3",
+	 "Hitachi SH3 DSP",
+	 "Hitachi SH4",
+	 "Hitachi SH5",
+	 "ARM or Thumb (\"interworking\")",
+	 "MIPS little-endian WCE v2"
 	};
 
+	/* By default, machine is unknown */
+	char *machine = "Unknown machine type";
+	
 	switch (Machine)
 	{
+		case 0x1d3:
+			machine = machines[1];
+			break;
+		
+		case 0x8664:
+			machine = machines[2];
+			break;
+		
+		case 0x1c0:
+			machine = machines[3];
+			break;
+		
+		case 0x1c4:
+			machine = machines[4];
+			break;
+		
+		case 0xebc:
+			machine = machines[5];
+			break;
+		
 		case 0x14c:
-			return machines[6];
-		default:
-			return "Unkown";
+			machine = machines[6];
+			break;
+		
+		case 0x200:
+			machine = machines[7];
+			break;
+		
+		case 0x9041:
+			machine = machines[8];
+			break;
+		
+		case 0x266:
+			machine = machines[9];
+			break;
+		
+		case 0x366:
+			machine = machines[10];
+			break;
+		
+		case 0x466:
+			machine = machines[11];
+			break;
+		
+		case 0x1f0:
+			machine = machines[12];
+			break;
+		
+		case 0x1f1:
+			machine = machines[13];
+			break;
+		
+		case 0x166:
+			machine = machines[14];
+			break;
+		
+		case 0x1a2:
+			machine = machines[15];
+			break;
+		
+		case 0x1a3:
+			machine = machines[16];
+			break;
+		
+		case 0x1a6:
+			machine = machines[17];
+			break;
+		
+		case 0x1a8:
+			machine = machines[18];
+			break;
+		
+		case 0x1c2:
+			machine = machines[19];
+			break;
+		
+		case 0x169:
+			machine = machines[20];
 	}
+	
+	return machine;
+}
 
+/* Converts a decimal number to decimal
+binary representation, limited by 524 287 */
+long dec2bindec(long decimal)
+{
+    long binary = 0;
+    long position = 1;
+
+    while (decimal >= 1)
+    {
+        binary = binary + (decimal % 2) * position;
+
+        decimal /= 2;
+        position *= 10;
+    }
+
+    return binary;
+}
+
+/* Print coff.Characteristics flags */
+void printflags(WORD c)
+{
+	register int i, j;
+	char *flags[] = {
+	"IMAGE_FILE_RELOCS_STRIPPED",
+	"IMAGE_FILE_EXECUTABLE_IMAGE",
+	"IMAGE_FILE_LINE_NUMS_STRIPPED",
+	"IMAGE_FILE_LOCAL_SYMS_STRIPPED",
+	"IMAGE_FILE_AGGRESSIVE_WS_TRIM",
+	"IMAGE_FILE_LARGE_ADDRESS_ AWARE",
+	"",
+	"IMAGE_FILE_BYTES_REVERSED_LO",
+	"IMAGE_FILE_32BIT_MACHINE",
+	"IMAGE_FILE_DEBUG_STRIPPED",
+	"IMAGE_FILE_REMOVABLE_RUN_ FROM_SWAP",
+	"IMAGE_FILE_NET_RUN_FROM_SWAP",
+	"IMAGE_FILE_SYSTEM",
+	"IMAGE_FILE_DLL",
+	"IMAGE_FILE_UP_SYSTEM_ONLY",
+	"IMAGE_FILE_BYTES_REVERSED_HI"
+	};
+
+	/* Loop through all flag possibilities to print */
+	for (i=1, j=0; i<0x8000; i=i<<1, j++)
+		if (c & i) printf("\t\t\t\t%s\n", flags[j]);
 }
 
 static void getdata(FILE *fp)
@@ -69,18 +200,18 @@ static void getdata(FILE *fp)
 	/* Pointer to struct. Will be use as array. */
 	PIMAGE_SECTION_HEADER sec;
 	
-	int i, found, sec_num;
+	int i, found, sec_num, read;
 
 	/* Find e_lfanew field of DOS header, that points to PE signature
 	and skip four bytes of signature: PE\0\0 */
 	{
 		IMAGE_DOS_HEADER dos;
-		(void) fread(&dos, sizeof(IMAGE_DOS_HEADER), 1, fp);
+		read = fread(&dos, sizeof(IMAGE_DOS_HEADER), 1, fp);
 
 		if ((int)dos.e_magic != 0x5a4d)
 			exit_error("the file is not a valid PE32 binary");
 
-		(void) fseek(fp, (int)dos.e_lfanew + 4, SEEK_SET);
+		read = fseek(fp, (int)dos.e_lfanew + 4, SEEK_SET);
 		
 		if (config.dos || config.all)
 		{
@@ -128,7 +259,8 @@ static void getdata(FILE *fp)
 			printf(" Symbol Table offset:\t\t%#x\n", (unsigned int)coff.PointerToSymbolTable);
 			printf(" Number of symbols:\t\t%d\n", (int)coff.NumberOfSymbols);
 			printf(" Size of optional header:\t%#x\n", coff.SizeOfOptionalHeader);
-			printf(" Characteristics:\t\t%#x\n", coff.Characteristics);
+			printf(" Characteristics:\t\t%#x (%032ld)\n", coff.Characteristics, dec2bindec(coff.Characteristics));
+			printflags(coff.Characteristics);
 			printf("\n");
 		}
 
@@ -180,7 +312,7 @@ static void getdata(FILE *fp)
 		if (sec == NULL)
 			exit_error("memory allocation error");
 
-		(void) fread(sec, sizeof(IMAGE_SECTION_HEADER)*coff.NumberOfSections,
+		read = fread(sec, sizeof(IMAGE_SECTION_HEADER)*coff.NumberOfSections,
 							1, fp);
 							
 		if (config.sections || config.all)
@@ -206,7 +338,7 @@ static void getdata(FILE *fp)
 					and forward the file pointer to offset in PointerToRawData
 					field specified in SECTION HEADER. */
 				sec_num = i;
-				(void) fseek(fp, (int) sec[i].PointerToRawData, SEEK_SET);
+				read = fseek(fp, (int) sec[i].PointerToRawData, SEEK_SET);
 				break;
 			}
 		}
@@ -222,21 +354,21 @@ static void getdata(FILE *fp)
 			IMAGE_RESOURCE_DIRECTORY dir;
 			IMAGE_RESOURCE_DIRECTORY_ENTRY ent;
 			/* Read the RESOURCE DIR struct to get the first entry */
-			(void) fread(&dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, fp);
+			read = fread(&dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, fp);
 
 			/* Read the *root* RESOURCE DIR ENTRY by looping through
 				all entries (named or not). */
 			for (i=0, found=0; i < (int)
 					(dir.NumberOfIdEntries+dir.NumberOfNamedEntries); i++)
 			{
-				(void) fread(&ent, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, fp);
+				read = fread(&ent, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, fp);
 				/* We look for version entry, specified by RT_VERSION in pe.h. */
 				if (ent.DUMMYUNIONNAME.Name == (int)RT_VERSION)
 				{
 					/* The offset pointed by "OffsetToData" field will point to another
 						DIRECTORY_ENTRY structure, signed by higher bit set to 1. The
 						other 31 bits are the offset. We'll XOR it with 0x80000000. */
-					(void) fseek(fp, (signed long)sec[sec_num].PointerToRawData +
+					read = fseek(fp, (signed long)sec[sec_num].PointerToRawData +
 					(ent.DUMMYUNIONNAME2.OffsetToData ^ 0x80000000), SEEK_SET);
 					found = 1;
 					break;
@@ -248,17 +380,17 @@ static void getdata(FILE *fp)
 				exit_error("the file does not contain version information");
 
 			/* Read the first RT_VERSION child directory (commonly named "1"). */
-			(void) fread(&dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, fp);
-			(void) fread(&ent, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, fp);
-			(void) fseek(fp, (signed long) sec[sec_num].PointerToRawData +
+			read = fread(&dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, fp);
+			read = fread(&ent, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, fp);
+			read = fseek(fp, (signed long) sec[sec_num].PointerToRawData +
 			(ent.DUMMYUNIONNAME2.OffsetToData ^ 0x80000000), SEEK_SET);
 
 			/* Read the second subdir, commonly an integer. This subdir does not
 				point to another RESOURCE DIRECTORY, so we doest not need to XOR.
 				This subdir points to a RESOURCE DARA ENTRY, that is our goal. */
-			(void) fread(&dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, fp);
-			(void) fread(&ent, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, fp);
-			(void) fseek(fp, (signed long)sec[sec_num].PointerToRawData +
+			read = fread(&dir, sizeof(IMAGE_RESOURCE_DIRECTORY), 1, fp);
+			read = fread(&ent, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY), 1, fp);
+			read = fseek(fp, (signed long)sec[sec_num].PointerToRawData +
 			(int)ent.DUMMYUNIONNAME2.OffsetToData, SEEK_SET);
 		}
 
@@ -267,8 +399,8 @@ static void getdata(FILE *fp)
 			/* Get and seek the offset to data beginning. Here we
 				skip 32 bytes equivalent to the utf-16-le codified
 				string "VS_VERSION_INFO". */
-			(void) fread(&data, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, fp);
-			(void) fseek(fp, (signed long)data.OffsetToData -
+			read = fread(&data, sizeof(IMAGE_RESOURCE_DATA_ENTRY), 1, fp);
+			read = fseek(fp, (signed long)data.OffsetToData -
 								sec[sec_num].VirtualAddress +	sec[sec_num].PointerToRawData
 								+ 32, SEEK_SET);
 		}
@@ -293,6 +425,8 @@ static void getdata(FILE *fp)
 
 int main(int argc, char *argv[])
 {
+	FILE *fp;
+
 	/* Call parse_options to populate the global
 	 * config struct, defined in parser.c */
 	parse_options(argc, argv);
@@ -300,7 +434,7 @@ int main(int argc, char *argv[])
 	/* Try to get file pointer passed as argument.
 	 * This function will exit program if no file
 	 * is found or is not readable */
-	FILE *fp = getfile(argc, argv);
+	fp = getfile(argc, argv);
 
 	/* Just double-checking fp */
 	if (fp != NULL)

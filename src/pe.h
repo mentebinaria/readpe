@@ -23,19 +23,8 @@
 #define IMAGE_SIZEOF_SHORT_NAME 8
 #define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
 
-/* Word size for x86 and x86-64 architectures */
-#ifndef __WORDSIZE
-#define __WORDSIZE 32
-#endif
-
-#if __WORDSIZE == 64
 typedef unsigned int DWORD;
 typedef int LONG;
-#elif __WORDSIZE == 32
-typedef unsigned long DWORD;
-typedef long LONG;
-#endif
-
 typedef unsigned char BYTE;
 typedef unsigned short WORD;
 

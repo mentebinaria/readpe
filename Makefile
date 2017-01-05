@@ -1,6 +1,6 @@
 CC=gcc
 SRC=src/pev.c src/parser.c
-CFLAGS=-O2 -Wall -ansi
+CFLAGS=-O2 -Wall -ansi -pedantic
 
 all:
 	$(CC) $(CFLAGS) -o pev $(SRC)

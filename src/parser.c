@@ -131,7 +131,7 @@ void parse_options(int argc, char *argv[])
 				break;
 
 			case 'v':
-				printf("PE Version utility (pev) %s\n", VERSION);
+				printf("pev %s\n", VERSION);
 				exit(EXIT_SUCCESS);
 
 			case 'h':

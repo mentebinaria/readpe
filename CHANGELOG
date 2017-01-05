@@ -6,6 +6,12 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
+pev 0.31 - May 11, 2011
+ - Fixed warning with Linux 32-bits boxes when compiling.
+ - Now pev compiles in OSX without any changes (thanks @gustavorobertux).
+ + Added human-readable machine types in COFF output.
+ + Added characteristics flags in COFF output.
+
 pev 0.30 - February 20, 2011
  * Improved memory use.
  + Added option "-d" to show the DOS header.

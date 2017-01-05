@@ -8,7 +8,7 @@ pesec - check for protections in PE files
 .IR pefile
 
 .SH DESCRIPTION
-pesec identify if a PE file is using some protection scheme like DEP/NX or ASLR.
+pesec identify if a PE file is using some protection scheme like DEP/NX or ASLR. It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
@@ -26,7 +26,7 @@ specifies the certificate output format (default: text).
 specifies the output filename to write certificates to (default: stdout).
 
 .TP
-.BR \-v ", " \-\-version
+.BR \-V ", " \-\-version
 show program version and exit.
 
 .TP
@@ -42,5 +42,5 @@ $ pesec putty.exe
 Please, check the latest development code and report at https://github.com/merces/pev/issues
 
 .SH COPYRIGHT
-Copyright © 2013 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright © 2017 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

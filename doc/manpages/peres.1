@@ -8,22 +8,26 @@ peres - analyze and extract PE file resources
 .IR pefile
 
 .SH DESCRIPTION
-peres opens the resource section of a PE file and it is able to show/extract resources.
+peres opens the resource section of a PE file and it is able to read and extract resources. It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
 .SH OPTIONS
 .TP
 .BR \-a ", " \-\-all
-show all information, statistics and extract resources.
+show all information, statistics and extract the resources.
 
 .TP
-.BR \-x ", " \-\-extract
-extract resources.
+.BR \-f ", " \-\-format\ <text|csv|xml|html>
+change output format (default is text).
 
 .TP
 .BR \-i ", " \-\-info
 show resources information.
+
+.TP
+.BR \-x ", " \-\-extract
+extract resources.
 
 .TP
 .BR \-s ", " \-\-statistics
@@ -31,6 +35,10 @@ show resource section statistics.
 
 .TP
 .BR \-v ", " \-\-version
+show the File Version frou resources section.
+
+.TP
+.BR \-V ", " \-\-version
 show program version and exit.
 
 .TP
@@ -46,5 +54,5 @@ $ peres -s putty.exe
 Please, check the latest development code and report at https://github.com/merces/pev/issues
 
 .SH COPYRIGHT
-Copyright © 2013 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright © 2017 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

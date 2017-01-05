@@ -11,7 +11,7 @@ How can I get the File Version from PE files like I'm used to do with previous v
 </question>
 <answer>
 <para>
-Use -v swtich of peres tool.
+Use peres tool -v swtich.
 </para>
 </answer>
 </qandaentry>
@@ -24,11 +24,10 @@ Can my machine be infected when analyzing malware with pev tools?
 </question>
 <answer>
 <para>
-Yes for Windows users. We have cpload tool that
-actually EXECUTES the target. Apart from that, attackers could exploit
-a vulnerability we don't know about in one of the tools to execute
-code in the user machine. So please, if you are on Windows, use pev
-tools in a protected/isolated virtual machine for malware analysis.
+Yes. We have cpload tool that actually EXECUTES the target on Windows machines.
+Apart from that, attackers could exploit a vulnerability we don't know about
+in one of the tools to execute arbitrary code by sending you a specially crafted PE file.
+So please, consider using pev tools in a protected/isolated virtual machine for binary file analysis.
 </para>
 </answer>
 </qandaentry>
@@ -41,8 +40,8 @@ Can any pev tool rate a file as malicious?
 </question>
 <answer>
 <para>
-No. Some tools can give you a hint but it's nearly impossible to say a code is
-malicious programatically.
+No. Some tools can give you a hint but it's nearly impossible to programatically
+claim a piece of code is malicious.
 </para>
 </answer>
 </qandaentry>
@@ -50,13 +49,13 @@ malicious programatically.
 <qandaentry>
 <question>
 <para>
-I can't compile pev from the latest source code on git repository. What I can do?
+I can't compile pev from the latest source code on git repository. What can I do?
 </para>
 </question>
 <answer>
 <para>
 You can open an issue on GitHub. The repository usually has under development code and
-sometimes things are indeed broken.
+sometimes things are, indeed, broken.
 </para>
 </answer>
 </qandaentry>
@@ -64,7 +63,7 @@ sometimes things are indeed broken.
 <qandaentry>
 <question>
 <para>
-How do I uninstall pev version I've installed from source code?
+How do I uninstall the pev version I've installed from source code?
 </para>
 </question>
 <answer>
@@ -98,7 +97,7 @@ I like pev. How do I let you guys know that?
 <para>
 We're glad you like it. Please, consider star it on GitHub or SourceForge
 (you can also make a comment), send your feedback to the pev-users list, tell your
-friends that pev exists!
+friends that pev exists, anything. We look forward to hear from you. Really.
 </para>
 </answer>
 </qandaentry>
@@ -106,7 +105,7 @@ friends that pev exists!
 <qandaentry>
 <question>
 <para>
-I found a bug. What I can do?
+I found a bug. What do I do?
 </para>
 </question>
 <answer>
@@ -125,7 +124,7 @@ My question is not listed here. How do I get an answer for that?
 </question>
 <answer>
 <para>
-Send it to pev-users mailing list or, if you're a developer, send it to pev-devel mailing list.
+Send it over to pev-users mailing list or, if you're a developer, send it to pev-devel mailing list.
 </para>
 </answer>
 </qandaentry>

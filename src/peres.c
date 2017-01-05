@@ -116,10 +116,11 @@ static void usage(void)
 		"\nOptions:\n"
 		" -a, --all                              Show all information, statistics and extract resources\n"
 		" -f, --format <%s>  change output format (default: text)\n"
+		" -i, --info                             Show resources information\n"
+		" -s, --statistics                       Show resources statistics\n"
 		" -x, --extract                          Extract resources\n"
-		" -i, --info                             Show informations\n"
-		" -s, --statistics                       Show statistics\n"
-		" -v, --version                          Show File Version from PE resource directory\n"
+		" -v, --file-version                     Show File Version from PE resource directory\n"
+		" -V, --version                          show version and exit\n"
 		" --help                                 Show this help and exit\n",
 		PROGRAM, PROGRAM);
 }
@@ -138,18 +139,19 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "a:x:f:i:s:v";
+	static const char short_options[] = "a:f:isxvV";
 
 	static const struct option long_options[] = {
-		{ "all",		required_argument,	NULL, 'a' },
-		{ "extract",	no_argument,		NULL, 'x' },
-		{ "format",     required_argument,  NULL, 'f' },
-		{ "info",		no_argument,		NULL, 'i' },
-		{ "statistics",	no_argument,		NULL, 's' },
-		{ "version",	no_argument,		NULL, 'v' },
-		{ "help",		no_argument,		NULL,  1  },
-		{ NULL,			0,					NULL,  0  }
-	};
+		{ "all",            required_argument,  NULL, 'a' },
+		{ "format",         required_argument,  NULL, 'f' },
+		{ "info",           no_argument,        NULL, 'i' },
+		{ "statistics",	    no_argument,        NULL, 's' },
+		{ "extract",	    no_argument,        NULL, 'x' },
+		{ "file-version",   no_argument,        NULL, 'v' },
+		{ "version",	    no_argument,        NULL, 'V' },
+		{ "help",           no_argument,        NULL,  1  },
+		{ NULL,             0,                  NULL,  0  }
+		};
 
 	int c, ind;
 
@@ -167,18 +169,21 @@ static options_t *parse_options(int argc, char *argv[])
 				if (output_set_format_by_name(optarg) < 0)
 					EXIT_ERROR("invalid format option");
 				break;
-			case 'x':
-				options->extract = true;
-				break;
 			case 'i':
 				options->info = true;
 				break;
 			case 's':
 				options->statistics = true;
 				break;
+			case 'x':
+				options->extract = true;
+				break;
 			case 'v':
 				options->version = true;
 				break;
+			case 'V':
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
+				exit(EXIT_SUCCESS);
 			case 1: // --help option
 				usage();
 				exit(EXIT_SUCCESS);

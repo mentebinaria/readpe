@@ -3,7 +3,7 @@
 
 	ofs2rva.c - converts raw file offset to RVA
 
-	Copyright (C) 2012 - 2015 pev authors
+	Copyright (C) 2012 - 2017 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ static void usage(void)
 		"Convert raw file offset to RVA\n"
 		"\nExample: %s 0x1b9b8 calc.exe\n"
 		"\nOptions:\n"
-		" -v, --version                          show version and exit\n"
+		" -V, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
 }
@@ -51,11 +51,11 @@ static void usage(void)
 static void parse_options(int argc, char *argv[])
 {
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "v";
+	static const char short_options[] = "V";
 
 	static const struct option long_options[] = {
 		{ "help",		no_argument,	NULL,  1  },
-		{ "version",	no_argument,	NULL, 'v' },
+		{ "version",	no_argument,	NULL, 'V' },
 		{  NULL,		0,				NULL,  0  }
 	};
 
@@ -71,7 +71,7 @@ static void parse_options(int argc, char *argv[])
 			case 1: // --help option
 				usage();
 				exit(EXIT_SUCCESS);
-			case 'v':
+			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			default:

@@ -30,6 +30,7 @@ Otherwise, cpload will send all messages to CPlApplet()
 </screen>
 </sect1>
 
+
 <sect1 id="ofs2rva">
 <title>ofs2rva</title>
 <screen>
@@ -44,6 +45,7 @@ Options:
 </screen>
 </sect1>
 
+
 <sect1 id="pedis">
 <title>pedis</title>
 <screen>
@@ -55,17 +57,18 @@ Example: pedis -r 0x4c4df putty.exe
 Options:
  --att                                  set AT&amp;T syntax
  -e, --entrypoint                       disassemble entrypoint
- -f, --format &lt;text|csv|xml|html&gt;       change output format (default: text)
- -m, --mode &lt;16|32|64&gt;                  disassembly mode (default: auto)
- -i, &lt;number&gt;                           number of instructions to be disassembled
- -n, &lt;number&gt;                           number of bytes to be disassembled
- -o, --offset &lt;offset&gt;                  disassemble at specified file offset
- -r, --rva &lt;rva&gt;                        disassemble at specified RVA
- -s, --section &lt;section_name&gt;           disassemble entire section given
- -v, --version                          show version and exit
+ -f, --format &lt;text|csv|xml|html&gt; change output format (default: text)
+ -m, --mode &lt;16|32|64&gt;            disassembly mode (default: auto)
+ -i, &lt;number&gt;                     number of instructions to be disassembled
+ -n, &lt;number&gt;                     number of bytes to be disassembled
+ -o, --offset &lt;offset&gt;            disassemble at specified file offset
+ -r, --rva &lt;rva&gt;                  disassemble at specified RVA
+ -s, --section &lt;section_name&gt;     disassemble entire section given
+ -V, --version                          show version and exit
  --help                                 show this help and exit
 </screen>
 </sect1>
+
 
 <sect1 id="pehash">
 <title>pehash</title>
@@ -77,17 +80,17 @@ Example: pehash -s '.text' winzip.exe
 
 Options:
  -f, --format &lt;text|csv|xml|html&gt;    change output format (default: text)
- -a, --algorithm &lt;algorithm&gt;         generate hash using one of the following algorithms:
-                                       md4, md5, ripemd160, sha, sha1, sha224, sha256
-                                       sha384, sha512, whirlpool or ssdeep
-
+ -a, --all                                 hash file, sections and headers with all available hash algorithms:
+                                           md5, sha1, sha256, sha512, sdeep and imphash (Mandiant and pefile)
+ -c, --content                             hash only the file content (default)
  -h, --header &lt;dos|coff|optional&gt;    hash only the header with the specified name
  -s, --section &lt;section_name&gt;        hash only the section with the specified name
  --section-index &lt;section_index&gt;     hash only the section at the specified index (1..n)
- -v, --version                       show version and exit
- --help                              show this help and exit
+ -V, --version                             show version and exit
+ --help                                    show this help and exit
 </screen>
 </sect1>
+
 
 <sect1 id="pepack">
 <title>pepack</title>
@@ -100,8 +103,8 @@ Example: pepack putty.exe
 Options:
  -d, --database &lt;file&gt;                  use database file (default: ./userdb.txt)
  -f, --format &lt;text|csv|xml|html&gt;       change output format (default: text)
- -v, --version                          show version and exit
- --help                                 show this help and exit
+ -V, --version                                show version and exit
+ --help                                       show this help and exit
 </screen>
 </sect1>
 
@@ -116,10 +119,11 @@ Example: peres -a putty.exe
 
 Options:
  -a, --all                              Show all information, statistics and extract resources
+ -i, --info                             Show resources information
+ -s, --statistics                       Show resources statistics
  -x, --extract                          Extract resources
- -i, --info                             Show informations
- -s, --statistics                       Show statistics
- -v, --version                          Show version and exit
+ -v, --file-version                     Show File Version from PE resource directory
+ -V, --version                          show version and exit
  --help                                 Show this help and exit
 </screen>
 </sect1>
@@ -135,8 +139,9 @@ Example: pescan putty.exe
 
 Options:
  -f, --format &lt;text|csv|xml|html&gt;       change output format (default: text)
- -v, --verbose                          show more info about items found
- --help                                 show this help and exit
+ -v, --verbose                                show more info about items found
+ -V, --version                                show version and exit
+ --help                                       show this help and exit
 </screen>
 </sect1>
 
@@ -153,8 +158,8 @@ Options:
  -f, --format &lt;text|csv|xml|html&gt;       change output format (default: text)
  -c, --certoutform &lt;text|pem&gt;           specifies the certificate output format (default: text)
  -o, --certout &lt;filename&gt;               specifies the output filename to write certificates to (default: stdout)
- -v, --version                          show version and exit
- --help                                 show this help and exit
+ -v, --version                                show version and exit
+ --help                                       show this help and exit
 </screen>
 </sect1>
 
@@ -163,7 +168,7 @@ Options:
 <title>pestr</title>
 <screen>
 Usage: pestr OPTIONS FILE
-Search for [encrypted] strings in PE files
+SSearch for strings in PE files
 
 Example: pestr acrobat.exe
 
@@ -171,7 +176,7 @@ Options:
  -n, --min-length                       set minimun string length (default: 4)
  -o, --offset                           show string offset in file
  -s, --section                          show string section, if exists
-  -v, --version                          show version and exit
+ -V, --version                          show version and exit
  --help                                 show this help and exit
 </screen>
 </sect1>
@@ -189,12 +194,12 @@ Options:
  -A, --all                              full output (default)
  -H, --all-headers                      print all PE headers
  -S, --all-sections                     print all PE sections headers
- -f, --format &lt;text|csv|xml|html&gt;       change output format (default: text)
+ -f, --format &lt;text|csv|xml|html&gt; change output format (default: text)
  -d, --dirs                             show data directories
- -h, --header &lt;dos|coff|optional&gt;       show specific header
+ -h, --header &lt;dos|coff|optional&gt; show specific header
  -i, --imports                          show imported functions
  -e, --exports                          show exported functions
- -v, --version                          show version and exit
+ -V, --version                          show version and exit
  --help                                 show this help and exit
 </screen>
 </sect1>
@@ -209,7 +214,7 @@ Convert RVA to raw file offset
 Example: rva2ofs 0x12db cards.dll
 
 Options:
- -v, --version                          show version and exit
+ -V, --version                          show version and exit
  --help                                 show this help and exit
 </screen>
 </sect1>

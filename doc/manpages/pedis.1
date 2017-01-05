@@ -8,8 +8,8 @@ pedis - disassemble PE sections and functions
 .IR pefile
 
 .SH DESCRIPTION
-pedis is a PE disassembler using libudis86 library. It can disassembly entire sections, functions or any position you want.
-It's part of pev analysis toolkit.
+pedis is a PE disassembler using libudis86 library. It can disassembly entire sections, functions or any file position you want.
+It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
@@ -40,18 +40,18 @@ number of bytes (lenght) to disassemble.
 
 .TP
 .BR \-o ", " \-\-offset\ <offset>
-start disassembly at specified offset, in decimal or hexadecimal format (prefixed with 0x).
+disassemble at specified offset, either in decimal or hexadecimal format (prefixed with 0x).
 
 .TP
 .BR \-r ", " \-\-rva\ <rva>
-start disassembly at specified RVA, in decimal or hexadecimal format (prefixed with 0x).
+disassemble at specified RVA, either in decimal or hexadecimal format (prefixed with 0x).
 
 .TP
 .BR \-s ", " \-\-section\ <name>
-start disassembly at specified PE section.
+disassemble specific PE section.
 
 .TP
-.BR \-v ", " \-\-version
+.BR \-V ", " \-\-version
 show program version and exit.
 
 .TP
@@ -77,5 +77,5 @@ $ pedis -m 16 -o 0x40 -n 32 game.exe
 Please, check the latest development code and report at https://github.com/merces/pev/issues
 
 .SH COPYRIGHT
-Copyright © 2013 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright © 2017 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

@@ -3,7 +3,7 @@
 
 	pescan.c - search for suspicious things in PE files.
 
-	Copyright (C) 2013 - 2015 pev authors
+	Copyright (C) 2013 - 2017 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ static void usage(void)
 		"\nOptions:\n"
 		" -f, --format <%s>  change output format (default: text)\n"
 		" -v, --verbose                          show more info about items found\n"
+		" -V, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
 }
@@ -73,12 +74,13 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "f:v";
+	static const char short_options[] = "f:vV";
 
 	static const struct option long_options[] = {
 		{ "format",		required_argument,	NULL,	'f' },
 		{ "help",		no_argument,		NULL,	 1  },
 		{ "verbose",	no_argument,		NULL,	'v' },
+		{ "version",	no_argument,		NULL,	'V' },
 		{ NULL,			0,					NULL, 	 0  }
 	};
 
@@ -101,6 +103,9 @@ static options_t *parse_options(int argc, char *argv[])
 			case 'v':
 				options->verbose = true;
 				break;
+			case 'V':
+				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
+				exit(EXIT_SUCCESS);
 			default:
 				fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
 				exit(EXIT_FAILURE);

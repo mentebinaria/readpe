@@ -46,13 +46,17 @@ Legend:
 
 pev 0.80 - ?
  ! Missing documentation for libpe.
+ * Now the -V switch is used by all pev programs to show their version numbers.
+ * pehash: Now the hash of the whole file is shown by default (-c option).
  * pestr: --net option removed (we may readd this in the future).
  + Basic plugins support.
  + cpload: new tool for CPL file debugging (Windows only).
  + Fixed: pestr: unable to handle too big strings.
  + Fixed: valid XML and HTML output formats (Jan Seidl)
+ + pehash: Import Hash (imphash) support for both Mandiant and pefile's implementation.
+ + peres: output the PE File Version with -v option.
  + Support for pev.conf configuration file.
- + peres can now output the PE File Version with -v option.
+
 
 pev 0.70 - December 26, 2013
  ! Missing full/English documentation.
@@ -97,15 +101,15 @@ pev 0.50 - June 25, 2012
  * Improved pev tools Makefile (Gabriel Barbosa).
  * MEW packer detection in packid (Rodrigo Rubira).
  * pev now is a collection of binaries and a library to work with PE executables.
- + Output in monospaced text and csv in most programs.
- + Released libpe 1.0 to support our programs.
  + libpe: xmalloc trick and fixes (Rodrigo Rubira).
+ + Output in monospaced text and csv in most programs.
  + pedis: disassemble functions and sections (Tiago Zaniquelli).
  + pepack: detect fake EP (Wagner Barongello).
  + pescan: new tool to search for suspicious things in PE files including TLS callbacks.
  + pesec: find security features in PE files.
  + readpe can now show imported functions with --imports or -i switch.
  + readpe: show PE headers and sections information (most of obsolete pev binary).
+ + Released libpe 1.0 to support our programs.
  + rva2ofs and ofs2rva: convert from rva to raw file offset and vice-versa.
  - Fixed erroneuous ord numbers in functions imported without name.
  - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting).
@@ -114,18 +118,18 @@ pev 0.40 - August 7, 2011
  * Compatible with PE/COFF specification v8.2.
  * Date format in COFF header similar to RFC 2822.
  * Improved function to get machine type (Gabriel Duarte).
- + ASLR and DEP identification.
  + Added "-r" option to show resource items at first level.
- + Added TLS callback functions detection in every PE section.
  + Added more human-readable fields, like subsystem and section characteristics.
+ + Added TLS callback functions detection in every PE section.
+ + ASLR and DEP identification.
  + PE32+ support. Now pev can handle 64-bits executables.
  + Variable data directories support (no more fixed in 16).
 
 pev 0.31 - May 11, 2011
  + Added characteristics flags in COFF output.
  + Added human-readable machine types in COFF output.
- - Fixed warning with Linux 32-bits boxes when compiling.
  - Fixed compilation in OS X. (Gustavo Roberto).
+ - Fixed warning with Linux 32-bits boxes when compiling.
 
 pev 0.30 - February 20, 2011
  * Improved memory use.

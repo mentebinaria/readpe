@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2013 - 2015 pev authors
+	Copyright (C) 2013 - 2017 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -39,8 +39,6 @@
 #include "plugins.h"
 
 #define PROGRAM "readpe"
-#define MAX_DLL_NAME 256
-#define MAX_FUNCTION_NAME 512
 
 typedef struct {
 	bool all;
@@ -70,7 +68,7 @@ static void usage(void)
 		" -h, --header <dos|coff|optional>       show specific header\n"
 		" -i, --imports                          show imported functions\n"
 		" -e, --exports                          show exported functions\n"
-		" -v, --version                          show version and exit\n"
+		" -V, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
 }
@@ -101,7 +99,7 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "AHSh:dief:v";
+	static const char short_options[] = "AHSh:dief:V";
 
 	static const struct option long_options[] = {
 		{ "help",             no_argument,       NULL,  1  },
@@ -113,7 +111,7 @@ static options_t *parse_options(int argc, char *argv[])
 		{ "exports",          no_argument,       NULL, 'e' },
 		{ "dirs",             no_argument,       NULL, 'd' },
 		{ "format",           required_argument, NULL, 'f' },
-		{ "version",          no_argument,       NULL, 'v' },
+		{ "version",          no_argument,       NULL, 'V' },
 		{  NULL,              0,                 NULL,  0  }
 	};
 
@@ -146,7 +144,7 @@ static options_t *parse_options(int argc, char *argv[])
 				options->all = false;
 				options->all_sections = true;
 				break;
-			case 'v':
+			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			case 'h':

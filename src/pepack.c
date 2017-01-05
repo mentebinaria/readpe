@@ -3,7 +3,7 @@
 
 	pepack.c - search packers in PE files
 
-	Copyright (C) 2012 - 2015 pev authors
+	Copyright (C) 2012 - 2017 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ static void usage(void)
 		"\nOptions:\n"
 		" -d, --database <file>                  use database file (default: ./userdb.txt)\n"
 		" -f, --format <%s>  change output format (default: text)\n"
-		" -v, --version                          show version and exit\n"
+		" -V, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
 }
@@ -75,13 +75,13 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "d:f:v";
+	static const char short_options[] = "d:f:V";
 
 	static const struct option long_options[] = {
 		{ "database",         required_argument, NULL, 'd' },
 		{ "format",           required_argument, NULL, 'f' },
 		{ "help",             no_argument,       NULL,  1  },
-		{ "version",          no_argument,       NULL, 'v' },
+		{ "version",          no_argument,       NULL, 'V' },
 		{ NULL,               0,                 NULL,  0  }
 	};
 
@@ -103,7 +103,7 @@ static options_t *parse_options(int argc, char *argv[])
 				if (output_set_format_by_name(optarg) < 0)
 					EXIT_ERROR("invalid format option");
 				break;
-			case 'v':
+			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			default:

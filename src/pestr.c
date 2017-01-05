@@ -3,7 +3,7 @@
 
 	pestr.c - search for strings in PE files.
 
-	Copyright (C) 2012 - 2015 pev authors
+	Copyright (C) 2012 - 2017 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ static void usage(void)
 		" -n, --min-length                       set minimun string length (default: 4)\n"
 		" -o, --offset                           show string offset in file\n"
 		" -s, --section                          show string section, if exists\n"
-		" -v, --version                          show version and exit\n"
+		" -V, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM);
 }
@@ -76,14 +76,14 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "osn:v";
+	static const char short_options[] = "osn:V";
 
 	static const struct option long_options[] = {
 		{ "offset",          no_argument,        NULL, 'o' },
 		{ "section",         no_argument,        NULL, 's' },
 		{ "min-length",      required_argument,  NULL, 'n' },
 		{ "help",            no_argument,        NULL,  1  },
-		{ "version",         no_argument,        NULL,  3  },
+		{ "version",         no_argument,        NULL, 'V' },
 		{ NULL,              0,                  NULL,  0  }
 	};
 
@@ -114,7 +114,7 @@ static options_t *parse_options(int argc, char *argv[])
 				options->strsize = (unsigned char)value;
 				break;
 			}
-			case 'v':
+			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
 				exit(EXIT_SUCCESS);
 			default:

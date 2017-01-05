@@ -98,6 +98,22 @@ typedef struct {
 	char dirName[20];
 } RESOURCE_ENTRY;
 
+typedef struct tagVS_FIXEDFILEINFO {
+   uint32_t dwSignature;
+   uint32_t dwStrucVersion;
+   uint32_t dwFileVersionMS;
+   uint32_t dwFileVersionLS;
+   uint32_t dwProductVersionMS;
+   uint32_t dwProductVersionLS;
+   uint32_t dwFileFlagsMask;
+   uint32_t dwFileFlags;
+   uint32_t dwFileOS;
+   uint32_t dwFileType;
+   uint32_t dwFileSubtype;
+   uint32_t dwFileDateMS;
+   uint32_t dwFileDateLS;
+} VS_FIXEDFILEINFO;
+
 #pragma pack(pop)
 
 #endif

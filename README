@@ -1,0 +1,69 @@
+
+pev is available under the GPLv3+ license, see the COPYING for details.
+
+Compiling
+---------
+
+Compiling pev is generally quite simple. pev currently depends on the 
+following packages:
+
+libc6 >= 2.11
+
+Many distributions already have packages that satisify these.
+
+Compile pev is as simple as:
+
+$ make
+
+If you want a clean compilation (already compiled before), you run:
+
+$ make clean && make
+
+
+Installing
+----------
+
+Basic installation is simple, you may run:
+
+$ sudo make install
+
+
+Uninstalling
+------------------
+
+To uninstall pev, run:
+
+$ sudo make uninstall
+
+
+Using
+------------------
+
+Just run pev against a PE32 (EXE, DLL etc) file, for example:
+
+$ pev ~/.wine/drive_c/windows/system32/cards.dll
+5.0.2134.1
+
+The command above should return a version number (if file exists).
+
+You can check your pev version with:
+
+$ pev -v
+or
+$ pev --version
+
+You can check the syntax with:
+$ pev -h
+or
+$ pev --help
+or
+$ man pev
+
+
+Authors
+------------------
+
+Written by Eduardo Fernandes, Fernando Mercês, Francivan Bezerra
+and Thiago Moraes, from Coding 40° (http://coding40.mentebinaria.com.br).
+
+Please, report any bugs to coding40@mentebinaria.com.br.

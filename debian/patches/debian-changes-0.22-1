@@ -1,0 +1,37 @@
+Description: Upstream changes introduced in version 0.22-1
+ This patch has been created by dpkg-source during the package build.
+ Here's the last changelog entry, hopefully it gives details on why
+ those changes were made:
+ .
+ pev (0.22-1) unstable; urgency=low
+ .
+   * Updated description (Closes: #618693)
+ .
+ The person named in the Author field signed this changelog entry.
+Author: Fernando Mercês <fernando@mentebinaria.com.br>
+Bug-Debian: http://bugs.debian.org/618693
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: http://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- pev-0.22.orig/Makefile
++++ pev-0.22/Makefile
+@@ -9,7 +9,7 @@ install:
+ 	gzip -c -9 pev.1 > $(DESTDIR)/usr/share/man/man1/pev.1.gz
+ 
+ clean:
+-	rm -f pev
++	rm -f pev pev.o
+ 
+ uninstall:
+ 	rm -f $(DESTDIR)/usr/bin/pev

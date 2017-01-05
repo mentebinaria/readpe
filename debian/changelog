@@ -1,0 +1,11 @@
+pev (0.22-2) unstable; urgency=low
+
+  * Updated description (Closes: #618693)
+
+ -- Fernando Mercês <fernando@mentebinaria.com.br>  Fri, 18 Mar 2011 11:19:23 -0300
+
+pev (0.22-1) unstable; urgency=low
+
+  * Initial release. (Closes: #608460)
+
+ -- Fernando Mercês <fernando@mentebinaria.com.br>  Tue, 28 Dec 2010 22:35:58 -0200

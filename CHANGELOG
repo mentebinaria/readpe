@@ -1,0 +1,20 @@
+pev - PE32 Version utility changelog
+
+Legend:
++ Added feature
+* Improved/changed feature
+- Bug fixed
+! Known issue / missing feature 
+
+pev 0.22 - January 9, 2011
+ * Improved Makefile.
+ + Added manpage.
+ ! Plans to read more PE informations
+ ! Does not support PE32+ files
+
+pev 0.2 - December 26, 2011
+ * Improved search algorithm.
+ - Fixed bug compiling in MS-Windows platform.
+
+pev 0.1 - December 12, 2010
+ initial release.

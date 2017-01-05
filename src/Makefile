@@ -65,15 +65,14 @@ ifeq ($(PLATFORM_OS), CYGWIN)
 	override CPPFLAGS += -D_XOPEN_SOURCE=600
 endif
 
-SRC_DIRS = $(srcdir) $(srcdir)/compat $(srcdir)/../lib/libfuzzy $(srcdir)/../lib/liblznt1
+SRC_DIRS = $(srcdir) $(srcdir)/compat $(srcdir)/../lib/libfuzzy
 
-PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres unlznt1
+PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
 export LIBPE = $(srcdir)/../lib/libpe
 LIBUDIS86 = $(srcdir)/../lib/libudis86
 LIBFUZZY = $(srcdir)/../lib/libfuzzy
-LIBLZNT1 = $(srcdir)/../lib/liblznt1
 MANDIR = $(srcdir)/../doc/manpages
 
 export pev_BUILDDIR = ./build
@@ -136,10 +135,6 @@ readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
 
 rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
-
-unlznt1: CFLAGS += -I$(LIBLZNT1)
-unlznt1: $(pev_BUILDDIR)/unlznt1.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(CFLAGS) $(CPPFLAGS) $(LIBLZNT1)/*.c
 
 # Generic rule matching sources
 

@@ -17,26 +17,13 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdlib.h>
+#ifndef TLS_H
+#define TLS_H
+
+#include "../include/pe.h"
 #include <stdio.h>
+#include <stdlib.h>
 
-#define PACKAGE "pev"
-#define VERSION "0.40"
+void get_tls_callbacks(int rva, int sec_rva, int sec_offset, int imagebase, FILE *fp);
 
-#define PE32 0x10b
-#define PE64 0x20b
-#define ROM 0x107
-
-#ifdef __DEBUG_MODE__
-	#define EXIT_WITH_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s, %d: %s\n", __FILE__, __LINE__, msg); \
-				exit(EXIT_FAILURE); \
-			}
-#else
-	#define EXIT_WITH_ERROR(msg) \
-			{ \
-				fprintf(stderr, "%s: %s\n", PACKAGE, msg); \
-				exit(EXIT_FAILURE); \
-			}
-#endif
+#endif /* TLS_H */

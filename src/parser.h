@@ -17,15 +17,20 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef PARSER_H
+#define PARSER_H
+
 FILE * getfile(int argc, char * argv[]);
 void parse_options(int argc, char *argv[]);
 
 struct options {
-	int all;
-	int dos;
-	int coff;
-	int opt;
-	int sections;
-	int resources;
-	int product;
+	char all;
+	char dos;
+	char coff;
+	char opt;
+	char sections;
+	char resources;
+	char product;
 };
+
+#endif /* PARSER_H */

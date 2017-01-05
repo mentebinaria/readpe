@@ -1,9 +1,10 @@
 CC=gcc
-SRC=src/pev.c src/parser.c
-CFLAGS=-O2 -Wall -ansi -pedantic
+SRC=src/pev.c src/parser.c src/modules/tls.c
+CFLAGS=-Wall -O2 -ansi
+#DFLAGS=-D __DEBUG_MODE__
 
 all:
-	$(CC) $(CFLAGS) -o pev $(SRC)
+	$(CC) $(CFLAGS) $(DFLAGS) -o pev $(SRC)
 
 install:
 	install pev $(DESTDIR)/usr/bin

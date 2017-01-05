@@ -1,19 +1,19 @@
 .TH PEV 1
 .SH NAME
-pev - show information about MS-DOS/Windows executables
+pev - show information about MS-Windows excutables files
 
 .SH SYNOPSIS
 .B pev
-[OPTION]
+[OPTION]...
 .IR file
 
 .SH DESCRIPTION
-Display information about MS-DOS/Windows PE32 (Portable Executable) file given.
+Make an analysis and show useful information of PE32/PE32+ file given.
 
 .SH OPTIONS
 .TP
 .BR \-A ", " \-\-all
-Equivalent to \-cdhops. This is the default action if none is specified.
+Equivalent to \-cdhoprs. This is the default action if none is specified.
 
 .TP
 .BR \-c ", " \-\-coff
@@ -36,6 +36,10 @@ Show the Optional (a.k.a. PE) file header.
 Show the Product Version (if added by programmer/compiler) of PE file.
 
 .TP
+.BR \-r ", " \-\-resources
+Show first level resource items information.
+
+.TP
 .BR \-s ", " \-\-sections
 Show information about executable sections.
 
@@ -54,7 +58,7 @@ To show DOS and COFF file headers of \fBcards.dll\fP:
 $ pev \-dc cards.dll
 
 .PP
-Display all headers and sections of \fBsvchost.exe\fP file:
+Display all possible information about \fBsvchost.exe\fP file:
 .IP
 $ pev svchost.exe
 

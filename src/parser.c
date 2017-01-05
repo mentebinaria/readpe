@@ -51,12 +51,13 @@ FILE * getfile(int argc, char * argv[])
 		if (file_ptr != NULL)
 			break;
 	}
-
+	
 	if (file_ptr == NULL)
 	{
 		fprintf(stderr, "%s: file not found\n", argv[i-1]);
 		exit(EXIT_FAILURE);
 	}
+	
 	return file_ptr;
 }
 
@@ -77,7 +78,8 @@ void parse_options(int argc, char *argv[])
 		{"sections", no_argument, NULL, (int)'s'},
 		{"resources", no_argument, NULL, (int)'r'},
 		{"product-version", no_argument, NULL, (int)'p'},
-		{ NULL, no_argument, NULL, 0 } };
+		{ NULL, no_argument, NULL, 0 }
+	};
 		
 	config.all = 0;
 	config.coff = 0;
@@ -102,33 +104,25 @@ void parse_options(int argc, char *argv[])
 				break;
 				
 			case 'A':
-				config.all = 1;
-				break;
+				config.all = 1; break;
 			
 			case 'd':
-				config.dos = 1;
-				break;
+				config.dos = 1; break;
 				
 			case 'c':
-				config.coff = 1;
-				break;
+				config.coff = 1; break;
 				
 			case 'o':
-				config.opt = 1;
-				break;
+				config.opt = 1; break;
 				
 			case 's':
-				config.sections = 1;
-				break;
+				config.sections = 1;	break;
 				
 			case 'r':
-				/*printf("─┬─├─ ─\n");*/
-				config.resources = 1;
-				break;
+				config.resources = 1; break; 	/* ─┬─ ├─ ─ */
 				
 			case 'p':
-				config.product = 1;
-				break;
+				config.product = 1; break;
 
 			case 'v':
 				printf("pev %s\n", VERSION);

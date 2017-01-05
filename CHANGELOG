@@ -6,25 +6,35 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
+pev 0.40 - August 7, 2011
+ + PE32+ support. Now pev can handle 64-bits executables.
+ + Variable data directories support (no more fixed in 16).
+ + Added more human-readable fields, like subsystem and section characteristics.
+ + Added TLS callback functions detection in every PE section.
+ + Added "-r" option to show resource items at first level.
+ + ASLR and DEP identification.
+ * Improved function to get machine type (thanks to Gabriel Duarte).
+ * Date format in COFF header similar to RFC 2822.
+ * Compatible with PE/COFF specification v8.2.
+
 pev 0.31 - May 11, 2011
- - Fixed warning with Linux 32-bits boxes when compiling.
- - Now pev compiles in OSX without any changes (thanks @gustavorobertux).
  + Added human-readable machine types in COFF output.
  + Added characteristics flags in COFF output.
+ - Fixed warning with Linux 32-bits boxes when compiling.
+ - Now pev compiles in OSX without any changes (thanks to Gustavo Roberto).
 
 pev 0.30 - February 20, 2011
- * Improved memory use.
  + Added option "-d" to show the DOS header.
  + Added option "-c" to show the COFF header.
  + Added option "-o" to show the Option (PE) header.
  + Added option "-s" to show executable sections.
  + Added option "-a" to show all information.
+ * Improved memory use.
  * Now pev shows the Product Version with option "-p".
  
-
 pev 0.22 - January 9, 2011
- * Improved Makefile.
  + Added manpage.
+ * Improved Makefile.
  ! Plans to read more PE informations.
  ! Does not support PE32+ files.
 

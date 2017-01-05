@@ -1,12 +1,10 @@
-pev is available under the GPLv3+ license, see the COPYING for details.
+pev is available under the GPLv3+ license, see the LICENSE for details.
 
 Compiling
 ---------
 
-Compiling pev is generally quite simple. pev currently depends on the 
-following packages:
-
-libc6 >= 2.11
+Compiling pev is generally quite simple. pev currently depends only
+on libc6 >= 2.11.
 
 Many distributions already have packages that satisify these.
 
@@ -39,21 +37,14 @@ Using
 ------------------
 
 pev can display a lot of information about PE files. Please, refer
-to manpage to get more details.
+to manpage to more information.
 
-To see all information that pev can take, just run it without any
+To see all info that pev can retrieve, just run it without any
 arguments against a PE32 executable:
 
 $ pev ~/.wine/drive_c/windows/system32/cards.dll
 
-You can check your pev version with:
-$ pev -v
-or
-$ pev --version
-
 You can check the syntax with:
-$ pev -h
-or
 $ pev --help
 or
 $ man pev
@@ -62,6 +53,6 @@ $ man pev
 Authors
 ------------------
 
-Written by Coding 40° group (http://coding40.mentebinaria.com.br).
+Written by Coding 40° group. See AUTHORS for details.
 
 Please, report any bugs at http://sourceforge.net/p/pev/tickets/.

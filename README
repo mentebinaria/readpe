@@ -1,4 +1,3 @@
-
 pev is available under the GPLv3+ license, see the COPYING for details.
 
 Compiling
@@ -15,7 +14,7 @@ Compile pev is as simple as:
 
 $ make
 
-If you want a clean compilation (already compiled before), you run:
+If you want a clean compilation (already compiled before), run:
 
 $ make clean && make
 
@@ -39,15 +38,15 @@ $ sudo make uninstall
 Using
 ------------------
 
-Just run pev against a PE32 (EXE, DLL etc) file, for example:
+pev can display a lot of information about PE files. Please, refer
+to manpage to get more details.
+
+To see all information that pev can take, just run it without any
+arguments against a PE32 executable:
 
 $ pev ~/.wine/drive_c/windows/system32/cards.dll
-5.0.2134.1
-
-The command above should return a version number (if file exists).
 
 You can check your pev version with:
-
 $ pev -v
 or
 $ pev --version

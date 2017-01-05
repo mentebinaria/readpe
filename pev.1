@@ -1,17 +1,63 @@
 .TH PEV 1
 .SH NAME
-pev - shows version number of MS-DOS/Windows executables
+pev - show information about MS-DOS/Windows executables
+
 .SH SYNOPSIS
 .B pev
-.IR file ...
+[OPTION]
+.IR file
+
 .SH DESCRIPTION
-Shows the Product Version number (if added by programmer) of MS-DOS/Windows PE32 (Portable Executable) files such EXE or DLL.
+Display information about MS-DOS/Windows PE32 (Portable Executable) file given.
+
+.SH OPTIONS
+.TP
+.BR \-A ", " \-\-all
+Equivalent to \-cdhops. This is the default action if none is specified.
+
+.TP
+.BR \-c ", " \-\-coff
+Show the COFF file header.
+
+.TP
+.BR \-d ", " \-\-dos
+Show the DOS file header.
+
 .TP
 .BR \-h ", " \-\-help
 Show usage and exit.
+
+.TP
+.BR \-o ", " \-\-optional
+Show the Optional (a.k.a. PE) file header.
+
+.TP
+.BR \-p ", " \-\-product-version
+Show the Product Version (if added by programmer/compiler) of PE file.
+
+.TP
+.BR \-s ", " \-\-sections
+Show information about executable sections.
+
 .TP
 .BR \-v ", " \-\-version
 Show version and exit.
+
+.SH EXAMPLES
+To get only the Product Version of \fBputty.exe\fP file:
+.IP
+$ pev \-p putty.exe
+
+.PP
+To show DOS and COFF file headers of \fBcards.dll\fP:
+.IP
+$ pev \-dc cards.dll
+
+.PP
+Display all headers and sections of \fBsvchost.exe\fP file:
+.IP
+$ pev svchost.exe
+
 .SH AUTHOR
 Written by Eduardo Fernandes, Fernando Mercês, Francivan Bezerra and Thiago Moraes.
 .SH REPORTING BUGS

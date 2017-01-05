@@ -1,7 +1,7 @@
 /*
-	pev - PE version dump utility
+	pev - PE information dump utility
 
-	Copyright (C) 2010 Coding 40°
+	Copyright (C) 2010 - 2011 Coding 40°
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

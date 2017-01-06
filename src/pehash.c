@@ -494,7 +494,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	if (flavor == IMPHASH_FLAVOR_MANDIANT)
 		output("imphash (Mandiant)", imphash);
 	else if (flavor == IMPHASH_FLAVOR_PEFILE)
-		output("imphash (pefile)", imphash);
+		output("imphash", imphash);
 }
 
 int main(int argc, char *argv[])
@@ -557,7 +557,7 @@ int main(int argc, char *argv[])
 		output_open_scope("file", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
-		imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
+		//imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
 		imphash(&ctx, IMPHASH_FLAVOR_PEFILE);
 		
 		output_close_scope(); // file

@@ -91,8 +91,7 @@ static void usage(void)
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s> change output format (default: text)\n"
-		" -a, --all                             hash file, sections and headers with all available hash algorithms:\n"
-		"                                       md5, sha1, sha256, sha512, sdeep and imphash (Mandiant and pefile)\n\n"
+		" -a, --all                             hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash\n"
 		" -c, --content                         hash only the file content (default)\n"
 		" -h, --header <dos|coff|optional>      hash only the header with the specified name\n"
 		" -s, --section <section_name>          hash only the section with the specified name\n"
@@ -230,7 +229,7 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
 
 static void print_basic_hash(const unsigned char *data, size_t size)
 {
-	char *basic_hashes[] = { "md5", "sha1", "sha256", "sha512", "ssdeep" };
+	char *basic_hashes[] = { "md5", "sha1", "sha256", "ssdeep" };
 	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
 	if (!data || !size)

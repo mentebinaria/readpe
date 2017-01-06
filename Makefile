@@ -10,7 +10,7 @@ all:
 	cd $(PEV_DIR) && $(MAKE) $@
 
 # Cygwin only
-win:
+zip:
 	cd $(PEV_DIR)/windows && $(MAKE)
 	mkdir -p $(ZIPDIR)/plugins
 	cp src/build/plugins/*.dll $(ZIPDIR)/plugins/

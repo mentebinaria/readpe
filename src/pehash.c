@@ -39,6 +39,7 @@
 #include "../lib/libfuzzy/fuzzy.h"
 #include "plugins.h"
 #include "utlist.h"
+#include "utils.h"
 
 #define PROGRAM "pehash"
 
@@ -61,6 +62,24 @@ typedef struct {
 		uint16_t index;
 	} sections;
 } options_t;
+
+/* By liw. */
+static char *last_strstr(const char *haystack, const char *needle)
+{
+    if (*needle == '\0')
+        return (char *) haystack;
+
+    char *result = NULL;
+    for (;;) {
+        char *p = strstr(haystack, needle);
+        if (p == NULL)
+            break;
+        result = p;
+        haystack = p + 1;
+    }
+
+    return result;
+}
 
 static void usage(void)
 {
@@ -322,9 +341,26 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		for (unsigned i=0; i < strlen(dll_name); i++)
 			dll_name[i] = tolower(dll_name[i]);
 
-		// Imphash pefile's algorithm looks explicitally by ".dll", not any file extension
-		char *aux = strstr(dll_name, ".dll");
+		char *aux;
 
+		//TODO use a reverse search function instead
+
+		if (flavor == IMPHASH_FLAVOR_MANDIANT)
+			aux = last_strstr(dll_name, ".");
+		else if (flavor == IMPHASH_FLAVOR_PEFILE) {
+			aux = last_strstr(dll_name, ".dll");
+			if (aux)
+				*aux = '\0';
+
+			aux = last_strstr(dll_name, ".ocx");
+			if (aux)
+				*aux = '\0';
+
+			aux = last_strstr(dll_name, ".sys");
+			if (aux)
+				*aux = '\0';
+		}
+		
 		if (aux)
 			*aux = '\0';
 		

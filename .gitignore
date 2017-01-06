@@ -34,3 +34,4 @@ tests/*.log
 tests/running_report
 */build/*
 .DS_Store
+._*

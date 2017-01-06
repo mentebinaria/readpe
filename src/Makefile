@@ -114,27 +114,27 @@ pehash: $(pev_BUILDDIR)/pehash.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBFUZZY)/*.c
 
 pepack: $(pev_BUILDDIR)/pepack.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 peres: $(pev_BUILDDIR)/peres.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 pescan: LDFLAGS += -lm
 pescan: $(pev_BUILDDIR)/pescan.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 pesec: LDFLAGS += -lcrypto
 pesec: $(pev_BUILDDIR)/pesec.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 pestr: $(pev_BUILDDIR)/pestr.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 # Generic rule matching sources
 

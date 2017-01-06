@@ -241,8 +241,7 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 	while (ud_disassemble(ud_obj))
 	{
 		char ofs[MAX_MSG], value[MAX_MSG], *bytes;
-		unsigned char *opcode = ud_insn_ptr(ud_obj);
-		unsigned int mnic, op_t;
+		const uint8_t *opcode = ud_insn_ptr(ud_obj);
 
 		c++; // increment instruction counter
 		b += ud_insn_len(ud_obj);
@@ -250,8 +249,9 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 		if (options->nbytes && b >= options->nbytes)
 			return;
 
-		mnic = ud_obj->mnemonic;
-		op_t = ud_obj->operand ? ud_obj->operand[0].type : 0;
+		const ud_mnemonic_code_t mnic = ud_obj->mnemonic; // udis 1.7.2 introduced ud_insn_mnemonic(ud_obj)
+		const ud_operand_t *operand = ud_obj->operand; // udis 1.7.??? introduced ud_insn_opr(ud_obj)
+		const ud_type_t op_type = operand != NULL ? operand->type : 0;
 
 		snprintf(ofs, MAX_MSG, "%"PRIx64, (options->offset_is_rva ? ctx->pe.imagebase : 0) + offset + ud_insn_off(ud_obj));
 		bytes = insert_spaces(ud_insn_hex(ud_obj));
@@ -260,7 +260,7 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 			return;
 
 		// correct near operand addresses for calls and jumps
-		if (op_t && (op_t != UD_OP_MEM) && (mnic == UD_Icall || (mnic >= UD_Ijo && mnic <= UD_Ijmp)))
+		if (op_type && (op_type != UD_OP_MEM) && (mnic == UD_Icall || (mnic >= UD_Ijo && mnic <= UD_Ijmp)))
 		{
 			char *ins = strtok(ud_insn_asm(ud_obj), "0x");
 

@@ -17,7 +17,8 @@ PDF_DIR=pdf
 VERSION=0.80
 
 html:
-	mkdir -p $(HTML_DIR)
+	mkdir -p $(HTML_DIR)/figures
+	cp figures/*.png $(HTML_DIR)/figures/
 	xsltproc -o $(HTML_DIR)/ $(XSL) $(SRC)
 
 pdf:

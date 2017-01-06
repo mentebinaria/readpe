@@ -6,6 +6,40 @@
 <qandaentry>
 <question>
 <para>
+I use pev in Windows and everytime I run one of the pev tools I see CYGWIN complaining about Windows-style file paths.
+</para>
+</question>
+<answer>
+<para>
+Windows version of pev are dependant on CYGWIN libraries that are included in the ZIP package provided for Windows users, so CYGWIN is still there. A workaround is setting the CYGWIN environment variable to disable these warnings:
+
+<screen>
+<prompt>$ </prompt><command>set CYGWIN=nodosfilewarning</command>
+</screen>
+
+<para>
+You can confirm the variable is set by running the following command on MS-DOS Prompt or Powershell:
+</para>
+
+<screen>
+<prompt>$ </prompt><command>set | findstr CYGWIN</command>
+</screen>
+
+<para>
+If you want to make it permanent, you'll have to add this variable with this value set in System Properties - Advanced - Environment Variables, as the image below shows:
+</para>
+
+<imageobject>
+	<imagedata fileref="figures/cygwin-warning.png" format="PNG" />
+</imageobject>
+
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+<para>
 How can I get the File Version from PE files like I'm used to do with previous versions of pev?
 </para>
 </question>

@@ -323,11 +323,9 @@ The OpenSSL library used by pev supports a wider range of hashing algorithms and
 </para>
 
 <para>
-pehash supports two different implementations of imphash (Import Hash): the original one proposed by Mandiant and the modified one by pefile's python library authors. As imphash is about a MD5 hash, any change will change the final result completely so keep that in mind when calculating those hashes. For more information, please refer to the following links:
-
-<ulink url="https://www.fireeye.com/blog/threat-research/2014/01/tracking-malware-import-hashing.html">https://www.fireeye.com/blog/threat-research/2014/01/tracking-malware-import-hashing.html</ulink>
-<ulink url="https://github.com/erocarrera/pefile/issues/113">Imphash implementation</ulink>
-<ulink url="https://github.com/erocarrera/pefile/issues/141">Imphash implementation does not follows convention</ulink>
+pehash supports two different implementations of imphash (Import Hash): the original one proposed by Mandiant and the modified one by pefile's python library authors. As imphash is about a MD5 hash, any change will change the final result completely so keep that in mind when calculating those hashes. For more information, please read <ulink url="https://www.fireeye.com/blog/threat-research/2014/01/tracking-malware-import-hashing.html">Tracking malware with Import Hashing</ulink>, 
+<ulink url="https://github.com/erocarrera/pefile/issues/113">Imphash implementation</ulink> and 
+<ulink url="https://github.com/erocarrera/pefile/issues/141">Imphash implementation does not follows convention</ulink>.
 </para>
 
 </sect1>

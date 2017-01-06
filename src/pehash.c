@@ -45,6 +45,8 @@
 #define IMPHASH_FLAVOR_MANDIANT 1
 #define IMPHASH_FLAVOR_PEFILE 2
 
+unsigned pefile_warn = 0;
+
 typedef struct {
 	bool all;
 	bool content;
@@ -337,9 +339,9 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			el->function_name = strdup(is_ordinal ? hint_str : fname);
 		}
 		else if (flavor == IMPHASH_FLAVOR_PEFILE) { 
-			if ( (strcmp(dll_name, "ws2_32") == 0 || strcmp(dll_name, "oleaut32") == 0) && is_ordinal) {
-				fprintf(stderr, "WARNING! pev does not follow fully support pefile's imphash implementation. " \
-					"You may want to check Ero Carrera's pefile imphash results for this file.\n.");
+			if ( (strncmp(dll_name, "ws2_32", 6) == 0 || strncmp(dll_name, "oleaut32", 8) == 0) && is_ordinal) {
+				pefile_warn++;
+				el->function_name = strdup(hint_str);
 			}
 			else {
 				char ord[MAX_FUNCTION_NAME];
@@ -440,6 +442,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	char imphash[32];
 	calc_hash("md5", (unsigned char *)imphash_string, strlen(imphash_string), imphash);
 	free(imphash_string);
+
 	if (flavor == IMPHASH_FLAVOR_MANDIANT)
 		output("imphash (Mandiant)", imphash);
 	else if (flavor == IMPHASH_FLAVOR_PEFILE)
@@ -508,6 +511,7 @@ int main(int argc, char *argv[])
 		print_basic_hash(data, data_size);
 		imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
 		imphash(&ctx, IMPHASH_FLAVOR_PEFILE);
+		
 		output_close_scope(); // file
 		if (!options->all) // whole file content only
 			goto BYE;
@@ -643,6 +647,11 @@ int main(int argc, char *argv[])
 
 	BYE:
 	output_close_document();
+
+	if (pefile_warn)
+		fprintf(stderr, "\nWARNING! We've identified at least %d functions that may be handled differently by pefile's imphash " \
+			"algorithm. That means that our imphash (pefile) results may not be correct. We recommend you to double check " \
+			"the imphash for this file using Ero Carrera's pefile Python library.\n\n", pefile_warn);
 
 	// free
 	free_options(options);

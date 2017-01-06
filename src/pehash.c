@@ -341,7 +341,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		for (unsigned i=0; i < strlen(dll_name); i++)
 			dll_name[i] = tolower(dll_name[i]);
 
-		char *aux;
+		char *aux = NULL;
 
 		//TODO use a reverse search function instead
 

@@ -124,7 +124,7 @@ static void usage(void)
 		" -v, --file-version                     Show File Version from PE resource directory\n"
 		" -V, --version                          show version and exit\n"
 		" --help                                 Show this help and exit\n",
-		PROGRAM, PROGRAM);
+		PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)
@@ -493,7 +493,7 @@ static void showVersion(pe_ctx_t *ctx, const NODE_PERES *node)
 	
 	const uint64_t offsetData = pe_rva2ofs(ctx, dataEntryNode->resource.dataEntry->offsetToData);
 	const size_t dataEntrySize = dataEntryNode->resource.dataEntry->size;
-	const char *buffer = LIBPE_PTR_ADD(ctx->map_addr+32, offsetData);
+	const char *buffer = LIBPE_PTR_ADD(ctx->map_addr, 32 + offsetData);
 	if (!pe_can_read(ctx, buffer, dataEntrySize)) {
 		// TODO: Should we report something?
 		return;

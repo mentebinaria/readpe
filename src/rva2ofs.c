@@ -114,9 +114,8 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	printf("%#llx\n", pe_rva2ofs(&ctx, rva));
+	printf("%#"PRIx64"\n", pe_rva2ofs(&ctx, rva));
 
-	// libera a memoria
 	pe_unload(&ctx);
 
 	//PEV_FINALIZE();

@@ -214,7 +214,7 @@ static void print_basic_hash(const unsigned char *data, size_t size)
 	if (!data || !size)
 		return;
 
-	for (int i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
+	for (unsigned i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
 		calc_hash(basic_hashes[i], data, size, hash_value);
 		output(basic_hashes[i], hash_value);
 	}
@@ -291,7 +291,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
 				if (is_ordinal) {
-					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu64,
+					snprintf(hint_str, sizeof(hint_str)-1, "%llu",
 						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
@@ -317,7 +317,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
 
-		for (int i=0; i < strlen(dll_name); i++)
+		for (unsigned i=0; i < strlen(dll_name); i++)
 			dll_name[i] = tolower(dll_name[i]);
 
 		// Imphash pefile's algorithm looks explicitally by ".dll", not any file extension
@@ -326,7 +326,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		if (aux)
 			*aux = '\0';
 		
-		for (int i=0; i < strlen(fname); i++)
+		for (unsigned i=0; i < strlen(fname); i++)
 			fname[i] = tolower(fname[i]);
 
 		struct element *el = (struct element *) malloc(sizeof(struct element));
@@ -426,7 +426,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 
 	memset(imphash_string, 0, imphash_string_size);
 
-	LL_FOREACH_SAFE(head, elt, tmp) \ 
+	LL_FOREACH_SAFE(head, elt, tmp) \
 		sprintf(imphash_string, "%s%s.%s,", imphash_string, elt->dll_name, elt->function_name); \
 		LL_DELETE(head, elt);
 
@@ -438,7 +438,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	//puts(imphash_string); // DEBUG
 
 	char imphash[32];
-	calc_hash("md5", imphash_string, strlen(imphash_string), imphash);
+	calc_hash("md5", (unsigned char *)imphash_string, strlen(imphash_string), imphash);
 	free(imphash_string);
 	if (flavor == IMPHASH_FLAVOR_MANDIANT)
 		output("imphash (Mandiant)", imphash);
@@ -485,7 +485,6 @@ int main(int argc, char *argv[])
 
 	unsigned c = pe_sections_count(&ctx);
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(&ctx);
-	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
 	data = ctx.map_addr;
 	data_size = pe_filesize(&ctx);

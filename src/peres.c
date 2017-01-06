@@ -110,6 +110,8 @@ typedef struct {
 
 static void usage(void)
 {
+	static char formats[255];
+	output_available_formats(formats, sizeof(formats), '|');
 	printf("Usage: %s OPTIONS FILE\n"
 		"Show information about resource section and extract it\n"
 		"\nExample: %s -a putty.exe\n"

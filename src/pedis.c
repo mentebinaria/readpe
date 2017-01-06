@@ -235,22 +235,22 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 	if (ctx == NULL || offset == 0)
 		return;
 
-	uint64_t c = 0; // counter for disassembled instructions
-	uint64_t b = 0; // counter for disassembled bytes
+	uint64_t instr_counter = 0; // counter for disassembled instructions
+	uint64_t byte_counter = 0; // counter for disassembled bytes
 
 	while (ud_disassemble(ud_obj))
 	{
 		char ofs[MAX_MSG], value[MAX_MSG], *bytes;
 		const uint8_t *opcode = ud_insn_ptr(ud_obj);
 
-		c++; // increment instruction counter
-		b += ud_insn_len(ud_obj);
+		instr_counter++; // increment instruction counter
+		byte_counter += ud_insn_len(ud_obj);
 
-		if (options->nbytes && b >= options->nbytes)
+		if (options->nbytes && byte_counter >= options->nbytes)
 			return;
 
-		const ud_mnemonic_code_t mnic = ud_obj->mnemonic; // udis 1.7.2 introduced ud_insn_mnemonic(ud_obj)
-		const ud_operand_t *operand = ud_obj->operand; // udis 1.7.??? introduced ud_insn_opr(ud_obj)
+		const ud_mnemonic_code_t mnic = ud_insn_mnemonic(ud_obj);
+		const ud_operand_t *operand = ud_insn_opr(ud_obj, 0);
 		const ud_type_t op_type = operand != NULL ? operand->type : 0;
 
 		snprintf(ofs, MAX_MSG, "%"PRIx64, (options->offset_is_rva ? ctx->pe.imagebase : 0) + offset + ud_insn_off(ud_obj));
@@ -262,7 +262,8 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 		// correct near operand addresses for calls and jumps
 		if (op_type && (op_type != UD_OP_MEM) && (mnic == UD_Icall || (mnic >= UD_Ijo && mnic <= UD_Ijmp)))
 		{
-			char *ins = strtok(ud_insn_asm(ud_obj), "0x");
+			char *instr_asm = strdup(ud_insn_asm(ud_obj));
+			char *instr = strtok(instr_asm, "0x");
 
 			snprintf(value,
 				MAX_MSG,
@@ -270,9 +271,10 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 				bytes,
 				SPACES - (int) strlen(bytes),
 				' ',
-				ins ? ins : "",
+				instr ? instr : "",
 				ctx->pe.imagebase + offset + ud_insn_off(ud_obj) + ud_obj->operand[0].lval.sdword + ud_insn_len(ud_obj)
 			);
+			free(instr_asm);
 		}
 		else
 			snprintf(value, MAX_MSG, "%s%*c%s", bytes, SPACES - (int) strlen(bytes), ' ', ud_insn_asm(ud_obj));
@@ -281,16 +283,16 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 		output(ofs, value);
 
 		// for sections, we stop at end of section
-		if (options->section && c >= options->ninstructions)
+		if (options->section && instr_counter >= options->ninstructions)
 			break;
-		else if (c >= options->ninstructions && options->ninstructions)
+		else if (instr_counter >= options->ninstructions && options->ninstructions)
 			break;
 		else if (options->entrypoint)
 		{
-		// search for LEAVE or RET insrtuctions
-		for (unsigned int i=0; i < ud_insn_len(ud_obj); i++)
-			if (is_ret_instruction(opcode[i]))
-				return;
+			// search for LEAVE or RET insrtuctions
+			for (unsigned int i=0; i < ud_insn_len(ud_obj); i++)
+				if (is_ret_instruction(opcode[i]))
+					return;
 		}
 	}
 }

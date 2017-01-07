@@ -155,8 +155,7 @@ static bool loaddb(FILE **fp, const options_t *options)
 	*fp = fopen(dbfile, "r");
 	// FIXME(jweyrich): Granted read permission to the informed dbfile, this will succeed even if it's a directory!
 	if (!*fp) {
-		// TODO(jweyrich): This might change - Should we use a config.h with a constant from $(SHAREDIR)?
-		*fp = fopen("/usr/share/pev/userdb.txt", "r");
+		*fp = fopen(SHAREDIR "/userdb.txt", "r");
 	}
 
 	return *fp != NULL;

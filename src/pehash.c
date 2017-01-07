@@ -40,6 +40,7 @@
 #include "plugins.h"
 #include "utlist.h"
 #include "utils.h"
+#include "ordlookup.h"
 
 #define PROGRAM "pehash"
 
@@ -90,8 +91,7 @@ static void usage(void)
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s> change output format (default: text)\n"
-		" -a, --all                             hash file, sections and headers with all available hash algorithms:\n"
-		"                                       md5, sha1, sha256, sha512, sdeep and imphash (Mandiant and pefile)\n\n"
+		" -a, --all                             hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash\n"
 		" -c, --content                         hash only the file content (default)\n"
 		" -h, --header <dos|coff|optional>      hash only the header with the specified name\n"
 		" -s, --section <section_name>          hash only the section with the specified name\n"
@@ -229,7 +229,7 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
 
 static void print_basic_hash(const unsigned char *data, size_t size)
 {
-	char *basic_hashes[] = { "md5", "sha1", "sha256", "sha512", "ssdeep" };
+	char *basic_hashes[] = { "md5", "sha1", "sha256", "ssdeep" };
 	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
 	if (!data || !size)
@@ -375,9 +375,18 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			el->function_name = strdup(is_ordinal ? hint_str : fname);
 		}
 		else if (flavor == IMPHASH_FLAVOR_PEFILE) { 
-			if ( (strncmp(dll_name, "ws2_32", 6) == 0 || strncmp(dll_name, "oleaut32", 8) == 0) && is_ordinal) {
-				pefile_warn++;
-				el->function_name = strdup(hint_str);
+			
+			int hint = strtoul(hint_str, NULL, 10);
+
+			if ( strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
+				for (unsigned i=0; i < sizeof(oleaut32_arr) / sizeof(ord_t); i++)
+					if (hint == oleaut32_arr[i].number)
+						el->function_name = strdup(oleaut32_arr[i].fname);
+			}
+			else if ( strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
+				for (unsigned i=0; i < sizeof(ws2_32_arr) / sizeof(ord_t); i++)
+					if (hint == ws2_32_arr[i].number)
+						el->function_name = strdup(ws2_32_arr[i].fname);
 			}
 			else {
 				char ord[MAX_FUNCTION_NAME];
@@ -391,6 +400,9 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 				}
 			}
 		}
+
+		for (unsigned i=0; i < strlen(el->function_name); i++)
+			el->function_name[i] = tolower(el->function_name[i]);
 
 		LL_APPEND(*head, el);
 	}
@@ -482,7 +494,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	if (flavor == IMPHASH_FLAVOR_MANDIANT)
 		output("imphash (Mandiant)", imphash);
 	else if (flavor == IMPHASH_FLAVOR_PEFILE)
-		output("imphash (pefile)", imphash);
+		output("imphash", imphash);
 }
 
 int main(int argc, char *argv[])
@@ -545,7 +557,7 @@ int main(int argc, char *argv[])
 		output_open_scope("file", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
-		imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
+		//imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
 		imphash(&ctx, IMPHASH_FLAVOR_PEFILE);
 		
 		output_close_scope(); // file
@@ -683,11 +695,6 @@ int main(int argc, char *argv[])
 
 	BYE:
 	output_close_document();
-
-	if (pefile_warn)
-		fprintf(stderr, "\nWARNING! We've identified at least %d functions that may be handled differently by pefile's imphash " \
-			"algorithm. That means that our imphash (pefile) results may not be correct. We recommend you to double check " \
-			"the imphash for this file using Ero Carrera's pefile Python library.\n\n", pefile_warn);
 
 	// free
 	free_options(options);

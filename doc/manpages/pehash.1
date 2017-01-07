@@ -8,14 +8,14 @@ pehash - calculate hashes of PE pieces
 .IR pefile
 
 .SH DESCRIPTION
-pehash uses libssl, libfuzzy and other magic to calculate PE file hashes. It's part of pev, the PE file analysis toolkit.
+pehash uses libssl, libfuzzy and other black magic to calculate PE file hashes. It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
 .SH OPTIONS
 .TP
 .BR \-a ", " \-\-all
-hash file, sections and headers with all available hash algorithms.
+hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash
 
 .TP
 .BR \-c ", " \-\-content

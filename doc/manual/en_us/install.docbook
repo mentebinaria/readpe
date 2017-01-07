@@ -10,28 +10,16 @@ If you choose to use the pre-compiled binaries (recommended for beginners), you 
 </para>
 
 <section id="binary">
-<title>From pre-compiled binaries</title>
+<title>Using the pre-compiled binaries</title>
 
 <section id="binlinux">
 <title>On GNU/Linux</title>
 
 <para>
-For Debian-based flavors, download the DEB package and run::
+We recommend you to use your package manager for that, but in case pev is outdated or
+not present in your package manager repositories, you can still use it by compiling it
+from the sources.
 </para>
-
-<screen>
-<prompt>$ </prompt><command>sudo dpkg -i pev-x.xx.deb</command>
-</screen>
-
-<para>
-For Red Hat based flavors, download the RPM package and run:
-</para>
-
-<screen>
-<prompt>$ </prompt><command>sudo rpm -i pev-x.xx.rpm</command>
-</screen>
-
-<para>To install pev using the package manager of your Linux distro, please check its documentation.</para>
 
 </section>
 
@@ -46,15 +34,19 @@ Just download the ZIP package and uncompress it in any directory you want. There
 	<imagedata fileref="figures/runbat.png" format="PNG" />
 </imageobject>
 
-<tip><para>You DO NOT need Cygwin for running pev in Windows. Cygwin is only needed if you want to compile pev toolkit by your own.</para></tip>
+<tip><para>You DON'T need to install Cygwin to run pev in Windows. Cygwin is only needed if you want to compile pev toolkit by your own.</para></tip>
 
 </section>
 
 <section id="binmac">
 <title>On Mac OS X</title>
 <para>
-If you haven't, please install <ulink url="http://www.macports.org/">MacPorts</ulink> first, then open a Terminal window and run the following command:
+If you haven't, please install either <ulink url="http://brew.sh/">Homebrew</ulink> or <ulink url="http://www.macports.org/">MacPorts</ulink> first, then open a Terminal window and run one of the following commands:
 </para>
+
+<screen>
+<prompt>$ </prompt><command>brew install pev</command>
+</screen>
 
 <screen>
 <prompt>$ </prompt><command>sudo port install pev</command>
@@ -92,7 +84,7 @@ Make sure you have the following dependencies installed and working properly:
 
 <simplelist>
 <member><ulink url="https://github.com/merces/libpe">libpe</ulink> (included if you've used the --recursive option of git command)</member>
-<member>libssl (used for pehash and pesec)</member>
+<member>libssl (used by pehash and pesec)</member>
 <member>gcc</member>
 <member>make</member>
 </simplelist>
@@ -103,7 +95,7 @@ Make sure you have the following dependencies installed and working properly:
 <prompt>$ </prompt><command>tar xf pev-x.xx.tar.gz</command>
 <prompt>$ </prompt><command>cd pev-x.xx</command>
 </screen>
-<para>If you've cloned git repository, go for compilation:</para>
+<para>If you've cloned the git repository, it's time to compile pev and its libraries:</para>
 
 <screen>
 <prompt>$ </prompt><command>make</command>
@@ -111,7 +103,7 @@ Make sure you have the following dependencies installed and working properly:
 </screen>
 
 <para>
-The commands above will compile libpe and all pev binaries. You can define
+The commands above will compile libpe and all pev binaries. You can set
 DEST and PREFIX variables if you need. For compiling libpe only, enter in its directory
 and issue make command, as this:
 </para>
@@ -129,7 +121,7 @@ and issue make command, as this:
 
 <note>
 <para>
-In order to compile any pev binary you should compile and install libpe first.
+In order to use any pev binary you should compile and install libpe first.
 </para>
 </note>
 
@@ -140,20 +132,20 @@ In order to compile any pev binary you should compile and install libpe first.
 
 <para>The first step is to download and install <ulink
 url="http://cygwin.com/">Cygwin</ulink>. During the installation process,
-you must select at minimum the following packages for installation:</para>
+you must select at minimum the following packages:</para>
 
 <simplelist>
-<member>gcc (32-bit version)</member>
+<member>gcc-core</member>
 <member>binutils</member>
 <member>make</member>
 <member>zip</member>
 <member>openssl-devel</member>
-<member>git (just to clone de repository to make things easier)</member>
+<member>git (just to clone de repository and make things easier)</member>
 </simplelist>
 
 <para>
-You should follow the same compilation steps in GNU/Linux, replacing
-"make install" by "make zip".
+You should follow the same compilation steps for GNU/Linux, replacing
+"make install" by "make zip" at the end:
 </para>
 
 <screen>
@@ -165,7 +157,7 @@ extracted in any directory you choose. All pev toolks can be called directly fro
 Windows Command Prompt (<emphasis>cmd.exe</emphasis>). You can add the pev's directory
 in %PATH% environment variable in order to call pev tools from anywhere.</para>
 
-<warning><para>You cannot call "make install" under compilation in Cygwin.</para></warning>
+<warning><para>You can't call "make install" under Cygwin.</para></warning>
 
 </section>
 
@@ -175,21 +167,22 @@ in %PATH% environment variable in order to call pev tools from anywhere.</para>
 compiling in OS X:</para>
 
 <simplelist>
+<member>Homebrew - http://brew.sh/</member>
 <member>MacPorts - http://www.macports.org</member>
-<member>Homebrew - http://mxcl.github.com/homebrew</member>
 </simplelist>
-
-<para>For MacPorts, use:</para>
-
-<screen>
-<prompt>$ </prompt><command>sudo port install &lt;pkgname&gt;</command>
-<prompt>$ </prompt><command>make CFLAGS="-I/opt/local/include"</command>
-</screen>
 
 <para>For Homebrew, use:</para>
 
 <screen>
 <prompt>$ </prompt><command>brew install &lt;pkgname&gt;</command>
+<prompt>$ </prompt><command>make CFLAGS="-I/opt/local/include"</command>
+</screen>
+
+
+<para>For MacPorts, use:</para>
+
+<screen>
+<prompt>$ </prompt><command>sudo port install &lt;pkgname&gt;</command>
 <prompt>$ </prompt><command>make CFLAGS="-I/opt/local/include"</command>
 </screen>
 
@@ -203,26 +196,32 @@ compiling in OS X:</para>
 <para>
 As pev is written in standard C language, we encourage you to compile it in
 different platforms and let us know about that. We believe pev can be compiled
-in different platforms without any patches, but you should face some challenges with
-the dependencies.
+in many different platforms with just a few or no patches, but you may face some
+dependencies challenges. Anyway, we encourage you to <ulink url="http://pev.sourceforge.net/#support">
+get in touch</ulink> to discuss.
 </para>
 
 <para>
-Past versions were compiled for Android, Solaris and other systems but current version
-not yet. If you'd like to give a try, go ahead! ;)
+Previous versions were compiled for Android, Solaris and other systems. If you want to give it
+a try, go ahead! ;)
 </para>
 </section>
 
 <section id="compat">
 <title>Output retro-compatibility</title>
 <para>
-As of version 0.70 the output format of readpe changed a little bit. If you have some
+As of version 0.70 the output format of pev programs changed. If you have some
 scripts calling pev and parsing the old 0.60 output format, you can define
 a macro called LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06 before compilation, just like this:</para>
 
 <screen>
 <prompt>$ </prompt><command>DFLAGS+=-DLIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06 make readpe</command>
 </screen>
+
+<para>This retrocompatibility will be removed in the next release, so please consider updating
+your scripts as soon as possible.
+</para>
+
 </section>
 
 </section>

@@ -80,8 +80,7 @@ Example: pehash -s '.text' winzip.exe
 
 Options:
  -f, --format &lt;text|csv|xml|html&gt;    change output format (default: text)
- -a, --all                                 hash file, sections and headers with all available hash algorithms:
-                                           md5, sha1, sha256, sha512, sdeep and imphash (Mandiant and pefile)
+ -a, --all                                 hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash
  -c, --content                             hash only the file content (default)
  -h, --header &lt;dos|coff|optional&gt;    hash only the header with the specified name
  -s, --section &lt;section_name&gt;        hash only the section with the specified name

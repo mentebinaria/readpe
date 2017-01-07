@@ -46,9 +46,11 @@ Legend:
 
 pev 0.80 - ?
  ! Missing documentation for libpe.
+ ! peres does not reconstruct icons and cursors extracted from resources section.
  * Now the -V switch is used by all pev programs to show their version numbers.
  * pehash: Now the hash of the whole file is shown by default (-c option).
  * pestr: --net option removed (we may readd this in the future).
+ * udis86 updated to version 1.7.2.
  + Basic plugins support.
  + cpload: new tool for CPL file debugging (Windows only).
  + Fixed: pestr: unable to handle too big strings.
@@ -56,7 +58,7 @@ pev 0.80 - ?
  + pehash: Import Hash (imphash) support for both Mandiant and pefile's implementation.
  + peres: output the PE File Version with -v option.
  + Support for pev.conf configuration file.
-
+ - readpe can now read virtual import descriptors.
 
 pev 0.70 - December 26, 2013
  ! Missing full/English documentation.

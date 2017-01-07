@@ -6,6 +6,19 @@
 <qandaentry>
 <question>
 <para>
+What's imphash?
+</para>
+</question>
+<answer>
+<para>
+It's a MD5 hash from the imported functions names, normally used to search for variants of the same file. The ideas was took in place by Mandiant and it is explained in their blog <ulink url="https://www.fireeye.com/blog/threat-research/2014/01/tracking-malware-import-hashing.html">Tracking malware with Import Hashing</ulink>, but keep in mind there are some people out there saying that the current algorithm for calculating imphash is broken. See <ulink url="https://github.com/erocarrera/pefile/issues/113">Imphash implementation</ulink> and <ulink url="https://github.com/erocarrera/pefile/issues/141">Imphash implementation does not follows convention</ulink> to understand better. This implementation from pefile is the one used in all software that we are aware of - and it's the one we use too.
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+<para>
 I use pev in Windows and everytime I run one of the pev tools I see CYGWIN complaining about Windows-style file paths.
 </para>
 </question>

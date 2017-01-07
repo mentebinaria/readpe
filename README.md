@@ -38,7 +38,7 @@ This is the current source for a likely unreleased version. Use at your own risk
 
 **NOTE**: The following packages must be installed along with your Cygwin:
 
-	- gcc (32-bit version)
+	- gcc-core
 	- binutils
 	- make
 	- zip

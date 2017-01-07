@@ -232,8 +232,7 @@ sections
         md5:                             67b498c232dfbe4f5cc0cabc5e78ac42
         sha1:                            32b5df9aaa201bc8cbfed37344aaa77bf842c1d4
         sha256:                          8f5b794da7fdbbc13f1abaae0949b4eb98935c99e7387c7e0dfef5d4f01ea298
-        sha512:                          3b09e2239f38c25cce72843dd7d2ac57c9115d616725e858194a04c072ad37069a19156c37f10e9a0d1f4f20951e338757445979ec19343318554cc2f2cfc135
-        ssdeep:6144:2QrIKt9jjmVG0xcpcZTcLexXqS1XGtbNwI/4p3RLjD0OVG:2QrD3mVG0xcpcZTEexvXENv/e3RD0W
+        ssdeep:                          6144:2QrIKt9jjmVG0xcpcZTcLexXqS1XGtbNwI/4p3RLjD0OVG:2QrD3mVG0xcpcZTEexvXENv/e3RD0W
 <prompt>$ </prompt><command>pehash -s CODE comentario.cpl</command>
 sections
     section
@@ -241,8 +240,7 @@ sections
         md5:                             973d11759194c14071aa6963de8f55c7
         sha1:                            1934e0085c8776e3243bf658e95b8943d4f91bc9
         sha256:                          e68349bfcb04b20c11973ce27770570ebb22c8c7750133d073f15f7ec9eeda38
-        sha512:                          ce80947ef811399f52235b84cb3c5b7a77eaec8eb058f863d55df35b6cade05d2573e14c6a21ff70fbd6ed65bfa7af1d924b28b69d679f64d4e99325d28d9777
-        ssdeep:6144:FQrIKt9jjmVG0xcpcZTcLexXqS1XGtbNwI/4p3Zv60G4:FQrD3mVG0xcpcZTEexvXENv/e3J6V
+        ssdeep:                          6144:FQrIKt9jjmVG0xcpcZTcLexXqS1XGtbNwI/4p3Zv60G4:FQrD3mVG0xcpcZTEexvXENv/e3J6V
 </screen>
 
 <para>
@@ -261,31 +259,26 @@ file
     md5:                             33c9d1e56152e212367e9c5b01671e45
     sha1:                            9ded3ce2ae09c37ca173bbd3dcb57258b72cdbd5
     sha256:                          b10922648f6ad71f3f20b9acdfacf9aeff706cad6c52737cdc426307ccfa51d9
-    sha512:                          bf2b75347abcf9db4af9f28a0900d7de46c3cbad414a2c8a6e9f23094baefe9a2904b5128c3e00e560b23ef7f4b33fa4beefc9eef50d4ec6956182edb1d3e8c0
     ssdeep:                          12288:ApoNd4D7aVwSn8nW+nGQZZcLYX4RXwWLJQ6LU:UoNde7aVT8WvQ3O+4NzLu6w
-    imphash (Mandiant):              fa35de4211168ff572a78b5adc0c14f4
-    imphash (pefile):                dae4485dd029c5e0256f477eda4797a4
+    imphash:                         dae4485dd029c5e0256f477eda4797a4
 headers
     header
         header_name:                     IMAGE_DOS_HEADER
         md5:                             5084c5d5cfe99932e67450023c068941
         sha1:                            856558429bb575486a46a92ba2684eaab8578cef
         sha256:                          52ea4dd296abe995cc1052a3a29325a8306fc888b3d6fea352d2cebdd83e6eaa
-        sha512:                          bef3831fdc584f011004b42f845113f98749217114031db57e36edf2df10d4b5db591d06e52dc12ad1c724d4a2c771801724465cbe22770d0eb688b39069d041
         ssdeep:                          3:WlWUqt/vllPln:idqH
     header
         header_name:                     IMAGE_COFF_HEADER
         md5:                             c29db8cff4c151279ea0f3e1e122bb92
         sha1:                            5df76c71b2fcb937b98d566dad7d353f23f23418
         sha256:                          4dc37a0d8a47d3c713b891a86b92acb28126729da2b7a6a5f3656d23fd8c1a9c
-        sha512:                          6fabd50bcf64bdb5b1fc6c73638e88c0c7ac914cea373c37dc19422256ec161ba6807fd087459688021c0fb1a1e1148c33880a622d1694d87bf9067944b397bc
         ssdeep:                          3:OHwkn:wwk
     header
         header_name:                     IMAGE_OPTIONAL_HEADER
         md5:                             0de919344c187babea80d66adc2b0d9e
         sha1:                            4bdec527003b46348d8f9a1594f39f064e9dd680
         sha256:                          97e834e37ee922bca8a9388b2b1663491ddf0d3b20c6d37782aa4f2d1d9ebf64
-        sha512:                          f1807425ed2b3acc978e66a0decc6113489bd15f814d033b9cc6a4b222d17cb944fbb428a13ea8bb327111c3f601dfaacd4283d39c52849960d039de7f99670d
         ssdeep:                          3:2H2l0lvl9gXH9lhtllrll3lll/ldt1l9tllH:NGlvA3
 sections
     section
@@ -293,40 +286,31 @@ sections
         md5:                             67b498c232dfbe4f5cc0cabc5e78ac42
         sha1:                            32b5df9aaa201bc8cbfed37344aaa77bf842c1d4
         sha256:                          8f5b794da7fdbbc13f1abaae0949b4eb98935c99e7387c7e0dfef5d4f01ea298
-        sha512:                          3b09e2239f38c25cce72843dd7d2ac57c9115d616725e858194a04c072ad37069a19156c37f10e9a0d1f4f20951e338757445979ec19343318554cc2f2cfc135
         ssdeep:                          6144:6poNd4D7aeaNqZs+iDpnRKnWDX/ZcnGs9BDT7JjZnZZGN+FAFtt6Xa//lrXwW:6poNd4D7aVwSn8nW+nGQZZcLYX4RXwW
     section
         section_name:                    .rdata
         md5:                             6087c2ffc1a7d69f82696a4f2d3aca75
         sha1:                            d69529b6402c520bdbee855c34ce4455112bd1eb
         sha256:                          30b49d20acb96827857ca125ce0d49838fafafe9d7e49523982b2ff1afe54283
-        sha512:                          6246b6d668a24d19598bdd3285b03d731131f8f8bc44d8ae0913d1d9d719cb5763e803008403c71be2f48966c63e711e9d944899ca12a3f186e21dc196eaca88
         ssdeep:                          3072:mDBKmaes7rlYhoAw/Jt8Lr6hx3bO6ta/4gRul:mS+oAw/Jt836L3bA/
     section
         section_name:                    .data
         md5:                             5578c6fd3e5a0b764a7f2bcde00f9a16
         sha1:                            b71d5142594f56e896e79e12abf729e94512b9e0
         sha256:                          edd88e6b2ccf3dd5624ebd07b8911e2fa51f4ddc7912d4699ed111d28a2a53e5
-        sha512:                          74952c1d02fe2f5f15dfcfad162a359303d40e5c649dc04c048e84ff53477a9356e90e0235c3b54495c75bd61546db3779ca50292442ca02acd6db93cfb36aad
         ssdeep:                          96:j/1HpvU2Ro26mTfOkf14dBPBgtbAgUhoSkb/:9o26sN2dJ9rIb/
     section
         section_name:                    .rsrc
         md5:                             24b45ea2b1620870730382fb7308a074
         sha1:                            bca5bc464c261f05751c24dce49d70458647e75c
         sha256:                          695707a6f3385838f6e5b58ab45584acb716bec2a2a953327dcb40314f0c0908
-        sha512:                          22601ed8588df68b7b8e6111881a38f145d544733d341149a45b71482c89e38cdf09d932a16a3dc6cfbedf6ce4426f851f4af406f0506edebbfa9eddab6fcf98
         ssdeep:                          192:Icgh8G2PnHGaAnkTjVDBY5disWxDgPWDSL73oqEnngLg:I5SG2vHi4jVDBKjPfL730ng0
 </screen>
 
 <para>
-The OpenSSL library used by pev supports a wider range of hashing algorithms and you can extend pehash to use them if needed.
+The OpenSSL library used by pev supports a wider range of hashing algorithms and you can extend pehash to use them by recompiling its source code.
 </para>
 
-<para>
-pehash supports two different implementations of imphash (Import Hash): the original one proposed by Mandiant and the modified one by pefile's python library authors. As imphash is about a MD5 hash, any change will change the final result completely so keep that in mind when calculating those hashes. For more information, please read <ulink url="https://www.fireeye.com/blog/threat-research/2014/01/tracking-malware-import-hashing.html">Tracking malware with Import Hashing</ulink>, 
-<ulink url="https://github.com/erocarrera/pefile/issues/113">Imphash implementation</ulink> and 
-<ulink url="https://github.com/erocarrera/pefile/issues/141">Imphash implementation does not follows convention</ulink>.
-</para>
 
 </sect1>
 

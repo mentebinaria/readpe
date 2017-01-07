@@ -34,7 +34,8 @@ This is the current source for a likely unreleased version. Use at your own risk
 ## How to build on Windows (via [Cygwin](http://cygwin.com/))?
 
 	cd pev
-	make install zip
+	make
+	make zip
 
 **NOTE**: The following packages must be installed along with your Cygwin:
 
@@ -44,3 +45,5 @@ This is the current source for a likely unreleased version. Use at your own risk
 	- zip
 	- openssl-devel
 	- git (just to clone de repository and make things easier)
+
+Please check the [online documentation](http://pev.sourceforge.net/doc/manual/en_us) for more details.

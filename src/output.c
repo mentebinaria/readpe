@@ -288,7 +288,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 	scope->depth = scope_depth + 1;
 
 	if (scope_depth > 0) {
-		output_scope_t * const parent_scope = malloc(sizeof *parent_scope);
+		output_scope_t * const parent_scope = NULL;
 		STACK_PEEK(g_scope_stack, (void *)&parent_scope);
 		scope->parent_type = parent_scope->type;
 	}
@@ -305,7 +305,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 void output_close_scope(void) {
 	assert(g_format != NULL);
 
-	const output_scope_t *scope = NULL;
+	output_scope_t *scope = NULL;
 	int ret = STACK_POP(g_scope_stack, (void *)&scope);
 	if (ret < 0) {
 		fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
@@ -319,6 +319,8 @@ void output_close_scope(void) {
 	//printf("DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
+
+	free(scope);
 }
 
 void output_keyval(const char *key, const char *value) {

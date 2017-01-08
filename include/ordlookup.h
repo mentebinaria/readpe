@@ -1,7 +1,7 @@
 /*
     pev - the PE file analyzer toolkit
 
-    pehash.c - calculate hashes of PE pieces
+    ordlookup.h
 
     Copyright (C) 2017 pev authors
 
@@ -35,6 +35,8 @@
 
 // This lookup database is necessary to match Ero Carrera's pefile imphash implementation used by VT and other programs
 // https://github.com/erocarrera/pefile/tree/master/ordlookup
+
+#pragma once
 
 typedef struct {
     int number;

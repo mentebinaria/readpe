@@ -305,7 +305,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 void output_close_scope(void) {
 	assert(g_format != NULL);
 
-	output_scope_t *scope = NULL;
+	output_scope_t * const scope = NULL;
 	int ret = STACK_POP(g_scope_stack, (void *)&scope);
 	if (ret < 0) {
 		fprintf(stderr, "output: cannot close a scope that has not been opened.\n");

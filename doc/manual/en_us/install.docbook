@@ -103,6 +103,13 @@ Make sure you have the following dependencies installed and working properly:
 </screen>
 
 <para>
+If your Linux distribution does not set /usr/local/lib as one of default locations for libraries, you may need to create a symlink like this:
+<screen>
+<prompt># </prompt><command>ln -s /usr/local/lib/libpe.so.1.0 /usr/lib/libpe.so.1</command>
+</screen>
+</para>
+
+<para>
 The commands above will compile libpe and all pev binaries. You can set
 DEST and PREFIX variables if you need. For compiling libpe only, enter in its directory
 and issue make command, as this:

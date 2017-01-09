@@ -29,7 +29,7 @@ manext = .1
 man1dir = $(mandir)/man1
 man1ext = .1
 
-export pluginsdir = $(DESTDIR)$(libdir)/pev/plugins
+export pluginsdir = $(libdir)/pev/plugins
 
 ####### Makefile Conventions - Utilities
 
@@ -54,7 +54,11 @@ endif
 
 override LDFLAGS += -L$(LIBPE) -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
-override CPPFLAGS += -D_GNU_SOURCE -D_FORTIFY_SOURCE=1 -DSHAREDIR="\"$(SHAREDIR)"\"
+override CPPFLAGS += \
+	-D_GNU_SOURCE \
+	-D_FORTIFY_SOURCE=1 \
+	-DSHAREDIR="\"$(SHAREDIR)"\" \
+	-DPLUGINSDIR="\"$(pluginsdir)"\"
 
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7

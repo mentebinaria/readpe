@@ -77,14 +77,14 @@ clean:
 ###
 
 install: installdirs
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(csv_LIBNAME).* $(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(csv_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(DESTDIR)$(pluginsdir)
 
 installdirs:
-	@$(CHK_DIR_EXISTS) $(pluginsdir) || $(MKDIR) $(pluginsdir)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(pluginsdir) || $(MKDIR) $(DESTDIR)$(pluginsdir)
 
 uninstall:
-	$(RM_DIR) $(pluginsdir)
+	$(RM_DIR) $(DESTDIR)$(pluginsdir)

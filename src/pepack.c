@@ -155,6 +155,7 @@ static bool loaddb(FILE **fp, const options_t *options)
 	*fp = fopen(dbfile, "r");
 	// FIXME(jweyrich): Granted read permission to the informed dbfile, this will succeed even if it's a directory!
 	if (!*fp) {
+		// SHAREDIR is defined via CPPFLAGS in the Makefile
 		*fp = fopen(SHAREDIR "/userdb.txt", "r");
 	}
 

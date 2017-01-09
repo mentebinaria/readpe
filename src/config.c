@@ -55,7 +55,7 @@
 #define DEFAULT_PLUGINS_PATH "plugins"
 #else
 #define DEFAULT_CONFIG_PATH ".config/pev" DEFAULT_CONFIG_FILENAME
-#define DEFAULT_PLUGINS_PATH "/usr/local/lib/pev/plugins"
+#define DEFAULT_PLUGINS_PATH PLUGINSDIR // PLUGINSDIR is defined via CPPFLAGS in the Makefile
 #endif
 
 static bool _load_config_cb(pev_config_t * const config, const char *name, const char *value) {

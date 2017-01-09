@@ -105,7 +105,6 @@ ofs2rva: $(pev_BUILDDIR)/ofs2rva.o $(pev_OBJS)
 
 pedis: CPPFLAGS += -DHAVE_STRING_H
 pedis: CFLAGS += -I$(LIBUDIS86)
-pedis: $(LIBUDIS86)/libudis86/*.c
 pedis: $(pev_BUILDDIR)/pedis.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBUDIS86)/libudis86/*.c
 

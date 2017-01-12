@@ -15,21 +15,22 @@ This is the current source for a likely unreleased version. Use at your own risk
 	cd pev
 	make
 
-**NOTE**: You may need to install OpenSSL using your package manager. Examples:
+**NOTE**: You may need to install OpenSSL and PCRE using your package manager. Examples:
 
-	apt-get install libssl-dev
-	yum install openssl-devel
+	apt-get install libssl-dev libpcre3 libpcre3-dev
+	yum install openssl-devel pcre-devel
 
 ## How to build on OS X?
 
 	cd pev
 	CFLAGS="-I/usr/local/opt/openssl/include/" LDFLAGS="-L/usr/local/opt/openssl/lib/" make
 
-**NOTE**: You may need to install OpenSSL via [Homebrew](http://brew.sh/):
+**NOTE**: You may need to install OpenSSL and PCRE via [Homebrew](http://brew.sh/):
 
 	brew update
 	brew install openssl
 	brew link --force openssl
+	brew install pcre
 
 ## How to build on Windows (via [Cygwin](http://cygwin.com/))?
 
@@ -44,6 +45,7 @@ This is the current source for a likely unreleased version. Use at your own risk
 	- make
 	- zip
 	- openssl-devel
+	- libpcre-devel
 	- git (just to clone de repository and make things easier)
 
 Please check the [online documentation](http://pev.sourceforge.net/doc/manual/en_us) for more details.

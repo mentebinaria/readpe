@@ -54,11 +54,14 @@ endif
 
 override LDFLAGS += -L$(LIBPE) -lpe -ldl
 override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+# Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
+# undefine it first to avoid redefinition warnings.
 override CPPFLAGS += \
 	-D_GNU_SOURCE \
-	-D_FORTIFY_SOURCE=1 \
+	-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 \
 	-DSHAREDIR="\"$(SHAREDIR)"\" \
 	-DPLUGINSDIR="\"$(pluginsdir)"\"
+
 
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7

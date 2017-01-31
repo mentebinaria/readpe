@@ -97,23 +97,23 @@ $(libpe_BUILDDIR)/%.o: %.c
 
 install: installdirs
 ifeq ($(PLATFORM_OS), Linux)
-	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), NetBSD)
-	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), FreeBSD)
-	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), OpenBSD)
-	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), Darwin)
-	$(INSTALL_DATA) $(LIBNAME).dylib $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION).dylib
+	echo $(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).dylib $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION).dylib
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).1.dylib
 else ifeq ($(PLATFORM_OS), CYGWIN)
@@ -124,22 +124,8 @@ installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR) || $(MKDIR) $(DESTDIR)
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(libdir) || $(MKDIR) $(DESTDIR)$(libdir)
 
-strip-binaries:
-ifeq ($(PLATFORM_OS), Linux)
-	$(STRIP) $(LIBNAME).so
-else ifeq ($(PLATFORM_OS), NetBSD)
-	$(STRIP) $(LIBNAME).so
-else ifeq ($(PLATFORM_OS), FreeBSD)
-	$(STRIP) $(LIBNAME).so
-else ifeq ($(PLATFORM_OS), OpenBSD)
-	$(STRIP) $(LIBNAME).so
-else ifeq ($(PLATFORM_OS), Darwin)
-	$(STRIP) $(LIBNAME).dylib
-else ifeq ($(PLATFORM_OS), CYGWIN)
-	$(STRIP) $(LIBNAME).dll
-endif
-
-install-strip: strip-binaries install
+install-strip: INSTALL_FLAGS += -s
+install-strip: install
 
 uninstall:
 	$(RM) $(DESTDIR)$(libdir)/$(LIBNAME).so* \

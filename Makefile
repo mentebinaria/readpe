@@ -78,6 +78,10 @@ ifeq ($(PLATFORM_OS), Linux)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), NetBSD)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), FreeBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), OpenBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
@@ -100,6 +104,14 @@ else ifeq ($(PLATFORM_OS), NetBSD)
 	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
+else ifeq ($(PLATFORM_OS), FreeBSD)
+	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
+	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
+else ifeq ($(PLATFORM_OS), OpenBSD)
+	$(INSTALL_DATA) $(LIBNAME).so $(DESTDIR)$(libdir)/$(LIBNAME).so.$(VERSION)
+	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
+	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(INSTALL_DATA) $(LIBNAME).dylib $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION).dylib
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
@@ -116,6 +128,10 @@ strip-binaries:
 ifeq ($(PLATFORM_OS), Linux)
 	$(STRIP) $(LIBNAME).so
 else ifeq ($(PLATFORM_OS), NetBSD)
+	$(STRIP) $(LIBNAME).so
+else ifeq ($(PLATFORM_OS), FreeBSD)
+	$(STRIP) $(LIBNAME).so
+else ifeq ($(PLATFORM_OS), OpenBSD)
 	$(STRIP) $(LIBNAME).so
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(STRIP) $(LIBNAME).dylib

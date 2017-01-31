@@ -57,6 +57,12 @@ json: $(json_OBJS)
 $(PLUGINS):
 ifeq ($(PLATFORM_OS), Linux)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), NetBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), FreeBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), OpenBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-undefined dynamic_lookup -fno-common \
@@ -77,11 +83,14 @@ clean:
 ###
 
 install: installdirs
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(csv_LIBNAME).* $(DESTDIR)$(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(DESTDIR)$(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(DESTDIR)$(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(DESTDIR)$(pluginsdir)
-	$(INSTALL_PROGRAM) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(csv_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(html_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(DESTDIR)$(pluginsdir)
+	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(DESTDIR)$(pluginsdir)
+
+install-strip: INSTALL_FLAGS += -s
+install-strip: install
 
 installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(pluginsdir) || $(MKDIR) $(DESTDIR)$(pluginsdir)

@@ -151,7 +151,7 @@ $(pev_BUILDDIR)/%.o: %.c
 
 install: installdirs
 	for prog in $(PROGS); do \
-		$(INSTALL_PROGRAM) $(pev_BUILDDIR)/$$prog $(DESTDIR)$(bindir); \
+		$(INSTALL_PROGRAM) $(INSTALL_FLAGS) $(pev_BUILDDIR)/$$prog $(DESTDIR)$(bindir); \
 		$(CHK_FILE_EXISTS) $(MANDIR)/$$prog$(man1ext) && \
 			gzip -c -9 $(MANDIR)/$$prog$(man1ext) > $(DESTDIR)$(man1dir)/$$prog$(man1ext).gz || \
 			echo -n; \
@@ -159,6 +159,9 @@ install: installdirs
 
 	$(INSTALL_DATA) $(srcdir)/userdb.txt $(DESTDIR)$(SHAREDIR)
 	cd $(PLUGINS_DIR) && $(MAKE) $@
+
+install-strip: INSTALL_FLAGS += -s
+install-strip: install
 
 installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR) || $(MKDIR) $(DESTDIR)

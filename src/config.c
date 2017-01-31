@@ -40,11 +40,7 @@
 #include <string.h>
 #if defined(__linux__)
 #include <linux/limits.h>
-#elif defined(__NetBSD__)
-#include <limits.h>
-#elif defined(__APPLE__)
-#include <sys/syslimits.h>
-#elif defined(__CYGWIN__)
+#elif defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
 #include <limits.h>
 #endif
 

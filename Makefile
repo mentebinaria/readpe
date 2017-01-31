@@ -51,6 +51,8 @@ endif
 ####### Compiler options
 
 override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c
+override CPPFLAGS += -D_FORTIFY_SOURCE=1
+
 ifneq ($(PLATFORM_OS), CYGWIN)
 	override CFLAGS += -fPIC
 endif

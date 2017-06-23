@@ -513,8 +513,11 @@ dos_hdr get_dos_hash(pe_ctx_t *ctx) {
   const unsigned char *data = (const unsigned char *)dos_;
   uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
-  dos.name  = "IMAGE_DOS_HEADER";                             // TODO : allow memory dynamically.
+  // dos.name  = "IMAGE_DOS_HEADER";                             // TODO : allow memory dynamically.
   dos.md5 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
+  dos.sha1 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
+  dos.sha256 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
+
   dos.md5 = calc_hash("md5", data, data_size, hash_value );
   dos.sha1 = calc_hash("sha1", data, data_size, hash_value );
   dos.md5 = calc_hash("sha256", data, data_size, hash_value );
@@ -530,7 +533,7 @@ coff_hdr get_coff_hash(pe_ctx_t *ctx) {
     uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
-  coff.name  = "IMAGE_COFF_HEADER";
+  // coff.name  = "IMAGE_COFF_HEADER";
   coff.md5 = calc_hash("md5", data, data_size, hash_value);
   coff.sha1 = calc_hash("sha1", data, data_size, hash_value);
   coff.md5 = calc_hash("sha256", data, data_size, hash_value);
@@ -545,7 +548,7 @@ optional_hdr get_optional_hash(pe_ctx_t *ctx) {
   uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
 
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
-  optional.name  = "IMAGE_OPTIONAL_HEADER";
+  // optional.name  = "IMAGE_OPTIONAL_HEADER";
   optional.md5 = calc_hash("md5", data,data_size, hash_value );
   optional.sha1 = calc_hash("sha1", data,data_size, hash_value );
   optional.md5 = calc_hash("sha256", data,data_size, hash_value );
@@ -557,8 +560,8 @@ basic_hashes get_basic_hashes(pe_ctx_t *ctx) {
   
   basic_hashes hasheslist;
   hasheslist.dos = get_dos_hash(ctx);
-  hasheslist.coff = get_coff_hash(ctx);
-  hasheslist.optional = get_optional_hash(ctx);
+  // hasheslist->coff = get_coff_hash(ctx);
+  // hasheslist->optional = get_optional_hash(ctx);
   return hasheslist;
 
 }

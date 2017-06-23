@@ -53,7 +53,7 @@ endif
 
 ####### Compiler options
 
-override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c
+override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c -lcrypto -lssl
 override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
 ifneq ($(PLATFORM_OS), CYGWIN)

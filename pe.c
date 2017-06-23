@@ -25,10 +25,16 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <openssl/evp.h>
+#include <openssl/md5.h>
+#include <assert.h>
+
+
 
 bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size) {
 	const uintptr_t end = (uintptr_t)LIBPE_PTR_ADD(ptr, size);

@@ -456,92 +456,9 @@ int fuzzy_hash_filename(const char *filename, /*@out@*/ char *result)
 //
 // return 1 if the two strings do have a common substring, 0 otherwise
 //
-static int has_common_substring(const char *s1, const char *s2)
-{
-  int i, j;
-  int num_hashes;
-  uint32_t hashes[SPAMSUM_LENGTH];
-
-  // there are many possible algorithms for common substring
-  // detection. In this case I am re-using the rolling hash code
-  // to act as a filter for possible substring matches
-
-  memset(hashes, 0, sizeof(hashes));
-
-  // first compute the windowed rolling hash at each offset in
-  // the first string
-  struct roll_state state;
-  roll_init (&state);
-
-  for (i=0;s1[i];i++)
-  {
-    roll_hash(&state, (unsigned char)s1[i]);
-    hashes[i] = roll_sum(&state);
-  }
-  num_hashes = i;
-
-  roll_init(&state);
-
-  // now for each offset in the second string compute the
-  // rolling hash and compare it to all of the rolling hashes
-  // for the first string. If one matches then we have a
-  // candidate substring match. We then confirm that match with
-  // a direct string comparison */
-  for (i=0;s2[i];i++)
-  {
-    roll_hash(&state, (unsigned char)s2[i]);
-    uint32_t h = roll_sum(&state);
-    if (i < ROLLING_WINDOW-1) continue;
-    for (j=ROLLING_WINDOW-1;j<num_hashes;j++)
-    {
-      if (hashes[j] != 0 && hashes[j] == h)
-      {
-	// we have a potential match - confirm it
-	if (strlen(s2+i-(ROLLING_WINDOW-1)) >= ROLLING_WINDOW &&
-	    strncmp(s2+i-(ROLLING_WINDOW-1),
-		    s1+j-(ROLLING_WINDOW-1),
-		    ROLLING_WINDOW) == 0)
-	{
-	  return 1;
-	}
-      }
-    }
-  }
-
-  return 0;
-}
-
-
 // eliminate sequences of longer than 3 identical characters. These
 // sequences contain very little information so they tend to just bias
 // the result unfairly
-static char *eliminate_sequences(const char *str)
-{
-  char *ret;
-  size_t i, j, len;
-
-  ret = strdup(str);
-  if (!ret)
-    return NULL;
-
-  len = strlen(str);
-  if (len < 3)
-    return ret;
-
-  for (i=j=3 ; i<len ; i++)
-  {
-    if (str[i] != str[i-1] ||
-	str[i] != str[i-2] ||
-	str[i] != str[i-3])
-    {
-      ret[j++] = str[i];
-    }
-  }
-
-  ret[j] = 0;
-
-  return ret;
-}
 
 //
 // this is the low level string scoring algorithm. It takes two strings
@@ -549,176 +466,6 @@ static char *eliminate_sequences(const char *str)
 // 100 is a great match. The block_size is used to cope with very small
 // messages.
 //
-static uint32_t score_strings(const char *s1,
-			      const char *s2,
-			      unsigned int block_size)
-{
-  uint32_t score;
-  size_t len1, len2;
-  int edit_distn(const char *from, int from_len, const char *to, int to_len);
-
-  len1 = strlen(s1);
-  len2 = strlen(s2);
-
-  if (len1 > SPAMSUM_LENGTH || len2 > SPAMSUM_LENGTH) {
-    // not a real spamsum signature?
-    return 0;
-  }
-
-  // the two strings must have a common substring of length
-  // ROLLING_WINDOW to be candidates
-  if (has_common_substring(s1, s2) == 0) {
-    return 0;
-  }
-
-  // compute the edit distance between the two strings. The edit distance gives
-  // us a pretty good idea of how closely related the two strings are
-  score = edit_distn(s1, len1, s2, len2);
-
-  // scale the edit distance by the lengths of the two
-  // strings. This changes the score to be a measure of the
-  // proportion of the message that has changed rather than an
-  // absolute quantity. It also copes with the variability of
-  // the string lengths.
-  score = (score * SPAMSUM_LENGTH) / (len1 + len2);
-
-  // at this stage the score occurs roughly on a 0-64 scale,
-  // with 0 being a good match and 64 being a complete
-  // mismatch
-
-  // rescale to a 0-100 scale (friendlier to humans)
-  score = (100 * score) / 64;
-
-  // it is possible to get a score above 100 here, but it is a
-  // really terrible match
-  if (score >= 100)
-    return 0;
-
-  // now re-scale on a 0-100 scale with 0 being a poor match and
-  // 100 being a excellent match.
-  score = 100 - score;
-
-  //  printf ("len1: %"PRIu32"  len2: %"PRIu32"\n", len1, len2);
-
-  // when the blocksize is small we don't want to exaggerate the match size
-  if (score > block_size/MIN_BLOCKSIZE * MIN(len1, len2))
-  {
-    score = block_size/MIN_BLOCKSIZE * MIN(len1, len2);
-  }
-  return score;
-}
-
-//
-// Given two spamsum strings return a value indicating the degree
-// to which they match.
-//
-int fuzzy_compare(const char *str1, const char *str2)
-{
-  unsigned int block_size1, block_size2;
-  uint32_t score = 0;
-  char *s1, *s2;
-  char *s1_1, *s1_2, *s1_3;
-  char *s2_1, *s2_2, *s2_3;
-
-  if (NULL == str1 || NULL == str2)
-    return -1;
-
-  // each spamsum is prefixed by its block size
-  if (sscanf(str1, "%u:", &block_size1) != 1 ||
-      sscanf(str2, "%u:", &block_size2) != 1) {
-    return -1;
-  }
-
-  // if the blocksizes don't match then we are comparing
-  // apples to oranges. This isn't an 'error' per se. We could
-  // have two valid signatures, but they can't be compared.
-  if (block_size1 != block_size2 &&
-      block_size1 != block_size2*2 &&
-      block_size2 != block_size1*2) {
-    return 0;
-  }
-
-  // move past the prefix
-  str1 = strchr(str1, ':');
-  str2 = strchr(str2, ':');
-
-  if (!str1 || !str2) {
-    // badly formed ...
-    return -1;
-  }
-
-  // there is very little information content is sequences of
-  // the same character like 'LLLLL'. Eliminate any sequences
-  // longer than 3. This is especially important when combined
-  // with the has_common_substring() test below.
-  // NOTE: This function duplciates str1 and str2
-  s1 = eliminate_sequences(str1+1);
-  if (!s1)
-    return 0;
-  s2 = eliminate_sequences(str2+1);
-  if (!s2)
-  {
-    free(s1);
-    return 0;
-  }
-
-  // now break them into the two pieces
-  s1_1 = s1;
-  s2_1 = s2;
-
-  s1_2 = strchr(s1, ':');
-  s2_2 = strchr(s2, ':');
-
-  if (!s1_2 || !s2_2) {
-    // a signature is malformed - it doesn't have 2 parts
-    free(s1); free(s2);
-    return -1;
-  }
-
-  // Chop the first substring. We terminate the first substring
-  // and then advance the pointer to the start of the second substring.
-  *s1_2 = 0;
-  s1_2++;
-  *s2_2 = 0;
-  s2_2++;
-
-  // Chop the second string at the comma--just before the filename.
-  // If the strings don't have a comma (i.e. don't have a filename)
-  // that's ok. It's not an error. This function can be called on
-  // signatures which don't have filenames attached.
-  // We also don't have to advance past the comma however. We don't care
-  // about the filename
-  s1_3 = strchr(s1_2, ',');
-  s2_3 = strchr(s2_2, ',');
-  if (s1_3 != NULL)
-    *s1_3 = 0;
-  if (s2_3 != NULL)
-    *s2_3 = 0;
-
-  // each signature has a string for two block sizes. We now
-  // choose how to combine the two block sizes. We checked above
-  // that they have at least one block size in common
-  if (block_size1 == block_size2)
-  {
-    uint32_t score1, score2;
-    score1 = score_strings(s1_1, s2_1, block_size1);
-    score2 = score_strings(s1_2, s2_2, block_size1*2);
-    score = MAX(score1, score2);
-  }
-  else if (block_size1 == block_size2*2)
-  {
-    score = score_strings(s1_1, s2_2, block_size1);
-  }
-  else
-  {
-    score = score_strings(s1_2, s2_1, block_size2);
-  }
-
-  free(s1);
-  free(s2);
-
-  return (int)score;
-}
 
 char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
 {
@@ -762,55 +509,55 @@ return output;
 dos_hdr get_dos_hash(pe_ctx_t *ctx) {
   
   dos_hdr dos;
-  const IMAGE_DOS_HEADER *dos_ = pe_dos(&ctx);
-  data = (const unsigned char *)dos_;
-  data_size = sizeof(IMAGE_DOS_HEADER);
+  const IMAGE_DOS_HEADER *dos_ = pe_dos(ctx);
+  const unsigned char *data = (const unsigned char *)dos_;
+  uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
-  dos.name  = "IMAGE_DOS_HEADER";
-  dos.md5 = calc_hash("md5", size,data, hash_value );
-  dos.sha1 = calc_hash("sha1", size,data, hash_value );
-  dos.md5 = calc_hash("sha256", size,data, hash_value );
-  dos.ssdeep = calc_hash("ssdeep", size,data, hash_value );
+  dos.name  = "IMAGE_DOS_HEADER";                             // TODO : allow memory dynamically.
+  dos.md5 = calc_hash("md5", data, data_size, hash_value );
+  dos.sha1 = calc_hash("sha1", data, data_size, hash_value );
+  dos.md5 = calc_hash("sha256", data, data_size, hash_value );
+  dos.ssdeep = calc_hash("ssdeep", data, data_size, hash_value );
   return dos;
 }
 
 coff_hdr get_coff_hash(pe_ctx_t *ctx) {
   coff_hdr coff;
 
-  const IMAGE_COFF_HEADER *coff_hdr = pe_coff(&ctx);
-    data = (const unsigned char *)coff_hdr;
-    data_size = sizeof(IMAGE_COFF_HEADER);
+  const IMAGE_COFF_HEADER *coff_hdr = pe_coff(ctx);
+    const unsigned char *data = (const unsigned char *)coff_hdr;
+    uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
   coff.name  = "IMAGE_COFF_HEADER";
-  coff.md5 = calc_hash("md5", size, data, hash_value);
-  coff.sha1 = calc_hash("sha1", size, data, hash_value);
-  coff.md5 = calc_hash("sha256", size, data, hash_value);
-  coff.ssdeep = calc_hash("ssdeep", size, hash_value);
+  coff.md5 = calc_hash("md5", data, data_size, hash_value);
+  coff.sha1 = calc_hash("sha1", data, data_size, hash_value);
+  coff.md5 = calc_hash("sha256", data, data_size, hash_value);
+  coff.ssdeep = calc_hash("ssdeep", data, data_size, hash_value);
   return coff;
 }
 
 optional_hdr get_optional_hash(pe_ctx_t *ctx) {
   optional_hdr optional;
-  const IMAGE_OPTIONAL_HEADER_64 *opt_hdr = pe_optional(&ctx);
-  data = (const unsigned char *)opt_hdr;  // TODO : revert to opt_hdr->_64 to support both opt_hdr->_32
-  data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
+  const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(ctx);
+  const unsigned char *data = (const unsigned char *)opt_hdr;  // TODO : revert to opt_hdr->_64 to support both opt_hdr->_32
+  uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
 
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
   optional.name  = "IMAGE_OPTIONAL_HEADER";
-  optional.md5 = calc_hash("md5", size,data, hash_value );
-  optional.sha1 = calc_hash("sha1", size,data, hash_value );
-  optional.md5 = calc_hash("sha256", size,data, hash_value );
-  optional.ssdeep = calc_hash("ssdeep", size,data, hash_value );
+  optional.md5 = calc_hash("md5", data,data_size, hash_value );
+  optional.sha1 = calc_hash("sha1", data,data_size, hash_value );
+  optional.md5 = calc_hash("sha256", data,data_size, hash_value );
+  optional.ssdeep = calc_hash("ssdeep", data,data_size, hash_value);
   return optional;
 } 
 
 basic_hashes get_basic_hashes(pe_ctx_t *ctx) {
   
   basic_hashes hasheslist;
-  hasheslist.dos = get_dos_hash(&ctx);
-  hasheslist.coff = get_coff_hash(&ctx);
-  hasheslist.optional = get_optional_hash(&ctx);
+  hasheslist.dos = get_dos_hash(ctx);
+  hasheslist.coff = get_coff_hash(ctx);
+  hasheslist.optional = get_optional_hash(ctx);
   return hasheslist;
 
 }

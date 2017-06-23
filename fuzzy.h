@@ -83,36 +83,36 @@ struct fuzzy_state;
 
 
 typedef struct {
-	char name[];  // IMAGE_DOS_HEADER
-	char md5[];
-	char ssdeep[];
-	char sha1[];
-	char sha256[];
+	char *name;  // IMAGE_DOS_HEADER
+	char *md5;
+	char *ssdeep;
+	char *sha1;
+	char *sha256;
 }dos_hdr;
 
 typedef struct {
-	char name[];  // IMAGE_COFF_HEADER
-	char md5[];
-	char ssdeep[];
-	char sha1[];
-	char sha256[];
+	char *name;  // IMAGE_COFF_HEADER
+	char *md5;
+	char *ssdeep;
+	char *sha1;
+	char *sha256;
 }coff_hdr;
 
 
 
 typedef struct {
-	char name[];  // IMAGE_OPTIONAL_HEADER
-	char md5[];
-	char ssdeep[];
-	char sha1[];
-	char sha256[];
+	char *name;  // IMAGE_OPTIONAL_HEADER
+	char *md5;
+	char *ssdeep;
+	char *sha1;
+	char *sha256;
 }optional_hdr;
 
 
 typedef struct {
-	dos_hdr dos
-	coff_hdr coff
-	optional_hdr optional
+	dos_hdr dos;
+	coff_hdr coff;
+	optional_hdr optional;
 }basic_hashes;
 
 basic_hashes get_basic_hashes(pe_ctx_t *ctx);

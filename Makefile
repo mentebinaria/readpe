@@ -42,6 +42,9 @@ SYMLINK = ln -sf
 MKDIR = mkdir -p
 RM = rm -f
 RM_DIR = rm -rf
+INC = -I.
+FLAGS = -W -Wall -ggdb
+
 ifeq ($(PLATFORM_OS), Darwin)
 	STRIP = strip -x
 else
@@ -51,7 +54,7 @@ endif
 ####### Compiler options
 
 override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c
-override CPPFLAGS += -D_FORTIFY_SOURCE=1
+override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
 ifneq ($(PLATFORM_OS), CYGWIN)
 	override CFLAGS += -fPIC

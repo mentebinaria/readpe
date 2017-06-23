@@ -514,6 +514,7 @@ dos_hdr get_dos_hash(pe_ctx_t *ctx) {
   uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
   dos.name  = "IMAGE_DOS_HEADER";                             // TODO : allow memory dynamically.
+  dos.md5 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
   dos.md5 = calc_hash("md5", data, data_size, hash_value );
   dos.sha1 = calc_hash("sha1", data, data_size, hash_value );
   dos.md5 = calc_hash("sha256", data, data_size, hash_value );

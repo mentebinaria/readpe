@@ -469,6 +469,7 @@ int fuzzy_hash_filename(const char *filename, /*@out@*/ char *result)
 
 char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
 {
+  OpenSSL_add_all_digests();
   if (strcmp("ssdeep", alg_name) == 0) {
     fuzzy_hash_buf(data, size, output);
     return output;

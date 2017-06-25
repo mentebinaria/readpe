@@ -507,25 +507,68 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 return output;
 }
 
-dos_hdr get_dos_hash(pe_ctx_t *ctx) {
+hash_ get_hashes(char *name,const unsigned char *data, size_t data_size) {
+  hash_ sample;
   
-  dos_hdr dos;
-  const IMAGE_DOS_HEADER *dos_ = pe_dos(ctx);
-  const unsigned char *data = (const unsigned char *)dos_;
-  uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
+  int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1;
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
-  // dos.name  = "IMAGE_DOS_HEADER";                             // TODO : allow memory dynamically.
-  dos.md5 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
-  dos.sha1 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
-  dos.sha256 = (char *)malloc(sizeof(EVP_MAX_MD_SIZE * 2 + 1));
+  sample.name  = name;                             // TODO : allow memory dynamically.
+  sample.md5 = (char *)malloc(MD_SIZE*sizeof(char *));
+  sample.sha1 = (char *)malloc(MD_SIZE*sizeof(char *));
+  sample.sha256 = (char *)malloc(MD_SIZE*sizeof(char *));
+  sample.ssdeep = (char *)malloc(MD_SIZE*sizeof(char *));
 
-  dos.md5 = calc_hash("md5", data, data_size, hash_value );
-  dos.sha1 = calc_hash("sha1", data, data_size, hash_value );
-  dos.md5 = calc_hash("sha256", data, data_size, hash_value );
-  dos.ssdeep = calc_hash("ssdeep", data, data_size, hash_value );
+  memcpy(sample.md5, calc_hash("md5", data, data_size, hash_value), MD_SIZE * sizeof(char *));
+  memcpy(sample.sha1, calc_hash("sha1", data, data_size, hash_value), MD_SIZE * sizeof(char *));
+  memcpy(sample.sha256, calc_hash("sha256", data, data_size, hash_value), MD_SIZE * sizeof(char *));
+  memcpy(sample.ssdeep, calc_hash("ssdeep", data, data_size, hash_value), MD_SIZE * sizeof(char *));
+
+return sample;
+
+}
+
+hash_ get_headers_dos_hash(pe_ctx_t *ctx) {
+  hash_ dos;
+  const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
+  const unsigned char *data = (const unsigned char *)dos_sample;
+  uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
+  dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);
   return dos;
 }
 
+hash_ get_headers_coff_hash(pe_ctx_t *ctx) {
+  hash_ coff;
+  const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
+  const unsigned char *data = (const unsigned char *)coff_sample;
+  uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
+  coff = get_hashes("IMAGE_COFF_HEADER", data, data_size); 
+  return coff;
+}
+
+hash_ get_headers_optional_hash(pe_ctx_t *ctx) {
+  hash_ optional;
+  const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
+  const unsigned char *data = (const unsigned char *)optional_sample;
+  uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER);
+  optional = get_hashes("IMAGE_OPTIONAL_HEADER", data, data_size);
+  return optional;
+}
+
+hdr_ get_headers_hash(pe_ctx_t *ctx) {
+  
+  hash_ dos = get_headers_dos_hash(ctx);
+  hash_ coff = get_headers_coff_hash(ctx);
+  hash_ optional = get_headers_optional_hash(ctx);
+  
+  hdr_ sample_hdr;
+  sample_hdr.dos = dos;
+  sample_hdr.coff = coff;
+  sample_hdr.optional = optional;
+ 
+  return sample_hdr;
+}
+ 
+/*
 coff_hdr get_coff_hash(pe_ctx_t *ctx) {
   coff_hdr coff;
 
@@ -534,7 +577,7 @@ coff_hdr get_coff_hash(pe_ctx_t *ctx) {
     uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
   char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
 
-  // coff.name  = "IMAGE_COFF_HEADER";
+  coff.name  = "IMAGE_COFF_HEADER";
   coff.md5 = calc_hash("md5", data, data_size, hash_value);
   coff.sha1 = calc_hash("sha1", data, data_size, hash_value);
   coff.md5 = calc_hash("sha256", data, data_size, hash_value);
@@ -556,13 +599,16 @@ optional_hdr get_optional_hash(pe_ctx_t *ctx) {
   optional.ssdeep = calc_hash("ssdeep", data,data_size, hash_value);
   return optional;
 } 
-
-basic_hashes get_basic_hashes(pe_ctx_t *ctx) {
+*/
+/*j
+pehash_ get_all_hashes(pe_ctx_t *ctx) {
   
-  basic_hashes hasheslist;
+  hdr_ 
   hasheslist.dos = get_dos_hash(ctx);
-  // hasheslist->coff = get_coff_hash(ctx);
-  // hasheslist->optional = get_optional_hash(ctx);
+  hasheslist.coff = get_coff_hash(ctx);
+  hasheslist.optional = get_optional_hash(ctx);
   return hasheslist;
 
 }
+*/
+

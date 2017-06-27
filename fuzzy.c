@@ -14,8 +14,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ * along with this program; if not, write to the Free Software * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * Earlier versions of this code were named fuzzy.c and can be found at:
  *     http://www.samba.org/ftp/unpacked/junkcode/spamsum/
@@ -594,3 +593,12 @@ section_ get_sections_hash(pe_ctx_t *ctx) {
   sample_sect.count = c;
   return sample_sect;
 }
+
+hash_ get_file_hash(pe_ctx_t *ctx) {
+	const unsigned char *data = ctx->map_addr;
+       uint64_t data_size = pe_filesize(ctx);
+	hash_ sample;
+	char *name = "PEfile hash";
+  sample = get_hashes(name, data, data_size);
+return sample;
+} 

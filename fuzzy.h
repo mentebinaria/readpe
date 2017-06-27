@@ -114,6 +114,9 @@ hdr_ get_headers_hash(pe_ctx_t *ctx);
 // Functions to get hash of sections
 section_ get_sections_hash(pe_ctx_t *ctx);
 
+// Functions to get Hash of entire file
+hash_ get_file_hash(pe_ctx_t *ctx);
+
 
 /**
  * @brief Construct a fuzzy_state object and return it.

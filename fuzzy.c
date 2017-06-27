@@ -40,6 +40,9 @@
 #define unlikely(x) x
 #endif
 
+#define MAX_FUNCTION_NAME 512
+#define MAX_DLL_NAME 256
+
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
@@ -602,3 +605,164 @@ hash_ get_file_hash(pe_ctx_t *ctx) {
   sample = get_hashes(name, data, data_size);
 return sample;
 } 
+
+
+char *get_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *hint_str, size_t size_hint_str, char *fname, size_t size_fname)
+{
+    uint64_t ofs = offset;
+
+        bool is_ordinal;
+
+    
+    while (1) {
+        switch (ctx->pe.optional_hdr.type) {
+            case MAGIC_PE32:
+            {
+                const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+                    // TODO: Should we report something?
+                    return NULL;
+                }
+
+                // Type punning
+                const uint32_t thunk_type = *(uint32_t *)thunk;
+                if (thunk_type == 0)
+                    return NULL;
+
+                is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+
+                if (is_ordinal) {
+                    snprintf(hint_str, size_hint_str-1, "%"PRIu32,
+                        thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+                } else {
+                    const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+                    const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+                    if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                        // TODO: Should we report something?
+                        return NULL;
+                    }
+
+                    snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
+                    strncpy(fname, (char *)imp_name->Name, size_fname-1);
+                    // Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+                    fname[size_fname - 1] = '\0';
+                    //size_t fname_len = strlen(fname);
+                }
+                ofs += sizeof(IMAGE_THUNK_DATA32);
+                break;
+            }
+            case MAGIC_PE64:
+            {
+                const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+                    // TODO: Should we report something?
+                    return NULL;
+                }
+
+                // Type punning
+                const uint64_t thunk_type = *(uint64_t *)thunk;
+                if (thunk_type == 0)
+                    return NULL;
+
+                is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+
+                if (is_ordinal) {
+                    snprintf(hint_str, size_hint_str-1, "%llu",
+                        thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+                } else {
+                    uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+                    const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+                    if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                        // TODO: Should we report something?
+                        return NULL;
+                    }
+
+                    snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
+                    strncpy(fname, (char *)imp_name->Name, size_fname-1);
+                    // Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+                    fname[size_fname - 1] = '\0';
+                    //size_t fname_len = strlen(fname);
+                }
+                ofs += sizeof(IMAGE_THUNK_DATA64);
+                break;
+            }
+        }
+
+        if (is_ordinal)
+            printf("Hint STR: %s \n",hint_str);
+        else
+            printf("Function name %s \n", fname);
+
+    }
+}
+void get_imports(pe_ctx_t *ctx) {
+
+  const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+    if (dir == NULL)
+        ///EXIT_ERROR("import directory not found")
+	// Do something which clearly tells when something get really bad.
+	exit(0);
+
+    const uint64_t va = dir->VirtualAddress;
+    if (va == 0) {
+        fprintf(stderr, "import directory not found\n");
+        // return something which clearly tell the error
+    }
+    uint64_t ofs = pe_rva2ofs(ctx, va);
+
+    while (1) {
+        IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+        if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+            // TODO: Should we report something?
+            //Areturn;
+		// or return an empty struct.
+        }
+
+        if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
+            break;
+
+        ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
+        const uint64_t aux = ofs; // Store current ofs
+
+        ofs = pe_rva2ofs(ctx, id->Name);
+        if (ofs == 0)
+            break;
+
+        const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+        // Validate whether it's ok to access at least 1 byte after dll_name_ptr.
+        // It might be '\0', for example.
+        if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+            // TODO: Should we report something?
+            break;
+        }
+
+        char dll_name[MAX_DLL_NAME];
+        strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
+        // Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+        dll_name[sizeof(dll_name) - 1] = '\0';
+
+        printf("dll name : %s \n", dll_name);
+
+        ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
+        if (ofs == 0) {
+//            output_close_scope(); // Library
+            break;
+        }
+
+
+        // Search for DLL imported functions
+	char hint_str[16];
+    	char fname[MAX_FUNCTION_NAME];
+	memset(hint_str, 0, sizeof(hint_str));
+	 memset(fname, 0, sizeof(fname));
+	size_t size_hint_str = sizeof(hint_str);
+	size_t size_fname = sizeof(fname);
+        //char *imports =
+	 get_imported_functions(ctx, ofs, hint_str,size_hint_str, fname, size_fname);
+
+	//printf("imports :%s  \n", imports);
+        ofs = aux; // Restore previous ofs
+    }
+
+	//return imports;
+}

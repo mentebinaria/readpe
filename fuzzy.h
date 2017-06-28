@@ -140,6 +140,8 @@ int get_functions_count(pe_ctx_t *ctx, uint64_t offset);
 double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length);
 double calculate_entropy_file(pe_ctx_t *ctx);
 bool fpu_trick(pe_ctx_t *ctx);
+int cpl_analysis(pe_ctx_t *ctx);
+int get_cpl_analysis(pe_ctx_t *ctx);
 /**
  * @brief Construct a fuzzy_state object and return it.
  *

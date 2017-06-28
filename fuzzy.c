@@ -941,3 +941,58 @@ bool fpu_trick(pe_ctx_t *ctx) {
 
     return false;
 }
+
+int cpl_analysis(pe_ctx_t *ctx)
+{
+    const IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+    const IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
+
+    if (hdr_coff_ptr == NULL || hdr_dos_ptr == NULL)
+        return 0;
+
+    static const uint16_t characteristics1 =
+        ( IMAGE_FILE_EXECUTABLE_IMAGE
+        | IMAGE_FILE_LINE_NUMS_STRIPPED
+        | IMAGE_FILE_LOCAL_SYMS_STRIPPED
+        | IMAGE_FILE_BYTES_REVERSED_LO
+        | IMAGE_FILE_32BIT_MACHINE
+        | IMAGE_FILE_DLL
+        | IMAGE_FILE_BYTES_REVERSED_HI);
+    static const uint16_t characteristics2 =
+        ( IMAGE_FILE_EXECUTABLE_IMAGE
+        | IMAGE_FILE_LINE_NUMS_STRIPPED
+        | IMAGE_FILE_LOCAL_SYMS_STRIPPED
+        | IMAGE_FILE_BYTES_REVERSED_LO
+        | IMAGE_FILE_32BIT_MACHINE
+        | IMAGE_FILE_DEBUG_STRIPPED
+        | IMAGE_FILE_DLL
+        | IMAGE_FILE_BYTES_REVERSED_HI);
+    static const uint16_t characteristics3 =
+        ( IMAGE_FILE_EXECUTABLE_IMAGE
+        | IMAGE_FILE_LINE_NUMS_STRIPPED
+        | IMAGE_FILE_32BIT_MACHINE
+        | IMAGE_FILE_DEBUG_STRIPPED
+        | IMAGE_FILE_DLL);
+
+    if ((hdr_coff_ptr->TimeDateStamp == 708992537 ||
+            hdr_coff_ptr->TimeDateStamp > 1354555867)
+        && (hdr_coff_ptr->Characteristics == characteristics1 || // equals 0xa18e
+            hdr_coff_ptr->Characteristics == characteristics2 || // equals 0xa38e
+            hdr_coff_ptr->Characteristics == characteristics3) // equals 0x2306
+        && hdr_dos_ptr->e_sp == 0xb8
+    )
+        return 1;
+
+    return 0;
+}
+
+int get_cpl_analysis(pe_ctx_t *ctx) {
+	int ret;
+	if (pe_is_dll(ctx)) {
+        ret = cpl_analysis(ctx);
+     } else {
+	ret = -1; 
+	}
+	return ret;
+}
+

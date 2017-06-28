@@ -114,6 +114,11 @@ typedef struct {
 	function *functions;
 }import;
 
+typedef struct {
+	char *addr;
+	char *function_name;
+}exports;
+
 // General functions
 char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output);
 
@@ -150,6 +155,9 @@ int get_tls_callback(pe_ctx_t *ctx);
 int pe_get_tls_callbacks(pe_ctx_t *ctx);
 uint32_t pe_get_tls_directory(pe_ctx_t *ctx);
 
+// Exports
+exports *get_exports(pe_ctx_t *ctx);
+int get_exports_functions_count(pe_ctx_t *ctx);
 /**
  * @brief Construct a fuzzy_state object and return it.
  *

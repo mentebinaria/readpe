@@ -145,6 +145,11 @@ int get_cpl_analysis(pe_ctx_t *ctx);
 int check_fake_entrypoint(pe_ctx_t *ctx);
 const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep);
 
+// TLS Functions
+int get_tls_callback(pe_ctx_t *ctx);
+int pe_get_tls_callbacks(pe_ctx_t *ctx);
+uint32_t pe_get_tls_directory(pe_ctx_t *ctx);
+
 /**
  * @brief Construct a fuzzy_state object and return it.
  *

@@ -1034,3 +1034,117 @@ int value;
     }
 return value;
 }
+
+uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
+{
+    if (ctx->pe.num_directories == 0 || ctx->pe.num_directories > MAX_DIRECTORIES)
+        return 0;
+
+    const IMAGE_DATA_DIRECTORY *directory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_TLS);
+    if (directory == NULL)
+        return 0;
+
+    if (directory->Size == 0)
+        return 0;
+
+    return directory->VirtualAddress;
+}
+
+int pe_get_tls_callbacks(pe_ctx_t *ctx)
+{
+int ret = 0;
+
+    const IMAGE_OPTIONAL_HEADER *optional_hdr = pe_optional(ctx);
+    if (optional_hdr == NULL)
+        return 0;
+
+    IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
+    if (sections == NULL)
+        return 0;
+
+    const uint64_t tls_addr = pe_get_tls_directory(ctx);
+    if (tls_addr == 0)
+        return 0;
+
+    const uint16_t num_sections = pe_sections_count(ctx);
+
+    uint64_t ofs = 0;
+
+    // search for tls in all sections
+    for (uint16_t i=0, j=0; i < num_sections; i++)
+    {
+        if (tls_addr >= sections[i]->VirtualAddress &&
+            tls_addr < (sections[i]->VirtualAddress + sections[i]->SizeOfRawData))
+        {
+            ofs = tls_addr - sections[i]->VirtualAddress + sections[i]->PointerToRawData;
+
+            switch (optional_hdr->type) {
+                default:
+                    return 0;
+                case MAGIC_PE32:
+                {
+                    const IMAGE_TLS_DIRECTORY32 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                    if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
+                        // TODO: Should we report something?
+                        return 0;
+                    }
+
+                    if (!(tls_dir->AddressOfCallBacks & optional_hdr->_32->ImageBase))
+                        break;
+
+                    ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks - optional_hdr->_32->ImageBase);
+                    break;
+                }
+                case MAGIC_PE64:
+                {
+                    const IMAGE_TLS_DIRECTORY64 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                    if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
+                        // TODO: Should we report something?
+                        return 0;
+                    }
+
+                    if (!(tls_dir->AddressOfCallBacks & optional_hdr->_64->ImageBase))
+                        break;
+
+                    ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks - optional_hdr->_64->ImageBase);
+                    break;
+                }
+            }
+
+            ret = -1; // tls directory and section exists
+
+            //char value[MAX_MSG];
+            uint32_t funcaddr = 0;
+
+            do
+            {
+                const uint32_t *funcaddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                if (!pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
+                    // TODO: Should we report something?
+                    return 0;
+                }
+
+                uint32_t funcaddr = *funcaddr_ptr;
+                if (funcaddr) {
+                    ret = ++j; // function found
+                }
+            } while (funcaddr);
+
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
+int get_tls_callback(pe_ctx_t *ctx) {
+	int callbacks = pe_get_tls_callbacks(ctx);
+	int ret;
+    if (callbacks == 0)
+        ret = INT_MIN; // not found
+    else if (callbacks == -1)
+        ret = INT_MAX; // found no functions
+    else if (callbacks > 0)
+        ret = callbacks;
+return ret;
+}

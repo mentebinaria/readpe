@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include "fuzzy.h"
@@ -996,3 +997,40 @@ int get_cpl_analysis(pe_ctx_t *ctx) {
 	return ret;
 }
 
+const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep)
+{
+    const uint16_t num_sections = pe_sections_count(ctx);
+    if (num_sections == 0)
+        return NULL;
+
+    const IMAGE_SECTION_HEADER *section = pe_rva2section(ctx, ep);
+    if (section == NULL)
+        return NULL;
+
+    if (section->Characteristics & IMAGE_SCN_CNT_CODE)
+        return NULL;
+
+    return section;
+}
+
+int check_fake_entrypoint(pe_ctx_t *ctx) {
+const IMAGE_OPTIONAL_HEADER *optional = pe_optional(ctx);
+    if (optional == NULL)
+        return INT_MAX; // Unable to read optional header.
+uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
+        (optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
+
+// fake ep
+int value;
+
+    if (ep == 0) {
+        value = -1; // null
+    } 
+    else if (pe_check_fake_entrypoint(ctx, ep)) {
+       value = 1; // fake 
+    } 
+    else {
+	value = 0;       // normal 
+    }
+return value;
+}

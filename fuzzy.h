@@ -142,6 +142,9 @@ double calculate_entropy_file(pe_ctx_t *ctx);
 bool fpu_trick(pe_ctx_t *ctx);
 int cpl_analysis(pe_ctx_t *ctx);
 int get_cpl_analysis(pe_ctx_t *ctx);
+int check_fake_entrypoint(pe_ctx_t *ctx);
+const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep);
+
 /**
  * @brief Construct a fuzzy_state object and return it.
  *

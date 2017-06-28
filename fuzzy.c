@@ -27,10 +27,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include "fuzzy.h"
 #include "pe.h"
+
 
 #if defined(__GNUC__) && __GNUC__ >= 3
 #define likely(x)       __builtin_expect(!!(x), 1)
@@ -895,4 +897,32 @@ import get_imports(pe_ctx_t *ctx) {
     }
 
 	return imports;
+}
+
+double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
+{
+    static const double log_2 = 1.44269504088896340736;
+    double entropy = 0.;
+
+    for (size_t i = 0; i < 256; i++) {
+        double temp = (double)counted_bytes[i] / total_length;
+        if (temp > 0.)
+            entropy += fabs(temp * (log(temp) * log_2));
+    }
+
+    return entropy;
+}
+
+double calculate_entropy_file(pe_ctx_t *ctx) {
+	unsigned int counted_bytes[256];
+    memset(counted_bytes, 0, sizeof(counted_bytes));
+
+    const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
+    const uint64_t filesize = pe_filesize(ctx);
+    for (uint64_t ofs=0; ofs < filesize; ofs++) {
+        const uint8_t byte = file_bytes[ofs];
+        counted_bytes[byte]++;
+    }
+
+    return calculate_entropy(counted_bytes, (size_t)filesize);
 }

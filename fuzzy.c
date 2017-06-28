@@ -926,3 +926,18 @@ double calculate_entropy_file(pe_ctx_t *ctx) {
 
     return calculate_entropy(counted_bytes, (size_t)filesize);
 }
+
+bool fpu_trick(pe_ctx_t *ctx) {
+	const char *opcode_ptr = ctx->map_addr;
+
+    for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
+        if (*opcode_ptr++ == '\xdf') {
+            if (++times == 4)
+                return true;
+        }
+        else
+            times = 0;
+    }
+
+    return false;
+}

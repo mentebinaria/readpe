@@ -571,9 +571,9 @@ hdr_ get_headers_hash(pe_ctx_t *ctx) {
 	return sample_hdr;
 }
 
-section_ get_sections_hash(pe_ctx_t *ctx) {
+hash_ *get_sections_hash(pe_ctx_t *ctx) {
 	int c = pe_sections_count(ctx);
-	hash_ sample[c];
+	hash_ *sample = (hash_ *)malloc(c *sizeof(hash_));
 	const unsigned char *data = NULL;
 	uint64_t data_size = 0;
 	char *name;
@@ -593,11 +593,11 @@ section_ get_sections_hash(pe_ctx_t *ctx) {
 			sample[i] =  get_hashes(name, data, data_size);
 		}
 	}
-	section_ sample_sect;
-	sample_sect.sections = (hash_ *)malloc( c * sizeof(hash_));
-	sample_sect.sections = sample;
-	sample_sect.count = c;
-	return sample_sect;
+	//section_ sample_sect;
+	//sample_sect.sections = (hash_ *)malloc( c * sizeof(hash_));
+	//sample_sect.sections = sample;
+	//sample_sect.count = c;
+	return sample;
 }
 
 hash_ get_file_hash(pe_ctx_t *ctx) {

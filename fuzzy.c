@@ -572,6 +572,7 @@ hdr_ get_headers_hash(pe_ctx_t *ctx) {
 }
 
 hash_section get_sections_hash(pe_ctx_t *ctx) {
+	hash_section final_sample;
 	int c = pe_sections_count(ctx); // Total number of sections
 	hash_ *sample = (hash_ *)malloc(c *sizeof(hash_));  //local hash sample which will later be assigned to finalsample.sections
 	const unsigned char *data = NULL;
@@ -586,7 +587,9 @@ hash_section get_sections_hash(pe_ctx_t *ctx) {
 		if (!pe_can_read(ctx, data, data_size)) {
 			//EXIT_ERROR("Unable to read section data");
 			fprintf(stderr, "%s\n", "unable to read sections data");
-			exit(1);
+			final_sample.count = 0;
+			final_sample.sections = NULL;
+			return final_sample;
 		}
 		if (data_size) {
 			name = (char *)sections[i]->Name;
@@ -602,7 +605,6 @@ hash_section get_sections_hash(pe_ctx_t *ctx) {
 	for (int i=0;i<count; i++) {
 			printf("%s\n",sample[i].name);
 	}
-	hash_section final_sample;
 	final_sample.count = count;
 	final_sample.sections = sample;
 	return final_sample;
@@ -742,13 +744,18 @@ function get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_co
 					const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
 						// TODO: Should we report something?
-						exit(0); // do some thing so the API notifies about the error
+						printf("Line:746 - Cannot read thunk");
+						sample.functions = NULL;	
+						return sample; // do some thing so the API notifies about the error
 					}
 
 					// Type punning
 					const uint32_t thunk_type = *(uint32_t *)thunk;
-					if (thunk_type == 0)
-						exit(0); // DO something so that API notifes about the error
+					if (thunk_type == 0) {
+						printf(" Line:752 thunk_type == 0\n");
+						sample.functions = NULL;
+						return sample; // DO something so that API notifes about the error
+					}
 
 					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
@@ -761,7 +768,9 @@ function get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_co
 						if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 							// TODO: Should we report something?
 							//return NULL;
-							exit(0); // Do something so that the API notifes of the error
+							printf("Line:766 - cannot read imp_name\n");
+							sample.functions = NULL;
+							return sample;// Do something so that the API notifes of the error
 						}
 
 						snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
@@ -779,14 +788,19 @@ function get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_co
 					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
 						// TODO: Should we report something?
 						//return NULL;
-						exit(0); // DO something so that API notifies of the error
+						printf("Line: 785 -cannot read thunk");
+						sample.functions = NULL;
+						return sample; // DO something so that API notifies of the error
 					}
 
 					// Type punning
 					const uint64_t thunk_type = *(uint64_t *)thunk;
-					if (thunk_type == 0)
+					if (thunk_type == 0) {
 						//return NULL;
-						exit(0); // DO something so that API notfies of the error
+						printf("Line 793: thunk_type == 0 \n"); // DO something so that API notfies of the error
+						sample.functions = NULL;
+						return sample;
+					}
 
 					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
@@ -799,7 +813,10 @@ function get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_co
 						if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 							// TODO: Should we report something?
 							//return NULL;
-							exit(0); // Do something so that API notifies of the error
+							printf("cannot read import by name\n");
+							sample.functions = NULL;
+							return sample; // Do something so that API notifies of the error
+
 						}
 
 						snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
@@ -835,15 +852,22 @@ import get_imports(pe_ctx_t *ctx) {
 	imports.functions = (function *)malloc(dll_count * sizeof(function));
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
-	if (dir == NULL)
+	if (dir == NULL) {
 		///EXIT_ERROR("import directory not found")
 		// Do something which clearly tells when something get really bad.
-		exit(0);
+		printf("Line: 849 - cannot read dir	\n");
+		imports.dll_count = dll_count;
+		imports.names = NULL;
+		return imports;
+	}
 
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
 		fprintf(stderr, "import directory not found\n");
 		// return something which clearly tell the error
+		imports.dll_count = dll_count;
+		imports.names = NULL;
+		return imports;
 	}
 	uint64_t ofs = pe_rva2ofs(ctx, va);
 
@@ -1160,14 +1184,15 @@ int get_tls_callback(pe_ctx_t *ctx) {
 
 int get_exports_functions_count(pe_ctx_t *ctx) {
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (dir == NULL)
+	if (dir == NULL) {
 		//EXIT_ERROR("export directory not found")
-		exit(0); 
+		return 0;
+	}	
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
 		//fprintf(stderr, "export directory not found\n");
 		// return;
-		exit(0);
+		return 0;
 	}
 
 	uint64_t ofs;
@@ -1181,14 +1206,17 @@ exports *get_exports(pe_ctx_t *ctx)
 {
 	exports *sample;
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (dir == NULL)
-		//EXIT_ERROR("export directory not found")
-		exit(0); 
+	if (dir == NULL) { 
+		//EXIT_ERROR("export directory not found") 
+		printf("Directory is null \n");
+		return NULL; 
+	}
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
 		//fprintf(stderr, "export directory not found\n");
-		// return;
-		exit(0);
+		printf("Virtual Address is null\n");
+		return NULL;
+		
 	}
 
 	uint64_t ofs;
@@ -1198,7 +1226,8 @@ exports *get_exports(pe_ctx_t *ctx)
 	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
 		// TODO: Should we report something?
 		//return;
-		exit(0);
+		printf("cannot read export data \n");
+		return NULL;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
@@ -1206,7 +1235,8 @@ exports *get_exports(pe_ctx_t *ctx)
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
 		// TODO: Should we report something?
 		//return;
-		exit(0);
+		printf(" Cannot read ofs"); 
+		return NULL;
 	}
 	const uint32_t rva = *rva_ptr;
 
@@ -1218,7 +1248,8 @@ exports *get_exports(pe_ctx_t *ctx)
 	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		// fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
 		//output_close_scope(); // Exported functions
-		exit(0); // Number of functions difffer for number of names
+		printf(" number of names not equals to number of sections"); // Number of functions difffer for number of names
+		return NULL;
 	}
 
 	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
@@ -1235,7 +1266,7 @@ exports *get_exports(pe_ctx_t *ctx)
 
 	sample = (exports *)malloc(exp->NumberOfFunctions*sizeof(exports *));
 
-	printf("Number Of Functions : %d\n", exp->NumberOfFunctions);
+	//printf("Number Of Functions : %d\n", exp->NumberOfFunctions);
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
 		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
@@ -1289,7 +1320,7 @@ exports *get_exports(pe_ctx_t *ctx)
 		char addr[11] = { 0 };
 		sprintf(addr, "%#x", entry_va);
 		memcpy(sample[i].addr, addr, 11);
-		printf("%s \n", sample[i].addr);
+		//printf("%s \n", sample[i].addr);
 		char fname[300] = { 0 };
 		strncpy(fname, entry_name, sizeof(fname)-1);
 

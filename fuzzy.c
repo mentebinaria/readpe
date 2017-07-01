@@ -571,13 +571,14 @@ hdr_ get_headers_hash(pe_ctx_t *ctx) {
 	return sample_hdr;
 }
 
-hash_ *get_sections_hash(pe_ctx_t *ctx) {
-	int c = pe_sections_count(ctx);
-	hash_ *sample = (hash_ *)malloc(c *sizeof(hash_));
+hash_section get_sections_hash(pe_ctx_t *ctx) {
+	int c = pe_sections_count(ctx); // Total number of sections
+	hash_ *sample = (hash_ *)malloc(c *sizeof(hash_));  //local hash sample which will later be assigned to finalsample.sections
 	const unsigned char *data = NULL;
 	uint64_t data_size = 0;
-	char *name;
+	char *name; // to savename of section
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
+	int count = 0; // to count number of sections which has hashes
 	for (int i=0; i<c; i++) {
 		data_size = sections[i]->SizeOfRawData;
 		data = LIBPE_PTR_ADD(ctx->map_addr, sections[i]->PointerToRawData);
@@ -587,17 +588,25 @@ hash_ *get_sections_hash(pe_ctx_t *ctx) {
 			fprintf(stderr, "%s\n", "unable to read sections data");
 			exit(1);
 		}
-
 		if (data_size) {
 			name = (char *)sections[i]->Name;
-			sample[i] =  get_hashes(name, data, data_size);
+			sample[count] =  get_hashes(name, data, data_size);
+			printf("%d \n",count);
+			count++;
 		}
 	}
 	//section_ sample_sect;
 	//sample_sect.sections = (hash_ *)malloc( c * sizeof(hash_));
 	//sample_sect.sections = sample;
 	//sample_sect.count = c;
-	return sample;
+	for (int i=0;i<count; i++) {
+			printf("%s\n",sample[i].name);
+	}
+	hash_section final_sample;
+	final_sample.count = count;
+	final_sample.sections = sample;
+	return final_sample;
+
 }
 
 hash_ get_file_hash(pe_ctx_t *ctx) {

@@ -19,12 +19,12 @@ It's a MD5 hash from the imported functions names, normally used to search for v
 <qandaentry>
 <question>
 <para>
-I use pev in Windows and everytime I run one of the pev tools I see CYGWIN complaining about Windows-style file paths.
+I use pev in Windows and every time I run one of the pev tools I see CYGWIN complaining about Windows-style file paths.
 </para>
 </question>
 <answer>
 <para>
-Windows version of pev are dependant on CYGWIN libraries that are included in the ZIP package provided for Windows users, so CYGWIN is still there. A workaround is setting the CYGWIN environment variable to disable these warnings:
+Windows version of pev are dependent on CYGWIN libraries that are included in the ZIP package provided for Windows users, so CYGWIN is still there. A workaround is setting the CYGWIN environment variable to disable these warnings:
 
 <screen>
 <prompt>$ </prompt><command>set CYGWIN=nodosfilewarning</command>
@@ -58,7 +58,7 @@ How can I get the File Version from PE files like I'm used to do with previous v
 </question>
 <answer>
 <para>
-Use peres tool -v swtich.
+Use peres tool -v switch.
 </para>
 </answer>
 </qandaentry>
@@ -87,7 +87,7 @@ Can any pev tool rate a file as malicious?
 </question>
 <answer>
 <para>
-No. Some tools can give you a hint but it's nearly impossible to programatically
+No. Some tools can give you a hint but it's nearly impossible to programmatically
 claim a piece of code is malicious.
 </para>
 </answer>

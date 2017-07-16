@@ -46,6 +46,6 @@ This is the current source for a likely unreleased version. Use at your own risk
 	- zip
 	- openssl-devel
 	- libpcre-devel
-	- git (just to clone de repository and make things easier)
+	- git (just to clone the repository and make things easier)
 
 Please check the [online documentation](http://pev.sourceforge.net/doc/manual/en_us) for more details.

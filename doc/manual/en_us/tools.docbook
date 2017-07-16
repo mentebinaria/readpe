@@ -167,12 +167,12 @@ Options:
 <title>pestr</title>
 <screen>
 Usage: pestr OPTIONS FILE
-SSearch for strings in PE files
+Search for strings in PE files
 
 Example: pestr acrobat.exe
 
 Options:
- -n, --min-length                       set minimun string length (default: 4)
+ -n, --min-length                       set minimum string length (default: 4)
  -o, --offset                           show string offset in file
  -s, --section                          show string section, if exists
  -V, --version                          show version and exit

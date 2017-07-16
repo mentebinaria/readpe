@@ -288,7 +288,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 	scope->depth = scope_depth + 1;
 
 	if (scope_depth > 0) {
-		output_scope_t * const parent_scope = NULL;
+		output_scope_t * parent_scope = NULL;
 		STACK_PEEK(g_scope_stack, (void *)&parent_scope);
 		scope->parent_type = parent_scope->type;
 	}

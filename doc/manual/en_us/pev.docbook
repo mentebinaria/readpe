@@ -25,9 +25,9 @@ through as well.
 </para>
 
 <para>
-Until version 0.40, pev was an unique program to parse the PE headers and sections
+Until version 0.40, pev was a unique program to parse the PE headers and sections
 (now readpe is responsible for this). In version 0.50 we focused on binary analysis
-and splitted pev into various programs beyond a library, called libpe. Currently
+and split pev into various programs beyond a library, called libpe. Currently
 most of pev toolkit programs depends on libpe.
 </para>
 
@@ -74,7 +74,7 @@ pev 0.70 - December 26, 2013
  + peres: added new tool to analyze/extract PE resources (Marcelo Fleury).
  + pescan: cpl malware detection.
  + pescan: undocumented anti-disassembly fpu trick detection.
- + pesec: show and extract cerfiticates from digitally signed binaries (Jardel Weyrich).
+ + pesec: show and extract certificates from digitally signed binaries (Jardel Weyrich).
  - readpe can't show functions exported by ID only.
  - readpe: fixed subsystem types (Dmitry Mostovenko).
 
@@ -113,7 +113,7 @@ pev 0.50 - June 25, 2012
  + readpe: show PE headers and sections information (most of obsolete pev binary).
  + Released libpe 1.0 to support our programs.
  + rva2ofs and ofs2rva: convert from rva to raw file offset and vice-versa.
- - Fixed erroneuous ord numbers in functions imported without name.
+ - Fixed erroneous ord numbers in functions imported without name.
  - Fixed two bugs with fake TLS callbacks in petls (thanks to Qualys guys for reporting).
 
 pev 0.40 - August 7, 2011
@@ -144,7 +144,7 @@ pev 0.30 - February 20, 2011
  
 pev 0.22 - January 9, 2011
  ! Does not support PE32+ files.
- ! Plans to read more PE informations.
+ ! Plans to read more PE information.
  * Improved Makefile.
  + Added manpage.
 

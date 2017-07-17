@@ -147,7 +147,7 @@ you must select at minimum the following packages:</para>
 <member>make</member>
 <member>zip</member>
 <member>openssl-devel</member>
-<member>git (just to clone de repository and make things easier)</member>
+<member>git (just to clone the repository and make things easier)</member>
 </simplelist>
 
 <para>
@@ -160,7 +160,7 @@ You should follow the same compilation steps for GNU/Linux, replacing
 </screen>
 
 <para>A file <emphasis>pev-x.xx.zip</emphasis> will be created and can be
-extracted in any directory you choose. All pev toolks can be called directly from
+extracted in any directory you choose. All pev tools can be called directly from
 Windows Command Prompt (<emphasis>cmd.exe</emphasis>). You can add the pev's directory
 in %PATH% environment variable in order to call pev tools from anywhere.</para>
 

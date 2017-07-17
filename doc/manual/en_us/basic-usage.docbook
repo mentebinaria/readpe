@@ -339,7 +339,7 @@ timestamp:                       normal - Wed, 26 Jun 2013 12:22:16 UTC
 </screen>
 
 <para>
-pescan is the PE scanner program intented to find any suspicious characteristic
+pescan is the PE scanner program intended to find any suspicious characteristic
 on it. It's good for an initial analysis. Further you can analyze things deeply
 with readpe, pedis, peres and so on.
 </para>
@@ -348,7 +348,7 @@ with readpe, pedis, peres and so on.
 Strings are also good indicators in general PE file analysis. To avoid the problem with
 Unicode and ASCII strings, we've developed our own strings dumper for PE files.
 With pestr you know exactly where the string is inside the file and you don't need to
-specify wether you are looking for ASCII or Unicode strings. pestr catches both.
+specify whether you are looking for ASCII or Unicode strings. pestr catches both.
 </para>
 
 <screen>

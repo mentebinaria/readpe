@@ -54,7 +54,7 @@ static void usage(void)
 		"Search for strings in PE files\n"
 		"\nExample: %s acrobat.exe\n"
 		"\nOptions:\n"
-		" -n, --min-length                       set minimun string length (default: 4)\n"
+		" -n, --min-length                       set minimum string length (default: 4)\n"
 		" -o, --offset                           show string offset in file\n"
 		" -s, --section                          show string section, if exists\n"
 		" -V, --version                          show version and exit\n"

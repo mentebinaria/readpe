@@ -482,7 +482,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	LL_COUNT(head, elt, count);
 	//printf("%d number of elements in list outside\n", count);
 
-	size_t imphash_string_size = sizeof(char) * count * MAX_DLL_NAME + MAX_FUNCTION_NAME;
+	size_t imphash_string_size = sizeof(char) * count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
 
 	char *imphash_string = (char *) malloc_s(imphash_string_size);
 

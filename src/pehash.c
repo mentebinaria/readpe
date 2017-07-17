@@ -387,7 +387,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		for (unsigned i=0; i < strlen(fname); i++)
 			fname[i] = tolower(fname[i]);
 
-		struct element *el = (struct element *) malloc(sizeof(struct element));
+		struct element *el = malloc_s(sizeof(struct element));
 
 		el->dll_name = strdup(dll_name);
 
@@ -492,7 +492,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 
 	size_t imphash_string_size = sizeof(char) * count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
 
-	char *imphash_string = (char *) malloc_s(imphash_string_size);
+	char *imphash_string = malloc_s(imphash_string_size);
 
 	memset(imphash_string, 0, imphash_string_size);
 

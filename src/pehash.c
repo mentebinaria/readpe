@@ -489,7 +489,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	memset(imphash_string, 0, imphash_string_size);
 
 	LL_FOREACH_SAFE(head, elt, tmp) \
-		sprintf(imphash_string, "%s%s.%s,", imphash_string, elt->dll_name, elt->function_name); \
+		sprintf(imphash_string + strlen(imphash_string), "%s.%s,", elt->dll_name, elt->function_name); \
 		LL_DELETE(head, elt);
 
 	free(elt);

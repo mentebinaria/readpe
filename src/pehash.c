@@ -241,16 +241,24 @@ static void calc_hash(const char *alg_name, const unsigned char *data, size_t si
 
 static void print_basic_hash(const unsigned char *data, size_t size)
 {
-	char *basic_hashes[] = { "md5", "sha1", "sha256", "ssdeep" };
-	char hash_value[EVP_MAX_MD_SIZE * 2 + 1];
-
 	if (!data || !size)
 		return;
+
+	const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
+	const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
+	// Since standard C lacks max(), we do it manually.
+	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
+		? openssl_hash_maxsize
+		: ssdeep_hash_maxsize;
+	const char *basic_hashes[] = { "md5", "sha1", "sha256", "ssdeep" };
+	char *hash_value = malloc_s(hash_maxsize);
 
 	for (unsigned i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
 		calc_hash(basic_hashes[i], data, size, hash_value);
 		output(basic_hashes[i], hash_value);
 	}
+
+	free(hash_value);
 }
 
 typedef struct element {

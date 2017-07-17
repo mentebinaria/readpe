@@ -499,7 +499,7 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 
 	//puts(imphash_string); // DEBUG
 
-	char imphash[32];
+	char imphash[33];
 	calc_hash("md5", (unsigned char *)imphash_string, strlen(imphash_string), imphash);
 	free(imphash_string);
 

@@ -495,7 +495,8 @@ static void imphash(pe_ctx_t *ctx, int flavor)
 	free(elt);
 
 	imphash_string_size = strlen(imphash_string);
-	imphash_string[imphash_string_size-1] = '\0'; // remove the last comma sign
+	if (imphash_string_size)
+		imphash_string[imphash_string_size-1] = '\0'; // remove the last comma sign
 
 	//puts(imphash_string); // DEBUG
 

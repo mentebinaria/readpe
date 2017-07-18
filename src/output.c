@@ -144,7 +144,7 @@ void output_term(void) {
 
 	// TODO(jweyrich): Should we loop to pop + close + output every scope?
 	if (g_scope_stack != NULL)
-		free(g_scope_stack);
+		STACK_DEALLOC(g_scope_stack);
 
 	_unregister_all_formats();
 }
@@ -305,7 +305,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 void output_close_scope(void) {
 	assert(g_format != NULL);
 
-	output_scope_t * const scope = NULL;
+	output_scope_t *scope = NULL;
 	int ret = STACK_POP(g_scope_stack, (void *)&scope);
 	if (ret < 0) {
 		fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
@@ -320,6 +320,7 @@ void output_close_scope(void) {
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 
+	free(scope->name);
 	free(scope);
 }
 

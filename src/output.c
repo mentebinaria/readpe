@@ -144,7 +144,7 @@ void output_term(void) {
 
 	// TODO(jweyrich): Should we loop to pop + close + output every scope?
 	if (g_scope_stack != NULL)
-		free(g_scope_stack);
+		STACK_DEALLOC(g_scope_stack);
 
 	_unregister_all_formats();
 }

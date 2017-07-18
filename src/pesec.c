@@ -276,7 +276,9 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 	if (numcerts > 0) {
 		X509 *subject = sk_X509_value(certs, 0);
 		X509 *issuer = sk_X509_value(certs, numcerts - 1);
-		int valid_sig = X509_verify(subject, X509_get_pubkey(issuer));
+		EVP_PKEY *issuer_pubkey = X509_get_pubkey(issuer);
+		int valid_sig = X509_verify(subject, issuer_pubkey);
+		EVP_PKEY_free(issuer_pubkey);
 		output("Signature", valid_sig == 1 ? "valid" : "invalid");
 	}
 

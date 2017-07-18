@@ -59,7 +59,7 @@ typedef enum {
 } output_scope_type_e;
 
 typedef struct {
-	const char *name;
+	char *name;
 	output_scope_type_e type;
 	uint16_t depth;
 	output_scope_type_e parent_type;

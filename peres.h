@@ -26,13 +26,13 @@ typedef struct _NODE_PERES {
 } NODE_PERES;
 
 typedef struct {
-	int Nodetype;
+	int NodeType;
 	int Characteristics;
-	int Timestamp;
+	int TimeDateStamp;
 	int MajorVersion;
 	int MinorVersion;
-	int NamedEntries;
-	int IdEntries;
+	int NumberOfNamedEntries;
+	int NumberOfIdEntries;
 }type_RDT_RESOURCE_DIRECTORY;
 
 typedef struct {
@@ -50,7 +50,7 @@ typedef struct {
 }type_RDT_DATA_STRING;
 
 typedef struct {
-	int Nodetype;
+	int NodeType;
 	int OffsetToData;
 	int Size;
 	int CodePage;
@@ -58,13 +58,7 @@ typedef struct {
 }type_RDT_DATA_ENTRY;
 
 typedef struct {
-	enum { 
-			RDT_RESOURCE_DIRECTORY,
-			RDT_DIRECTORY_ENTRY,
-			RDT_DATA_STRING,
-			RDT_DATA_ENTRY
-	}kind;
-
+ NODE_TYPE_PERES kind;
 	union {
 		type_RDT_RESOURCE_DIRECTORY resourcesDirectory;
 		type_RDT_DIRECTORY_ENTRY directoryEntry;
@@ -80,15 +74,10 @@ typedef struct {
 	int directoryEntry;
 	int dataString;
 	int dataEntry;
-}output_count;
+}resources_count;
 
 typedef struct {
-	enum { 
-			RDT_RESOURCE_DIRECTORY,
-			RDT_DIRECTORY_ENTRY,
-			RDT_DATA_STRING,
-			RDT_DATA_ENTRY
-	}kind;
+	NODE_TYPE_PERES kind;
 }count_output_node;
 
 typedef struct {
@@ -99,4 +88,5 @@ typedef struct {
 }final_output;
 
 final_output get_resources(pe_ctx_t *ctx);
-output_count get_count(NODE_PERES *node);
+//output_count get_count(NODE_PERES *node);
+resources_count get_resources_count(pe_ctx_t *ctx);

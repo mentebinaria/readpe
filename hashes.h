@@ -38,3 +38,6 @@ hash_section get_sections_hash(pe_ctx_t *ctx);
 	// Functions to get Hash of entire file
 hash_ get_file_hash(pe_ctx_t *ctx);
 
+// Functions to get imphash
+char *imphash(pe_ctx_t *ctx, int flavor);
+

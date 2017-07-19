@@ -97,7 +97,7 @@ output_node *showNode(const NODE_PERES *node, output_node *output)
 	return output;
 }
 
-void *malloc_s(size_t size) {
+static void *malloc_s(size_t size) {
 	if (!size)
 		return NULL;
 	void *new_mem = malloc(size);

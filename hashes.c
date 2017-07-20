@@ -1,25 +1,14 @@
-#include "pe.h"
-#include "hashes.h"
-
-#include <assert.h>
-#include <errno.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <limits.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
-#include "fuzzy.h"
 #include <ctype.h>
+#include <math.h>
 
-#include "include/plugins.h"
-#include "include/utlist.h"
-#include "include/utils.h"
-#include "include/ordlookup.h"
+#include "libfuzzy/fuzzy.h"
+#include "common.h"
+#include "hashes.h"
+#include "inc_plugin.h"
 
-#define MAX_FUNCTION_NAME 255
+#define MAX_FUNCTION_NAME 255 
 #define MAX_DLL_NAME 255
 #define IMPHASH_FLAVOR_MANDIANT 1
 #define IMPHASH_FLAVOR_PEFILE 2
@@ -40,18 +29,6 @@ static char *last_strstr(const char *haystack, const char *needle)
     }
 
     return result;
-}
-
-static void *malloc_s(size_t size) {
-	if (!size)
-		return NULL;
-	void *new_mem = malloc(size);
-
-	if (!new_mem) {
-		fprintf(stderr, "fatal: memory exhausted (malloc of %zu bytes)\n", size);
-		exit(-1);
-	}
-	return new_mem;
 }
 
 char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
@@ -91,25 +68,24 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 	return output;
 }
 
-hash_ get_hashes(char *name,const unsigned char *data, size_t data_size) {
+hash_ get_hashes(const char *name,const unsigned char *data, size_t data_size) {
 	hash_ sample;
 
-	int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1;
+	const int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1; // should we use int or size_t or uint64_t or uint32_t?
 	char hash_value[MD_SIZE];
-	sample.name  = name;                             // TODO : allow memory dynamically.
-	//sample.name = (char *)malloc(
-	sample.md5 = (char *)malloc(MD_SIZE*sizeof(char *));
-	sample.sha1 = (char *)malloc(MD_SIZE*sizeof(char *));
-	sample.sha256 = (char *)malloc(MD_SIZE*sizeof(char *));
-	sample.ssdeep = (char *)malloc(MD_SIZE*sizeof(char *));
 
-	memcpy(sample.md5, calc_hash("md5", data, data_size, hash_value), MD_SIZE * sizeof(char *));
-	memcpy(sample.sha1, calc_hash("sha1", data, data_size, hash_value), MD_SIZE * sizeof(char *));
-	memcpy(sample.sha256, calc_hash("sha256", data, data_size, hash_value), MD_SIZE * sizeof(char *));
-	memcpy(sample.ssdeep, calc_hash("ssdeep", data, data_size, hash_value), MD_SIZE * sizeof(char *));
+	sample.name  = name;
+	sample.md5 = malloc(MD_SIZE); 
+	sample.sha1 = malloc(MD_SIZE);
+	sample.sha256 = malloc(MD_SIZE);
+	sample.ssdeep = malloc(MD_SIZE);
+
+	memcpy(sample.md5, calc_hash("md5", data, data_size, hash_value), MD_SIZE); // TODO: what if something ??!!
+	memcpy(sample.sha1, calc_hash("sha1", data, data_size, hash_value), MD_SIZE);
+	memcpy(sample.sha256, calc_hash("sha256", data, data_size, hash_value), MD_SIZE);
+	memcpy(sample.ssdeep, calc_hash("ssdeep", data, data_size, hash_value), MD_SIZE);
 
 	return sample;
-
 }
 
 hash_ get_headers_dos_hash(pe_ctx_t *ctx) {
@@ -117,7 +93,7 @@ hash_ get_headers_dos_hash(pe_ctx_t *ctx) {
 	const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
 	const unsigned char *data = (const unsigned char *)dos_sample;
 	uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
-	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);
+	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);  // TODO: what if something goes wrong?
 	return dos;
 }
 
@@ -126,7 +102,7 @@ hash_ get_headers_coff_hash(pe_ctx_t *ctx) {
 	const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
 	const unsigned char *data = (const unsigned char *)coff_sample;
 	uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
-	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size); 
+	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size);  // TODO: what if something goes wrong!!??
 	return coff;
 }
 
@@ -153,7 +129,7 @@ hash_ get_headers_optional_hash(pe_ctx_t *ctx) {
 
 hdr_ get_headers_hash(pe_ctx_t *ctx) {
 
-	hash_ dos = get_headers_dos_hash(ctx);
+	hash_ dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
 	hash_ optional = get_headers_optional_hash(ctx);
 	hash_ coff = get_headers_coff_hash(ctx);
 
@@ -162,7 +138,9 @@ hdr_ get_headers_hash(pe_ctx_t *ctx) {
 	sample_hdr.coff = coff;
 	sample_hdr.optional = optional;
 
-	return sample_hdr;
+	return sample_hdr; // TODO: We dont have a pointer here how to we return status 
+										// My method : pointer return types can simply return NULL.
+										// for others, use `int err` as a first value in struct
 }
 
 hash_section get_sections_hash(pe_ctx_t *ctx) {
@@ -180,7 +158,7 @@ hash_section get_sections_hash(pe_ctx_t *ctx) {
 
 		if (!pe_can_read(ctx, data, data_size)) {
 			//EXIT_ERROR("Unable to read section data");
-			fprintf(stderr, "%s\n", "unable to read sections data");
+			//fprintf(stderr, "%s\n", "unable to read sections data");
 			final_sample.count = 0;
 			final_sample.sections = NULL;
 			return final_sample;
@@ -209,7 +187,7 @@ hash_ get_file_hash(pe_ctx_t *ctx) {
 	const unsigned char *data = ctx->map_addr;
 	uint64_t data_size = pe_filesize(ctx);
 	hash_ sample;
-	char *name = "PEfile hash";
+	const char *name = "PEfile hash";
 	sample = get_hashes(name, data, data_size);
 	return sample;
 } 
@@ -389,7 +367,7 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		fprintf(stderr, "import directory not found\n");
+		//fprintf(stderr, "import directory not found\n");
 		return NULL;
 	}
 	uint64_t ofs = pe_rva2ofs(ctx, va);

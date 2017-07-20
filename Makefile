@@ -60,9 +60,11 @@ endif
 VERSION = 1.0
 LIBNAME = libpe
 
+SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy
+
 libpe_BUILDDIR = $(CURDIR)/build
 libpe_SRCS_FILTER = $(wildcard ${dir}/*.c)
-libpe_SRCS = $(foreach dir, ${srcdir}, ${libpe_SRCS_FILTER})
+libpe_SRCS = $(foreach dir, ${SRC_DIRS}, ${libpe_SRCS_FILTER})
 libpe_OBJS = $(addprefix ${libpe_BUILDDIR}/, $(addsuffix .o, $(basename ${libpe_SRCS})))
 
 ####### Build rules

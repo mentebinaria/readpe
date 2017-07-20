@@ -13,7 +13,7 @@ const char *resourceDir = "resources";
 #include <stdlib.h>
 #include <malloc.h>
 
-output_node *showNode(const NODE_PERES *node, output_node *output)
+output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 {
 	switch (node->nodeType)
 	{
@@ -189,8 +189,8 @@ count_output_node countNode(NODE_PERES *node) {
 	return count;
 }
 
-resources_count get_count(NODE_PERES *node) {
-	resources_count count;
+resources_count_t get_count(NODE_PERES *node) {
+	resources_count_t count;
 	int resourcesDirectory = 0;
 	int directoryEntry = 0;
 	int dataString = 0;
@@ -355,9 +355,8 @@ _error:
 }
 
 
-
-final_output get_resources(pe_ctx_t *ctx) {
-	final_output sum_output;
+final_output_t get_resources(pe_ctx_t *ctx) {
+	final_output_t sum_output;
 	sum_output.resourcesDirectory = NULL;
 	sum_output.directoryEntry = NULL;
 	sum_output.dataString = NULL;
@@ -368,28 +367,24 @@ final_output get_resources(pe_ctx_t *ctx) {
 		return sum_output;
 	}
 
-	output_node *output = (output_node *)malloc(sizeof(output_node *));
+	output_node_t *output = malloc(sizeof(output_node_t));
 
 	while (node->lastNode != NULL) {
 		node = node->lastNode;
 	}
 
-	resources_count count = get_count(node);
+	resources_count_t count = get_count(node);
 
-
-	/*while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}*/
 
 	int index_resourcesDirectory = 0;
 	int index_directoryEntry = 0;
 	int index_dataString = 0;
 	int index_dataEntry = 0;
 
-	type_RDT_RESOURCE_DIRECTORY *resourcesDirectory = (type_RDT_RESOURCE_DIRECTORY *)malloc(count.resourcesDirectory*sizeof(type_RDT_RESOURCE_DIRECTORY *));
-	type_RDT_DIRECTORY_ENTRY *directoryEntry = (type_RDT_DIRECTORY_ENTRY *)malloc(count.directoryEntry*sizeof(type_RDT_DIRECTORY_ENTRY *));
-	type_RDT_DATA_STRING *dataString = (type_RDT_DATA_STRING *)malloc(count.dataString*sizeof(type_RDT_DATA_STRING *));
-	type_RDT_DATA_ENTRY *dataEntry = (type_RDT_DATA_ENTRY *)malloc(count.dataEntry*sizeof(type_RDT_DATA_ENTRY *));
+	type_RDT_RESOURCE_DIRECTORY *resourcesDirectory = malloc(count.resourcesDirectory*sizeof(type_RDT_RESOURCE_DIRECTORY));
+	type_RDT_DIRECTORY_ENTRY *directoryEntry = malloc(count.directoryEntry*sizeof(type_RDT_DIRECTORY_ENTRY));
+	type_RDT_DATA_STRING *dataString = malloc(count.dataString*sizeof(type_RDT_DATA_STRING));
+	type_RDT_DATA_ENTRY *dataEntry = malloc(count.dataEntry*sizeof(type_RDT_DATA_ENTRY));
 	while (node != NULL) {
 		output = showNode(node, output);
 		if (output->kind == RDT_RESOURCE_DIRECTORY) {
@@ -423,20 +418,9 @@ sum_output.dataEntry = dataEntry;
 	return sum_output;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-resources_count get_resources_count(pe_ctx_t *ctx)
+resources_count_t get_resources_count(pe_ctx_t *ctx)
 {
-	resources_count count;
+	resources_count_t count;
 	NODE_PERES *node = discoveryNodesPeres(ctx);
 	if (node == NULL) {
 		fprintf(stderr, "this file has no resources\n");
@@ -444,7 +428,6 @@ resources_count get_resources_count(pe_ctx_t *ctx)
 		count.directoryEntry = 0;
 		count.dataString = 0;
 		count.dataEntry = 0;
-
 
 		return count;
 	}

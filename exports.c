@@ -1,43 +1,16 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "exports.h"
 #include "pe.h"
+
 int get_exports_functions_count(pe_ctx_t *ctx) {
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL) {
-		//EXIT_ERROR("export directory not found")
 		return 0;
 	}	
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		//fprintf(stderr, "export directory not found\n");
-		// return;
 		return 0;
-	}
-
-	uint64_t ofs;
-
-	ofs = pe_rva2ofs(ctx, va);
-	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	return exp->NumberOfFunctions;
-}
-
-exports *get_exports(pe_ctx_t *ctx)
-{
-	exports *sample;
-	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (dir == NULL) { 
-		//EXIT_ERROR("export directory not found") 
-		printf("Directory is null \n");
-		return NULL; 
-	}
-	const uint64_t va = dir->VirtualAddress;
-	if (va == 0) {
-		//fprintf(stderr, "export directory not found\n");
-		printf("Virtual Address is null\n");
-		return NULL;
-		
 	}
 
 	uint64_t ofs;
@@ -45,31 +18,48 @@ exports *get_exports(pe_ctx_t *ctx)
 	ofs = pe_rva2ofs(ctx, va);
 	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
-		// TODO: Should we report something?
-		//return;
-		printf("cannot read export data \n");
+		return 0;
+	}
+	return exp->NumberOfFunctions;
+}
+
+exports_t *get_exports(pe_ctx_t *ctx)
+{
+	exports_t *sample;
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	if (dir == NULL) { 
+		//printf("Directory is null \n");
+		return NULL; 
+	}
+	const uint64_t va = dir->VirtualAddress;
+	if (va == 0) {
+		//fprintf(stderr, "export directory not found\n");
+		return NULL;
+	}
+
+	uint64_t ofs;
+
+	ofs = pe_rva2ofs(ctx, va);
+	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
+		//printf("cannot read export data \n");
 		return NULL;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
-		// TODO: Should we report something?
-		//return;
-		printf(" Cannot read ofs"); 
+		//printf(" Cannot read ofs"); 
 		return NULL;
 	}
 	const uint32_t rva = *rva_ptr;
 
 	ofs = pe_rva2ofs(ctx, rva);
 
-	//output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
 	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
 	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		// fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
-		//output_close_scope(); // Exported functions
-		printf(" number of names not equals to number of sections"); // Number of functions difffer for number of names
 		return NULL;
 	}
 
@@ -85,9 +75,8 @@ exports *get_exports(pe_ctx_t *ctx)
 	// exported by the module. On the other hand, `NumberOfNames` is the number of
 	// functions/symbols exported by name only.
 
-	sample = (exports *)malloc(exp->NumberOfFunctions*sizeof(exports *));
+	sample = malloc(exp->NumberOfFunctions*sizeof(exports_t));
 
-	//printf("Number Of Functions : %d\n", exp->NumberOfFunctions);
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
 		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
@@ -98,24 +87,15 @@ exports *get_exports(pe_ctx_t *ctx)
 		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
 		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
 
-		// printf("ctx->map_addr = %p\n", ctx->map_addr);
-		// printf("ctx->map_end = %p\n", ctx->map_end);
-		// printf("entry_ordinal_list = %p\n", entry_ordinal_list);
-		// printf("entry_va_list = %p\n", entry_va_list);
-		// printf("entry_name_list = %p\n", entry_name_list);
-
 		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint32_t))) {
-			// TODO: Should we report something?
 			break;
 		}
 
 		if (!pe_can_read(ctx, entry_va_list, sizeof(uint32_t))) {
-			// TODO: Should we report something?
 			break;
 		}
 
 		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
-			// TODO: Should we report something?
 			break;
 		}
 
@@ -129,26 +109,15 @@ exports *get_exports(pe_ctx_t *ctx)
 		// Validate whether it's ok to access at least 1 byte after entry_name.
 		// It might be '\0', for example.
 		if (!pe_can_read(ctx, entry_name, 1)) {
-			// TODO: Should we report something?
 			break;
 		}
 
-		//printf("ord=%d, va=%x, name=%s\n", entry_ordinal, entry_va, entry_name);
-
-		// Declared as 11 bytes so that it can store the hexadecimal representation of the maximum
-		// possible value of an uint32_t variable, 0xFFFFFFFF.
-		sample[i].addr = (char *) malloc(11 *sizeof(char*));
-		char addr[11] = { 0 };
-		sprintf(addr, "%#x", entry_va);
-		memcpy(sample[i].addr, addr, 11);
-		//printf("%s \n", sample[i].addr);
+		sample[i].addr = entry_va;
 		char fname[300] = { 0 };
-		strncpy(fname, entry_name, sizeof(fname)-1);
-
+		const size_t fname_size = sizeof(fname);
+		strncpy(fname, entry_name, fname_size-1);
 		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		fname[sizeof(fname) - 1] = '\0';
-
-		//output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
+		fname[fname_size - 1] = '\0';
 
 		// Check whether the exported function is forwarded.
 		// It's forwarded if its RVA is inside the exports section.
@@ -162,21 +131,19 @@ exports *get_exports(pe_ctx_t *ctx)
 			// Validate whether it's ok to access at least 1 byte after fw_entry_name.
 			// It might be '\0', for example.
 			if (!pe_can_read(ctx, fw_entry_name, 1)) {
-				// TODO: Should we report something?
 				break;
 			}
 
-			sample[i].function_name = (char *)malloc( (sizeof(fname) * 2 + 4)*sizeof(char *));
 			char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
-			snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
-
-			memcpy(sample[i].function_name, fname_forwarded, sizeof(fname) * 2 + 4);
-			printf(" fname_forwarded : %s ", sample[i].function_name);
+			const size_t function_name_size = sizeof(fname_forwarded);
+			sample[i].function_name = malloc(function_name_size);
+			snprintf(fname_forwarded, function_name_size-1, "%s -> %s", fname, fw_entry_name);
+			memcpy(sample[i].function_name, fname_forwarded, function_name_size);
 		}
 		else
 		{
-			sample[i].function_name = (char *)malloc(300*sizeof(char*));
-			memcpy(sample[i].function_name, fname, 300);
+			sample[i].function_name = malloc(fname_size);
+			memcpy(sample[i].function_name, fname, fname_size);
 		}
 
 	}

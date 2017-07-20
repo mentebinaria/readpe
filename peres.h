@@ -66,7 +66,7 @@ typedef struct {
 		type_RDT_DATA_ENTRY dataEntry;
 	}node_type;
 
-}output_node;
+}output_node_t;
 
 // counting
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct {
 	int directoryEntry;
 	int dataString;
 	int dataEntry;
-}resources_count;
+}resources_count_t;
 
 typedef struct {
 	NODE_TYPE_PERES kind;
@@ -85,8 +85,8 @@ typedef struct {
 	type_RDT_DIRECTORY_ENTRY *directoryEntry;
 	type_RDT_DATA_STRING *dataString;
 	type_RDT_DATA_ENTRY *dataEntry;
-}final_output;
+}final_output_t;
 
-final_output get_resources(pe_ctx_t *ctx);
+final_output_t get_resources(pe_ctx_t *ctx);
 //output_count get_count(NODE_PERES *node);
-resources_count get_resources_count(pe_ctx_t *ctx);
+resources_count_t get_resources_count(pe_ctx_t *ctx);

@@ -71,19 +71,29 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 hash_ get_hashes(const char *name,const unsigned char *data, size_t data_size) {
 	hash_ sample;
 
-	const int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1; // should we use int or size_t or uint64_t or uint32_t?
-	char hash_value[MD_SIZE];
+//	const int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1; // should we use int or size_t or uint64_t or uint32_t?
+//	char hash_value[MD_SIZE];
+
+	const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
+	const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
+	 // Since standard C lacks max(), we do it manually.
+	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
+									? openssl_hash_maxsize
+									: ssdeep_hash_maxsize;
+	char *hash_value = malloc_s(hash_maxsize);
+
+
 
 	sample.name  = name;
-	sample.md5 = malloc(MD_SIZE); 
-	sample.sha1 = malloc(MD_SIZE);
-	sample.sha256 = malloc(MD_SIZE);
-	sample.ssdeep = malloc(MD_SIZE);
+	sample.md5 = malloc(hash_maxsize); 
+	sample.sha1 = malloc(hash_maxsize);
+	sample.sha256 = malloc(hash_maxsize);
+	sample.ssdeep = malloc(hash_maxsize);
 
-	memcpy(sample.md5, calc_hash("md5", data, data_size, hash_value), MD_SIZE); // TODO: what if something ??!!
-	memcpy(sample.sha1, calc_hash("sha1", data, data_size, hash_value), MD_SIZE);
-	memcpy(sample.sha256, calc_hash("sha256", data, data_size, hash_value), MD_SIZE);
-	memcpy(sample.ssdeep, calc_hash("ssdeep", data, data_size, hash_value), MD_SIZE);
+	memcpy(sample.md5, calc_hash("md5", data, data_size, hash_value), hash_maxsize); // TODO: what if something ??!!
+	memcpy(sample.sha1, calc_hash("sha1", data, data_size, hash_value), hash_maxsize);
+	memcpy(sample.sha256, calc_hash("sha256", data, data_size, hash_value), hash_maxsize);
+	memcpy(sample.ssdeep, calc_hash("ssdeep", data, data_size, hash_value), hash_maxsize);
 
 	return sample;
 }

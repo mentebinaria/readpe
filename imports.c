@@ -11,7 +11,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 	uint64_t ofs = offset;
 	function_t sample;
 	sample.count = functions_count;
-	char **functions = malloc(functions_count); // create an array of char pointers
+	char **functions = malloc(functions_count*sizeof(char*)); // create an array of char pointers
 
 	// allocate space for each string.
 	for (int i=0; i < functions_count; i++)
@@ -111,7 +111,7 @@ import_t get_imports(pe_ctx_t *ctx) {
 	int dll_count = get_dll_count(ctx);
 	import_t imports;
 	imports.dll_count = dll_count;
-	imports.dllNames = malloc(dll_count *sizeof(imports.dllNames));
+	imports.dllNames = malloc(dll_count *sizeof(char*));
 
 	for ( int i=0; i<dll_count; i++)
 		imports.dllNames[i] = malloc(MAX_DLL_NAME);
@@ -165,7 +165,7 @@ import_t get_imports(pe_ctx_t *ctx) {
 		dll_name[sizeof(dll_name) - 1] = '\0';
 
 		//	imports.names[i] = dll_name;
-		memcpy(imports.dllNames[i], dll_name, MAX_DLL_NAME* sizeof(char *));
+		memcpy(imports.dllNames[i], dll_name, MAX_DLL_NAME);
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0) {
 			break;

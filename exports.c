@@ -6,11 +6,11 @@
 int get_exports_functions_count(pe_ctx_t *ctx) {
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL) {
-		return 0;
+		return -1;
 	}	
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		return 0;
+		return -1;
 	}
 
 	uint64_t ofs;
@@ -18,23 +18,22 @@ int get_exports_functions_count(pe_ctx_t *ctx) {
 	ofs = pe_rva2ofs(ctx, va);
 	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
-		return 0;
+		return -1;
 	}
 	return exp->NumberOfFunctions;
 }
 
-exports_t *get_exports(pe_ctx_t *ctx)
+int get_exports(pe_ctx_t *ctx, exports_t *output)
 {
-	exports_t *sample;
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL) { 
 		//printf("Directory is null \n");
-		return NULL; 
+		return -1; 
 	}
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
 		//fprintf(stderr, "export directory not found\n");
-		return NULL;
+		return -2;
 	}
 
 	uint64_t ofs;
@@ -43,14 +42,14 @@ exports_t *get_exports(pe_ctx_t *ctx)
 	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
 		//printf("cannot read export data \n");
-		return NULL;
+		return -3;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
 		//printf(" Cannot read ofs"); 
-		return NULL;
+		return -3;
 	}
 	const uint32_t rva = *rva_ptr;
 
@@ -60,7 +59,7 @@ exports_t *get_exports(pe_ctx_t *ctx)
 	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
 	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		// fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
-		return NULL;
+		return -3;
 	}
 
 	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
@@ -75,7 +74,7 @@ exports_t *get_exports(pe_ctx_t *ctx)
 	// exported by the module. On the other hand, `NumberOfNames` is the number of
 	// functions/symbols exported by name only.
 
-	sample = malloc(exp->NumberOfFunctions*sizeof(exports_t));
+	output = malloc(exp->NumberOfFunctions*sizeof(exports_t));
 
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
@@ -112,7 +111,7 @@ exports_t *get_exports(pe_ctx_t *ctx)
 			break;
 		}
 
-		sample[i].addr = entry_va;
+		output[i].addr = entry_va;
 		char fname[300] = { 0 };
 		const size_t fname_size = sizeof(fname);
 		strncpy(fname, entry_name, fname_size-1);
@@ -136,17 +135,17 @@ exports_t *get_exports(pe_ctx_t *ctx)
 
 			char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
 			const size_t function_name_size = sizeof(fname_forwarded);
-			sample[i].function_name = malloc(function_name_size);
+			output[i].function_name = malloc(function_name_size);
 			snprintf(fname_forwarded, function_name_size-1, "%s -> %s", fname, fw_entry_name);
-			memcpy(sample[i].function_name, fname_forwarded, function_name_size);
+			memcpy(output[i].function_name, fname_forwarded, function_name_size);
 		}
 		else
 		{
-			sample[i].function_name = malloc(fname_size);
-			memcpy(sample[i].function_name, fname, fname_size);
+			output[i].function_name = malloc(fname_size);
+			memcpy(output[i].function_name, fname, fname_size);
 		}
 
 	}
-	return sample;
+	return 1;
 }
 

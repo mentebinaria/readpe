@@ -123,6 +123,9 @@ hash_ get_headers_optional_hash(pe_ctx_t *ctx) {
 	const unsigned char *data;
 	uint64_t data_size;
 	switch(optional_sample->type) {
+		default:
+			// TODO(jweyrich): handle unknown type.
+			exit(1);
 		case MAGIC_PE32:
 			data = (const unsigned char *)optional_sample->_32;
 			data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
@@ -134,8 +137,7 @@ hash_ get_headers_optional_hash(pe_ctx_t *ctx) {
 		  data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);	
 			optional = get_hashes("IMAGE_OPTIONAL_HEADER_64", data, data_size);
 			return optional;
-	}	
-	return optional;	
+	}
 }
 
 hdr_ get_headers_hash(pe_ctx_t *ctx) {

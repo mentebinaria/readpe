@@ -81,6 +81,7 @@ typedef struct {
 }count_output_node;
 
 typedef struct {
+	pe_err_e err;
 	type_RDT_RESOURCE_DIRECTORY *resourcesDirectory;
 	type_RDT_DIRECTORY_ENTRY *directoryEntry;
 	type_RDT_DATA_STRING *dataString;

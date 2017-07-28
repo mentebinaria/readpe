@@ -3,10 +3,11 @@
 #include <ctype.h>
 #include <math.h>
 
-#include "libfuzzy/fuzzy.h"
+#include "fuzzy.h"
 #include "common.h"
 #include "hashes.h"
-#include "inc_plugin.h"
+#include "ordlookup.h"
+#include "utlist.h"
 
 #define MAX_FUNCTION_NAME 255 
 #define MAX_DLL_NAME 255

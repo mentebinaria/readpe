@@ -3,7 +3,7 @@
 
 const char *resourceDir = "resources";
 
-#include "udis86.h"
+#include "libudis86/udis86.h"
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>

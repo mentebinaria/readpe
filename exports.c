@@ -2,6 +2,8 @@
 #include <string.h>
 #include "exports.h"
 #include "pe.h"
+//#include "error.h"
+
 
 int get_exports_functions_count(pe_ctx_t *ctx) {
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
@@ -10,29 +12,6 @@ int get_exports_functions_count(pe_ctx_t *ctx) {
 	}	
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		return -1;
-	}
-
-	uint64_t ofs;
-
-	ofs = pe_rva2ofs(ctx, va);
-	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
-		return -1;
-	}
-	return exp->NumberOfFunctions;
-}
-
-int get_exports(pe_ctx_t *ctx, exports_t *output)
-{
-	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (dir == NULL) { 
-		//printf("Directory is null \n");
-		return -1; 
-	}
-	const uint64_t va = dir->VirtualAddress;
-	if (va == 0) {
-		//fprintf(stderr, "export directory not found\n");
 		return -2;
 	}
 
@@ -41,15 +20,47 @@ int get_exports(pe_ctx_t *ctx, exports_t *output)
 	ofs = pe_rva2ofs(ctx, va);
 	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
-		//printf("cannot read export data \n");
 		return -3;
+	}
+	return exp->NumberOfFunctions;
+}
+
+pe_exports_t get_exports(pe_ctx_t *ctx)
+{
+	exports_t *output;
+	//pe_err_e err;
+	pe_exports_t exports;
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	if (dir == NULL) { 
+	exports.err =	LIBPE_E_EXPORTS_DIR;
+	exports.exports = NULL;
+	return exports;
+	//goto: packup;
+	//O	return LIBPE_E_EXPORTS_DIR;
+	}
+	const uint64_t va = dir->VirtualAddress;
+	if (va == 0) {
+		exports.err = LIBPE_E_EXPORTS_VA;
+		exports.exports = NULL;
+		return exports;
+	}
+
+	uint64_t ofs;
+
+	ofs = pe_rva2ofs(ctx, va);
+	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
+		exports.err = LIBPE_E_EXPORTS_CANT_READ_EXP;
+		exports.exports = NULL;	
+		return exports;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
-		//printf(" Cannot read ofs"); 
-		return -3;
+		exports.err = LIBPE_E_EXPORTS_CANT_READ_RVA;
+		exports.exports = NULL;
+		return exports;
 	}
 	const uint32_t rva = *rva_ptr;
 
@@ -59,7 +70,9 @@ int get_exports(pe_ctx_t *ctx, exports_t *output)
 	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
 	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		// fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
-		return -3;
+		exports.err = LIBPE_E_EXPORTS_FUNC_NEQ_NAMES;
+		exports.exports = NULL;
+		return exports;
 	}
 
 	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
@@ -146,6 +159,8 @@ int get_exports(pe_ctx_t *ctx, exports_t *output)
 		}
 
 	}
-	return 1;
+	exports.exports = output;
+	exports.err = LIBPE_E_EXPORTS_OK;
+	return exports;
 }
 

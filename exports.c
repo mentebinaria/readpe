@@ -164,3 +164,6 @@ pe_exports_t get_exports(pe_ctx_t *ctx)
 	return exports;
 }
 
+void pe_dealloc_exports(exports_t *exports) {
+	free(exports);
+}

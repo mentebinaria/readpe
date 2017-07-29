@@ -3,7 +3,7 @@
 
 const char *resourceDir = "resources";
 
-#include "udis86.h"
+#include "libudis86/udis86.h"
 #include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,7 +11,6 @@ const char *resourceDir = "resources";
 #include "pe.h"
 #include "peres.h"
 #include <stdlib.h>
-#include <malloc.h>
 
 output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 {
@@ -97,21 +96,14 @@ output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 	return output;
 }
 
-static void *malloc_s(size_t size) {
-	if (!size)
-		return NULL;
-	void *new_mem = malloc(size);
-
-	if (!new_mem) {
-		fprintf(stderr, "fatal: memory exhausted (malloc of %zu bytes)\n", size);
-		exit(-1);
-	}
-	return new_mem;
-}
 static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
 {
 	assert(currentNode != NULL);
-	NODE_PERES *newNode = malloc_s(sizeof(NODE_PERES));
+	NODE_PERES *newNode = malloc(sizeof(NODE_PERES));
+	if (newNode == NULL) {
+		// TODO(jweyrich): Report allocation failure?
+		return NULL;
+	}
 	newNode->lastNode = currentNode;
 	newNode->nextNode = NULL;
 	newNode->nodeType = typeOfNextNode;
@@ -235,7 +227,11 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		return NULL;
 	}
 
-	NODE_PERES *node = malloc_s(sizeof(NODE_PERES));
+	NODE_PERES *node = malloc(sizeof(NODE_PERES));
+	if (node == NULL) {
+		// TODO(jweyrich): Report allocation failure?
+		return NULL;
+	}
 	node->lastNode = NULL; // root
 	node->nodeType = RDT_RESOURCE_DIRECTORY;
 	node->nodeLevel = RDT_LEVEL1;
@@ -363,18 +359,22 @@ final_output_t get_resources(pe_ctx_t *ctx) {
 	sum_output.dataEntry = NULL;
 	NODE_PERES *node = discoveryNodesPeres(ctx);
 	if (node == NULL) {
-		fprintf(stderr, "this file has no resources\n");
+		//fprintf(stderr, "this file has no resources\n");
+		sum_output.err = LIBPE_E_ALLOCATION_FAILURE;
 		return sum_output;
 	}
 
 	output_node_t *output = malloc(sizeof(output_node_t));
+	if (output == NULL) {
+		sum_output.err = LIBPE_E_ALLOCATION_FAILURE;
+		return sum_output;
+	}
 
 	while (node->lastNode != NULL) {
 		node = node->lastNode;
 	}
 
 	resources_count_t count = get_count(node);
-
 
 	int index_resourcesDirectory = 0;
 	int index_directoryEntry = 0;
@@ -409,10 +409,10 @@ final_output_t get_resources(pe_ctx_t *ctx) {
 		node = node->nextNode;
 	}
 
-sum_output.resourcesDirectory = resourcesDirectory;
-sum_output.directoryEntry = directoryEntry;
-sum_output.dataString = dataString;
-sum_output.dataEntry = dataEntry;
+	sum_output.resourcesDirectory = resourcesDirectory;
+	sum_output.directoryEntry = directoryEntry;
+	sum_output.dataString = dataString;
+	sum_output.dataEntry = dataEntry;
 
 	freeNodes(node);
 	return sum_output;

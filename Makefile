@@ -15,7 +15,7 @@ localstatedir = $(prefix)/var
 bindir = $(exec_prefix)/bin
 libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
-sbindir = $(exec_prefix)/sbin:
+sbindir = $(exec_prefix)/sbin
 datadir = $(datarootdir)
 docdir = $(datarootdir)/doc/pev
 infodir = $(datarootdir)/info
@@ -39,8 +39,6 @@ SYMLINK = ln -sf
 MKDIR = mkdir -p
 RM = rm -f
 RM_DIR = rm -rf
-INC = -I.
-FLAGS = -W -Wall -ggdb
 
 ifeq ($(PLATFORM_OS), Darwin)
 	STRIP = strip -x
@@ -50,8 +48,13 @@ endif
 
 ####### Compiler options
 
-override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c -lcrypto -lssl
+override CFLAGS += \
+	-I"." \
+	-I"./include" \
+	-I"./libfuzzy" \
+	-W -Wall -Wextra -pedantic -std=c99 -c
 override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+override LDFLAGS += -lssl -lcrypto
 
 ifneq ($(PLATFORM_OS), CYGWIN)
 	override CFLAGS += -fPIC

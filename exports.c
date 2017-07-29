@@ -27,7 +27,7 @@ int get_exports_functions_count(pe_ctx_t *ctx) {
 
 pe_exports_t get_exports(pe_ctx_t *ctx)
 {
-	exports_t *output;
+	exports_t *output = NULL;
 	//pe_err_e err;
 	pe_exports_t exports;
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
@@ -164,6 +164,9 @@ pe_exports_t get_exports(pe_ctx_t *ctx)
 	return exports;
 }
 
-void pe_dealloc_exports(exports_t *exports) {
+void pe_dealloc_exports(exports_t *exports, int no_of_functions) {
+	for (int i=0; i<no_of_functions; i++) {
+		free(exports[i].function_name);
+	}
 	free(exports);
 }

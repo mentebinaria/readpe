@@ -22,4 +22,4 @@ typedef struct {
 
 pe_exports_t get_exports(pe_ctx_t *ctx);
 int get_exports_functions_count(pe_ctx_t *ctx);
-void pe_dealloc_exports(exports_t *exports);
+void pe_dealloc_exports(exports_t *exports, int no_of_functions);

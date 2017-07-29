@@ -49,7 +49,8 @@ const char *pe_error_msg(pe_err_e error) {
 		"failed reading virtual address", // LIBPE_E_EXPORTS_VA
 		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA	
 		"number of function not equal to no of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
-
+		// PERES
+		"no errrors in getting resources information" // LIBPE_E_PERES_OK
 	};
 	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
 	size_t index = index_max + error;

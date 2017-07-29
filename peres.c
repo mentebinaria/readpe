@@ -21,7 +21,7 @@ output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 			break;
 		case RDT_RESOURCE_DIRECTORY:
 		{
-			const IMAGE_RESOURCE_DIRECTORY * const resourceDirectory = node->resource.resourceDirectory;
+			const IMAGE_RESOURCE_DIRECTORY *resourceDirectory = node->resource.resourceDirectory;
 			output->kind = RDT_RESOURCE_DIRECTORY;
 
 			output->node_type.resourcesDirectory.NodeType = node->nodeLevel;
@@ -42,7 +42,7 @@ output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 		}
 		case RDT_DIRECTORY_ENTRY:
 		{
-			const IMAGE_RESOURCE_DIRECTORY_ENTRY * const directoryEntry = node->resource.directoryEntry;
+			const IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry = node->resource.directoryEntry;
 
 			output->kind = RDT_DIRECTORY_ENTRY;
 
@@ -60,7 +60,7 @@ output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 		}
 		case RDT_DATA_STRING:
 		{
-			const IMAGE_RESOURCE_DATA_STRING * const dataString = node->resource.dataString;
+			const IMAGE_RESOURCE_DATA_STRING *dataString = node->resource.dataString;
 
 			output->kind = RDT_DATA_STRING;
 
@@ -74,7 +74,7 @@ output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 		}
 		case RDT_DATA_ENTRY:
 		{
-			const IMAGE_RESOURCE_DATA_ENTRY * const dataEntry = node->resource.dataEntry;
+			const IMAGE_RESOURCE_DATA_ENTRY *dataEntry = node->resource.dataEntry;
 
 			output->kind = RDT_DATA_ENTRY;
 
@@ -214,7 +214,7 @@ resources_count_t get_count(NODE_PERES *node) {
 
 static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 {
-	const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
+	const IMAGE_DATA_DIRECTORY * resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
 	if (resourceDirectory == NULL || resourceDirectory->Size == 0)
 		return NULL;
 
@@ -361,12 +361,14 @@ final_output_t get_resources(pe_ctx_t *ctx) {
 	if (node == NULL) {
 		//fprintf(stderr, "this file has no resources\n");
 		sum_output.err = LIBPE_E_ALLOCATION_FAILURE;
+		freeNodes(node);
 		return sum_output;
 	}
 
 	output_node_t *output = malloc(sizeof(output_node_t));
 	if (output == NULL) {
 		sum_output.err = LIBPE_E_ALLOCATION_FAILURE;
+		freeNodes(node);
 		return sum_output;
 	}
 
@@ -387,6 +389,9 @@ final_output_t get_resources(pe_ctx_t *ctx) {
 	type_RDT_DATA_ENTRY *dataEntry = malloc(count.dataEntry*sizeof(type_RDT_DATA_ENTRY));
 	while (node != NULL) {
 		output = showNode(node, output);
+		if (output == NULL)
+			continue;
+
 		if (output->kind == RDT_RESOURCE_DIRECTORY) {
 			resourcesDirectory[index_resourcesDirectory] = output->node_type.resourcesDirectory;
 			index_resourcesDirectory++;
@@ -408,13 +413,14 @@ final_output_t get_resources(pe_ctx_t *ctx) {
 		}
 		node = node->nextNode;
 	}
-
+	free(output);
 	sum_output.resourcesDirectory = resourcesDirectory;
 	sum_output.directoryEntry = directoryEntry;
 	sum_output.dataString = dataString;
 	sum_output.dataEntry = dataEntry;
 
 	freeNodes(node);
+	sum_output.err = LIBPE_E_PERES_OK;
 	return sum_output;
 }
 
@@ -423,7 +429,7 @@ resources_count_t get_resources_count(pe_ctx_t *ctx)
 	resources_count_t count;
 	NODE_PERES *node = discoveryNodesPeres(ctx);
 	if (node == NULL) {
-		fprintf(stderr, "this file has no resources\n");
+		//fprintf(stderr, "this file has no resources\n");
 		count.resourcesDirectory = 0;
 		count.directoryEntry = 0;
 		count.dataString = 0;
@@ -437,4 +443,11 @@ resources_count_t get_resources_count(pe_ctx_t *ctx)
 	}
 	count = get_count(node);
 	return count;
+}
+
+void  pe_dealloc_peres(final_output_t *peres){
+	free(peres->resourcesDirectory);
+	free(peres->directoryEntry);
+	free(peres->dataString);
+	free(peres->dataEntry);
 }

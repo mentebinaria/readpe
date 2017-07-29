@@ -51,14 +51,14 @@ typedef enum {
 	LIBPE_E_EXPORTS_VA,
 	LIBPE_E_EXPORTS_CANT_READ_RVA,
 	LIBPE_E_EXPORTS_CANT_READ_EXP,
-	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES,
 	
 	// Imports Errors
 		
 	// Hashes errors
 	
 	// PERES
-	
+	LIBPE_E_PERES_OK
 	// misc
 	
 } pe_err_e;

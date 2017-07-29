@@ -91,3 +91,4 @@ typedef struct {
 final_output_t get_resources(pe_ctx_t *ctx);
 //output_count get_count(NODE_PERES *node);
 resources_count_t get_resources_count(pe_ctx_t *ctx);
+void pe_dealloc_peres(final_output_t *peres);

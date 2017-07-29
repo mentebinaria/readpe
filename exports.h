@@ -1,14 +1,14 @@
 #include "pe.h"
-//#include "error.h"
+#include "error.h"
 
-typedef enum {
+/*typedef enum {
 	LIBPE_E_EXPORTS_OK = 0,
 	LIBPE_E_EXPORTS_DIR,
 	LIBPE_E_EXPORTS_VA,
 	LIBPE_E_EXPORTS_CANT_READ_RVA,
 	LIBPE_E_EXPORTS_CANT_READ_EXP,
 	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
-}pe_err_exports_e;
+}pe_err_exports_e;*/
 
 typedef struct {
 	uint32_t addr;
@@ -16,7 +16,7 @@ typedef struct {
 }exports_t;
 
 typedef struct {
-	pe_err_exports_e err;
+	pe_err_e err;
 	exports_t* exports;
 }pe_exports_t;
 

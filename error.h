@@ -44,6 +44,23 @@ typedef enum {
 	LIBPE_E_CLOSE_FAILED,
 	LIBPE_E_TOO_MANY_DIRECTORIES,
 	LIBPE_E_TOO_MANY_SECTIONS,
+	
+	// Exports errors
+	LIBPE_E_EXPORTS_OK,
+	LIBPE_E_EXPORTS_DIR,
+	LIBPE_E_EXPORTS_VA,
+	LIBPE_E_EXPORTS_CANT_READ_RVA,
+	LIBPE_E_EXPORTS_CANT_READ_EXP,
+	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+	
+	// Imports Errors
+		
+	// Hashes errors
+	
+	// PERES
+	
+	// misc
+	
 } pe_err_e;
 
 const char *pe_error_msg(pe_err_e error);

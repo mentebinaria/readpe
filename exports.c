@@ -2,7 +2,7 @@
 #include <string.h>
 #include "exports.h"
 #include "pe.h"
-//#include "error.h"
+#include "error.h"
 
 
 int get_exports_functions_count(pe_ctx_t *ctx) {

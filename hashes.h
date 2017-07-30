@@ -43,3 +43,4 @@ hash_t get_file_hash(pe_ctx_t *ctx);
 char *imphash(pe_ctx_t *ctx, int flavor);
 void dealloc_hdr_hashes(hdr_t header_hashes);
 void dealloc_sections_hashes(hash_section_t sections_hash);
+void dealloc_filehash(hash_t filehash);

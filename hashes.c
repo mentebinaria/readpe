@@ -550,3 +550,10 @@ void dealloc_sections_hashes(hash_section_t sections_hash) {
 	}
 	free(sections_hash.sections);
 }
+
+void dealloc_filehash(hash_t filehash) {
+	free(filehash.md5);
+	free(filehash.sha1);
+	free(filehash.sha256);
+	free(filehash.ssdeep);
+}

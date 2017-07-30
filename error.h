@@ -52,7 +52,6 @@ typedef enum {
 	LIBPE_E_EXPORTS_CANT_READ_RVA,
 	LIBPE_E_EXPORTS_CANT_READ_EXP,
 	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES,
-	LIBPE_E_HASHES_OK,	
 	// Imports Errors
 	LIBPE_E_IMPORTS_OK,	
 	// Hashes errors
@@ -60,11 +59,13 @@ typedef enum {
 	LIBPE_E_HASHES_SHA1,
 	LIBPE_E_HASHES_SHA256,
 	LIBPE_E_HASHES_SSDEEP,
+	LIBPE_E_HASHES_OK,
 
 	// PERES
-	LIBPE_E_PERES_OK
+	LIBPE_E_PERES_OK,
 	// misc
-	
+	LIBPE_E_NO_CALLBACKS_FOUND,		
+	LIBPE_E_NO_FUNCTIONS_FOUND
 } pe_err_e;
 
 const char *pe_error_msg(pe_err_e error);

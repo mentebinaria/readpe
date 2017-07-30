@@ -1,9 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#include <limits.h>
 #include <string.h>
 #include "pe.h"
+#include "error.h"
 
 double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
 {
@@ -115,7 +115,7 @@ const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep)
 int pe_has_fake_entrypoint(pe_ctx_t *ctx) {
 	const IMAGE_OPTIONAL_HEADER *optional = pe_optional(ctx);
 	if (optional == NULL)
-		return INT_MAX; // Unable to read optional header.
+		return -1; // Unable to read optional header.
 	uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
 			(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
 
@@ -123,7 +123,7 @@ int pe_has_fake_entrypoint(pe_ctx_t *ctx) {
 	int value;
 
 	if (ep == 0) {
-		value = -1; // null
+		value = -2; // null
 	} 
 	else if (pe_check_fake_entrypoint(ctx, ep)) {
 		value = 1; // fake 
@@ -240,9 +240,9 @@ int get_tls_callback(pe_ctx_t *ctx) {
 	int callbacks = pe_count_tls_callbacks(ctx);
 	int ret;
 	if (callbacks == 0)
-		ret = INT_MIN; // not found
+		ret = LIBPE_E_NO_CALLBACKS_FOUND; // not found
 	else if (callbacks == -1)
-		ret = INT_MAX; // found no functions
+		ret = LIBPE_E_NO_FUNCTIONS_FOUND; // found no functions
 	else if (callbacks > 0)
 		ret = callbacks;
 	return ret;

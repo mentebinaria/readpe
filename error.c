@@ -59,6 +59,9 @@ const char *pe_error_msg(pe_err_e error) {
 		"error getting ssdeep hash", // LIBPE_E_HASHES_SSDEEP
 		// PERES
 		"no errrors in getting resources information" // LIBPE_E_PERES_OK
+		// Misc
+		"no callbacks found", //LIBPE_E_NO_CALLBACKS_FOUND
+		"no functions found", //LIBPE_E_NO_FUNCIONS_FOUND
 	};
 	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
 	size_t index = index_max + error;

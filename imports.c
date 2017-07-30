@@ -12,11 +12,19 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 	function_t sample;
 	sample.count = functions_count;
 	char **functions = malloc(functions_count*sizeof(char*)); // create an array of char pointers
-
+	if (functions == NULL){
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		return sample;
+	}
+	
 	// allocate space for each string.
-	for (int i=0; i < functions_count; i++)
+	for (int i=0; i < functions_count; i++) {
 		functions[i] = malloc(MAX_FUNCTION_NAME);
-
+		if (functions[i] == NULL) {
+			sample.err = LIBPE_E_ALLOCATION_FAILURE;
+			return sample;
+		}
+	}
 	bool is_ordinal;
 
 	for (int i=0;i<functions_count; i++) {
@@ -25,15 +33,17 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 				{
 					const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+						sample.err = LIBPE_E_ALLOCATION_FAILURE;
 						sample.functions = NULL;	
-						return sample; // do some thing so the API notifies about the error
+						return sample;
 					}
 
 					// Type punning
 					const uint32_t thunk_type = *(uint32_t *)thunk;
 					if (thunk_type == 0) {
+						sample.err = LIBPE_E_TYPE_PUNNING_FAILED;
 						sample.functions = NULL;
-						return sample; // DO something so that API notifes about the error
+						return sample;
 					}
 
 					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
@@ -45,6 +55,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 						const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 						if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+							sample.err = LIBPE_E_ALLOCATION_FAILURE;
 							sample.functions = NULL;
 							return sample;// Do something so that the API notifes of the error
 						}
@@ -62,6 +73,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 				{
 					const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+						sample.err = LIBPE_E_ALLOCATION_FAILURE;
 						sample.functions = NULL;
 						return sample; // DO something so that API notifies of the error
 					}
@@ -69,6 +81,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 					// Type punning
 					const uint64_t thunk_type = *(uint64_t *)thunk;
 					if (thunk_type == 0) {
+						sample.err = LIBPE_E_TYPE_PUNNING_FAILED;
 						sample.functions = NULL;
 						return sample;
 					}
@@ -82,6 +95,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 						uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 						if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+							sample.err = LIBPE_E_ALLOCATION_FAILURE;
 							sample.functions = NULL;
 							return sample; // Do something so that API notifies of the error
 						}
@@ -103,6 +117,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 			memcpy(functions[i], fname, MAX_FUNCTION_NAME);
 
 	}
+	sample.err = LIBPE_E_IMPORTS_OK;
 	sample.functions = functions;
 	return sample;
 }
@@ -180,10 +195,13 @@ import_t get_imports(pe_ctx_t *ctx) {
 		int functions_count = get_functions_count(ctx, ofs);
 
 		imports.functions[i] = get_imported_functions(ctx, ofs, functions_count, hint_str,size_hint_str, fname, size_fname);
-
+		if (imports.functions[i].err != LIBPE_E_IMPORTS_OK) {
+			imports.err = imports.functions[i].err;
+			return imports;
+		}
 		ofs = aux; // Restore previous ofs
 	}
-
+	imports.err = LIBPE_E_IMPORTS_OK;
 	return imports;
 }
 
@@ -284,4 +302,16 @@ int get_functions_count( pe_ctx_t *ctx, uint64_t offset) {
 		count++;
 	}
 	return count;
+}
+
+void dealloc_imports(import_t imports) {
+	for (int i=0; i<imports.dll_count; i++) {	
+		free(imports.dllNames[i]);
+		for (int j=0; j<imports.functions[i].count; j++) {
+			free(imports.functions[i].functions[j]);
+		}
+		free(imports.functions[i].functions);
+	}
+	free(imports.dllNames);
+	free(imports.functions);
 }

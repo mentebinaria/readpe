@@ -43,12 +43,15 @@ const char *pe_error_msg(pe_err_e error) {
 		"close() failed", // LIBPE_E_CLOSE_FAILED,
 		"too many directories", // LIBPE_E_TOO_MANY_DIRECTORIES,
 		"too many sections", // LIBPE_E_TOO_MANY_SECTIONS,
+		" type punning failed", // LIBPE_E_TYPE_PUNNING_FAILED
 		// Exports errors
 		"no error in exports", // LIBPE_E_EXPORTS_OK
 		"failed reading directory", // LIBPE_E_EXPORTS_DIR
 		"failed reading virtual address", // LIBPE_E_EXPORTS_VA
 		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA	
 		"number of function not equal to no of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+		// Imports
+		"no errors in getting imports", //LIBPE_E_IMPORTS_OK
 		// Hashes Errors
 		"error getting md5 hash", // LIBPE_E_HASHES_MD5
 		"error getting sha1 hash", // LIBPE_E_HASHES_SHA1

@@ -49,6 +49,11 @@ const char *pe_error_msg(pe_err_e error) {
 		"failed reading virtual address", // LIBPE_E_EXPORTS_VA
 		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA	
 		"number of function not equal to no of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+		// Hashes Errors
+		"error getting md5 hash", // LIBPE_E_HASHES_MD5
+		"error getting sha1 hash", // LIBPE_E_HASHES_SHA1
+		"error getting sha256 hash", // LIBPE_E_HASHES_SHA256
+		"error getting ssdeep hash", // LIBPE_E_HASHES_SSDEEP
 		// PERES
 		"no errrors in getting resources information" // LIBPE_E_PERES_OK
 	};

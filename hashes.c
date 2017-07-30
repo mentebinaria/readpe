@@ -8,6 +8,7 @@
 #include "hashes.h"
 #include "ordlookup.h"
 #include "utlist.h"
+#include "error.h"
 
 #define MAX_FUNCTION_NAME 255 
 #define MAX_DLL_NAME 255
@@ -58,20 +59,29 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 	EVP_DigestUpdate(md_ctx, data, size);
 	EVP_DigestFinal_ex(md_ctx, md_value, &md_len);
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-	//EVP_MD_CTX_cleanup(md_ctx);  // removing this to fix :"Error: free(): invalid next size (fast):" this is happening only with imphash
+	EVP_MD_CTX_cleanup(md_ctx);  // removing this to fix :"Error: free(): invalid next size (fast):" this is happening only with imphash
 #else
 	//EVP_MD_CTX_free(md_ctx); // same here
 #endif
-	for (unsigned int i=0; i < md_len; i++)
-		sprintf(&output[i * 2], "%02x", md_value[i]);
+	int err;
+	for (unsigned int i=0; i < md_len; i++) {
+		err = sprintf(&output[i * 2], "%02x", md_value[i]);
+		if(err<0){
+			output = NULL;
+			break;
+		}
+	}
+	CRYPTO_cleanup_all_ex_data();
+	//ERR_free_strings();
+	//ERR_remove_state(0);
 	EVP_cleanup();
 
 	return output;
 }
 
-hash_ get_hashes(const char *name,const unsigned char *data, size_t data_size) {
-	hash_ sample;
-
+hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) {
+	hash_t sample;
+	//pe_err_e err;
 //	const int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1; // should we use int or size_t or uint64_t or uint32_t?
 //	char hash_value[MD_SIZE];
 
@@ -90,17 +100,54 @@ hash_ get_hashes(const char *name,const unsigned char *data, size_t data_size) {
 	sample.sha1 = malloc(hash_maxsize);
 	sample.sha256 = malloc(hash_maxsize);
 	sample.ssdeep = malloc(hash_maxsize);
+// Currently we can show only one error. But what if there is a problem in both md5 and sha1?
+	char *md5 = calc_hash("md5", data, data_size, hash_value);
+	if (md5 == NULL){
+		sample.err = LIBPE_E_HASHES_MD5;
+		sample.md5 = NULL;
+		return sample;
+	}
+	else {
+		memcpy(sample.md5,md5 , hash_maxsize); // TODO: what if something ??!!
+	}
 
-	memcpy(sample.md5, calc_hash("md5", data, data_size, hash_value), hash_maxsize); // TODO: what if something ??!!
-	memcpy(sample.sha1, calc_hash("sha1", data, data_size, hash_value), hash_maxsize);
-	memcpy(sample.sha256, calc_hash("sha256", data, data_size, hash_value), hash_maxsize);
-	memcpy(sample.ssdeep, calc_hash("ssdeep", data, data_size, hash_value), hash_maxsize);
+	char *sha1 = calc_hash("sha1", data, data_size, hash_value);
+	if (sha1 == NULL){
+		sample.err = LIBPE_E_HASHES_SHA1;
+		sample.sha1 = NULL;
+		return sample;
+	}
+	else {
+		memcpy(sample.sha1,sha1 , hash_maxsize);
+	}
 
+	char *sha256 = calc_hash("sha256", data, data_size, hash_value);
+	if (sha256 == NULL) {
+		sample.err = LIBPE_E_HASHES_SHA256;
+		sample.sha256 = NULL;
+		return sample;
+	}
+	else {
+		memcpy(sample.sha256,sha256, hash_maxsize);
+	}
+
+	char *ssdeep = calc_hash("ssdeep", data, data_size, hash_value);
+	if (ssdeep == NULL) {
+		sample.err = LIBPE_E_HASHES_SSDEEP;
+		sample.ssdeep = NULL;
+		return sample;
+	}
+	else {
+		memcpy(sample.ssdeep,ssdeep, hash_maxsize);
+	}
+
+	free(hash_value);
+	sample.err = LIBPE_E_HASHES_OK;
 	return sample;
 }
 
-hash_ get_headers_dos_hash(pe_ctx_t *ctx) {
-	hash_ dos;
+hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
+	hash_t dos;
 	const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
 	const unsigned char *data = (const unsigned char *)dos_sample;
 	uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
@@ -108,8 +155,8 @@ hash_ get_headers_dos_hash(pe_ctx_t *ctx) {
 	return dos;
 }
 
-hash_ get_headers_coff_hash(pe_ctx_t *ctx) {
-	hash_ coff;
+hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
+	hash_t coff;
 	const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
 	const unsigned char *data = (const unsigned char *)coff_sample;
 	uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
@@ -117,9 +164,8 @@ hash_ get_headers_coff_hash(pe_ctx_t *ctx) {
 	return coff;
 }
 
-hash_ get_headers_optional_hash(pe_ctx_t *ctx) {
-	hash_ optional;
-	const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
+hash_t get_headers_optional_hash(pe_ctx_t *ctx) { 
+	hash_t optional; const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
 	const unsigned char *data;
 	uint64_t data_size;
 	switch(optional_sample->type) {
@@ -140,26 +186,46 @@ hash_ get_headers_optional_hash(pe_ctx_t *ctx) {
 	}
 }
 
-hdr_ get_headers_hash(pe_ctx_t *ctx) {
+hdr_t get_headers_hash(pe_ctx_t *ctx) {
 
-	hash_ dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
-	hash_ optional = get_headers_optional_hash(ctx);
-	hash_ coff = get_headers_coff_hash(ctx);
+	hash_t dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
+	hash_t optional = get_headers_optional_hash(ctx);
+	hash_t coff = get_headers_coff_hash(ctx);
 
-	hdr_ sample_hdr;
-	sample_hdr.dos = dos;
-	sample_hdr.coff = coff;
-	sample_hdr.optional = optional;
+	hdr_t sample_hdr;
+	sample_hdr.err = dos.err;
 
-	return sample_hdr; // TODO: We dont have a pointer here how to we return status 
-										// My method : pointer return types can simply return NULL.
-										// for others, use `int err` as a first value in struct
+	if (dos.err == LIBPE_E_HASHES_OK) {
+		sample_hdr.dos = dos;
+	}
+	else {
+		sample_hdr.err = dos.err;
+		return sample_hdr;
+	}
+
+	if (optional.err == LIBPE_E_HASHES_OK) {
+		sample_hdr.optional = optional;
+	}
+	else {
+		sample_hdr.err = optional.err;
+		return sample_hdr;
+	}
+
+	if (coff.err == LIBPE_E_HASHES_OK) {
+		sample_hdr.coff = coff;
+	}
+	else {
+		sample_hdr.err = coff.err;
+		return sample_hdr;
+	}
+
+	return sample_hdr; 
 }
 
-hash_section get_sections_hash(pe_ctx_t *ctx) {
-	hash_section final_sample;
+hash_section_t get_sections_hash(pe_ctx_t *ctx) {
+	hash_section_t final_sample;
 	int c = pe_sections_count(ctx); // Total number of sections
-	hash_ *sample = (hash_ *)malloc(c *sizeof(hash_));  //local hash sample which will later be assigned to finalsample.sections
+	hash_t *sample = (hash_t *)malloc(c *sizeof(hash_t));  //local hash sample which will later be assigned to finalsample.sections
 	const unsigned char *data = NULL;
 	uint64_t data_size = 0;
 	char *name; // to savename of section
@@ -178,28 +244,28 @@ hash_section get_sections_hash(pe_ctx_t *ctx) {
 		}
 		if (data_size) {
 			name = (char *)sections[i]->Name;
-			sample[count] =  get_hashes(name, data, data_size);
-			printf("%d \n",count);
-			count++;
+			 hash_t sec_hash = get_hashes(name, data, data_size);
+			 if (sec_hash.err != LIBPE_E_HASHES_OK) {
+				 final_sample.err = sec_hash.err;
+				 return final_sample;
+				}
+				else {
+					sample[count] = sec_hash;
+					count++;
+				}
+			}
 		}
-	}
-	//section_ sample_sect;
-	//sample_sect.sections = (hash_ *)malloc( c * sizeof(hash_));
-	//sample_sect.sections = sample;
-	//sample_sect.count = c;
-	for (int i=0;i<count; i++) {
-			printf("%s\n",sample[i].name);
-	}
+
+	final_sample.err = LIBPE_E_HASHES_OK;
 	final_sample.count = count;
 	final_sample.sections = sample;
 	return final_sample;
-
 }
 
-hash_ get_file_hash(pe_ctx_t *ctx) {
+hash_t get_file_hash(pe_ctx_t *ctx) {
 	const unsigned char *data = ctx->map_addr;
 	uint64_t data_size = pe_filesize(ctx);
-	hash_ sample;
+	hash_t sample;
 	const char *name = "PEfile hash";
 	sample = get_hashes(name, data, data_size);
 	return sample;
@@ -457,4 +523,30 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 	free(imphash_string);
 
 	return output;
+}
+
+void dealloc_hdr_hashes(hdr_t header_hashes) {
+		free(header_hashes.dos.md5);
+	free(header_hashes.dos.sha1);
+	free(header_hashes.dos.sha256);
+	free(header_hashes.dos.ssdeep);
+	free(header_hashes.coff.md5);
+	free(header_hashes.coff.sha1);
+	free( header_hashes.coff.sha256);
+	free( header_hashes.coff.ssdeep);
+	free(header_hashes.optional.md5);
+	free(header_hashes.optional.sha1);
+	free( header_hashes.optional.sha256);
+	free(header_hashes.optional.ssdeep); 
+}
+
+void dealloc_sections_hashes(hash_section_t sections_hash) {
+	int count = sections_hash.count;
+	for (int i=0;i<count;i++){
+		free(sections_hash.sections[i].md5);
+		free(sections_hash.sections[i].sha1);
+		free(sections_hash.sections[i].sha256);
+		free(sections_hash.sections[i].ssdeep);
+	}
+	free(sections_hash.sections);
 }

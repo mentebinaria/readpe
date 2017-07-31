@@ -28,7 +28,7 @@ typedef enum {
 	LIBPE_E_OK = 0,
 	// Declaring negative values this way is EVIL because it
 	// BREAKS compatiblity every time we add/remove an error code.
-	LIBPE_E_ALLOCATION_FAILURE = -16,
+	LIBPE_E_ALLOCATION_FAILURE = -21,
 	LIBPE_E_OPEN_FAILED,
 	LIBPE_E_FDOPEN_FAILED,
 	LIBPE_E_FSTAT_FAILED,

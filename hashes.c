@@ -142,7 +142,7 @@ hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) 
 	}
 
 	free(hash_value);
-	sample.err = LIBPE_E_HASHES_OK;
+	sample.err = LIBPE_E_OK;
 	return sample;
 }
 
@@ -195,7 +195,7 @@ hdr_t get_headers_hash(pe_ctx_t *ctx) {
 	hdr_t sample_hdr;
 	sample_hdr.err = dos.err;
 
-	if (dos.err == LIBPE_E_HASHES_OK) {
+	if (dos.err == LIBPE_E_OK) {
 		sample_hdr.dos = dos;
 	}
 	else {
@@ -203,7 +203,7 @@ hdr_t get_headers_hash(pe_ctx_t *ctx) {
 		return sample_hdr;
 	}
 
-	if (optional.err == LIBPE_E_HASHES_OK) {
+	if (optional.err == LIBPE_E_OK) {
 		sample_hdr.optional = optional;
 	}
 	else {
@@ -211,7 +211,7 @@ hdr_t get_headers_hash(pe_ctx_t *ctx) {
 		return sample_hdr;
 	}
 
-	if (coff.err == LIBPE_E_HASHES_OK) {
+	if (coff.err == LIBPE_E_OK) {
 		sample_hdr.coff = coff;
 	}
 	else {
@@ -245,7 +245,7 @@ hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 		if (data_size) {
 			name = (char *)sections[i]->Name;
 			 hash_t sec_hash = get_hashes(name, data, data_size);
-			 if (sec_hash.err != LIBPE_E_HASHES_OK) {
+			 if (sec_hash.err != LIBPE_E_OK) {
 				 final_sample.err = sec_hash.err;
 				 return final_sample;
 				}
@@ -256,7 +256,7 @@ hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 			}
 		}
 
-	final_sample.err = LIBPE_E_HASHES_OK;
+	final_sample.err = LIBPE_E_OK;
 	final_sample.count = count;
 	final_sample.sections = sample;
 	return final_sample;

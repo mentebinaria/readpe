@@ -420,7 +420,7 @@ final_output_t get_resources(pe_ctx_t *ctx) {
 	sum_output.dataEntry = dataEntry;
 
 	freeNodes(node);
-	sum_output.err = LIBPE_E_PERES_OK;
+	sum_output.err = LIBPE_E_OK;
 	return sum_output;
 }
 

@@ -117,7 +117,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 			memcpy(functions[i], fname, MAX_FUNCTION_NAME);
 
 	}
-	sample.err = LIBPE_E_IMPORTS_OK;
+	sample.err = LIBPE_E_OK;
 	sample.functions = functions;
 	return sample;
 }
@@ -195,13 +195,13 @@ import_t get_imports(pe_ctx_t *ctx) {
 		int functions_count = get_functions_count(ctx, ofs);
 
 		imports.functions[i] = get_imported_functions(ctx, ofs, functions_count, hint_str,size_hint_str, fname, size_fname);
-		if (imports.functions[i].err != LIBPE_E_IMPORTS_OK) {
+		if (imports.functions[i].err != LIBPE_E_OK) {
 			imports.err = imports.functions[i].err;
 			return imports;
 		}
 		ofs = aux; // Restore previous ofs
 	}
-	imports.err = LIBPE_E_IMPORTS_OK;
+	imports.err = LIBPE_E_OK;
 	return imports;
 }
 

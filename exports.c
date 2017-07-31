@@ -28,15 +28,12 @@ int get_exports_functions_count(pe_ctx_t *ctx) {
 pe_exports_t get_exports(pe_ctx_t *ctx)
 {
 	exports_t *output = NULL;
-	//pe_err_e err;
 	pe_exports_t exports;
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL) { 
 	exports.err =	LIBPE_E_EXPORTS_DIR;
 	exports.exports = NULL;
 	return exports;
-	//goto: packup;
-	//O	return LIBPE_E_EXPORTS_DIR;
 	}
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
@@ -160,7 +157,7 @@ pe_exports_t get_exports(pe_ctx_t *ctx)
 
 	}
 	exports.exports = output;
-	exports.err = LIBPE_E_EXPORTS_OK;
+	exports.err = LIBPE_E_OK;
 	return exports;
 }
 

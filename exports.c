@@ -156,12 +156,15 @@ pe_exports_t get_exports(pe_ctx_t *ctx)
 		}
 
 	}
+	exports.functions_count= exp->NumberOfFunctions;
 	exports.exports = output;
 	exports.err = LIBPE_E_OK;
 	return exports;
 }
 
-void pe_dealloc_exports(exports_t *exports, int no_of_functions) {
+void pe_dealloc_exports(pe_exports_t exports_sample) {
+	exports_t* exports = exports_sample.exports;
+	int no_of_functions = exports_sample.functions_count;
 	for (int i=0; i<no_of_functions; i++) {
 		free(exports[i].function_name);
 	}

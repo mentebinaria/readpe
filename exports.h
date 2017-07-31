@@ -18,8 +18,9 @@ typedef struct {
 typedef struct {
 	pe_err_e err;
 	exports_t* exports;
+	int functions_count;
 }pe_exports_t;
 
 pe_exports_t get_exports(pe_ctx_t *ctx);
 int get_exports_functions_count(pe_ctx_t *ctx);
-void pe_dealloc_exports(exports_t *exports, int no_of_functions);
+void pe_dealloc_exports(pe_exports_t exports);

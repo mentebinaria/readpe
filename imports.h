@@ -1,16 +1,16 @@
+#ifndef LIBPE_IMPORTS
+#define LIBPE_IMPORTS
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include "pe.h"
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include "error.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-	// related to Imports
 
 typedef struct {
 	pe_err_e err;
@@ -45,7 +45,9 @@ import_t get_imports(pe_ctx_t *ctx);
 int get_dll_count(pe_ctx_t *ctx);
 int get_functions_count(pe_ctx_t *ctx, uint64_t offset);
 void dealloc_imports(import_t imports);
+
 #ifdef __cplusplus
-} 
+} // extern "C"
 #endif
 
+#endif

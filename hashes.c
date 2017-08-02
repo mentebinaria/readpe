@@ -77,8 +77,8 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 	return output;
 }
 
-hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) {
-	hash_t sample;
+pe_hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) {
+	pe_hash_t sample;
 
 	const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
 	const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
@@ -141,8 +141,8 @@ hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) 
 	return sample;
 }
 
-hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
-	hash_t dos;
+pe_hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
+	pe_hash_t dos;
 	const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
 	const unsigned char *data = (const unsigned char *)dos_sample;
 	uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
@@ -150,8 +150,8 @@ hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
 	return dos;
 }
 
-hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
-	hash_t coff;
+pe_hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
+	pe_hash_t coff;
 	const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
 	const unsigned char *data = (const unsigned char *)coff_sample;
 	uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
@@ -159,8 +159,8 @@ hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
 	return coff;
 }
 
-hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
-	hash_t optional; const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
+pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
+	pe_hash_t optional; const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
 	const unsigned char *data;
 	uint64_t data_size;
 	switch(optional_sample->type) {
@@ -183,9 +183,9 @@ hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 
 pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
 
-	hash_t dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
-	hash_t optional = get_headers_optional_hash(ctx);
-	hash_t coff = get_headers_coff_hash(ctx);
+	pe_hash_t dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
+	pe_hash_t optional = get_headers_optional_hash(ctx);
+	pe_hash_t coff = get_headers_coff_hash(ctx);
 
 	pe_hdr_t sample_hdr;
 	sample_hdr.err = dos.err;
@@ -220,7 +220,7 @@ pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
 pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 	pe_hash_section_t final_sample;
 	int c = pe_sections_count(ctx); // Total number of sections
-	hash_t *sample = (hash_t *)malloc(c *sizeof(hash_t));  //local hash sample which will later be assigned to finalsample.sections
+	pe_hash_t *sample = (pe_hash_t *)malloc(c *sizeof(pe_hash_t));  //local hash sample which will later be assigned to finalsample.sections
 	const unsigned char *data = NULL;
 	uint64_t data_size = 0;
 	char *name; // to savename of section
@@ -239,7 +239,7 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 		}
 		if (data_size) {
 			name = (char *)sections[i]->Name;
-			hash_t sec_hash = get_hashes(name, data, data_size);
+			pe_hash_t sec_hash = get_hashes(name, data, data_size);
 			if (sec_hash.err != LIBPE_E_OK) {
 				final_sample.err = sec_hash.err;
 				return final_sample;
@@ -257,10 +257,10 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 	return final_sample;
 }
 
-hash_t get_file_hash(pe_ctx_t *ctx) {
+pe_hash_t get_file_hash(pe_ctx_t *ctx) {
 	const unsigned char *data = ctx->map_addr;
 	uint64_t data_size = pe_filesize(ctx);
-	hash_t sample;
+	pe_hash_t sample;
 	const char *name = "PEfile hash";
 	sample = get_hashes(name, data, data_size);
 	return sample;
@@ -546,7 +546,7 @@ void dealloc_sections_hashes(pe_hash_section_t sections_hash) {
 	free(sections_hash.sections);
 }
 
-void dealloc_filehash(hash_t filehash) {
+void dealloc_filehash(pe_hash_t filehash) {
 	free(filehash.md5);
 	free(filehash.sha1);
 	free(filehash.sha256);

@@ -39,9 +39,6 @@ pe_exports_t get_exports(pe_ctx_t *ctx)
 		exports.exports = NULL;
 		return exports;
 	}
-	const uint32_t rva = *rva_ptr;
-
-	ofs = pe_rva2ofs(ctx, rva);
 
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
 	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`

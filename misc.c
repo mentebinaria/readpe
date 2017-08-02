@@ -238,7 +238,7 @@ int count_tls_callbacks(pe_ctx_t *ctx)
 
 int pe_get_tls_callback(pe_ctx_t *ctx) {
 	int callbacks = count_tls_callbacks(ctx);
-	int ret;
+	int ret = 0; // Initialize variable
 	if (callbacks == 0)
 		ret = LIBPE_E_NO_CALLBACKS_FOUND; // not found
 	else if (callbacks == -1)

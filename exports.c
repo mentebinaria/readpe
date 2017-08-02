@@ -5,35 +5,15 @@
 #include "error.h"
 
 
-int get_exports_functions_count(pe_ctx_t *ctx) {
-	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (dir == NULL) {
-		return -1;
-	}	
-	const uint64_t va = dir->VirtualAddress;
-	if (va == 0) {
-		return -2;
-	}
-
-	uint64_t ofs;
-
-	ofs = pe_rva2ofs(ctx, va);
-	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
-		return -3;
-	}
-	return exp->NumberOfFunctions;
-}
-
 pe_exports_t get_exports(pe_ctx_t *ctx)
 {
 	exports_t *output = NULL;
 	pe_exports_t exports;
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL) { 
-	exports.err =	LIBPE_E_EXPORTS_DIR;
-	exports.exports = NULL;
-	return exports;
+		exports.err =	LIBPE_E_EXPORTS_DIR;
+		exports.exports = NULL;
+		return exports;
 	}
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {

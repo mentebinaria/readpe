@@ -6,6 +6,105 @@
 #define MAX_FUNCTION_NAME 512
 #define MAX_DLL_NAME 256
 
+int get_dll_count( pe_ctx_t *ctx) {
+	/*const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+		printf("%"PRIu32 Print virtual address"\n ", dir->VirtualAddress);*/
+	int count =0;
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	if (dir == NULL)
+		return count;
+	const uint64_t va = dir->VirtualAddress;
+	if (va == 0) {
+		fprintf(stderr, "import directory not found\n");
+		return count;
+	}
+	uint64_t ofs = pe_rva2ofs(ctx, va);
+
+	while (1) {
+		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+			// TODO: Should we report something?
+			return count;
+		}
+		if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
+			break;
+
+		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
+		const uint64_t aux = ofs; // Store current ofs
+		ofs = pe_rva2ofs(ctx, id->Name);
+		if (ofs == 0)
+			break;
+
+		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
+		if (ofs == 0) {
+			break;
+		}
+		count++;
+		ofs = aux; // Restore previous ofs
+	}
+	return count;	
+}
+
+int get_functions_count( pe_ctx_t *ctx, uint64_t offset) {
+	uint64_t ofs = offset;
+
+	//char hint_str[16];
+	//char fname[MAX_FUNCTION_NAME];
+	int count =0;
+	//memset(hint_str, 0, sizeof(hint_str));
+	//memset(fname, 0, sizeof(fname));
+
+	while (1) {
+		switch (ctx->pe.optional_hdr.type) {
+			case MAGIC_PE32:
+				{
+					const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+						return count;
+					}
+
+					// Type punning
+					const uint32_t thunk_type = *(uint32_t *)thunk;
+					if (thunk_type == 0) {
+						return count;
+					}
+
+					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+						return count;
+					}
+
+					ofs += sizeof(IMAGE_THUNK_DATA32);
+					break;
+				}
+			case MAGIC_PE64:
+				{
+					const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+						return count;
+					}
+
+					const uint64_t thunk_type = *(uint64_t *)thunk;
+					if (thunk_type == 0) {
+						return count;
+					}
+
+					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+						return count;
+
+					}
+					ofs += sizeof(IMAGE_THUNK_DATA64);
+					break;
+				}
+		}
+		count++;
+	}
+	return count;
+}
+
 function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_count, char *hint_str, size_t size_hint_str, char *fname, size_t size_fname)
 {
 	uint64_t ofs = offset;
@@ -16,7 +115,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 		sample.err = LIBPE_E_ALLOCATION_FAILURE;
 		return sample;
 	}
-	
+
 	// allocate space for each string.
 	for (int i=0; i < functions_count; i++) {
 		functions[i] = malloc(MAX_FUNCTION_NAME);
@@ -122,9 +221,9 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 	return sample;
 }
 
-import_t get_imports(pe_ctx_t *ctx) {
+pe_import_t get_imports(pe_ctx_t *ctx) {
 	int dll_count = get_dll_count(ctx);
-	import_t imports;
+	pe_import_t imports;
 	imports.dll_count = dll_count;
 	imports.dllNames = malloc(dll_count *sizeof(char*));
 
@@ -165,7 +264,7 @@ import_t get_imports(pe_ctx_t *ctx) {
 			break;
 
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		
+
 		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
 			// TODO: Should we report something?
 			break;
@@ -205,106 +304,11 @@ import_t get_imports(pe_ctx_t *ctx) {
 	return imports;
 }
 
-int get_dll_count( pe_ctx_t *ctx) {
-	/*const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
-		printf("%"PRIu32 Print virtual address"\n ", dir->VirtualAddress);*/
-	int count =0;
-	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
-	if (dir == NULL)
-		return count;
-	const uint64_t va = dir->VirtualAddress;
-	if (va == 0) {
-		fprintf(stderr, "import directory not found\n");
-		return count;
-	}
-	uint64_t ofs = pe_rva2ofs(ctx, va);
 
-	while (1) {
-		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
-			// TODO: Should we report something?
-			return count;
-		}
-		if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
-			break;
 
-		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
-		const uint64_t aux = ofs; // Store current ofs
-		ofs = pe_rva2ofs(ctx, id->Name);
-		if (ofs == 0)
-			break;
 
-		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
-		if (ofs == 0) {
-			break;
-		}
-		count++;
-		ofs = aux; // Restore previous ofs
-	}
-	return count;	
-}
 
-int get_functions_count( pe_ctx_t *ctx, uint64_t offset) {
-	uint64_t ofs = offset;
-
-	//char hint_str[16];
-	//char fname[MAX_FUNCTION_NAME];
-	int count =0;
-	//memset(hint_str, 0, sizeof(hint_str));
-	//memset(fname, 0, sizeof(fname));
-
-	while (1) {
-		switch (ctx->pe.optional_hdr.type) {
-			case MAGIC_PE32:
-				{
-					const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
-						return count;
-					}
-
-					// Type punning
-					const uint32_t thunk_type = *(uint32_t *)thunk;
-					if (thunk_type == 0) {
-						return count;
-					}
-
-					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
-						return count;
-					}
-
-					ofs += sizeof(IMAGE_THUNK_DATA32);
-					break;
-				}
-			case MAGIC_PE64:
-				{
-					const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
-						return count;
-					}
-
-					const uint64_t thunk_type = *(uint64_t *)thunk;
-					if (thunk_type == 0) {
-						return count;
-					}
-
-					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
-						return count;
-
-					}
-					ofs += sizeof(IMAGE_THUNK_DATA64);
-					break;
-				}
-		}
-		count++;
-	}
-	return count;
-}
-
-void dealloc_imports(import_t imports) {
+void dealloc_imports(pe_import_t imports) {
 	for (int i=0; i<imports.dll_count; i++) {	
 		free(imports.dllNames[i]);
 		for (int j=0; j<imports.functions[i].count; j++) {

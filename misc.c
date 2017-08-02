@@ -19,7 +19,7 @@ double calculate_entropy(const unsigned int counted_bytes[256], const size_t tot
 	return entropy;
 }
 
-double calculate_entropy_file(pe_ctx_t *ctx) {
+double pe_calculate_entropy_file(pe_ctx_t *ctx) {
 	unsigned int counted_bytes[256];
 	memset(counted_bytes, 0, sizeof(counted_bytes));
 
@@ -33,7 +33,7 @@ double calculate_entropy_file(pe_ctx_t *ctx) {
 	return calculate_entropy(counted_bytes, (size_t)filesize);
 }
 
-bool fpu_trick(pe_ctx_t *ctx) {
+bool pe_fpu_trick(pe_ctx_t *ctx) {
 	const char *opcode_ptr = ctx->map_addr;
 
 	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
@@ -92,7 +92,7 @@ int cpl_analysis(pe_ctx_t *ctx)
 	return 0;
 }
 
-int get_cpl_analysis(pe_ctx_t *ctx) {
+int pe_get_cpl_analysis(pe_ctx_t *ctx) {
 	return pe_is_dll(ctx) ? cpl_analysis(ctx) : -1;
 }
 
@@ -129,7 +129,7 @@ int pe_has_fake_entrypoint(pe_ctx_t *ctx) {
 		value = 1; // fake 
 	} 
 	else {
-		value = 0;       // normal 
+		value = 0;			 // normal 
 	}
 	return value;
 }
@@ -149,7 +149,7 @@ uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
 	return directory->VirtualAddress;
 }
 
-int pe_count_tls_callbacks(pe_ctx_t *ctx)
+int count_tls_callbacks(pe_ctx_t *ctx)
 {
 	int ret = 0;
 
@@ -236,8 +236,8 @@ int pe_count_tls_callbacks(pe_ctx_t *ctx)
 	return 0;
 }
 
-int get_tls_callback(pe_ctx_t *ctx) {
-	int callbacks = pe_count_tls_callbacks(ctx);
+int pe_get_tls_callback(pe_ctx_t *ctx) {
+	int callbacks = count_tls_callbacks(ctx);
 	int ret;
 	if (callbacks == 0)
 		ret = LIBPE_E_NO_CALLBACKS_FOUND; // not found

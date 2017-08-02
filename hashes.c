@@ -18,19 +18,19 @@
 // Used for Imphash calulation 
 static char *last_strstr(const char *haystack, const char *needle)
 {
-    if (*needle == '\0')
-        return (char *) haystack;
+	if (*needle == '\0')
+		return (char *) haystack;
 
-    char *result = NULL;
-    for (;;) {
-        char *p = strstr(haystack, needle);
-        if (p == NULL)
-            break;
-        result = p;
-        haystack = p + 1;
-    }
+	char *result = NULL;
+	for (;;) {
+		char *p = strstr(haystack, needle);
+		if (p == NULL)
+			break;
+		result = p;
+		haystack = p + 1;
+	}
 
-    return result;
+	return result;
 }
 
 char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
@@ -72,8 +72,6 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 		}
 	}
 	CRYPTO_cleanup_all_ex_data();
-	//ERR_free_strings();
-	//ERR_remove_state(0);
 	EVP_cleanup();
 
 	return output;
@@ -81,16 +79,13 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 
 hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) {
 	hash_t sample;
-	//pe_err_e err;
-//	const int MD_SIZE = EVP_MAX_MD_SIZE * 2 + 1; // should we use int or size_t or uint64_t or uint32_t?
-//	char hash_value[MD_SIZE];
 
 	const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
 	const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
-	 // Since standard C lacks max(), we do it manually.
+	// Since standard C lacks max(), we do it manually.
 	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
-									? openssl_hash_maxsize
-									: ssdeep_hash_maxsize;
+		? openssl_hash_maxsize
+		: ssdeep_hash_maxsize;
 	char *hash_value = malloc_s(hash_maxsize);
 
 
@@ -100,13 +95,13 @@ hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) 
 	sample.sha1 = malloc(hash_maxsize);
 	sample.sha256 = malloc(hash_maxsize);
 	sample.ssdeep = malloc(hash_maxsize);
-// Currently we can show only one error. But what if there is a problem in both md5 and sha1?
+	// Currently we can show only one error. But what if there is a problem in both md5 and sha1?
 	char *md5 = calc_hash("md5", data, data_size, hash_value);
 	if (md5 == NULL){
 		sample.err = LIBPE_E_HASHES_MD5;
 		sample.md5 = NULL;
 		return sample;
-	}
+	} 
 	else {
 		memcpy(sample.md5,md5 , hash_maxsize); // TODO: what if something ??!!
 	}
@@ -151,7 +146,7 @@ hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
 	const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
 	const unsigned char *data = (const unsigned char *)dos_sample;
 	uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
-	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);  // TODO: what if something goes wrong?
+	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);	// TODO: what if something goes wrong?
 	return dos;
 }
 
@@ -160,11 +155,11 @@ hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
 	const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
 	const unsigned char *data = (const unsigned char *)coff_sample;
 	uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
-	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size);  // TODO: what if something goes wrong!!??
+	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size);	// TODO: what if something goes wrong!!??
 	return coff;
 }
 
-hash_t get_headers_optional_hash(pe_ctx_t *ctx) { 
+hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 	hash_t optional; const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
 	const unsigned char *data;
 	uint64_t data_size;
@@ -177,22 +172,22 @@ hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 			data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
 			optional = get_hashes("IMAGE_OPTIONAL_HEADER_32", data, data_size);
 			return optional;
-		
+
 		case MAGIC_PE64:
 			data = (const unsigned char *)optional_sample->_64;
-		  data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);	
+			data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);	
 			optional = get_hashes("IMAGE_OPTIONAL_HEADER_64", data, data_size);
 			return optional;
 	}
 }
 
-hdr_t get_headers_hash(pe_ctx_t *ctx) {
+pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
 
 	hash_t dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
 	hash_t optional = get_headers_optional_hash(ctx);
 	hash_t coff = get_headers_coff_hash(ctx);
 
-	hdr_t sample_hdr;
+	pe_hdr_t sample_hdr;
 	sample_hdr.err = dos.err;
 
 	if (dos.err == LIBPE_E_OK) {
@@ -222,8 +217,8 @@ hdr_t get_headers_hash(pe_ctx_t *ctx) {
 	return sample_hdr; 
 }
 
-hash_section_t get_sections_hash(pe_ctx_t *ctx) {
-	hash_section_t final_sample;
+pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
+	pe_hash_section_t final_sample;
 	int c = pe_sections_count(ctx); // Total number of sections
 	hash_t *sample = (hash_t *)malloc(c *sizeof(hash_t));  //local hash sample which will later be assigned to finalsample.sections
 	const unsigned char *data = NULL;
@@ -244,17 +239,17 @@ hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 		}
 		if (data_size) {
 			name = (char *)sections[i]->Name;
-			 hash_t sec_hash = get_hashes(name, data, data_size);
-			 if (sec_hash.err != LIBPE_E_OK) {
-				 final_sample.err = sec_hash.err;
-				 return final_sample;
-				}
-				else {
-					sample[count] = sec_hash;
-					count++;
-				}
+			hash_t sec_hash = get_hashes(name, data, data_size);
+			if (sec_hash.err != LIBPE_E_OK) {
+				final_sample.err = sec_hash.err;
+				return final_sample;
+			}
+			else {
+				sample[count] = sec_hash;
+				count++;
 			}
 		}
+	}
 
 	final_sample.err = LIBPE_E_OK;
 	final_sample.count = count;
@@ -272,10 +267,10 @@ hash_t get_file_hash(pe_ctx_t *ctx) {
 } 
 
 typedef struct element {
-    char *dll_name;
-    char *function_name;
-    //struct element *prev; /* needed for a doubly-linked list only */
-    struct element *next; /* needed for singly- or doubly-linked lists */
+	char *dll_name;
+	char *function_name;
+	//struct element *prev; /* needed for a doubly-linked list only */
+	struct element *next; /* needed for singly- or doubly-linked lists */
 } element;
 
 static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, struct element **head, int flavor)
@@ -292,75 +287,75 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
 			case MAGIC_PE32:
-			{
-				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
-					// TODO: Should we report something?
-					return;
-				}
-
-				// Type punning
-				const uint32_t thunk_type = *(uint32_t *)thunk;
-				if (thunk_type == 0)
-					return;
-
-				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
-
-				if (is_ordinal) {
-					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
-						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
-				} else {
-					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+				{
+					const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
 						// TODO: Should we report something?
 						return;
 					}
 
-					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
-					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
-					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-					fname[sizeof(fname) - 1] = '\0';
-					//size_t fname_len = strlen(fname);
+					// Type punning
+					const uint32_t thunk_type = *(uint32_t *)thunk;
+					if (thunk_type == 0)
+						return;
+
+					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+
+					if (is_ordinal) {
+						snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
+								thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+					} else {
+						const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+						if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+							// TODO: Should we report something?
+							return;
+						}
+
+						snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
+						strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+						// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+						fname[sizeof(fname) - 1] = '\0';
+						//size_t fname_len = strlen(fname);
+					}
+					ofs += sizeof(IMAGE_THUNK_DATA32);
+					break;
 				}
-				ofs += sizeof(IMAGE_THUNK_DATA32);
-				break;
-			}
 			case MAGIC_PE64:
-			{
-				const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
-					// TODO: Should we report something?
-					return;
-				}
-
-				// Type punning
-				const uint64_t thunk_type = *(uint64_t *)thunk;
-				if (thunk_type == 0)
-					return;
-
-				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
-
-				if (is_ordinal) {
-					snprintf(hint_str, sizeof(hint_str)-1, "%llu",
-						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
-				} else {
-					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+				{
+					const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+					if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
 						// TODO: Should we report something?
 						return;
 					}
 
-					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
-					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
-					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-					fname[sizeof(fname) - 1] = '\0';
-					//size_t fname_len = strlen(fname);
+					// Type punning
+					const uint64_t thunk_type = *(uint64_t *)thunk;
+					if (thunk_type == 0)
+						return;
+
+					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+
+					if (is_ordinal) {
+						snprintf(hint_str, sizeof(hint_str)-1, "%llu",
+								thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+					} else {
+						uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+						if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+							// TODO: Should we report something?
+							return;
+						}
+
+						snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
+						strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
+						// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+						fname[sizeof(fname) - 1] = '\0';
+						//size_t fname_len = strlen(fname);
+					}
+					ofs += sizeof(IMAGE_THUNK_DATA64);
+					break;
 				}
-				ofs += sizeof(IMAGE_THUNK_DATA64);
-				break;
-			}
 		}
 
 		if (!dll_name)
@@ -390,10 +385,10 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			if (aux)
 				*aux = '\0';
 		}
-		
+
 		if (aux)
 			*aux = '\0';
-		
+
 		for (unsigned i=0; i < strlen(fname); i++)
 			fname[i] = tolower(fname[i]);
 
@@ -405,7 +400,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			el->function_name = strdup(is_ordinal ? hint_str : fname);
 		}
 		else if (flavor == IMPHASH_FLAVOR_PEFILE) { 
-			
+
 			int hint = strtoul(hint_str, NULL, 10);
 
 			if ( strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
@@ -525,8 +520,8 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 	return output;
 }
 
-void dealloc_hdr_hashes(hdr_t header_hashes) {
-		free(header_hashes.dos.md5);
+void dealloc_hdr_hashes(pe_hdr_t header_hashes) {
+	free(header_hashes.dos.md5);
 	free(header_hashes.dos.sha1);
 	free(header_hashes.dos.sha256);
 	free(header_hashes.dos.ssdeep);
@@ -540,7 +535,7 @@ void dealloc_hdr_hashes(hdr_t header_hashes) {
 	free(header_hashes.optional.ssdeep); 
 }
 
-void dealloc_sections_hashes(hash_section_t sections_hash) {
+void dealloc_sections_hashes(pe_hash_section_t sections_hash) {
 	int count = sections_hash.count;
 	for (int i=0;i<count;i++){
 		free(sections_hash.sections[i].md5);

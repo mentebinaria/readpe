@@ -124,7 +124,7 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 			return sample;
 		}
 	}
-	bool is_ordinal;
+	bool is_ordinal = false;
 
 	for (int i=0;i<functions_count; i++) {
 		switch (ctx->pe.optional_hdr.type) {
@@ -222,8 +222,14 @@ function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, int functions_
 }
 
 pe_import_t get_imports(pe_ctx_t *ctx) {
-	int dll_count = get_dll_count(ctx);
 	pe_import_t imports;
+	int dll_count = get_dll_count(ctx);
+	// fix: "Call to 'malloc' has an allocation size of 0 bytes"
+	if (dll_count == 0) {
+		imports.dll_count = 0;
+		imports.dllNames = NULL;
+		return imports;
+	}
 	imports.dll_count = dll_count;
 	imports.dllNames = malloc(dll_count *sizeof(char*));
 

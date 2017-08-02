@@ -279,7 +279,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 	char hint_str[16];
 	char fname[MAX_FUNCTION_NAME];
-	bool is_ordinal;
+	bool is_ordinal = false; // Initalize variable
 
 	memset(hint_str, 0, sizeof(hint_str));
 	memset(fname, 0, sizeof(fname));

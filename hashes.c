@@ -2,9 +2,9 @@
 #include <openssl/md5.h>
 #include <ctype.h>
 #include <math.h>
+#include <string.h>
 
 #include "fuzzy.h"
-#include "common.h"
 #include "hashes.h"
 #include "ordlookup.h"
 #include "utlist.h"

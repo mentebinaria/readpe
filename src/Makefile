@@ -53,7 +53,7 @@ endif
 ####### Compiler options
 
 override LDFLAGS += -L$(LIBPE) -lpe -ldl
-override CFLAGS += -I$(LIBPE) -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+override CFLAGS += -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
 # Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
 # undefine it first to avoid redefinition warnings.
 override CPPFLAGS += \

@@ -36,7 +36,7 @@
 #include "common.h"
 #include <time.h>
 #include <ctype.h>
-#include "plugins.h"
+#include "output.h"
 
 #define PROGRAM "readpe"
 

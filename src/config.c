@@ -34,8 +34,8 @@
 */
 
 #include "config.h"
-#include "error.h" // from libpe
 #include "utils.h"
+#include <libpe/error.h>
 #include <stdlib.h>
 #include <string.h>
 #if defined(__linux__)

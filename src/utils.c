@@ -32,7 +32,7 @@
 */
 
 #include "utils.h"
-#include "error.h"
+#include <libpe/error.h>
 #include <errno.h>
 #include <ctype.h>
 #include <stdio.h>

@@ -86,11 +86,13 @@ pe_hash_t get_hashes(const char *name,const unsigned char *data, size_t data_siz
 	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
 		? openssl_hash_maxsize
 		: ssdeep_hash_maxsize;
-	char *hash_value = malloc_s(hash_maxsize);
+	char *hash_value = malloc(hash_maxsize);
+	if (hash_value == NULL) {
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		return sample;
+	}
 
-
-
-	sample.name  = name;
+	sample.name = strdup(name);
 	sample.md5 = malloc(hash_maxsize); 
 	sample.sha1 = malloc(hash_maxsize);
 	sample.sha256 = malloc(hash_maxsize);
@@ -392,7 +394,11 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		for (unsigned i=0; i < strlen(fname); i++)
 			fname[i] = tolower(fname[i]);
 
-		struct element *el = malloc_s(sizeof(struct element));
+		struct element *el = malloc(sizeof(struct element));
+		if (el == NULL) {
+			// TODO: Handle allocation failure.
+			abort();
+		}
 
 		el->dll_name = strdup(dll_name);
 
@@ -495,7 +501,11 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 
 	size_t imphash_string_size = sizeof(char) * count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
 
-	char *imphash_string = malloc_s(imphash_string_size);
+	char *imphash_string = malloc(imphash_string_size);
+	if (imphash_string == NULL) {
+		// TODO: Handle allocation failure.
+		abort();
+	}
 
 	memset(imphash_string, 0, imphash_string_size);
 
@@ -512,43 +522,46 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 	//puts(imphash_string); // DEBUG
 
 	char imphash[33];
-	char *output = (char *)malloc(sizeof(imphash));
+	char *output = malloc(sizeof(imphash));
+	char *md5 = calc_hash("md5", imphash_string, sizeof(imphash_string), imphash);
+	memcpy(output, md5, sizeof(imphash));
+	free(md5);
 
-	memcpy(output, calc_hash("md5", (unsigned char *)imphash_string, strlen(imphash_string)*sizeof(char), imphash), sizeof(imphash));
 	free(imphash_string);
 
 	return output;
 }
 
-void dealloc_hdr_hashes(pe_hdr_t header_hashes) {
-	free(header_hashes.dos.md5);
-	free(header_hashes.dos.sha1);
-	free(header_hashes.dos.sha256);
-	free(header_hashes.dos.ssdeep);
-	free(header_hashes.coff.md5);
-	free(header_hashes.coff.sha1);
-	free( header_hashes.coff.sha256);
-	free( header_hashes.coff.ssdeep);
-	free(header_hashes.optional.md5);
-	free(header_hashes.optional.sha1);
-	free( header_hashes.optional.sha256);
-	free(header_hashes.optional.ssdeep); 
+void dealloc_hdr_hashes(pe_hdr_t obj) {
+	free(obj.dos.md5);
+	free(obj.dos.sha1);
+	free(obj.dos.sha256);
+	free(obj.dos.ssdeep);
+	free(obj.coff.md5);
+	free(obj.coff.sha1);
+	free(obj.coff.sha256);
+	free(obj.coff.ssdeep);
+	free(obj.optional.md5);
+	free(obj.optional.sha1);
+	free(obj.optional.sha256);
+	free(obj.optional.ssdeep); 
 }
 
-void dealloc_sections_hashes(pe_hash_section_t sections_hash) {
-	int count = sections_hash.count;
+void dealloc_sections_hashes(pe_hash_section_t obj) {
+	int count = obj.count;
 	for (int i=0;i<count;i++){
-		free(sections_hash.sections[i].md5);
-		free(sections_hash.sections[i].sha1);
-		free(sections_hash.sections[i].sha256);
-		free(sections_hash.sections[i].ssdeep);
+		free(obj.sections[i].md5);
+		free(obj.sections[i].sha1);
+		free(obj.sections[i].sha256);
+		free(obj.sections[i].ssdeep);
 	}
-	free(sections_hash.sections);
+	free(obj.sections);
 }
 
-void dealloc_filehash(pe_hash_t filehash) {
-	free(filehash.md5);
-	free(filehash.sha1);
-	free(filehash.sha256);
-	free(filehash.ssdeep);
+void dealloc_filehash(pe_hash_t obj) {
+	free(obj.name);
+	free(obj.md5);
+	free(obj.sha1);
+	free(obj.sha256);
+	free(obj.ssdeep);
 }

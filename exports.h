@@ -10,17 +10,16 @@ extern "C" {
 
 typedef struct {
 	uint32_t addr;
-	char *function_name;	// name of the function at that address
-}exports_t;
+	char *name;	// name of the function at that address
+} pe_exported_function_t;
 
 typedef struct {
 	pe_err_e err;
-	exports_t* exports;
-	int functions_count;
-}pe_exports_t;
+	uint32_t functions_count;
+	pe_exported_function_t *functions; // array of exported functions
+} pe_exports_t;
 
-pe_exports_t get_exports(pe_ctx_t *ctx);
-// Deallocation Function
+pe_exports_t pe_get_exports(pe_ctx_t *ctx);
 void pe_dealloc_exports(pe_exports_t exports);
 
 #ifdef __cplusplus

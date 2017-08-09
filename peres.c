@@ -7,98 +7,69 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
-{
-	switch (node->nodeType)
-	{
-		default:
-			return NULL;
-			break;
+output_node_t *showNode(const NODE_PERES *node, output_node_t *output) {
+	switch (node->nodeType) {
+		default: return NULL;
 		case RDT_RESOURCE_DIRECTORY:
-			{
-				const IMAGE_RESOURCE_DIRECTORY *resourceDirectory = node->resource.resourceDirectory;
-				output->kind = RDT_RESOURCE_DIRECTORY;
-
-				output->node_type.resourcesDirectory.NodeType = node->nodeLevel;
-
-				output->node_type.resourcesDirectory.Characteristics = resourceDirectory->Characteristics;
-
-				output->node_type.resourcesDirectory.TimeDateStamp = resourceDirectory->TimeDateStamp;
-
-				output->node_type.resourcesDirectory.MajorVersion = resourceDirectory->MajorVersion;
-
-				output->node_type.resourcesDirectory.MinorVersion = resourceDirectory->MinorVersion;
-
-				output->node_type.resourcesDirectory.NumberOfNamedEntries = resourceDirectory->NumberOfNamedEntries;
-
-				output->node_type.resourcesDirectory.NumberOfIdEntries = resourceDirectory->NumberOfIdEntries;
-
-				break;
-			}
+		{
+			const IMAGE_RESOURCE_DIRECTORY *resourceDirectory = node->resource.resourceDirectory;
+			output->kind = RDT_RESOURCE_DIRECTORY;
+			output->node_type.resourcesDirectory.NodeType = node->nodeLevel;
+			output->node_type.resourcesDirectory.Characteristics = resourceDirectory->Characteristics;
+			output->node_type.resourcesDirectory.TimeDateStamp = resourceDirectory->TimeDateStamp;
+			output->node_type.resourcesDirectory.MajorVersion = resourceDirectory->MajorVersion;
+			output->node_type.resourcesDirectory.MinorVersion = resourceDirectory->MinorVersion;
+			output->node_type.resourcesDirectory.NumberOfNamedEntries = resourceDirectory->NumberOfNamedEntries;
+			output->node_type.resourcesDirectory.NumberOfIdEntries = resourceDirectory->NumberOfIdEntries;
+			break;
+		}
 		case RDT_DIRECTORY_ENTRY:
-			{
-				const IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry = node->resource.directoryEntry;
+		{
+			const IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry = node->resource.directoryEntry;
+			output->kind = RDT_DIRECTORY_ENTRY;
+			output->node_type.directoryEntry.NodeType = node->nodeLevel;
+			output->node_type.directoryEntry.NameOffset = directoryEntry->DirectoryName.name.NameOffset;
+			output->node_type.directoryEntry.NameIsString = directoryEntry->DirectoryName.name.NameIsString;
+			output->node_type.directoryEntry.OffsetIsDirectory = directoryEntry->DirectoryData.data.OffsetToDirectory;
+			output->node_type.directoryEntry.DataIsDirectory = directoryEntry->DirectoryData.data.DataIsDirectory;
 
-				output->kind = RDT_DIRECTORY_ENTRY;
-
-				output->node_type.directoryEntry.NodeType = node->nodeLevel;
-
-				output->node_type.directoryEntry.NameOffset = directoryEntry->DirectoryName.name.NameOffset;
-
-				output->node_type.directoryEntry.NameIsString = directoryEntry->DirectoryName.name.NameIsString;
-
-				output->node_type.directoryEntry.OffsetIsDirectory = directoryEntry->DirectoryData.data.OffsetToDirectory;
-
-				output->node_type.directoryEntry.DataIsDirectory = directoryEntry->DirectoryData.data.DataIsDirectory;
-
-				break;
-			}
+			break;
+		}
 		case RDT_DATA_STRING:
-			{
-				const IMAGE_RESOURCE_DATA_STRING *dataString = node->resource.dataString;
-
-				output->kind = RDT_DATA_STRING;
-
-				output->node_type.dataString.NodeType = node->nodeLevel;
-
-				output->node_type.dataString.Strlen = dataString->length;
-
-				output->node_type.dataString.String = dataString->string[0];
-
-				break;
-			}
+		{
+			const IMAGE_RESOURCE_DATA_STRING *dataString = node->resource.dataString;
+			output->kind = RDT_DATA_STRING;
+			output->node_type.dataString.NodeType = node->nodeLevel;
+			output->node_type.dataString.Strlen = dataString->length;
+			output->node_type.dataString.String = dataString->string[0];
+			break;
+		}
 		case RDT_DATA_ENTRY:
-			{
-				const IMAGE_RESOURCE_DATA_ENTRY *dataEntry = node->resource.dataEntry;
-
-				output->kind = RDT_DATA_ENTRY;
-
-				output->node_type.dataEntry.NodeType = node->nodeLevel;
-
-				output->node_type.dataEntry.OffsetToData = dataEntry->offsetToData;
-
-				output->node_type.dataEntry.Size = dataEntry->size;
-
-				output->node_type.dataEntry.CodePage = dataEntry->codePage;
-
-				output->node_type.dataEntry.CodePage = dataEntry->codePage;
-
-				output->node_type.dataEntry.Reserved = dataEntry->reserved;
-
-				break;
-			}
+		{
+			const IMAGE_RESOURCE_DATA_ENTRY *dataEntry = node->resource.dataEntry;
+			output->kind = RDT_DATA_ENTRY;
+			output->node_type.dataEntry.NodeType = node->nodeLevel;
+			output->node_type.dataEntry.OffsetToData = dataEntry->offsetToData;
+			output->node_type.dataEntry.Size = dataEntry->size;
+			output->node_type.dataEntry.CodePage = dataEntry->codePage;
+			output->node_type.dataEntry.CodePage = dataEntry->codePage;
+			output->node_type.dataEntry.Reserved = dataEntry->reserved;
+			break;
+		}
 	}
+
 	return output;
 }
 
-static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode)
-{
+static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNextNode) {
 	assert(currentNode != NULL);
+
 	NODE_PERES *newNode = malloc(sizeof(NODE_PERES));
 	if (newNode == NULL) {
 		// TODO(jweyrich): Report allocation failure?
 		return NULL;
 	}
+
 	newNode->lastNode = currentNode;
 	newNode->nextNode = NULL;
 	newNode->nodeType = typeOfNextNode;
@@ -106,9 +77,9 @@ static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNe
 	return newNode;
 }
 
-static const NODE_PERES * lastNodeByTypeAndLevel(const NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch)
-{
+static const NODE_PERES * lastNodeByTypeAndLevel(const NODE_PERES *currentNode, NODE_TYPE_PERES nodeTypeSearch, NODE_LEVEL_PERES nodeLevelSearch) {
 	assert(currentNode != NULL);
+
 	if (currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
 		return currentNode;
 
@@ -121,8 +92,7 @@ static const NODE_PERES * lastNodeByTypeAndLevel(const NODE_PERES *currentNode, 
 	return NULL;
 }
 
-static void freeNodes(NODE_PERES *currentNode)
-{
+static void freeNodes(NODE_PERES *currentNode) {
 	if (currentNode == NULL)
 		return;
 
@@ -142,37 +112,26 @@ static void freeNodes(NODE_PERES *currentNode)
 	}
 }
 
-count_output_node countNode(NODE_PERES *node) {
-	count_output_node count;
-	switch (node->nodeType)
-	{
-		default:
-			return count;
+count_output_node_t countNode(NODE_PERES *node) {
+	count_output_node_t count;
+	memset(&count, 0, sizeof(count_output_node_t));
+
+	switch (node->nodeType) {
+		default: return count;
 		case RDT_RESOURCE_DIRECTORY:
-			{
-				count.kind = RDT_RESOURCE_DIRECTORY;
-				break;
-			}
-
+			count.kind = RDT_RESOURCE_DIRECTORY;
+			break;
 		case RDT_DIRECTORY_ENTRY:
-			{
-				count.kind = RDT_DIRECTORY_ENTRY;
-				break;
-			}
-
+			count.kind = RDT_DIRECTORY_ENTRY;
+			break;
 		case RDT_DATA_STRING:
-			{
-				count.kind = RDT_DATA_STRING;
-				break;
-			}
-
+			count.kind = RDT_DATA_STRING;
+			break;
 		case RDT_DATA_ENTRY:
-			{
-				count.kind = RDT_DATA_ENTRY;
-				break;
-			}
-
+			count.kind = RDT_DATA_ENTRY;
+			break;
 	}
+
 	return count;
 }
 
@@ -183,7 +142,7 @@ pe_resources_count_t get_count(NODE_PERES *node) {
 	int dataString = 0;
 	int dataEntry = 0;
 
-	count_output_node output;
+	count_output_node_t output;
 	while (node->lastNode != NULL) {
 		node = node->lastNode;
 	}
@@ -207,8 +166,7 @@ pe_resources_count_t get_count(NODE_PERES *node) {
 	return count;
 }
 
-static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
-{
+static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx) {
 	const IMAGE_DATA_DIRECTORY * resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
 	if (resourceDirectory == NULL || resourceDirectory->Size == 0)
 		return NULL;
@@ -419,8 +377,7 @@ pe_final_output_t get_resources(pe_ctx_t *ctx) {
 	return sum_output;
 }
 
-pe_resources_count_t get_resources_count(pe_ctx_t *ctx)
-{
+pe_resources_count_t get_resources_count(pe_ctx_t *ctx) {
 	pe_resources_count_t count;
 	NODE_PERES *node = discoveryNodesPeres(ctx);
 	if (node == NULL) {
@@ -440,9 +397,9 @@ pe_resources_count_t get_resources_count(pe_ctx_t *ctx)
 	return count;
 }
 
-void	pe_dealloc_peres(pe_final_output_t *peres){
-	free(peres->resourcesDirectory);
-	free(peres->directoryEntry);
-	free(peres->dataString);
-	free(peres->dataEntry);
+void pe_dealloc_peres(pe_final_output_t obj){
+	free(obj.resourcesDirectory);
+	free(obj.directoryEntry);
+	free(obj.dataString);
+	free(obj.dataEntry);
 }

@@ -13,7 +13,7 @@ typedef enum {
 	RDT_LEVEL1 = 1,
 	RDT_LEVEL2 = 2,
 	RDT_LEVEL3 = 3
-}NODE_LEVEL_PERES;
+} NODE_LEVEL_PERES;
 
 typedef enum {
 	RDT_RESOURCE_DIRECTORY = 1,
@@ -44,7 +44,7 @@ typedef struct {
 	int MinorVersion;
 	int NumberOfNamedEntries;
 	int NumberOfIdEntries;
-}type_RDT_RESOURCE_DIRECTORY;
+} type_RDT_RESOURCE_DIRECTORY;
 
 typedef struct {
 	int NodeType;
@@ -52,13 +52,13 @@ typedef struct {
 	int NameIsString;
 	int OffsetIsDirectory;
 	int DataIsDirectory;
-}type_RDT_DIRECTORY_ENTRY;
+} type_RDT_DIRECTORY_ENTRY;
 
 typedef struct {
 	int NodeType;
 	int Strlen;
 	int String;
-}type_RDT_DATA_STRING;
+} type_RDT_DATA_STRING;
 
 typedef struct {
 	int NodeType;
@@ -66,7 +66,7 @@ typedef struct {
 	int Size;
 	int CodePage;
 	int Reserved;
-}type_RDT_DATA_ENTRY;
+} type_RDT_DATA_ENTRY;
 
 typedef struct {
 	NODE_TYPE_PERES kind;
@@ -77,7 +77,7 @@ typedef struct {
 		type_RDT_DATA_ENTRY dataEntry;
 	}node_type;
 
-}output_node_t;
+} output_node_t;
 
 // counting
 typedef struct {
@@ -85,11 +85,11 @@ typedef struct {
 	int directoryEntry;
 	int dataString;
 	int dataEntry;
-}pe_resources_count_t;
+} pe_resources_count_t;
 
 typedef struct {
 	NODE_TYPE_PERES kind;
-}count_output_node;
+} count_output_node_t;
 
 typedef struct {
 	pe_err_e err;
@@ -97,11 +97,11 @@ typedef struct {
 	type_RDT_DIRECTORY_ENTRY *directoryEntry;
 	type_RDT_DATA_STRING *dataString;
 	type_RDT_DATA_ENTRY *dataEntry;
-}pe_final_output_t;
+} pe_final_output_t;
 
 pe_final_output_t get_resources(pe_ctx_t *ctx);
 pe_resources_count_t get_resources_count(pe_ctx_t *ctx);
-void pe_dealloc_peres(pe_final_output_t *peres);
+void pe_dealloc_peres(pe_final_output_t obj);
 
 #ifdef __cplusplus
 } // extern "C"

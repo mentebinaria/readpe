@@ -91,6 +91,7 @@ static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNe
 		return NULL;
 	}
 
+	memset(newNode, 0, sizeof(NODE_PERES));
 	newNode->lastNode = currentNode;
 	newNode->nextNode = NULL;
 	newNode->nodeType = typeOfNextNode;
@@ -206,6 +207,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx) {
 		// TODO(jweyrich): Report allocation failure?
 		return NULL;
 	}
+	memset(node, 0, sizeof(NODE_PERES));
 	node->lastNode = NULL; // root
 	node->nodeType = RDT_RESOURCE_DIRECTORY;
 	node->nodeLevel = RDT_LEVEL1;
@@ -345,6 +347,7 @@ pe_final_output_t get_resources(pe_ctx_t *ctx) {
 		freeNodes(node);
 		return sum_output;
 	}
+	memset(output, 0, sizeof(output_node_t));
 
 	while (node->lastNode != NULL) {
 		node = node->lastNode;
@@ -357,10 +360,13 @@ pe_final_output_t get_resources(pe_ctx_t *ctx) {
 	int index_dataString = 0;
 	int index_dataEntry = 0;
 
-	type_RDT_RESOURCE_DIRECTORY *resourcesDirectory = malloc(count.resourcesDirectory*sizeof(type_RDT_RESOURCE_DIRECTORY));
-	type_RDT_DIRECTORY_ENTRY *directoryEntry = malloc(count.directoryEntry*sizeof(type_RDT_DIRECTORY_ENTRY));
-	type_RDT_DATA_STRING *dataString = malloc(count.dataString*sizeof(type_RDT_DATA_STRING));
-	type_RDT_DATA_ENTRY *dataEntry = malloc(count.dataEntry*sizeof(type_RDT_DATA_ENTRY));
+	type_RDT_RESOURCE_DIRECTORY *resourcesDirectory = malloc(count.resourcesDirectory * sizeof(type_RDT_RESOURCE_DIRECTORY));
+	type_RDT_DIRECTORY_ENTRY *directoryEntry = malloc(count.directoryEntry * sizeof(type_RDT_DIRECTORY_ENTRY));
+	type_RDT_DATA_STRING *dataString = malloc(count.dataString * sizeof(type_RDT_DATA_STRING));
+	type_RDT_DATA_ENTRY *dataEntry = malloc(count.dataEntry * sizeof(type_RDT_DATA_ENTRY));
+
+	// TODO: Handle allocation failure.
+
 	while (node != NULL) {
 		output = showNode(node, output);
 		if (output == NULL)

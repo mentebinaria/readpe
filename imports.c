@@ -129,19 +129,24 @@ pe_imported_function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, ui
 	sample.err = LIBPE_E_OK;
 	sample.count = functions_count;
 
-	sample.names = malloc(functions_count * sizeof(char *));
+	const size_t names_size = functions_count * sizeof(char *);
+	sample.names = malloc(names_size);
 	if (sample.names == NULL) {
 		sample.err = LIBPE_E_ALLOCATION_FAILURE;
 		return sample;
 	}
+	memset(sample.names, 0, names_size);
 
 	// allocate space for each string.
+	const size_t name_size = MAX_FUNCTION_NAME;
 	for (uint32_t i=0; i < functions_count; i++) {
-		sample.names[i] = malloc(MAX_FUNCTION_NAME);
-		if (sample.names[i] == NULL) {
+		char *name = malloc(name_size);
+		if (name == NULL) {
 			sample.err = LIBPE_E_ALLOCATION_FAILURE;
 			return sample;
 		}
+		memset(name, 0, name_size);
+		sample.names[i] = name;
 	}
 
 	bool is_ordinal = false;
@@ -244,23 +249,32 @@ pe_import_t pe_get_imports(pe_ctx_t *ctx) {
 	if (imports.dll_count == 0)
 		return imports;
 
-	imports.dll_names = malloc(imports.dll_count * sizeof(char *));
+	const size_t dll_names_size = imports.dll_count * sizeof(char *);
+	imports.dll_names = malloc(dll_names_size);
 	if (imports.dll_names == NULL) {
 		imports.err = LIBPE_E_ALLOCATION_FAILURE;
 		return imports;
 	}
+	memset(imports.dll_names, 0, dll_names_size);
 
 	for (uint32_t i=0; i < imports.dll_count; i++) {
-		char *dll_name = malloc(MAX_DLL_NAME);
+		const size_t dll_name_size = MAX_DLL_NAME;
+		char *dll_name = malloc(dll_name_size);
 		if (dll_name == NULL) {
 			imports.err = LIBPE_E_ALLOCATION_FAILURE;
 			return imports;
 		}
-
+		memset(dll_name, 0, dll_name_size);
 		imports.dll_names[i] = dll_name;
 	}
 
-	imports.functions = malloc(imports.dll_count * sizeof(pe_imported_function_t *));
+	const size_t functions_size = imports.dll_count * sizeof(pe_imported_function_t *);
+	imports.functions = malloc(functions_size);
+	if (imports.functions == NULL) {
+		imports.err = LIBPE_E_ALLOCATION_FAILURE;
+		return imports;
+	}
+	memset(imports.functions, 0, functions_size);
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL) {

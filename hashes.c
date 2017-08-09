@@ -116,6 +116,7 @@ pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_si
 		sample.err = LIBPE_E_ALLOCATION_FAILURE;
 		return sample;
 	}
+	memset(hash_value, 0, hash_maxsize);
 
 	sample.name = strdup(name);
 	if (sample.name == NULL) {
@@ -252,11 +253,13 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 	const size_t num_sections = pe_sections_count(ctx);
 	
 	// Local hash sample which will be assigned to finalsample.sections
-	pe_hash_t *sample = malloc(num_sections * sizeof(pe_hash_t));
+	const size_t sample_size = num_sections * sizeof(pe_hash_t);
+	pe_hash_t *sample = malloc(sample_size);
 	if (sample == NULL) {
 		final_sample.err = LIBPE_E_ALLOCATION_FAILURE;
 		return final_sample;
 	}
+	memset(sample, 0, sample_size);
 
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
 	size_t count = 0;
@@ -437,6 +440,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			// TODO: Handle allocation failure.
 			abort();
 		}
+		memset(el, 0, sizeof(element_t));
 
 		el->dll_name = strdup(dll_name);
 

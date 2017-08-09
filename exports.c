@@ -78,11 +78,13 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 	// functions/symbols exported by name only.
 
 	exports.functions_count = exp->NumberOfFunctions;
-	exports.functions = malloc(exp->NumberOfFunctions * sizeof(pe_exported_function_t));
+	const size_t functions_size = exp->NumberOfFunctions * sizeof(pe_exported_function_t);
+	exports.functions = malloc(functions_size);
 	if (exports.functions == NULL) {
 		exports.err = LIBPE_E_ALLOCATION_FAILURE;
 		return exports;
 	}
+	memset(exports.functions, 0, functions_size);
 
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;

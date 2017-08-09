@@ -16,10 +16,10 @@
 #define IMPHASH_FLAVOR_PEFILE 2
 
 // Used for Imphash calulation 
-static char *last_strstr(const char *haystack, const char *needle)
+static char *last_strstr(char *haystack, const char *needle)
 {
-	if (*needle == '\0')
-		return (char *) haystack;
+	if (needle == NULL || *needle == '\0')
+		return haystack;
 
 	char *result = NULL;
 	for (;;) {

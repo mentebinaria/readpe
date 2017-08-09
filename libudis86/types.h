@@ -26,6 +26,8 @@
 #ifndef UD_TYPES_H
 #define UD_TYPES_H
 
+#include <string.h>
+
 #ifdef __KERNEL__
   /* -D__KERNEL__ is automatically passed on the command line when
      building something as part of the Linux kernel */

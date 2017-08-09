@@ -1,12 +1,12 @@
 #ifndef LIBPE_EXPORTS
 #define LIBPE_EXPORTS
 
+#include "pe.h"
+#include "error.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "pe.h"
-#include "error.h"
 
 typedef struct {
 	uint32_t addr;

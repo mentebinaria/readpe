@@ -1,12 +1,10 @@
+#include "imports.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
-#include "imports.h"
-
-#define MAX_FUNCTION_NAME 512
-#define MAX_DLL_NAME 256
 
 uint32_t get_dll_count(pe_ctx_t *ctx) {
 	uint32_t count = 0;

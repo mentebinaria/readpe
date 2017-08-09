@@ -1,16 +1,11 @@
-//#include "common.h"
-#include <string.h>
+#include "peres.h"
 
-const char *resourceDir = "resources";
-
-#include "libudis86/udis86.h"
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "pe.h"
-#include "peres.h"
-#include <stdlib.h>
 
 output_node_t *showNode(const NODE_PERES *node, output_node_t *output)
 {

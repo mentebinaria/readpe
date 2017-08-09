@@ -1,8 +1,7 @@
+#include "exports.h"
+
 #include <stdlib.h>
 #include <string.h>
-#include "exports.h"
-#include "pe.h"
-#include "error.h"
 
 pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 	pe_exports_t exports;

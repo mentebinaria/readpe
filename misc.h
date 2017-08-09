@@ -1,11 +1,11 @@
 #ifndef LIBPE_MISC
 #define LIBPE_MISC
 
+#include "pe.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "pe.h"
 
 double pe_calculate_entropy_file(pe_ctx_t *ctx);
 bool pe_fpu_trick(pe_ctx_t *ctx);

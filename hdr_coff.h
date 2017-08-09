@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 	IMAGE_FILE_MACHINE_UNKNOWN		= 0x0,
 	IMAGE_FILE_MACHINE_AM33			= 0x1d3,
@@ -126,5 +130,9 @@ typedef struct {
 } IMAGE_FILE_HEADER, IMAGE_COFF_HEADER;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

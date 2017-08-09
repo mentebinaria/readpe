@@ -1,12 +1,12 @@
 #ifndef LIBPE_HASHES
 #define LIBPE_HASHES
 
+#include "pe.h"
+#include "error.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "pe.h"
-#include "error.h"
 
 typedef struct {
 	pe_err_e err;

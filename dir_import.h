@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #pragma pack(push, 1)
 
 typedef struct {
@@ -63,5 +67,9 @@ typedef struct {
 } IMAGE_THUNK_DATA32;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

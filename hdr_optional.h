@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx
 typedef enum {
 	// Unknown subsystem
@@ -182,5 +186,9 @@ typedef struct {
 } IMAGE_OPTIONAL_HEADER;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

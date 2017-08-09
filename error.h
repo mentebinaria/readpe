@@ -24,6 +24,10 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 	LIBPE_E_OK = 0,
 	// Declaring negative values this way is EVIL because it
@@ -63,5 +67,9 @@ typedef enum {
 
 const char *pe_error_msg(pe_err_e error);
 void pe_error_print(FILE *stream, pe_err_e error);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

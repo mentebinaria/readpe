@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #pragma pack(push, 1)
 
 typedef struct {
@@ -49,5 +53,9 @@ typedef struct {
 } IMAGE_DOS_HEADER;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

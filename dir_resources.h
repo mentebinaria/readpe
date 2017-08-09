@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // resources types
 typedef enum {
 	RT_CURSOR			= 1, // cursor image
@@ -115,5 +119,9 @@ typedef struct tagVS_FIXEDFILEINFO {
 } VS_FIXEDFILEINFO;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

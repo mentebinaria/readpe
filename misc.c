@@ -1,9 +1,9 @@
+#include "misc.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "pe.h"
-#include "error.h"
 
 double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
 {

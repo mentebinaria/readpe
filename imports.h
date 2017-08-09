@@ -1,13 +1,13 @@
 #ifndef LIBPE_IMPORTS
 #define LIBPE_IMPORTS
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include "pe.h"
 #include "error.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
 	pe_err_e err;

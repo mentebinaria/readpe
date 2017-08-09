@@ -1,6 +1,10 @@
 #ifndef LIBPE_PERES
 #define LIBPE_PERES
 
+#include <stdint.h>
+#include "pe.h"
+#include "error.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

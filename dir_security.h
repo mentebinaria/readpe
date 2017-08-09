@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ANYSIZE_ARRAY 1
 
 // #define WIN_TRUST_MAJOR_REVISION_MASK	0xFFFF0000
@@ -76,5 +80,9 @@ typedef struct {
 } CRYPT_DATA_BLOB;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

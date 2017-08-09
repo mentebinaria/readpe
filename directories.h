@@ -27,6 +27,10 @@
 #include "dir_resources.h"
 #include "dir_security.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Directory entries
 typedef enum {
 	IMAGE_DIRECTORY_ENTRY_EXPORT			= 0, // Export Table
@@ -84,5 +88,9 @@ typedef struct {
 	uint32_t VirtualAddress;
 	uint32_t Size;
 } IMAGE_DATA_DIRECTORY;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

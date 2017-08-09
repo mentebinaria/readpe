@@ -1,3 +1,5 @@
+#include "hashes.h"
+
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <ctype.h>
@@ -5,13 +7,9 @@
 #include <string.h>
 
 #include "fuzzy.h"
-#include "hashes.h"
 #include "ordlookup.h"
 #include "utlist.h"
-#include "error.h"
 
-#define MAX_FUNCTION_NAME 255 
-#define MAX_DLL_NAME 255
 #define IMPHASH_FLAVOR_MANDIANT 1
 #define IMPHASH_FLAVOR_PEFILE 2
 

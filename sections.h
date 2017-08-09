@@ -24,6 +24,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SECTION_NAME_SIZE 8
 
 typedef enum {
@@ -84,5 +88,9 @@ typedef struct {
 } IMAGE_SECTION_HEADER;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

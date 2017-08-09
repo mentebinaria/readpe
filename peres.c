@@ -19,7 +19,7 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "peres.h"
+#include "libpe/peres.h"
 
 #include <assert.h>
 #include <stdlib.h>

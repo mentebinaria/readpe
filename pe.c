@@ -19,7 +19,7 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pe.h"
+#include "libpe/pe.h"
 
 #include <errno.h>
 #include <fcntl.h>

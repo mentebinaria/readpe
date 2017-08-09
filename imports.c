@@ -19,7 +19,7 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "imports.h"
+#include "libpe/imports.h"
 
 #include <stdio.h>
 #include <stdlib.h>

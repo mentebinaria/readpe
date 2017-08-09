@@ -19,8 +19,8 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "error.h"
-#include "macros.h"
+#include "libpe/error.h"
+#include "libpe/macros.h"
 #include <errno.h>
 #include <string.h>
 

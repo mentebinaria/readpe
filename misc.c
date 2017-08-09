@@ -19,7 +19,7 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "misc.h"
+#include "libpe/misc.h"
 
 #include <stdlib.h>
 #include <stdio.h>

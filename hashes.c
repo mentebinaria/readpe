@@ -19,7 +19,7 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hashes.h"
+#include "libpe/hashes.h"
 
 #include <openssl/evp.h>
 #include <openssl/md5.h>
@@ -27,9 +27,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "fuzzy.h"
-#include "ordlookup.h"
-#include "utlist.h"
+#include "libfuzzy/fuzzy.h"
+#include "libpe/ordlookup.h"
+#include "libpe/utlist.h"
 
 // Used for Imphash calulation 
 static char *last_strstr(char *haystack, const char *needle) {

@@ -10,12 +10,8 @@
 #include "ordlookup.h"
 #include "utlist.h"
 
-#define IMPHASH_FLAVOR_MANDIANT 1
-#define IMPHASH_FLAVOR_PEFILE 2
-
 // Used for Imphash calulation 
-static char *last_strstr(char *haystack, const char *needle)
-{
+static char *last_strstr(char *haystack, const char *needle) {
 	if (needle == NULL || *needle == '\0')
 		return haystack;
 
@@ -31,13 +27,16 @@ static char *last_strstr(char *haystack, const char *needle)
 	return result;
 }
 
-char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
-{
-	OpenSSL_add_all_digests();
+bool calc_hash(char *output, const char *alg_name, const unsigned char *data, size_t data_size) {
+	bool ret = true;
+
 	if (strcmp("ssdeep", alg_name) == 0) {
-		fuzzy_hash_buf(data, size, output);
-		return output;
+		fuzzy_hash_buf(data, data_size, output);
+		return ret;
 	}
+
+	OpenSSL_add_all_digests();
+
 	const EVP_MD *md = EVP_get_digestbyname(alg_name);
 	//assert(md != NULL); // We already checked this in parse_hash_algorithm()
 	unsigned char md_value[EVP_MAX_MD_SIZE];
@@ -54,36 +53,43 @@ char *calc_hash(const char *alg_name, const unsigned char *data, size_t size, ch
 	// FIXME: Handle errors - Check return values.
 	EVP_MD_CTX_init(md_ctx);
 	EVP_DigestInit_ex(md_ctx, md, NULL);
-	EVP_DigestUpdate(md_ctx, data, size);
+	EVP_DigestUpdate(md_ctx, data, data_size);
 	EVP_DigestFinal_ex(md_ctx, md_value, &md_len);
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	EVP_MD_CTX_cleanup(md_ctx);  // removing this to fix :"Error: free(): invalid next size (fast):" this is happening only with imphash
 #else
 	//EVP_MD_CTX_free(md_ctx); // same here
 #endif
+
 	int err;
 	for (unsigned int i=0; i < md_len; i++) {
 		err = sprintf(&output[i * 2], "%02x", md_value[i]);
-		if(err<0){
+		if (err < 0) {
 			output = NULL;
+			ret = false;
 			break;
 		}
 	}
+
 	CRYPTO_cleanup_all_ex_data();
 	EVP_cleanup();
 
-	return output;
+	return ret;
 }
 
-pe_hash_t get_hashes(const char *name,const unsigned char *data, size_t data_size) {
-	pe_hash_t sample;
-
-	const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
-	const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
+pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_size) {
+	static const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
+	static const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
 	// Since standard C lacks max(), we do it manually.
-	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
+	static const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
 		? openssl_hash_maxsize
 		: ssdeep_hash_maxsize;
+
+	pe_hash_t sample;
+	memset(&sample, 0, sizeof(sample));
+
+	sample.err = LIBPE_E_OK;
+
 	char *hash_value = malloc(hash_maxsize);
 	if (hash_value == NULL) {
 		sample.err = LIBPE_E_ALLOCATION_FAILURE;
@@ -91,53 +97,59 @@ pe_hash_t get_hashes(const char *name,const unsigned char *data, size_t data_siz
 	}
 
 	sample.name = strdup(name);
-	sample.md5 = malloc(hash_maxsize); 
-	sample.sha1 = malloc(hash_maxsize);
-	sample.sha256 = malloc(hash_maxsize);
-	sample.ssdeep = malloc(hash_maxsize);
-	// Currently we can show only one error. But what if there is a problem in both md5 and sha1?
-	char *md5 = calc_hash("md5", data, data_size, hash_value);
-	if (md5 == NULL){
-		sample.err = LIBPE_E_HASHES_MD5;
-		sample.md5 = NULL;
-		return sample;
-	} 
-	else {
-		memcpy(sample.md5,md5 , hash_maxsize); // TODO: what if something ??!!
+	if (sample.name == NULL) {
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		goto error;
 	}
 
-	char *sha1 = calc_hash("sha1", data, data_size, hash_value);
-	if (sha1 == NULL){
-		sample.err = LIBPE_E_HASHES_SHA1;
-		sample.sha1 = NULL;
-		return sample;
+	bool hash_ok;
+
+	hash_ok = calc_hash(hash_value, "md5", data, data_size);
+	if (!hash_ok) {
+		sample.err = LIBPE_E_HASHING_FAILED;
+		goto error;
 	}
-	else {
-		memcpy(sample.sha1,sha1 , hash_maxsize);
+	sample.md5 = strdup(hash_value);
+	if (sample.md5 == NULL) {
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		goto error;
 	}
 
-	char *sha256 = calc_hash("sha256", data, data_size, hash_value);
-	if (sha256 == NULL) {
-		sample.err = LIBPE_E_HASHES_SHA256;
-		sample.sha256 = NULL;
-		return sample;
+	hash_ok = calc_hash(hash_value, "sha1", data, data_size);
+	if (!hash_ok) {
+		sample.err = LIBPE_E_HASHING_FAILED;
+		goto error;
 	}
-	else {
-		memcpy(sample.sha256,sha256, hash_maxsize);
-	}
-
-	char *ssdeep = calc_hash("ssdeep", data, data_size, hash_value);
-	if (ssdeep == NULL) {
-		sample.err = LIBPE_E_HASHES_SSDEEP;
-		sample.ssdeep = NULL;
-		return sample;
-	}
-	else {
-		memcpy(sample.ssdeep,ssdeep, hash_maxsize);
+	sample.sha1 = strdup(hash_value);
+	if (sample.sha1 == NULL) {
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		goto error;
 	}
 
+	hash_ok = calc_hash(hash_value, "sha256", data, data_size);
+	if (!hash_ok) {
+		sample.err = LIBPE_E_HASHING_FAILED;
+		goto error;
+	}
+	sample.sha256 = strdup(hash_value);
+	if (sample.sha256 == NULL) {
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		goto error;
+	}
+
+	hash_ok = calc_hash(hash_value, "ssdeep", data, data_size);
+	if (!hash_ok) {
+		sample.err = LIBPE_E_HASHING_FAILED;
+		goto error;
+	}
+	sample.ssdeep = strdup(hash_value);
+	if (sample.ssdeep == NULL) {
+		sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		goto error;
+	}
+
+error:
 	free(hash_value);
-	sample.err = LIBPE_E_OK;
 	return sample;
 }
 
@@ -146,7 +158,7 @@ pe_hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
 	const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
 	const unsigned char *data = (const unsigned char *)dos_sample;
 	uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
-	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);	// TODO: what if something goes wrong?
+	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);
 	return dos;
 }
 
@@ -155,7 +167,7 @@ pe_hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
 	const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
 	const unsigned char *data = (const unsigned char *)coff_sample;
 	uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
-	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size);	// TODO: what if something goes wrong!!??
+	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size);
 	return coff;
 }
 
@@ -182,53 +194,55 @@ pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 }
 
 pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
-
-	pe_hash_t dos = get_headers_dos_hash(ctx); // TODO:what if something goes wrong??
+	pe_hash_t dos = get_headers_dos_hash(ctx);
 	pe_hash_t optional = get_headers_optional_hash(ctx);
 	pe_hash_t coff = get_headers_coff_hash(ctx);
 
 	pe_hdr_t sample_hdr;
 	sample_hdr.err = dos.err;
 
-	if (dos.err == LIBPE_E_OK) {
-		sample_hdr.dos = dos;
-	}
-	else {
+	if (dos.err != LIBPE_E_OK) {
 		sample_hdr.err = dos.err;
 		return sample_hdr;
 	}
+	sample_hdr.dos = dos;
 
-	if (optional.err == LIBPE_E_OK) {
-		sample_hdr.optional = optional;
-	}
-	else {
+	if (optional.err != LIBPE_E_OK) {
 		sample_hdr.err = optional.err;
 		return sample_hdr;
 	}
+	sample_hdr.optional = optional;
 
-	if (coff.err == LIBPE_E_OK) {
-		sample_hdr.coff = coff;
-	}
-	else {
+	if (coff.err != LIBPE_E_OK) {
 		sample_hdr.err = coff.err;
 		return sample_hdr;
 	}
+	sample_hdr.coff = coff;
 
 	return sample_hdr; 
 }
 
 pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 	pe_hash_section_t final_sample;
-	int c = pe_sections_count(ctx); // Total number of sections
-	pe_hash_t *sample = (pe_hash_t *)malloc(c *sizeof(pe_hash_t));  //local hash sample which will later be assigned to finalsample.sections
-	const unsigned char *data = NULL;
-	uint64_t data_size = 0;
-	char *name; // to savename of section
+	memset(&final_sample, 0, sizeof(pe_hash_section_t));
+	
+	final_sample.err = LIBPE_E_OK;
+
+	const size_t num_sections = pe_sections_count(ctx);
+	
+	// Local hash sample which will be assigned to finalsample.sections
+	pe_hash_t *sample = malloc(num_sections * sizeof(pe_hash_t));
+	if (sample == NULL) {
+		final_sample.err = LIBPE_E_ALLOCATION_FAILURE;
+		return final_sample;
+	}
+
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
-	int count = 0; // to count number of sections which has hashes
-	for (int i=0; i<c; i++) {
-		data_size = sections[i]->SizeOfRawData;
-		data = LIBPE_PTR_ADD(ctx->map_addr, sections[i]->PointerToRawData);
+	size_t count = 0;
+
+	for (size_t i=0; i < num_sections; i++) {
+		uint64_t data_size = sections[i]->SizeOfRawData;
+		const unsigned char *data = LIBPE_PTR_ADD(ctx->map_addr, sections[i]->PointerToRawData);
 
 		if (!pe_can_read(ctx, data, data_size)) {
 			//EXIT_ERROR("Unable to read section data");
@@ -237,14 +251,15 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 			final_sample.sections = NULL;
 			return final_sample;
 		}
+
 		if (data_size) {
-			name = (char *)sections[i]->Name;
+			char *name = (char *)sections[i]->Name;
 			pe_hash_t sec_hash = get_hashes(name, data, data_size);
 			if (sec_hash.err != LIBPE_E_OK) {
+				// TODO: Should we skip this section and continue the loop?
 				final_sample.err = sec_hash.err;
 				return final_sample;
-			}
-			else {
+			} else {
 				sample[count] = sec_hash;
 				count++;
 			}
@@ -258,23 +273,19 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 }
 
 pe_hash_t get_file_hash(pe_ctx_t *ctx) {
-	const unsigned char *data = ctx->map_addr;
-	uint64_t data_size = pe_filesize(ctx);
-	pe_hash_t sample;
-	const char *name = "PEfile hash";
-	sample = get_hashes(name, data, data_size);
+	const uint64_t data_size = pe_filesize(ctx);
+	pe_hash_t sample = get_hashes("PEfile hash", ctx->map_addr, data_size);
 	return sample;
 } 
 
 typedef struct element {
 	char *dll_name;
 	char *function_name;
-	//struct element *prev; /* needed for a doubly-linked list only */
-	struct element *next; /* needed for singly- or doubly-linked lists */
-} element;
+	//struct element *prev; // needed for a doubly-linked list only
+	struct element *next; // needed for singly- or doubly-linked lists
+} element_t;
 
-static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, struct element **head, int flavor)
-{
+static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, element_t **head, pe_imphash_flavor_e flavor) {
 	uint64_t ofs = offset;
 
 	char hint_str[16];
@@ -370,29 +381,37 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 		//TODO use a reverse search function instead
 
-		if (flavor == IMPHASH_FLAVOR_MANDIANT)
-			aux = last_strstr(dll_name, ".");
-		else if (flavor == IMPHASH_FLAVOR_PEFILE) {
-			aux = last_strstr(dll_name, ".dll");
-			if (aux)
-				*aux = '\0';
+		switch (flavor) {
+			default: abort();
+			case LIBPE_IMPHASH_FLAVOR_MANDIANT:
+			{
+				aux = last_strstr(dll_name, ".");
+				break;
+			}
+			case LIBPE_IMPHASH_FLAVOR_PEFILE:
+			{
+				aux = last_strstr(dll_name, ".dll");
+				if (aux)
+					*aux = '\0';
 
-			aux = last_strstr(dll_name, ".ocx");
-			if (aux)
-				*aux = '\0';
+				aux = last_strstr(dll_name, ".ocx");
+				if (aux)
+					*aux = '\0';
 
-			aux = last_strstr(dll_name, ".sys");
-			if (aux)
-				*aux = '\0';
+				aux = last_strstr(dll_name, ".sys");
+				if (aux)
+					*aux = '\0';
+				break;
+			}
 		}
 
 		if (aux)
 			*aux = '\0';
 
-		for (unsigned i=0; i < strlen(fname); i++)
+		for (size_t i=0; i < strlen(fname); i++)
 			fname[i] = tolower(fname[i]);
 
-		struct element *el = malloc(sizeof(struct element));
+		element_t *el = malloc(sizeof(element_t));
 		if (el == NULL) {
 			// TODO: Handle allocation failure.
 			abort();
@@ -400,45 +419,47 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 		el->dll_name = strdup(dll_name);
 
-		if (flavor == IMPHASH_FLAVOR_MANDIANT) {
-			el->function_name = strdup(is_ordinal ? hint_str : fname);
-		}
-		else if (flavor == IMPHASH_FLAVOR_PEFILE) { 
-
-			int hint = strtoul(hint_str, NULL, 10);
-
-			if ( strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
-				for (unsigned i=0; i < sizeof(oleaut32_arr) / sizeof(ord_t); i++)
-					if (hint == oleaut32_arr[i].number)
-						el->function_name = strdup(oleaut32_arr[i].fname);
+		switch (flavor) {
+			default: abort();
+			case LIBPE_IMPHASH_FLAVOR_MANDIANT:
+			{
+				el->function_name = strdup(is_ordinal ? hint_str : fname);
+				break;
 			}
-			else if ( strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
-				for (unsigned i=0; i < sizeof(ws2_32_arr) / sizeof(ord_t); i++)
-					if (hint == ws2_32_arr[i].number)
-						el->function_name = strdup(ws2_32_arr[i].fname);
-			}
-			else {
-				char ord[MAX_FUNCTION_NAME];
-				memset(ord, 0, MAX_FUNCTION_NAME);
+			case LIBPE_IMPHASH_FLAVOR_PEFILE:
+			{
+				int hint = strtoul(hint_str, NULL, 10);
 
-				if (is_ordinal) {
-					snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
-					el->function_name = strdup(ord);
+				if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
+					for (size_t i=0; i < sizeof(oleaut32_arr) / sizeof(ord_t); i++)
+						if (hint == oleaut32_arr[i].number)
+							el->function_name = strdup(oleaut32_arr[i].fname);
+				} else if ( strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
+					for (size_t i=0; i < sizeof(ws2_32_arr) / sizeof(ord_t); i++)
+						if (hint == ws2_32_arr[i].number)
+							el->function_name = strdup(ws2_32_arr[i].fname);
 				} else {
-					el->function_name = strdup(fname);
+					char ord[MAX_FUNCTION_NAME];
+					memset(ord, 0, MAX_FUNCTION_NAME);
+
+					if (is_ordinal) {
+						snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
+						el->function_name = strdup(ord);
+					} else {
+						el->function_name = strdup(fname);
+					}
 				}
 			}
 		}
 
-		for (unsigned i=0; i < strlen(el->function_name); i++)
+		for (size_t i=0; i < strlen(el->function_name); i++)
 			el->function_name[i] = tolower(el->function_name[i]);
 
 		LL_APPEND(*head, el);
 	}
 }
 
-char *imphash(pe_ctx_t *ctx, int flavor)
-{
+char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL)
 		return NULL;
@@ -448,8 +469,9 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 		//fprintf(stderr, "import directory not found\n");
 		return NULL;
 	}
+
 	uint64_t ofs = pe_rva2ofs(ctx, va);
-	element *elt, *tmp, *head = NULL;
+	element_t *elt, *tmp, *head = NULL;
 	int count = 0;
 
 	while (1) {
@@ -497,14 +519,12 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 	LL_COUNT(head, elt, count);
 	//printf("%d number of elements in list outside\n", count);
 
-	size_t imphash_string_size = sizeof(char) * count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
-
+	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
 	char *imphash_string = malloc(imphash_string_size);
 	if (imphash_string == NULL) {
 		// TODO: Handle allocation failure.
 		abort();
 	}
-
 	memset(imphash_string, 0, imphash_string_size);
 
 	LL_FOREACH_SAFE(head, elt, tmp) \
@@ -513,24 +533,21 @@ char *imphash(pe_ctx_t *ctx, int flavor)
 
 	free(elt);
 
-	imphash_string_size = strlen(imphash_string);
-	if (imphash_string_size)
-		imphash_string[imphash_string_size-1] = '\0'; // remove the last comma sign
+	const size_t imphash_string_len = strlen(imphash_string);
+	if (imphash_string_len)
+		imphash_string[imphash_string_len - 1] = '\0'; // remove the last comma sign
 
-	//puts(imphash_string); // DEBUG
-
-	char imphash[33];
-	char *output = malloc(sizeof(imphash));
-	char *md5 = calc_hash("md5", imphash_string, sizeof(imphash_string), imphash);
-	memcpy(output, md5, sizeof(imphash));
-	free(md5);
+	char result[33];
+	const unsigned char *data = (const unsigned char *)imphash_string;
+	const size_t data_size = imphash_string_len;
+	const bool hash_ok = calc_hash(result, "md5", data, data_size);
 
 	free(imphash_string);
 
-	return output;
+	return hash_ok ? strdup(result) : NULL;
 }
 
-void dealloc_hdr_hashes(pe_hdr_t obj) {
+void pe_dealloc_hdr_hashes(pe_hdr_t obj) {
 	free(obj.dos.md5);
 	free(obj.dos.sha1);
 	free(obj.dos.sha256);
@@ -545,18 +562,18 @@ void dealloc_hdr_hashes(pe_hdr_t obj) {
 	free(obj.optional.ssdeep); 
 }
 
-void dealloc_sections_hashes(pe_hash_section_t obj) {
-	int count = obj.count;
-	for (int i=0;i<count;i++){
+void pe_dealloc_sections_hashes(pe_hash_section_t obj) {
+	for (uint32_t i=0; i < obj.count; i++) {
 		free(obj.sections[i].md5);
 		free(obj.sections[i].sha1);
 		free(obj.sections[i].sha256);
 		free(obj.sections[i].ssdeep);
 	}
+
 	free(obj.sections);
 }
 
-void dealloc_filehash(pe_hash_t obj) {
+void pe_dealloc_filehash(pe_hash_t obj) {
 	free(obj.name);
 	free(obj.md5);
 	free(obj.sha1);

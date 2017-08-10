@@ -102,7 +102,7 @@ pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_si
 	static const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
 	static const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
 	// Since standard C lacks max(), we do it manually.
-	static const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
+	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
 		? openssl_hash_maxsize
 		: ssdeep_hash_maxsize;
 

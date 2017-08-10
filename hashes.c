@@ -107,7 +107,7 @@ pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_si
 		: ssdeep_hash_maxsize;
 
 	pe_hash_t sample;
-	memset(&sample, 0, sizeof(sample));
+	memset(&sample, 0, sizeof(pe_hash_t));
 
 	sample.err = LIBPE_E_OK;
 
@@ -176,88 +176,82 @@ error:
 }
 
 pe_hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
-	pe_hash_t dos;
-	const IMAGE_DOS_HEADER *dos_sample = pe_dos(ctx);
-	const unsigned char *data = (const unsigned char *)dos_sample;
-	uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
-	dos = get_hashes("IMAGE_DOS_HEADER", data, data_size);
-	return dos;
+	const IMAGE_DOS_HEADER *sample = pe_dos(ctx);
+	const unsigned char *data = (const unsigned char *)sample;
+	const uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
+	return get_hashes("IMAGE_DOS_HEADER", data, data_size);
 }
 
 pe_hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
-	pe_hash_t coff;
-	const IMAGE_COFF_HEADER *coff_sample = pe_coff(ctx);
-	const unsigned char *data = (const unsigned char *)coff_sample;
-	uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
-	coff = get_hashes("IMAGE_COFF_HEADER", data, data_size);
-	return coff;
+	const IMAGE_COFF_HEADER *sample = pe_coff(ctx);
+	const unsigned char *data = (const unsigned char *)sample;
+	const uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
+	return get_hashes("IMAGE_COFF_HEADER", data, data_size);
 }
 
 pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
-	pe_hash_t optional; const IMAGE_OPTIONAL_HEADER *optional_sample = pe_optional(ctx);
-	const unsigned char *data;
-	uint64_t data_size;
-	switch(optional_sample->type) {
+	const IMAGE_OPTIONAL_HEADER *sample = pe_optional(ctx);
+
+	switch (sample->type) {
 		default:
 			// TODO(jweyrich): handle unknown type.
 			exit(1);
 		case MAGIC_PE32:
-			data = (const unsigned char *)optional_sample->_32;
-			data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
-			optional = get_hashes("IMAGE_OPTIONAL_HEADER_32", data, data_size);
-			return optional;
-
+		{
+			const unsigned char *data = (const unsigned char *)sample->_32;
+			const uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
+			return get_hashes("IMAGE_OPTIONAL_HEADER_32", data, data_size);
+		}
 		case MAGIC_PE64:
-			data = (const unsigned char *)optional_sample->_64;
-			data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);	
-			optional = get_hashes("IMAGE_OPTIONAL_HEADER_64", data, data_size);
-			return optional;
+		{
+			const unsigned char *data = (const unsigned char *)sample->_64;
+			const uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
+			return get_hashes("IMAGE_OPTIONAL_HEADER_64", data, data_size);
+		}
 	}
 }
 
 pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
-	pe_hash_t dos = get_headers_dos_hash(ctx);
-	pe_hash_t optional = get_headers_optional_hash(ctx);
-	pe_hash_t coff = get_headers_coff_hash(ctx);
+	pe_hdr_t result;
+	memset(&result, 0, sizeof(pe_hdr_t));
 
-	pe_hdr_t sample_hdr;
-	sample_hdr.err = dos.err;
+	result.err = LIBPE_E_OK;
 
-	if (dos.err != LIBPE_E_OK) {
-		sample_hdr.err = dos.err;
-		return sample_hdr;
+	result.dos = get_headers_dos_hash(ctx);
+	if (result.dos.err != LIBPE_E_OK) {
+		result.err = result.dos.err;
+		return result;
 	}
-	sample_hdr.dos = dos;
 
-	if (optional.err != LIBPE_E_OK) {
-		sample_hdr.err = optional.err;
-		return sample_hdr;
+	result.optional = get_headers_optional_hash(ctx);
+	if (result.optional.err != LIBPE_E_OK) {
+		result.err = result.optional.err;
+		return result;
 	}
-	sample_hdr.optional = optional;
 
-	if (coff.err != LIBPE_E_OK) {
-		sample_hdr.err = coff.err;
-		return sample_hdr;
+	result.coff = get_headers_coff_hash(ctx);
+	if (result.coff.err != LIBPE_E_OK) {
+		result.err = result.coff.err;
+		return result;
 	}
-	sample_hdr.coff = coff;
 
-	return sample_hdr; 
+	return result;
 }
 
 pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
-	pe_hash_section_t final_sample;
-	memset(&final_sample, 0, sizeof(pe_hash_section_t));
+	pe_hash_section_t result;
+	memset(&result, 0, sizeof(pe_hash_section_t));
 	
-	final_sample.err = LIBPE_E_OK;
+	result.err = LIBPE_E_OK;
 
 	const size_t num_sections = pe_sections_count(ctx);
 	
-	// Local hash sample which will be assigned to finalsample.sections
+	// Local hash sample which will be assigned to result.sections
 	const size_t sample_size = num_sections * sizeof(pe_hash_t);
 	pe_hash_t *sample = malloc(sample_size);
 	if (sample == NULL) {
-		final_sample.err = LIBPE_E_ALLOCATION_FAILURE;
-		return final_sample;
+		result.err = LIBPE_E_ALLOCATION_FAILURE;
+		return result;
 	}
 	memset(sample, 0, sample_size);
 
@@ -271,29 +265,29 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 		if (!pe_can_read(ctx, data, data_size)) {
 			//EXIT_ERROR("Unable to read section data");
 			//fprintf(stderr, "%s\n", "unable to read sections data");
-			final_sample.count = 0;
-			final_sample.sections = NULL;
-			return final_sample;
+			result.count = 0;
+			result.sections = NULL;
+			return result;
 		}
 
 		if (data_size) {
 			char *name = (char *)sections[i]->Name;
+
 			pe_hash_t sec_hash = get_hashes(name, data, data_size);
 			if (sec_hash.err != LIBPE_E_OK) {
 				// TODO: Should we skip this section and continue the loop?
-				final_sample.err = sec_hash.err;
-				return final_sample;
-			} else {
-				sample[count] = sec_hash;
-				count++;
+				result.err = sec_hash.err;
+				return result;
 			}
+
+			sample[count] = sec_hash;
+			count++;
 		}
 	}
 
-	final_sample.err = LIBPE_E_OK;
-	final_sample.count = count;
-	final_sample.sections = sample;
-	return final_sample;
+	result.count = count;
+	result.sections = sample;
+	return result;
 }
 
 pe_hash_t get_file_hash(pe_ctx_t *ctx) {
@@ -577,10 +571,12 @@ void pe_dealloc_hdr_hashes(pe_hdr_t obj) {
 	free(obj.dos.sha1);
 	free(obj.dos.sha256);
 	free(obj.dos.ssdeep);
+
 	free(obj.coff.md5);
 	free(obj.coff.sha1);
 	free(obj.coff.sha256);
 	free(obj.coff.ssdeep);
+
 	free(obj.optional.md5);
 	free(obj.optional.sha1);
 	free(obj.optional.sha256);

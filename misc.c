@@ -1,12 +1,32 @@
+/*
+    libpe - the PE library
+
+    Copyright (C) 2010 - 2017 libpe authors
+    
+    This file is part of libpe.
+
+    libpe is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    libpe is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with libpe.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "libpe/misc.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "pe.h"
-#include "error.h"
 
-double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length)
-{
+double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length) {
 	static const double log_2 = 1.44269504088896340736;
 	double entropy = 0.;
 
@@ -40,16 +60,15 @@ bool pe_fpu_trick(pe_ctx_t *ctx) {
 		if (*opcode_ptr++ == '\xdf') {
 			if (++times == 4)
 				return true;
-		}
-		else
+		} else {
 			times = 0;
+		}
 	}
 
 	return false;
 }
 
-int cpl_analysis(pe_ctx_t *ctx)
-{
+int cpl_analysis(pe_ctx_t *ctx) {
 	const IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
 	const IMAGE_DOS_HEADER *hdr_dos_ptr = pe_dos(ctx);
 
@@ -96,8 +115,7 @@ int pe_get_cpl_analysis(pe_ctx_t *ctx) {
 	return pe_is_dll(ctx) ? cpl_analysis(ctx) : -1;
 }
 
-const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep)
-{
+const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx, uint32_t ep) {
 	const uint16_t num_sections = pe_sections_count(ctx);
 	if (num_sections == 0)
 		return NULL;
@@ -116,26 +134,25 @@ int pe_has_fake_entrypoint(pe_ctx_t *ctx) {
 	const IMAGE_OPTIONAL_HEADER *optional = pe_optional(ctx);
 	if (optional == NULL)
 		return -1; // Unable to read optional header.
-	uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
-			(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
 
-	// fake ep
+	const uint32_t ep = optional->_32
+		? optional->_32->AddressOfEntryPoint
+		: (optional->_64 ? optional->_64->AddressOfEntryPoint : 0);
+
 	int value;
 
 	if (ep == 0) {
 		value = -2; // null
-	} 
-	else if (pe_check_fake_entrypoint(ctx, ep)) {
+	}  else if (pe_check_fake_entrypoint(ctx, ep)) {
 		value = 1; // fake 
-	} 
-	else {
-		value = 0;			 // normal 
+	}  else {
+		value = 0; // normal
 	}
+
 	return value;
 }
 
-uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
-{
+uint32_t pe_get_tls_directory(pe_ctx_t *ctx) {
 	if (ctx->pe.num_directories == 0 || ctx->pe.num_directories > MAX_DIRECTORIES)
 		return 0;
 
@@ -149,8 +166,7 @@ uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
 	return directory->VirtualAddress;
 }
 
-int count_tls_callbacks(pe_ctx_t *ctx)
-{
+int count_tls_callbacks(pe_ctx_t *ctx) {
 	int ret = 0;
 
 	const IMAGE_OPTIONAL_HEADER *optional_hdr = pe_optional(ctx);
@@ -170,80 +186,78 @@ int count_tls_callbacks(pe_ctx_t *ctx)
 	uint64_t ofs = 0;
 
 	// search for tls in all sections
-	for (uint16_t i=0, j=0; i < num_sections; i++)
-	{
-		if (tls_addr >= sections[i]->VirtualAddress &&
-				tls_addr < (sections[i]->VirtualAddress + sections[i]->SizeOfRawData))
-		{
-			ofs = tls_addr - sections[i]->VirtualAddress + sections[i]->PointerToRawData;
+	for (uint16_t i=0, j=0; i < num_sections; i++) {
+		const bool can_process = tls_addr >= sections[i]->VirtualAddress
+			&& tls_addr < (sections[i]->VirtualAddress + sections[i]->SizeOfRawData);
+		if (!can_process)
+			continue;
 
-			switch (optional_hdr->type) {
-				default:
-					return 0;
-				case MAGIC_PE32:
-					{
-						const IMAGE_TLS_DIRECTORY32 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-						if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
-							// TODO: Should we report something?
-							return 0;
-						}
+		
+		ofs = tls_addr - sections[i]->VirtualAddress + sections[i]->PointerToRawData;
 
-						if (!(tls_dir->AddressOfCallBacks & optional_hdr->_32->ImageBase))
-							break;
-
-						ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks - optional_hdr->_32->ImageBase);
-						break;
-					}
-				case MAGIC_PE64:
-					{
-						const IMAGE_TLS_DIRECTORY64 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-						if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
-							// TODO: Should we report something?
-							return 0;
-						}
-
-						if (!(tls_dir->AddressOfCallBacks & optional_hdr->_64->ImageBase))
-							break;
-
-						ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks - optional_hdr->_64->ImageBase);
-						break;
-					}
-			}
-
-			ret = -1; // tls directory and section exists
-
-			//char value[MAX_MSG];
-			uint32_t funcaddr = 0;
-
-			do
+		switch (optional_hdr->type) {
+			default: return 0;
+			case MAGIC_PE32:
 			{
-				const uint32_t *funcaddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (!pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
+				const IMAGE_TLS_DIRECTORY32 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
 					// TODO: Should we report something?
 					return 0;
 				}
 
-				uint32_t funcaddr = *funcaddr_ptr;
-				if (funcaddr) {
-					ret = ++j; // function found
-				}
-			} while (funcaddr);
+				if (!(tls_dir->AddressOfCallBacks & optional_hdr->_32->ImageBase))
+					break;
 
-			return ret;
+				ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks - optional_hdr->_32->ImageBase);
+				break;
+			}
+			case MAGIC_PE64:
+			{
+				const IMAGE_TLS_DIRECTORY64 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+				if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
+					// TODO: Should we report something?
+					return 0;
+				}
+
+				if (!(tls_dir->AddressOfCallBacks & optional_hdr->_64->ImageBase))
+					break;
+
+				ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks - optional_hdr->_64->ImageBase);
+				break;
+			}
 		}
+
+		ret = -1; // tls directory and section exists
+
+		uint32_t funcaddr = 0;
+
+		do {
+			const uint32_t *funcaddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+			if (!pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
+				// TODO: Should we report something?
+				return 0;
+			}
+
+			uint32_t funcaddr = *funcaddr_ptr;
+			if (funcaddr) {
+				ret = ++j; // function found
+			}
+		} while (funcaddr);
 	}
 
-	return 0;
+	return ret;
 }
 
 int pe_get_tls_callback(pe_ctx_t *ctx) {
-	int callbacks = count_tls_callbacks(ctx);
-	int ret = 0; // Initialize variable
+	const int callbacks = count_tls_callbacks(ctx);
+	int ret = 0;
+
 	if (callbacks == 0)
 		ret = LIBPE_E_NO_CALLBACKS_FOUND; // not found
 	else if (callbacks == -1)
 		ret = LIBPE_E_NO_FUNCTIONS_FOUND; // found no functions
 	else if (callbacks > 0)
 		ret = callbacks;
+	
 	return ret;
 }

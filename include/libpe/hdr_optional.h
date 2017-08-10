@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -23,6 +23,10 @@
 #define LIBPE_HDR_OPTIONAL_H
 
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx
 typedef enum {
@@ -182,5 +186,9 @@ typedef struct {
 } IMAGE_OPTIONAL_HEADER;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

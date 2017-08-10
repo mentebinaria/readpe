@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -43,6 +43,11 @@ extern "C" {
 #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
 #define MAX_SECTIONS 96
+
+// TODO(jweyrich): Does the PE spec define a length limit for
+//                 function names and import/export library names?
+#define MAX_DLL_NAME 256
+#define MAX_FUNCTION_NAME 512
 
 #define IMAGE_ORDINAL_FLAG32 0x80000000
 #define IMAGE_ORDINAL_FLAG64 0x8000000000000000ULL

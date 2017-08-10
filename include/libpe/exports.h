@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -19,35 +19,32 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LIBPE_HDR_DOS_H
-#define LIBPE_HDR_DOS_H
+#ifndef LIBPE_EXPORTS
+#define LIBPE_EXPORTS
 
-#include <inttypes.h>
+#include "pe.h"
+#include "error.h"
 
-#pragma pack(push, 1)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
-	uint16_t e_magic;
-	uint16_t e_cblp;
-	uint16_t e_cp;
-	uint16_t e_crlc;
-	uint16_t e_cparhdr;
-	uint16_t e_minalloc;
-	uint16_t e_maxalloc;
-	uint16_t e_ss;
-	uint16_t e_sp;
-	uint16_t e_csum;
-	uint16_t e_ip;
-	uint16_t e_cs;
-	uint16_t e_lfarlc;
-	uint16_t e_ovno;
-	uint16_t e_res[4];
-	uint16_t e_oemid;
-	uint16_t e_oeminfo;
-	uint16_t e_res2[10];
-	uint32_t e_lfanew; // sizeof(IMAGE_DOS_HEADER) + size of MS-DOS stub
-} IMAGE_DOS_HEADER;
+	uint32_t addr;
+	char *name;	// name of the function at that address
+} pe_exported_function_t;
 
-#pragma pack(pop)
+typedef struct {
+	pe_err_e err;
+	uint32_t functions_count;
+	pe_exported_function_t *functions; // array of exported functions
+} pe_exports_t;
+
+pe_exports_t pe_get_exports(pe_ctx_t *ctx);
+void pe_dealloc_exports(pe_exports_t exports);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

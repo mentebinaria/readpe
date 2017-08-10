@@ -1,0 +1,72 @@
+/*
+    libpe - the PE library
+
+    Copyright (C) 2010 - 2017 libpe authors
+    
+    This file is part of libpe.
+
+    libpe is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    libpe is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with libpe.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef LIBPE_HASHES
+#define LIBPE_HASHES
+
+#include "pe.h"
+#include "error.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum {
+	LIBPE_IMPHASH_FLAVOR_MANDIANT = 1,
+	LIBPE_IMPHASH_FLAVOR_PEFILE = 2,
+} pe_imphash_flavor_e;
+
+typedef struct {
+	pe_err_e err;
+	char *name;
+	char *md5;
+	char *ssdeep;
+	char *sha1;
+	char *sha256;
+} pe_hash_t;
+
+typedef struct {
+	pe_err_e err;
+	pe_hash_t dos;
+	pe_hash_t coff;
+	pe_hash_t optional;
+} pe_hdr_t;
+
+typedef struct {
+	pe_err_e err;
+	uint32_t count;
+	pe_hash_t *sections;
+} pe_hash_section_t;
+
+pe_hdr_t get_headers_hash(pe_ctx_t *ctx);
+pe_hash_section_t get_sections_hash(pe_ctx_t *ctx);
+pe_hash_t get_file_hash(pe_ctx_t *ctx);
+char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor);
+
+void pe_dealloc_hdr_hashes(pe_hdr_t obj);
+void pe_dealloc_sections_hashes(pe_hash_section_t obj);
+void pe_dealloc_filehash(pe_hash_t obj);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif

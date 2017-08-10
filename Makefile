@@ -51,7 +51,6 @@ endif
 override CFLAGS += \
 	-I"." \
 	-I"./include" \
-	-I"./libfuzzy" \
 	-W -Wall -Wextra -pedantic -std=c99 -c
 override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 override LDFLAGS += -lssl -lcrypto
@@ -63,7 +62,7 @@ endif
 VERSION = 1.0
 LIBNAME = libpe
 
-SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy
+SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy $(srcdir)/libudis86
 
 libpe_BUILDDIR = $(CURDIR)/build
 libpe_SRCS_FILTER = $(wildcard ${dir}/*.c)

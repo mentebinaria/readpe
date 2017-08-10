@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -23,6 +23,10 @@
 #define LIBPE_DIR_IMPORT_H
 
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #pragma pack(push, 1)
 
@@ -63,5 +67,9 @@ typedef struct {
 } IMAGE_THUNK_DATA32;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

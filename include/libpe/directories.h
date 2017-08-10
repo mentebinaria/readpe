@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -26,6 +26,10 @@
 #include "dir_import.h"
 #include "dir_resources.h"
 #include "dir_security.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Directory entries
 typedef enum {
@@ -84,5 +88,9 @@ typedef struct {
 	uint32_t VirtualAddress;
 	uint32_t Size;
 } IMAGE_DATA_DIRECTORY;
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -24,11 +24,15 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 	LIBPE_E_OK = 0,
 	// Declaring negative values this way is EVIL because it
 	// BREAKS compatiblity every time we add/remove an error code.
-	LIBPE_E_ALLOCATION_FAILURE = -21,
+	LIBPE_E_ALLOCATION_FAILURE = -25,
 	LIBPE_E_OPEN_FAILED,
 	LIBPE_E_FDOPEN_FAILED,
 	LIBPE_E_FSTAT_FAILED,
@@ -45,23 +49,24 @@ typedef enum {
 	LIBPE_E_TOO_MANY_DIRECTORIES,
 	LIBPE_E_TOO_MANY_SECTIONS,
 	LIBPE_E_TYPE_PUNNING_FAILED,	
-	// Exports errors
+	// Exports
 	LIBPE_E_EXPORTS_DIR,
 	LIBPE_E_EXPORTS_VA,
 	LIBPE_E_EXPORTS_CANT_READ_RVA,
 	LIBPE_E_EXPORTS_CANT_READ_EXP,
 	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES,
-	// Hashes errors
-	LIBPE_E_HASHES_MD5,
-	LIBPE_E_HASHES_SHA1,
-	LIBPE_E_HASHES_SHA256,
-	LIBPE_E_HASHES_SSDEEP,
-	// misc
+	// Hashes
+	LIBPE_E_HASHING_FAILED,
+	// Misc
 	LIBPE_E_NO_CALLBACKS_FOUND,		
 	LIBPE_E_NO_FUNCTIONS_FOUND
 } pe_err_e;
 
 const char *pe_error_msg(pe_err_e error);
 void pe_error_print(FILE *stream, pe_err_e error);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

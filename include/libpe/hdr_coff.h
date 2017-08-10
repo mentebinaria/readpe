@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -23,6 +23,10 @@
 #define LIBPE_HDR_COFF_H
 
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum {
 	IMAGE_FILE_MACHINE_UNKNOWN		= 0x0,
@@ -126,5 +130,9 @@ typedef struct {
 } IMAGE_FILE_HEADER, IMAGE_COFF_HEADER;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

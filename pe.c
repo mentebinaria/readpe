@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -19,7 +19,7 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "pe.h"
+#include "libpe/pe.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -33,8 +33,6 @@
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <assert.h>
-
-
 
 bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size) {
 	const uintptr_t start = (uintptr_t)ptr;

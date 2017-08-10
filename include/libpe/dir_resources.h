@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2015 libpe authors
+    Copyright (C) 2010 - 2017 libpe authors
     
     This file is part of libpe.
 
@@ -23,6 +23,10 @@
 #define LIBPE_DIR_RESOURCES_H
 
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // resources types
 typedef enum {
@@ -115,5 +119,9 @@ typedef struct tagVS_FIXEDFILEINFO {
 } VS_FIXEDFILEINFO;
 
 #pragma pack(pop)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

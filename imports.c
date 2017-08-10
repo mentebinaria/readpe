@@ -116,57 +116,48 @@ uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 				break;
 			}
 		}
+
 		count++;
 	}
 
 	return count;
 }
 
-pe_imported_function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, uint32_t functions_count, char *hint_str, size_t size_hint_str, char *fname, size_t size_fname) {
-	pe_imported_function_t sample;
-	memset(&sample, 0, sizeof(pe_imported_function_t));
+pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll, uint64_t offset) {
+	imported_dll->err = LIBPE_E_OK;
+	imported_dll->functions_count = get_functions_count(ctx, offset);
 
-	sample.err = LIBPE_E_OK;
-	sample.count = functions_count;
-
-	const size_t names_size = functions_count * sizeof(char *);
-	sample.names = malloc(names_size);
-	if (sample.names == NULL) {
-		sample.err = LIBPE_E_ALLOCATION_FAILURE;
-		return sample;
+	const size_t size_functions = imported_dll->functions_count * sizeof(pe_imported_function_t);
+	imported_dll->functions = malloc(size_functions);
+	if (imported_dll->functions == NULL) {
+		imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+		return imported_dll->err;
 	}
-	memset(sample.names, 0, names_size);
+	memset(imported_dll->functions, 0, size_functions);
 
-	// allocate space for each string.
-	const size_t name_size = MAX_FUNCTION_NAME;
-	for (uint32_t i=0; i < functions_count; i++) {
-		char *name = malloc(name_size);
-		if (name == NULL) {
-			sample.err = LIBPE_E_ALLOCATION_FAILURE;
-			return sample;
-		}
-		memset(name, 0, name_size);
-		sample.names[i] = name;
-	}
+	char hint_str[16] = {0};
+	char fname[MAX_FUNCTION_NAME] = {0};
+	const size_t size_hint_str = sizeof(hint_str);
+	const size_t size_fname = sizeof(fname);
 
 	bool is_ordinal = false;
 	uint64_t ofs = offset;
 
-	for (uint32_t i=0; i < functions_count; i++) {
+	for (uint32_t i=0; i < imported_dll->functions_count; i++) {
 		switch (ctx->pe.optional_hdr.type) {
 			case MAGIC_PE32:
 			{
 				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
-					sample.err = LIBPE_E_ALLOCATION_FAILURE;
-					return sample;
+					imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+					return imported_dll->err;
 				}
 
 				// Type punning
 				const uint32_t thunk_type = *(uint32_t *)thunk;
 				if (thunk_type == 0) {
-					sample.err = LIBPE_E_TYPE_PUNNING_FAILED;
-					return sample;
+					imported_dll->err = LIBPE_E_TYPE_PUNNING_FAILED;
+					return imported_dll->err;
 				}
 
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
@@ -178,8 +169,8 @@ pe_imported_function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, ui
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
-						sample.err = LIBPE_E_ALLOCATION_FAILURE;
-						return sample;// Do something so that the API notifes of the error
+						imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+						return imported_dll->err;
 					}
 
 					snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
@@ -195,15 +186,15 @@ pe_imported_function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, ui
 			{
 				const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
-					sample.err = LIBPE_E_ALLOCATION_FAILURE;
-					return sample; // DO something so that API notifies of the error
+					imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+					return imported_dll->err; // DO something so that API notifies of the error
 				}
 
 				// Type punning
 				const uint64_t thunk_type = *(uint64_t *)thunk;
 				if (thunk_type == 0) {
-					sample.err = LIBPE_E_TYPE_PUNNING_FAILED;
-					return sample;
+					imported_dll->err = LIBPE_E_TYPE_PUNNING_FAILED;
+					return imported_dll->err;
 				}
 
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
@@ -215,8 +206,8 @@ pe_imported_function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, ui
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
-						sample.err = LIBPE_E_ALLOCATION_FAILURE;
-						return sample; // Do something so that API notifies of the error
+						imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+						return imported_dll->err;
 					}
 
 					snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
@@ -230,18 +221,23 @@ pe_imported_function_t get_imported_functions(pe_ctx_t *ctx, uint64_t offset, ui
 			}
 		}
 
-		if (is_ordinal)
-			memcpy(sample.names[i], hint_str, 16);
-		else
-			memcpy(sample.names[i], fname, MAX_FUNCTION_NAME);
+		//printf("fname = %s, hint_str = %s\n", fname, hint_str);
+
+		imported_dll->functions[i].name = is_ordinal
+			? strdup(hint_str)
+			: strdup(fname);
+		if (imported_dll->functions[i].name == NULL) {
+			imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+			return imported_dll->err;
+		}
 	}
 
-	return sample;
+	return LIBPE_E_OK;
 }
 
-pe_import_t pe_get_imports(pe_ctx_t *ctx) {
-	pe_import_t imports;
-	memset(&imports, 0, sizeof(pe_import_t));
+pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
+	pe_imports_t imports;
+	memset(&imports, 0, sizeof(pe_imports_t));
 
 	imports.err = LIBPE_E_OK;
 	
@@ -249,32 +245,14 @@ pe_import_t pe_get_imports(pe_ctx_t *ctx) {
 	if (imports.dll_count == 0)
 		return imports;
 
-	const size_t dll_names_size = imports.dll_count * sizeof(char *);
-	imports.dll_names = malloc(dll_names_size);
-	if (imports.dll_names == NULL) {
+	// Allocate array to store DLLs
+	const size_t dll_array_size = imports.dll_count * sizeof(pe_imported_dll_t);
+	imports.dlls = malloc(dll_array_size);
+	if (imports.dlls == NULL) {
 		imports.err = LIBPE_E_ALLOCATION_FAILURE;
 		return imports;
 	}
-	memset(imports.dll_names, 0, dll_names_size);
-
-	for (uint32_t i=0; i < imports.dll_count; i++) {
-		const size_t dll_name_size = MAX_DLL_NAME;
-		char *dll_name = malloc(dll_name_size);
-		if (dll_name == NULL) {
-			imports.err = LIBPE_E_ALLOCATION_FAILURE;
-			return imports;
-		}
-		memset(dll_name, 0, dll_name_size);
-		imports.dll_names[i] = dll_name;
-	}
-
-	const size_t functions_size = imports.dll_count * sizeof(pe_imported_function_t *);
-	imports.functions = malloc(functions_size);
-	if (imports.functions == NULL) {
-		imports.err = LIBPE_E_ALLOCATION_FAILURE;
-		return imports;
-	}
-	memset(imports.functions, 0, functions_size);
+	memset(imports.dlls, 0, dll_array_size);
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL) {
@@ -307,41 +285,38 @@ pe_import_t pe_get_imports(pe_ctx_t *ctx) {
 			break;
 
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-
 		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
 			// TODO: Should we report something?
 			break;
 		}
 
-		char dll_name[MAX_DLL_NAME];
+		pe_imported_dll_t * const dll = &imports.dlls[i];
+
+		// Allocate string to store DLL name
+		const size_t dll_name_size = MAX_DLL_NAME;
+		dll->name = malloc(dll_name_size);
+		if (dll->name == NULL) {
+			imports.err = LIBPE_E_ALLOCATION_FAILURE;
+			return imports;
+		}
+		memset(dll->name, 0, dll_name_size);
 
 		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
 		// It might be '\0', for example.
-		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
+		strncpy(dll->name, dll_name_ptr, dll_name_size-1);
 		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		dll_name[sizeof(dll_name) - 1] = '\0';
+		dll->name[dll_name_size - 1] = '\0';
 
-		//	imports.names[i] = dll_name;
-		memcpy(imports.dll_names[i], dll_name, MAX_DLL_NAME);
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk
 			? id->u1.OriginalFirstThunk
 			: id->FirstThunk);
 		if (ofs == 0) {
 			break;
 		}
-
-		char hint_str[16];
-		char fname[MAX_FUNCTION_NAME];
-		memset(hint_str, 0, sizeof(hint_str));
-		memset(fname, 0, sizeof(fname));
-
-		size_t size_hint_str = sizeof(hint_str);
-		size_t size_fname = sizeof(fname);
-		uint32_t functions_count = get_functions_count(ctx, ofs);
-
-		imports.functions[i] = get_imported_functions(ctx, ofs, functions_count, hint_str,size_hint_str, fname, size_fname);
-		if (imports.functions[i].err != LIBPE_E_OK) {
-			imports.err = imports.functions[i].err;
+	
+		pe_err_e parse_err = parse_imported_functions(ctx, dll, ofs);
+		if (parse_err != LIBPE_E_OK) {
+			imports.err = parse_err;
 			return imports;
 		}
 
@@ -351,16 +326,13 @@ pe_import_t pe_get_imports(pe_ctx_t *ctx) {
 	return imports;
 }
 
-void pe_dealloc_imports(pe_import_t imports) {
+void pe_dealloc_imports(pe_imports_t imports) {
 	for (uint32_t i=0; i < imports.dll_count; i++) {
-		free(imports.dll_names[i]);
-
-		for (uint32_t j=0; j < imports.functions[i].count; j++) {
-			free(imports.functions[i].names[j]);
+		const pe_imported_dll_t *dll = &imports.dlls[i];
+		for (uint32_t j=0; j < dll->functions_count; j++) {
+			const pe_imported_function_t *function = &dll->functions[j];
+			free(function->name);
 		}
-
-		free(imports.functions[i].names);
 	}
-	free(imports.dll_names);
-	free(imports.functions);
+	free(imports.dlls);
 }

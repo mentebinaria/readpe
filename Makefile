@@ -7,18 +7,15 @@ PLATFORM_OS := $(shell uname | cut -d_ -f1)
 
 srcdir = .
 prefix = /usr/local
-
 exec_prefix = $(prefix)
 sysconfdir = $(prefix)/etc
 includedir = $(prefix)/include
 datarootdir = $(prefix)/share
 localstatedir = $(prefix)/var
-
 bindir = $(exec_prefix)/bin
 libdir = $(exec_prefix)/lib
 libexecdir = $(exec_prefix)/libexec
 sbindir = $(exec_prefix)/sbin
-
 datadir = $(datarootdir)
 docdir = $(datarootdir)/doc/pev
 infodir = $(datarootdir)/info
@@ -42,6 +39,7 @@ SYMLINK = ln -sf
 MKDIR = mkdir -p
 RM = rm -f
 RM_DIR = rm -rf
+
 ifeq ($(PLATFORM_OS), Darwin)
 	STRIP = strip -x
 else
@@ -50,8 +48,13 @@ endif
 
 ####### Compiler options
 
-override CFLAGS += -W -Wall -Wextra -pedantic -std=c99 -c
-override CPPFLAGS += -D_FORTIFY_SOURCE=1
+override CFLAGS += \
+	-I"." \
+	-I"./include" \
+	-I"./libfuzzy" \
+	-W -Wall -Wextra -pedantic -std=c99 -c
+override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+override LDFLAGS += -lssl -lcrypto
 
 ifneq ($(PLATFORM_OS), CYGWIN)
 	override CFLAGS += -fPIC
@@ -60,9 +63,11 @@ endif
 VERSION = 1.0
 LIBNAME = libpe
 
+SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy
+
 libpe_BUILDDIR = $(CURDIR)/build
 libpe_SRCS_FILTER = $(wildcard ${dir}/*.c)
-libpe_SRCS = $(foreach dir, ${srcdir}, ${libpe_SRCS_FILTER})
+libpe_SRCS = $(foreach dir, ${SRC_DIRS}, ${libpe_SRCS_FILTER})
 libpe_OBJS = $(addprefix ${libpe_BUILDDIR}/, $(addsuffix .o, $(basename ${libpe_SRCS})))
 
 ####### Build rules

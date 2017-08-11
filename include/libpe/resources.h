@@ -23,8 +23,8 @@
 #define LIBPE_PERES
 
 #include <stdint.h>
-#include "pe.h"
 #include "error.h"
+#include "dir_resources.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,10 +119,6 @@ typedef struct {
 	type_RDT_DATA_STRING *dataString;
 	type_RDT_DATA_ENTRY *dataEntry;
 } pe_final_output_t;
-
-pe_final_output_t get_resources(pe_ctx_t *ctx);
-pe_resources_count_t get_resources_count(pe_ctx_t *ctx);
-void pe_dealloc_peres(pe_final_output_t obj);
 
 #ifdef __cplusplus
 } // extern "C"

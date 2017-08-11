@@ -22,7 +22,7 @@
 #ifndef LIBPE_SECTIONS_H
 #define LIBPE_SECTIONS_H
 
-#include <inttypes.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

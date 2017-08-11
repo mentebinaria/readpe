@@ -21,6 +21,7 @@
 
 #include "libpe/exports.h"
 
+#include "libpe/pe.h"
 #include <stdlib.h>
 #include <string.h>
 

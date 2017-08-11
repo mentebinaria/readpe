@@ -22,7 +22,7 @@
 #ifndef LIBPE_EXPORTS
 #define LIBPE_EXPORTS
 
-#include "pe.h"
+#include <stdint.h>
 #include "error.h"
 
 #ifdef __cplusplus
@@ -39,9 +39,6 @@ typedef struct {
 	uint32_t functions_count;
 	pe_exported_function_t *functions; // array of exported functions
 } pe_exports_t;
-
-pe_exports_t pe_get_exports(pe_ctx_t *ctx);
-void pe_dealloc_exports(pe_exports_t exports);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -23,7 +23,6 @@
 #define LIBPE_IMPORTS
 
 #include <stdint.h>
-#include "pe.h"
 #include "error.h"
 
 #ifdef __cplusplus
@@ -62,9 +61,6 @@ typedef struct {
  *		}
  *	 ]
  */
-
-pe_imports_t pe_get_imports(pe_ctx_t *ctx);
-void pe_dealloc_imports(pe_imports_t imports);
 
 #ifdef __cplusplus
 } // extern "C"

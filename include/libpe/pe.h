@@ -39,6 +39,10 @@ extern "C" {
 #include "hdr_optional.h"
 #include "directories.h"
 #include "sections.h"
+#include "hashes.h"
+#include "imports.h"
+#include "exports.h"
+#include "resources.h"
 
 #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
@@ -141,6 +145,38 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
+
+// Hashes functions
+pe_hdr_t pe_get_headers_hash(pe_ctx_t *ctx);
+void pe_dealloc_hdr_hashes(pe_hdr_t obj);
+
+pe_hash_section_t pe_get_sections_hash(pe_ctx_t *ctx);
+void pe_dealloc_sections_hashes(pe_hash_section_t obj);
+
+pe_hash_t pe_get_file_hash(pe_ctx_t *ctx);
+void pe_dealloc_filehash(pe_hash_t obj);
+
+char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor);
+
+// Imports functions
+pe_imports_t pe_get_imports(pe_ctx_t *ctx);
+void pe_dealloc_imports(pe_imports_t imports);
+
+// Exports functions
+pe_exports_t pe_get_exports(pe_ctx_t *ctx);
+void pe_dealloc_exports(pe_exports_t exports);
+
+// Resources functions
+pe_final_output_t pe_get_resources(pe_ctx_t *ctx);
+pe_resources_count_t pe_get_resources_count(pe_ctx_t *ctx);
+void pe_dealloc_peres(pe_final_output_t obj);
+
+// Misc functions
+double pe_calculate_entropy_file(pe_ctx_t *ctx);
+bool pe_fpu_trick(pe_ctx_t *ctx);
+int pe_get_cpl_analysis(pe_ctx_t *ctx);
+int pe_has_fake_entrypoint(pe_ctx_t *ctx);
+int pe_get_tls_callback(pe_ctx_t *ctx);
 
 #ifdef __cplusplus
 } // extern "C"

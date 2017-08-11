@@ -22,7 +22,7 @@
 #ifndef LIBPE_HDR_OPTIONAL_H
 #define LIBPE_HDR_OPTIONAL_H
 
-#include <inttypes.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

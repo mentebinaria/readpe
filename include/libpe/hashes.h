@@ -22,7 +22,7 @@
 #ifndef LIBPE_HASHES
 #define LIBPE_HASHES
 
-#include "pe.h"
+#include <stdint.h>
 #include "error.h"
 
 #ifdef __cplusplus
@@ -55,15 +55,6 @@ typedef struct {
 	uint32_t count;
 	pe_hash_t *sections;
 } pe_hash_section_t;
-
-pe_hdr_t get_headers_hash(pe_ctx_t *ctx);
-pe_hash_section_t get_sections_hash(pe_ctx_t *ctx);
-pe_hash_t get_file_hash(pe_ctx_t *ctx);
-char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor);
-
-void pe_dealloc_hdr_hashes(pe_hdr_t obj);
-void pe_dealloc_sections_hashes(pe_hash_section_t obj);
-void pe_dealloc_filehash(pe_hash_t obj);
 
 #ifdef __cplusplus
 } // extern "C"

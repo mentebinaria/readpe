@@ -22,7 +22,7 @@
 #ifndef LIBPE_DIRECTORIES_H
 #define LIBPE_DIRECTORIES_H
 
-#include <inttypes.h>
+#include <stdint.h>
 #include "dir_import.h"
 #include "dir_resources.h"
 #include "dir_security.h"

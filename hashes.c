@@ -21,15 +21,16 @@
 
 #include "libpe/hashes.h"
 
+#include "libpe/pe.h"
+#include "libfuzzy/fuzzy.h"
+#include "libpe/ordlookup.h"
+#include "libpe/utlist.h"
+
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
-
-#include "libfuzzy/fuzzy.h"
-#include "libpe/ordlookup.h"
-#include "libpe/utlist.h"
 
 // Used for Imphash calulation 
 static char *last_strstr(char *haystack, const char *needle) {
@@ -48,7 +49,7 @@ static char *last_strstr(char *haystack, const char *needle) {
 	return result;
 }
 
-bool calc_hash(char *output, const char *alg_name, const unsigned char *data, size_t data_size) {
+static bool calc_hash(char *output, const char *alg_name, const unsigned char *data, size_t data_size) {
 	bool ret = true;
 
 	if (strcmp("ssdeep", alg_name) == 0) {
@@ -98,7 +99,7 @@ bool calc_hash(char *output, const char *alg_name, const unsigned char *data, si
 	return ret;
 }
 
-pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_size) {
+static pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_size) {
 	static const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
 	static const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
 	// Since standard C lacks max(), we do it manually.
@@ -175,21 +176,21 @@ error:
 	return sample;
 }
 
-pe_hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
+static pe_hash_t get_headers_dos_hash(pe_ctx_t *ctx) {
 	const IMAGE_DOS_HEADER *sample = pe_dos(ctx);
 	const unsigned char *data = (const unsigned char *)sample;
 	const uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
 	return get_hashes("IMAGE_DOS_HEADER", data, data_size);
 }
 
-pe_hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
+static pe_hash_t get_headers_coff_hash(pe_ctx_t *ctx) {
 	const IMAGE_COFF_HEADER *sample = pe_coff(ctx);
 	const unsigned char *data = (const unsigned char *)sample;
 	const uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
 	return get_hashes("IMAGE_COFF_HEADER", data, data_size);
 }
 
-pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
+static pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 	const IMAGE_OPTIONAL_HEADER *sample = pe_optional(ctx);
 
 	switch (sample->type) {
@@ -211,7 +212,7 @@ pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 	}
 }
 
-pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
+pe_hdr_t pe_get_headers_hash(pe_ctx_t *ctx) {
 	pe_hdr_t result;
 	memset(&result, 0, sizeof(pe_hdr_t));
 
@@ -238,7 +239,7 @@ pe_hdr_t get_headers_hash(pe_ctx_t *ctx) {
 	return result;
 }
 
-pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
+pe_hash_section_t pe_get_sections_hash(pe_ctx_t *ctx) {
 	pe_hash_section_t result;
 	memset(&result, 0, sizeof(pe_hash_section_t));
 	
@@ -290,7 +291,7 @@ pe_hash_section_t get_sections_hash(pe_ctx_t *ctx) {
 	return result;
 }
 
-pe_hash_t get_file_hash(pe_ctx_t *ctx) {
+pe_hash_t pe_get_file_hash(pe_ctx_t *ctx) {
 	const uint64_t data_size = pe_filesize(ctx);
 	pe_hash_t sample = get_hashes("PEfile hash", ctx->map_addr, data_size);
 	return sample;

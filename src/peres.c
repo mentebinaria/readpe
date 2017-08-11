@@ -38,33 +38,6 @@
 
 #define PROGRAM "peres"
 
-typedef enum {
-    RDT_LEVEL1 = 1,
-    RDT_LEVEL2 = 2,
-    RDT_LEVEL3 = 3
-} NODE_LEVEL_PERES;
-
-typedef enum {
-    RDT_RESOURCE_DIRECTORY = 1,
-    RDT_DIRECTORY_ENTRY = 2,
-    RDT_DATA_STRING = 3,
-    RDT_DATA_ENTRY = 4
-} NODE_TYPE_PERES;
-
-typedef struct _NODE_PERES {
-	NODE_TYPE_PERES nodeType;
-	NODE_LEVEL_PERES nodeLevel;
-	union {
-		IMAGE_RESOURCE_DIRECTORY *resourceDirectory; // nodeType == 1
-		IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry; // nodeType == 2
-		IMAGE_RESOURCE_DATA_STRING *dataString; // nodeType == 3
-		IMAGE_RESOURCE_DATA_ENTRY *dataEntry; // nodeType == 4
-	} resource;
-	struct _NODE_PERES *nextNode;
-	struct _NODE_PERES *lastNode;
-	struct _NODE_PERES *rootNode;
-} NODE_PERES;
-
 static const RESOURCE_ENTRY resource_types[] = {
 	{ "RT_CURSOR",			1, ".cur",		"cursors"		},
 	{ "RT_BITMAP",			2, ".bmp",		"bitmaps"		},

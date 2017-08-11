@@ -72,14 +72,13 @@ ifeq ($(PLATFORM_OS), CYGWIN)
 	override CPPFLAGS += -D_XOPEN_SOURCE=600
 endif
 
-SRC_DIRS = $(srcdir) $(srcdir)/compat $(srcdir)/../lib/libfuzzy
+SRC_DIRS = $(srcdir) $(srcdir)/compat
 
 PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
 export LIBPE = $(realpath $(srcdir)/../lib/libpe)
 LIBUDIS86 = $(srcdir)/../lib/libudis86
-LIBFUZZY = $(srcdir)/../lib/libfuzzy
 MANDIR = $(srcdir)/../doc/manpages
 
 export pev_BUILDDIR = ./build
@@ -115,10 +114,8 @@ pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: $(pev_BUILDDIR)/pedis.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBUDIS86)/libudis86/*.c
 
-pehash: LDFLAGS += -lssl -lcrypto
-pehash: CFLAGS += -I$(LIBFUZZY)
 pehash: $(pev_BUILDDIR)/pehash.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBFUZZY)/*.c
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 pepack: $(pev_BUILDDIR)/pepack.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)

@@ -34,18 +34,10 @@
 */
 
 #include "common.h"
-#include <openssl/evp.h>
-#include <openssl/md5.h>
-#include "../lib/libfuzzy/fuzzy.h"
 #include "plugins.h"
-#include "utlist.h"
 #include "utils.h"
-#include "ordlookup.h"
 
 #define PROGRAM "pehash"
-
-#define IMPHASH_FLAVOR_MANDIANT 1
-#define IMPHASH_FLAVOR_PEFILE 2
 
 unsigned pefile_warn = 0;
 
@@ -63,24 +55,6 @@ typedef struct {
 		uint16_t index;
 	} sections;
 } options_t;
-
-/* By liw. */
-static char *last_strstr(const char *haystack, const char *needle)
-{
-    if (*needle == '\0')
-        return (char *) haystack;
-
-    char *result = NULL;
-    for (;;) {
-        char *p = strstr(haystack, needle);
-        if (p == NULL)
-            break;
-        result = p;
-        haystack = p + 1;
-    }
-
-    return result;
-}
 
 static void usage(void)
 {
@@ -202,320 +176,21 @@ static options_t *parse_options(int argc, char *argv[])
 	return options;
 }
 
-static void calc_hash(const char *alg_name, const unsigned char *data, size_t size, char *output)
+static void print_basic_hash(const unsigned char *data, size_t data_size)
 {
-	if (strcmp("ssdeep", alg_name) == 0) {
-		fuzzy_hash_buf(data, size, output);
-		return;
-	}
-
-	const EVP_MD *md = EVP_get_digestbyname(alg_name);
-	//assert(md != NULL); // We already checked this in parse_hash_algorithm()
-
-	unsigned char md_value[EVP_MAX_MD_SIZE];
-	unsigned int md_len;
-
-// See https://wiki.openssl.org/index.php/1.1_API_Changes
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	EVP_MD_CTX md_ctx_auto;
-	EVP_MD_CTX *md_ctx = &md_ctx_auto;
-#else
-	EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
-#endif
-
-	// FIXME: Handle errors - Check return values.
-	EVP_MD_CTX_init(md_ctx);
-	EVP_DigestInit_ex(md_ctx, md, NULL);
-	EVP_DigestUpdate(md_ctx, data, size);
-	EVP_DigestFinal_ex(md_ctx, md_value, &md_len);
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	EVP_MD_CTX_cleanup(md_ctx);
-#else
-	EVP_MD_CTX_free(md_ctx);
-#endif
-
-	for (unsigned int i=0; i < md_len; i++)
-		sprintf(&output[i * 2], "%02x", md_value[i]);
-}
-
-static void print_basic_hash(const unsigned char *data, size_t size)
-{
-	if (!data || !size)
+	if (!data || !data_size)
 		return;
 
-	const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
-	const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
-	// Since standard C lacks max(), we do it manually.
-	const size_t hash_maxsize = openssl_hash_maxsize > ssdeep_hash_maxsize
-		? openssl_hash_maxsize
-		: ssdeep_hash_maxsize;
 	const char *basic_hashes[] = { "md5", "sha1", "sha256", "ssdeep" };
-	char *hash_value = malloc_s(hash_maxsize);
+	const size_t hash_value_size = pe_hash_recommended_size();
+	char *hash_value = malloc_s(hash_value_size);
 
-	for (unsigned i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
-		calc_hash(basic_hashes[i], data, size, hash_value);
+	for (size_t i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
+		pe_hash_raw_data(hash_value, hash_value_size, basic_hashes[i], data, data_size);
 		output(basic_hashes[i], hash_value);
 	}
 
 	free(hash_value);
-}
-
-typedef struct element {
-    char *dll_name;
-    char *function_name;
-    //struct element *prev; /* needed for a doubly-linked list only */
-    struct element *next; /* needed for singly- or doubly-linked lists */
-} element;
-
-static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, struct element **head, int flavor)
-{
-	uint64_t ofs = offset;
-
-	char hint_str[16];
-	char fname[MAX_FUNCTION_NAME];
-	bool is_ordinal;
-
-	memset(hint_str, 0, sizeof(hint_str));
-	memset(fname, 0, sizeof(fname));
-
-	while (1) {
-		switch (ctx->pe.optional_hdr.type) {
-			case MAGIC_PE32:
-			{
-				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
-					// TODO: Should we report something?
-					return;
-				}
-
-				// Type punning
-				const uint32_t thunk_type = *(uint32_t *)thunk;
-				if (thunk_type == 0)
-					return;
-
-				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
-
-				if (is_ordinal) {
-					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
-						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
-				} else {
-					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
-						// TODO: Should we report something?
-						return;
-					}
-
-					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
-					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
-					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-					fname[sizeof(fname) - 1] = '\0';
-					//size_t fname_len = strlen(fname);
-				}
-				ofs += sizeof(IMAGE_THUNK_DATA32);
-				break;
-			}
-			case MAGIC_PE64:
-			{
-				const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
-					// TODO: Should we report something?
-					return;
-				}
-
-				// Type punning
-				const uint64_t thunk_type = *(uint64_t *)thunk;
-				if (thunk_type == 0)
-					return;
-
-				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
-
-				if (is_ordinal) {
-					snprintf(hint_str, sizeof(hint_str)-1, "%llu",
-						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
-				} else {
-					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
-						// TODO: Should we report something?
-						return;
-					}
-
-					snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
-					strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
-					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-					fname[sizeof(fname) - 1] = '\0';
-					//size_t fname_len = strlen(fname);
-				}
-				ofs += sizeof(IMAGE_THUNK_DATA64);
-				break;
-			}
-		}
-
-		if (!dll_name)
-			continue;
-
-		// Beginning of imphash logic - that's the weirdest thing I've even seen...
-
-		for (unsigned i=0; i < strlen(dll_name); i++)
-			dll_name[i] = tolower(dll_name[i]);
-
-		char *aux = NULL;
-
-		//TODO use a reverse search function instead
-
-		if (flavor == IMPHASH_FLAVOR_MANDIANT)
-			aux = last_strstr(dll_name, ".");
-		else if (flavor == IMPHASH_FLAVOR_PEFILE) {
-			aux = last_strstr(dll_name, ".dll");
-			if (aux)
-				*aux = '\0';
-
-			aux = last_strstr(dll_name, ".ocx");
-			if (aux)
-				*aux = '\0';
-
-			aux = last_strstr(dll_name, ".sys");
-			if (aux)
-				*aux = '\0';
-		}
-		
-		if (aux)
-			*aux = '\0';
-		
-		for (unsigned i=0; i < strlen(fname); i++)
-			fname[i] = tolower(fname[i]);
-
-		struct element *el = malloc_s(sizeof(struct element));
-
-		el->dll_name = strdup(dll_name);
-
-		if (flavor == IMPHASH_FLAVOR_MANDIANT) {
-			el->function_name = strdup(is_ordinal ? hint_str : fname);
-		}
-		else if (flavor == IMPHASH_FLAVOR_PEFILE) { 
-			
-			int hint = strtoul(hint_str, NULL, 10);
-
-			if ( strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
-				for (unsigned i=0; i < sizeof(oleaut32_arr) / sizeof(ord_t); i++)
-					if (hint == oleaut32_arr[i].number)
-						el->function_name = strdup(oleaut32_arr[i].fname);
-			}
-			else if ( strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
-				for (unsigned i=0; i < sizeof(ws2_32_arr) / sizeof(ord_t); i++)
-					if (hint == ws2_32_arr[i].number)
-						el->function_name = strdup(ws2_32_arr[i].fname);
-			}
-			else {
-				char ord[MAX_FUNCTION_NAME];
-				memset(ord, 0, MAX_FUNCTION_NAME);
-
-				if (is_ordinal) {
-					snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
-					el->function_name = strdup(ord);
-				} else {
-					el->function_name = strdup(fname);
-				}
-			}
-		}
-
-		for (unsigned i=0; i < strlen(el->function_name); i++)
-			el->function_name[i] = tolower(el->function_name[i]);
-
-		LL_APPEND(*head, el);
-	}
-}
-
-static void imphash(pe_ctx_t *ctx, int flavor)
-{
-	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
-	if (dir == NULL)
-		return;
-
-	const uint64_t va = dir->VirtualAddress;
-	if (va == 0) {
-		fprintf(stderr, "import directory not found\n");
-		return;
-	}
-	uint64_t ofs = pe_rva2ofs(ctx, va);
-	element *elt, *tmp, *head = NULL;
-	int count = 0;
-
-	while (1) {
-		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
-			// TODO: Should we report something?
-			output_close_scope();
-			return;
-		}
-
-		if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
-			break;
-
-		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
-		const uint64_t aux = ofs; // Store current ofs
-
-		ofs = pe_rva2ofs(ctx, id->Name);
-		if (ofs == 0)
-			break;
-
-		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
-		// It might be '\0', for example.
-		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
-			// TODO: Should we report something?
-			break;
-		}
-
-		char dll_name[MAX_DLL_NAME];
-		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
-		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		dll_name[sizeof(dll_name) - 1] = '\0';
-
-		//output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
-		//output("Name", dll_name);
-
-		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
-		if (ofs == 0) {
-			output_close_scope(); // Library
-			break;
-		}
-
-		imphash_load_imported_functions(ctx, ofs, dll_name, &head, flavor);
-		ofs = aux; // Restore previous ofs
-	}
-
-	LL_COUNT(head, elt, count);
-	//printf("%d number of elements in list outside\n", count);
-
-	size_t imphash_string_size = sizeof(char) * count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
-
-	char *imphash_string = malloc_s(imphash_string_size);
-
-	memset(imphash_string, 0, imphash_string_size);
-
-	LL_FOREACH_SAFE(head, elt, tmp) \
-		sprintf(imphash_string + strlen(imphash_string), "%s.%s,", elt->dll_name, elt->function_name); \
-		LL_DELETE(head, elt);
-
-	free(elt);
-
-	imphash_string_size = strlen(imphash_string);
-	if (imphash_string_size)
-		imphash_string[imphash_string_size-1] = '\0'; // remove the last comma sign
-
-	//puts(imphash_string); // DEBUG
-
-	char imphash[33];
-	calc_hash("md5", (unsigned char *)imphash_string, strlen(imphash_string), imphash);
-	free(imphash_string);
-
-	if (flavor == IMPHASH_FLAVOR_MANDIANT)
-		output("imphash (Mandiant)", imphash);
-	else if (flavor == IMPHASH_FLAVOR_PEFILE)
-		output("imphash", imphash);
 }
 
 int main(int argc, char *argv[])
@@ -529,8 +204,6 @@ int main(int argc, char *argv[])
 	}
 
 	output_set_cmdline(argc, argv);
-
-	OpenSSL_add_all_digests();
 
 	options_t *options = parse_options(argc, argv);
 
@@ -578,8 +251,16 @@ int main(int argc, char *argv[])
 		output_open_scope("file", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("filepath", ctx.path);
 		print_basic_hash(data, data_size);
-		//imphash(&ctx, IMPHASH_FLAVOR_MANDIANT);
-		imphash(&ctx, IMPHASH_FLAVOR_PEFILE);
+
+		char *imphash = NULL;
+
+		// imphash = pe_imphash(&ctx, LIBPE_IMPHASH_FLAVOR_MANDIANT);
+		// output("imphash (Mandiant)", imphash);
+		// free(imphash);
+
+		imphash = pe_imphash(&ctx, LIBPE_IMPHASH_FLAVOR_PEFILE);
+		output("imphash", imphash);
+		free(imphash);
 		
 		output_close_scope(); // file
 		if (!options->all) // whole file content only
@@ -714,7 +395,7 @@ int main(int argc, char *argv[])
 	if (options->all || options->sections.name || options->sections.index)
 		output_close_scope();
 
-	BYE:
+BYE:
 	output_close_document();
 
 	// free
@@ -726,7 +407,6 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
 	PEV_FINALIZE(&config);
 	return EXIT_SUCCESS;
 }

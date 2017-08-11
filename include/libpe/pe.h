@@ -171,7 +171,7 @@ void pe_dealloc_exports(pe_exports_t exports);
 // Resources functions
 pe_final_output_t pe_get_resources(pe_ctx_t *ctx);
 pe_resources_count_t pe_get_resources_count(pe_ctx_t *ctx);
-void pe_dealloc_peres(pe_final_output_t obj);
+void pe_dealloc_resources(pe_final_output_t obj);
 
 // Misc functions
 double pe_calculate_entropy_file(pe_ctx_t *ctx);

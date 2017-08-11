@@ -32,7 +32,7 @@
 #include <math.h>
 #include <string.h>
 
-// Used for Imphash calulation 
+/* By liw. */
 static char *last_strstr(char *haystack, const char *needle) {
 	if (needle == NULL || *needle == '\0')
 		return haystack;

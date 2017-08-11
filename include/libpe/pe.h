@@ -86,23 +86,6 @@ typedef struct {
 	IMAGE_SECTION_HEADER **sections; // array up to MAX_SECTIONS
 	uint64_t entrypoint;
 	uint64_t imagebase;
-
-#if 0
-	uint16_t e_lfanew;
-	uint16_t architecture;
-	uint64_t entrypoint;
-	uint64_t imagebase;
-	uint64_t size;
-
-	uint16_t num_rsrc_entries;
-	uint16_t addr_rsrc_sec;
-	uint16_t addr_rsrc_dir;
-
-	// pointers (will be freed if needed)
-	//IMAGE_TLS_DIRECTORY32 *tls_ptr;
-	IMAGE_RESOURCE_DIRECTORY *rsrc_ptr;
-	IMAGE_RESOURCE_DIRECTORY_ENTRY **rsrc_entries_ptr;
-#endif
 } pe_file_t;
 
 typedef struct {

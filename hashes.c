@@ -49,56 +49,6 @@ static char *last_strstr(char *haystack, const char *needle) {
 	return result;
 }
 
-static bool calc_hash(char *output, const char *alg_name, const unsigned char *data, size_t data_size) {
-	bool ret = true;
-
-	if (strcmp("ssdeep", alg_name) == 0) {
-		fuzzy_hash_buf(data, data_size, output);
-		return ret;
-	}
-
-	OpenSSL_add_all_digests();
-
-	const EVP_MD *md = EVP_get_digestbyname(alg_name);
-	//assert(md != NULL); // We already checked this in parse_hash_algorithm()
-	unsigned char md_value[EVP_MAX_MD_SIZE];
-	unsigned int md_len;
-
-	// See https://wiki.openssl.org/index.php/1.1_API_Changes
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	EVP_MD_CTX md_ctx_auto;
-	EVP_MD_CTX *md_ctx = &md_ctx_auto;
-#else
-	EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
-#endif
-
-	// FIXME: Handle errors - Check return values.
-	EVP_MD_CTX_init(md_ctx);
-	EVP_DigestInit_ex(md_ctx, md, NULL);
-	EVP_DigestUpdate(md_ctx, data, data_size);
-	EVP_DigestFinal_ex(md_ctx, md_value, &md_len);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	EVP_MD_CTX_cleanup(md_ctx);  // removing this to fix :"Error: free(): invalid next size (fast):" this is happening only with imphash
-#else
-	//EVP_MD_CTX_free(md_ctx); // same here
-#endif
-
-	int err;
-	for (unsigned int i=0; i < md_len; i++) {
-		err = sprintf(&output[i * 2], "%02x", md_value[i]);
-		if (err < 0) {
-			output = NULL;
-			ret = false;
-			break;
-		}
-	}
-
-	CRYPTO_cleanup_all_ex_data();
-	EVP_cleanup();
-
-	return ret;
-}
-
 static pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t data_size) {
 	static const size_t openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
 	static const size_t ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
@@ -127,7 +77,7 @@ static pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t 
 
 	bool hash_ok;
 
-	hash_ok = calc_hash(hash_value, "md5", data, data_size);
+	hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
 	if (!hash_ok) {
 		sample.err = LIBPE_E_HASHING_FAILED;
 		goto error;
@@ -138,7 +88,7 @@ static pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t 
 		goto error;
 	}
 
-	hash_ok = calc_hash(hash_value, "sha1", data, data_size);
+	hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "sha1", data, data_size);
 	if (!hash_ok) {
 		sample.err = LIBPE_E_HASHING_FAILED;
 		goto error;
@@ -149,7 +99,7 @@ static pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t 
 		goto error;
 	}
 
-	hash_ok = calc_hash(hash_value, "sha256", data, data_size);
+	hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "sha256", data, data_size);
 	if (!hash_ok) {
 		sample.err = LIBPE_E_HASHING_FAILED;
 		goto error;
@@ -160,7 +110,7 @@ static pe_hash_t get_hashes(const char *name, const unsigned char *data, size_t 
 		goto error;
 	}
 
-	hash_ok = calc_hash(hash_value, "ssdeep", data, data_size);
+	hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "ssdeep", data, data_size);
 	if (!hash_ok) {
 		sample.err = LIBPE_E_HASHING_FAILED;
 		goto error;
@@ -210,6 +160,75 @@ static pe_hash_t get_headers_optional_hash(pe_ctx_t *ctx) {
 			return get_hashes("IMAGE_OPTIONAL_HEADER_64", data, data_size);
 		}
 	}
+}
+
+static const size_t g_openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
+static const size_t g_ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
+
+size_t pe_hash_recommended_size(void) {
+	// Since standard C lacks max(), we do it manually.
+	const size_t result = g_openssl_hash_maxsize > g_ssdeep_hash_maxsize
+		? g_openssl_hash_maxsize
+		: g_ssdeep_hash_maxsize;
+
+	return result;
+}
+
+bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size) {
+	if (strcmp("ssdeep", alg_name) == 0) {
+		if (output_size < g_ssdeep_hash_maxsize) {
+			// Not enough space.
+			return false;
+		}
+
+		fuzzy_hash_buf(data, data_size, output);
+		return true;
+	}
+
+	if (output_size < g_openssl_hash_maxsize) {
+		// Not enough space.
+		return false;
+	}
+
+	const EVP_MD *md = EVP_get_digestbyname(alg_name);
+	if (md == NULL) {
+		// Unsupported hash algorithm.
+		return false;
+	}
+
+	unsigned char md_value[EVP_MAX_MD_SIZE];
+	unsigned int md_len;
+
+// See https://wiki.openssl.org/index.php/1.1_API_Changes
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	EVP_MD_CTX md_ctx_auto;
+	EVP_MD_CTX *md_ctx = &md_ctx_auto;
+#else
+	EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
+#endif
+
+	// FIXME: Handle errors - Check return values.
+	EVP_MD_CTX_init(md_ctx);
+	EVP_DigestInit_ex(md_ctx, md, NULL);
+	EVP_DigestUpdate(md_ctx, data, data_size);
+	EVP_DigestFinal_ex(md_ctx, md_value, &md_len);
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	EVP_MD_CTX_cleanup(md_ctx);
+#else
+	EVP_MD_CTX_free(md_ctx);
+#endif
+
+	int result = true;
+	for (unsigned int i=0; i < md_len; i++) {
+		int err = sprintf(&output[i * 2], "%02x", md_value[i]);
+		if (err < 0) {
+			result = false;
+			break;
+		}
+	}
+
+	return result;
 }
 
 pe_hdr_t pe_get_headers_hash(pe_ctx_t *ctx) {
@@ -309,7 +328,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 	char hint_str[16];
 	char fname[MAX_FUNCTION_NAME];
-	bool is_ordinal = false; // Initalize variable
+	bool is_ordinal = false;
 
 	memset(hint_str, 0, sizeof(hint_str));
 	memset(fname, 0, sizeof(fname));
@@ -537,7 +556,6 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	}
 
 	LL_COUNT(head, elt, count);
-	//printf("%d number of elements in list outside\n", count);
 
 	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
 	char *imphash_string = malloc(imphash_string_size);
@@ -560,7 +578,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	char result[33];
 	const unsigned char *data = (const unsigned char *)imphash_string;
 	const size_t data_size = imphash_string_len;
-	const bool hash_ok = calc_hash(result, "md5", data, data_size);
+	const bool hash_ok = pe_hash_raw_data(result, sizeof(result), "md5", data, data_size);
 
 	free(imphash_string);
 

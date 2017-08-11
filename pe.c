@@ -122,18 +122,17 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 		// NOTE: This is a recoverable error. Do not abort.
 	}
 
+	OpenSSL_add_all_digests();
+
 	return LIBPE_E_OK;
 }
 
 pe_err_e pe_unload(pe_ctx_t *ctx) {
-	int ret = 0;
-
 	if (ctx->stream != NULL) {
 		fclose(ctx->stream);
 	}
 
 	free(ctx->path);
-
 
 	// Dealloc internal pointers.
 	free(ctx->pe.directories);
@@ -141,12 +140,15 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 
 	// Dealloc the virtual mapping.
 	if (ctx->map_addr != NULL) {
-		ret = munmap(ctx->map_addr, ctx->map_size);
+		int ret = munmap(ctx->map_addr, ctx->map_size);
 		if (ret != 0) {
 			//perror("munmap");
 			return LIBPE_E_MUNMAP_FAILED;
 		}
 	}
+
+	CRYPTO_cleanup_all_ex_data();
+	EVP_cleanup(); // Clean OpenSSL_add_all_digests.
 
 	// Cleanup the whole struct.
 	memset(ctx, 0, sizeof(pe_ctx_t));

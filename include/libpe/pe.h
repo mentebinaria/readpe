@@ -147,6 +147,8 @@ const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
 
 // Hashes functions
+size_t pe_hash_recommended_size(void);
+bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size);
 pe_hdr_t pe_get_headers_hash(pe_ctx_t *ctx);
 void pe_dealloc_hdr_hashes(pe_hdr_t obj);
 

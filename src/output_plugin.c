@@ -86,8 +86,6 @@ char *escape_ex_quoted(const char *str, const entity_table_t entities) {
 
 	const size_t old_length = strlen(str);
 	const size_t new_length = escape_count_chars_ex(str, old_length, entities) + 2; // Extra bytes for quotes
-	if (old_length == new_length - 2)
-		return strdup_quoted(str);
 
 	char *new_str = malloc(new_length + 1); // Extra byte for NULL terminator
 	if (new_str == NULL)
@@ -126,8 +124,6 @@ char *escape_ex(const char *str, const entity_table_t entities) {
 
 	const size_t old_length = strlen(str);
 	const size_t new_length = escape_count_chars_ex(str, old_length, entities);
-	if (old_length == new_length)
-		return strdup(str);
 
 	char *new_str = malloc(new_length + 1); // Extra byte for NULL terminator
 	if (new_str == NULL)

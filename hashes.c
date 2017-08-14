@@ -231,7 +231,7 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 	return result;
 }
 
-pe_hdr_t pe_get_headers_hash(pe_ctx_t *ctx) {
+pe_hdr_t pe_get_headers_hashes(pe_ctx_t *ctx) {
 	pe_hdr_t result;
 	memset(&result, 0, sizeof(pe_hdr_t));
 
@@ -585,35 +585,21 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	return hash_ok ? strdup(result) : NULL;
 }
 
-void pe_dealloc_hdr_hashes(pe_hdr_t obj) {
-	free(obj.dos.md5);
-	free(obj.dos.sha1);
-	free(obj.dos.sha256);
-	free(obj.dos.ssdeep);
-
-	free(obj.coff.md5);
-	free(obj.coff.sha1);
-	free(obj.coff.sha256);
-	free(obj.coff.ssdeep);
-
-	free(obj.optional.md5);
-	free(obj.optional.sha1);
-	free(obj.optional.sha256);
-	free(obj.optional.ssdeep); 
+void pe_dealloc_headers_hashes(pe_hdr_t obj) {
+	pe_dealloc_hashes(obj.dos);
+	pe_dealloc_hashes(obj.coff);
+	pe_dealloc_hashes(obj.optional);
 }
 
 void pe_dealloc_sections_hashes(pe_hash_section_t obj) {
 	for (uint32_t i=0; i < obj.count; i++) {
-		free(obj.sections[i].md5);
-		free(obj.sections[i].sha1);
-		free(obj.sections[i].sha256);
-		free(obj.sections[i].ssdeep);
+		pe_dealloc_hashes(obj.sections[i]);
 	}
 
 	free(obj.sections);
 }
 
-void pe_dealloc_filehash(pe_hash_t obj) {
+void pe_dealloc_hashes(pe_hash_t obj) {
 	free(obj.name);
 	free(obj.md5);
 	free(obj.sha1);

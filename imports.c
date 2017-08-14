@@ -334,6 +334,8 @@ void pe_dealloc_imports(pe_imports_t imports) {
 			const pe_imported_function_t *function = &dll->functions[j];
 			free(function->name);
 		}
+		free(dll->name);
+		free(dll->functions);
 	}
 	free(imports.dlls);
 }

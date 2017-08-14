@@ -48,13 +48,13 @@ typedef struct {
 	pe_hash_t dos;
 	pe_hash_t coff;
 	pe_hash_t optional;
-} pe_hdr_t;
+} pe_hash_headers_t;
 
 typedef struct {
 	pe_err_e err;
 	uint32_t count;
 	pe_hash_t *sections;
-} pe_hash_section_t;
+} pe_hash_sections_t;
 
 #ifdef __cplusplus
 } // extern "C"

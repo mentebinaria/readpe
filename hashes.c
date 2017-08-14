@@ -231,9 +231,9 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 	return result;
 }
 
-pe_hdr_t pe_get_headers_hashes(pe_ctx_t *ctx) {
-	pe_hdr_t result;
-	memset(&result, 0, sizeof(pe_hdr_t));
+pe_hash_headers_t pe_get_headers_hashes(pe_ctx_t *ctx) {
+	pe_hash_headers_t result;
+	memset(&result, 0, sizeof(pe_hash_headers_t));
 
 	result.err = LIBPE_E_OK;
 
@@ -258,9 +258,9 @@ pe_hdr_t pe_get_headers_hashes(pe_ctx_t *ctx) {
 	return result;
 }
 
-pe_hash_section_t pe_get_sections_hash(pe_ctx_t *ctx) {
-	pe_hash_section_t result;
-	memset(&result, 0, sizeof(pe_hash_section_t));
+pe_hash_sections_t pe_get_sections_hash(pe_ctx_t *ctx) {
+	pe_hash_sections_t result;
+	memset(&result, 0, sizeof(pe_hash_sections_t));
 	
 	result.err = LIBPE_E_OK;
 
@@ -585,13 +585,13 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	return hash_ok ? strdup(result) : NULL;
 }
 
-void pe_dealloc_headers_hashes(pe_hdr_t obj) {
+void pe_dealloc_headers_hashes(pe_hash_headers_t obj) {
 	pe_dealloc_hashes(obj.dos);
 	pe_dealloc_hashes(obj.coff);
 	pe_dealloc_hashes(obj.optional);
 }
 
-void pe_dealloc_sections_hashes(pe_hash_section_t obj) {
+void pe_dealloc_sections_hashes(pe_hash_sections_t obj) {
 	for (uint32_t i=0; i < obj.count; i++) {
 		pe_dealloc_hashes(obj.sections[i]);
 	}

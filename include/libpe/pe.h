@@ -132,11 +132,11 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 // Hashes functions
 size_t pe_hash_recommended_size(void);
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size);
-pe_hdr_t pe_get_headers_hashes(pe_ctx_t *ctx);
-void pe_dealloc_headers_hashes(pe_hdr_t obj);
+pe_hash_headers_t pe_get_headers_hashes(pe_ctx_t *ctx);
+void pe_dealloc_headers_hashes(pe_hash_headers_t obj);
 
-pe_hash_section_t pe_get_sections_hash(pe_ctx_t *ctx);
-void pe_dealloc_sections_hashes(pe_hash_section_t obj);
+pe_hash_sections_t pe_get_sections_hash(pe_ctx_t *ctx);
+void pe_dealloc_sections_hashes(pe_hash_sections_t obj);
 
 pe_hash_t pe_get_file_hash(pe_ctx_t *ctx);
 void pe_dealloc_hashes(pe_hash_t obj);

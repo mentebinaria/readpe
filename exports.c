@@ -144,25 +144,20 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 				break;
 			}
 
-			char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
-			
-			const size_t function_name_size = sizeof(fname_forwarded);
+			const size_t function_name_size = sizeof(fname) * 2 + 4; // Twice the size plus " -> ".
 			exports.functions[i].name = malloc(function_name_size);
 			if (exports.functions[i].name) {
 				exports.err = LIBPE_E_ALLOCATION_FAILURE;
 				return exports;
 			}
 
-			snprintf(fname_forwarded, function_name_size-1, "%s -> %s", fname, fw_entry_name);
-			memcpy(exports.functions[i].name, fname_forwarded, function_name_size);
+			snprintf(exports.functions[i].name, function_name_size-1, "%s -> %s", fname, fw_entry_name);
 		} else {
-			exports.functions[i].name = malloc(fname_size);
+			exports.functions[i].name = strdup(fname);
 			if (exports.functions[i].name) {
 				exports.err = LIBPE_E_ALLOCATION_FAILURE;
 				return exports;
 			}
-
-			memcpy(exports.functions[i].name, fname, fname_size);
 		}
 	}
 

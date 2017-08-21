@@ -498,6 +498,20 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 	}
 }
 
+static void freeNodes(element_t *currentNode) {
+	if (currentNode == NULL)
+		return;
+
+	element_t *temp;
+	while (currentNode->next != NULL) {
+		temp = currentNode;
+		currentNode = currentNode->next;
+		free(temp->function_name);
+		free(temp->dll_name);
+		free(temp);
+	}
+}
+
 char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL)
@@ -531,8 +545,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 			break;
 
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
-		// It might be '\0', for example.
+		
 		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
 			// TODO: Should we report something?
 			break;
@@ -540,6 +553,8 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 		char dll_name[MAX_DLL_NAME];
 		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
+		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
+		// It might be '\0', for example.
 		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
 		dll_name[sizeof(dll_name) - 1] = '\0';
 
@@ -581,7 +596,8 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	const bool hash_ok = pe_hash_raw_data(result, sizeof(result), "md5", data, data_size);
 
 	free(imphash_string);
-
+	freeNodes(head);
+	free(head);
 	return hash_ok ? strdup(result) : NULL;
 }
 

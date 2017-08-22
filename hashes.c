@@ -503,7 +503,7 @@ static void freeNodes(element_t *currentNode) {
 		return;
 
 	element_t *temp;
-	while (currentNode->next != NULL) {
+	while(currentNode != NULL) {
 		temp = currentNode;
 		currentNode = currentNode->next;
 		free(temp->function_name);
@@ -597,7 +597,6 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 	free(imphash_string);
 	freeNodes(head);
-	free(head);
 	return hash_ok ? strdup(result) : NULL;
 }
 

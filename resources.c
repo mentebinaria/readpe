@@ -367,7 +367,7 @@ pe_final_output_t pe_get_resources(pe_ctx_t *ctx) {
 	type_RDT_DATA_ENTRY *dataEntry = malloc(count.dataEntry * sizeof(type_RDT_DATA_ENTRY));
 
 	// TODO: Handle allocation failure.
-
+	NODE_PERES *Todelete = node;
 	while (node != NULL) {
 		output = showNode(node, output);
 		if (output == NULL)
@@ -394,13 +394,13 @@ pe_final_output_t pe_get_resources(pe_ctx_t *ctx) {
 		}
 		node = node->nextNode;
 	}
-	free(output);
 	sum_output.resourcesDirectory = resourcesDirectory;
 	sum_output.directoryEntry = directoryEntry;
 	sum_output.dataString = dataString;
 	sum_output.dataEntry = dataEntry;
 
-	freeNodes(node);
+	free(output);
+	freeNodes(Todelete);
 	sum_output.err = LIBPE_E_OK;
 	return sum_output;
 }
@@ -418,10 +418,8 @@ pe_resources_count_t pe_get_resources_count(pe_ctx_t *ctx) {
 		return count;
 	}
 
-	while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}
 	count = get_count(node);
+	freeNodes(node);
 	return count;
 }
 

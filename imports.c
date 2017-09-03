@@ -28,7 +28,7 @@
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 
-uint32_t get_dll_count(pe_ctx_t *ctx) {
+static uint32_t get_dll_count(pe_ctx_t *ctx) {
 	uint32_t count = 0;
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -73,7 +73,7 @@ uint32_t get_dll_count(pe_ctx_t *ctx) {
 	return count;	
 }
 
-uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
+static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 	uint64_t ofs = offset;
 	uint32_t count = 0;
 
@@ -132,7 +132,7 @@ uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 	return count;
 }
 
-pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll, uint64_t offset) {
+static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll, uint64_t offset) {
 	imported_dll->err = LIBPE_E_OK;
 	imported_dll->functions_count = get_functions_count(ctx, offset);
 

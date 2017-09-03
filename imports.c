@@ -175,7 +175,6 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 				if (is_ordinal) {
 					hint = 0;
 					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32) & 0xffff;
-					snprintf(fname, size_fname-1, "ord(%u)", ordinal);
 				} else {
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -216,7 +215,6 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 				if (is_ordinal) {
 					hint = 0;
 					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64) & 0xffff;
-					snprintf(fname, size_fname-1, "ord(%u)", ordinal);
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -241,10 +239,12 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 		imported_dll->functions[i].hint = hint;
 		imported_dll->functions[i].ordinal = ordinal;
 
-		imported_dll->functions[i].name = strdup(fname);
-		if (imported_dll->functions[i].name == NULL) {
-			imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
-			return imported_dll->err;
+		if (!is_ordinal) {
+			imported_dll->functions[i].name = strdup(fname);
+			if (imported_dll->functions[i].name == NULL) {
+				imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+				return imported_dll->err;
+			}
 		}
 	}
 

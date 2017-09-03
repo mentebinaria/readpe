@@ -37,7 +37,7 @@ uint32_t get_dll_count(pe_ctx_t *ctx) {
 
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		fprintf(stderr, "import directory not found\n");
+		// TODO: report error?
 		return count;
 	}
 
@@ -90,10 +90,14 @@ uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 				if (thunk_type == 0)
 					return count;
 
-				const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-				const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-				if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME)))
-					return count;
+				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+
+				if (!is_ordinal) {
+					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME)))
+						return count;
+				}
 
 				ofs += sizeof(IMAGE_THUNK_DATA32);
 				break;
@@ -108,10 +112,14 @@ uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 				if (thunk_type == 0)
 					return count;
 
-				uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
-				const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-				if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME)))
-					return count;
+				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+				
+				if (!is_ordinal) {
+					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
+					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
+					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME)))
+						return count;
+				}
 
 				ofs += sizeof(IMAGE_THUNK_DATA64);
 				break;
@@ -142,6 +150,7 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 	const size_t size_fname = sizeof(fname);
 
 	bool is_ordinal = false;
+	uint16_t ordinal = 0;
 	uint64_t ofs = offset;
 
 	for (uint32_t i=0; i < imported_dll->functions_count; i++) {
@@ -157,16 +166,17 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 				// Type punning
 				const uint32_t thunk_type = *(uint32_t *)thunk;
 				if (thunk_type == 0) {
-					imported_dll->err = LIBPE_E_TYPE_PUNNING_FAILED;
+					imported_dll->err = LIBPE_E_INVALID_THUNK;
 					return imported_dll->err;
 				}
 
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
 				if (is_ordinal) {
-					snprintf(hint_str, size_hint_str-1, "%"PRIu32,
-						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32) & 0xffff;
+					snprintf(hint_str, size_hint_str-1, "ord(%u)", ordinal);
 				} else {
+					ordinal = 0;
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
@@ -174,12 +184,11 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 						return imported_dll->err;
 					}
 
-					snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
 					strncpy(fname, (char *)imp_name->Name, size_fname-1);
 					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
 					fname[size_fname - 1] = '\0';
-					//size_t fname_len = strlen(fname);
 				}
+
 				ofs += sizeof(IMAGE_THUNK_DATA32);
 				break;
 			}
@@ -194,16 +203,17 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 				// Type punning
 				const uint64_t thunk_type = *(uint64_t *)thunk;
 				if (thunk_type == 0) {
-					imported_dll->err = LIBPE_E_TYPE_PUNNING_FAILED;
+					imported_dll->err = LIBPE_E_INVALID_THUNK;
 					return imported_dll->err;
 				}
 
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
 				if (is_ordinal) {
-					snprintf(hint_str, size_hint_str-1, "%llu",
-						thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64) & 0xffff;
+					snprintf(hint_str, size_hint_str-1, "ord(%u)", ordinal);
 				} else {
+					ordinal = 0;
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
@@ -211,18 +221,17 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 						return imported_dll->err;
 					}
 
-					snprintf(hint_str, size_hint_str-1, "%d", imp_name->Hint);
 					strncpy(fname, (char *)imp_name->Name, size_fname-1);
 					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
 					fname[size_fname - 1] = '\0';
-					//size_t fname_len = strlen(fname);
 				}
+
 				ofs += sizeof(IMAGE_THUNK_DATA64);
 				break;
 			}
 		}
 
-		//printf("fname = %s, hint_str = %s\n", fname, hint_str);
+		//printf("fname = %s, hint_str = %s, ordinal = %d\n", fname, hint_str, ordinal);
 
 		imported_dll->functions[i].name = is_ordinal
 			? strdup(hint_str)
@@ -231,6 +240,8 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 			imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
 			return imported_dll->err;
 		}
+
+		imported_dll->functions[i].ordinal = ordinal;
 	}
 
 	return LIBPE_E_OK;
@@ -257,7 +268,6 @@ pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL) {
-		// TODO: report error?
 		return imports;
 	}
 

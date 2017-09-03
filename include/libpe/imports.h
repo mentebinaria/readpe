@@ -31,13 +31,14 @@ extern "C" {
 
 typedef struct {
 	char *name;
+	uint16_t ordinal;
 } pe_imported_function_t;
 
 typedef struct {
-    pe_err_e err;
-    char *name;
-    uint32_t functions_count;
-    pe_imported_function_t *functions; // array of imported functions
+	pe_err_e err;
+	char *name;
+	uint32_t functions_count;
+	pe_imported_function_t *functions; // array of imported functions
 } pe_imported_dll_t;
 
 typedef struct {

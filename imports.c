@@ -144,13 +144,12 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 	}
 	memset(imported_dll->functions, 0, size_functions);
 
-	char hint_str[16] = {0};
 	char fname[MAX_FUNCTION_NAME] = {0};
-	const size_t size_hint_str = sizeof(hint_str);
 	const size_t size_fname = sizeof(fname);
 
 	bool is_ordinal = false;
 	uint16_t ordinal = 0;
+	uint16_t hint = 0;
 	uint64_t ofs = offset;
 
 	for (uint32_t i=0; i < imported_dll->functions_count; i++) {
@@ -170,19 +169,23 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 					return imported_dll->err;
 				}
 
+				// If the MSB of the member is 1, the function is exported by ordinal.
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
 				if (is_ordinal) {
+					hint = 0;
 					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32) & 0xffff;
-					snprintf(hint_str, size_hint_str-1, "ord(%u)", ordinal);
+					snprintf(fname, size_fname-1, "ord(%u)", ordinal);
 				} else {
-					ordinal = 0;
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 						imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
 						return imported_dll->err;
 					}
+
+					hint = imp_name->Hint;
+					ordinal = 0;
 
 					strncpy(fname, (char *)imp_name->Name, size_fname-1);
 					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
@@ -207,19 +210,23 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 					return imported_dll->err;
 				}
 
+				// If the MSB of the member is 1, the function is exported by ordinal.
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
 				if (is_ordinal) {
+					hint = 0;
 					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64) & 0xffff;
-					snprintf(hint_str, size_hint_str-1, "ord(%u)", ordinal);
+					snprintf(fname, size_fname-1, "ord(%u)", ordinal);
 				} else {
-					ordinal = 0;
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
 					if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
 						imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
 						return imported_dll->err;
 					}
+
+					hint = imp_name->Hint;
+					ordinal = 0;
 
 					strncpy(fname, (char *)imp_name->Name, size_fname-1);
 					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
@@ -231,17 +238,14 @@ pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *imported_dll
 			}
 		}
 
-		//printf("fname = %s, hint_str = %s, ordinal = %d\n", fname, hint_str, ordinal);
+		imported_dll->functions[i].hint = hint;
+		imported_dll->functions[i].ordinal = ordinal;
 
-		imported_dll->functions[i].name = is_ordinal
-			? strdup(hint_str)
-			: strdup(fname);
+		imported_dll->functions[i].name = strdup(fname);
 		if (imported_dll->functions[i].name == NULL) {
 			imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
 			return imported_dll->err;
 		}
-
-		imported_dll->functions[i].ordinal = ordinal;
 	}
 
 	return LIBPE_E_OK;

@@ -31,6 +31,7 @@ extern "C" {
 
 typedef struct {
 	char *name;
+    uint16_t hint;
 	uint16_t ordinal;
 } pe_imported_function_t;
 

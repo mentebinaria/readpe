@@ -26,10 +26,10 @@
 #include <string.h>
 
 pe_exports_t *pe_exports(pe_ctx_t *ctx) {
-	if (ctx->exports != NULL)
-		return ctx->exports;
+	if (ctx->cached_data.exports != NULL)
+		return ctx->cached_data.exports;
 
-	pe_exports_t *exports = ctx->exports = malloc(sizeof(pe_exports_t));
+	pe_exports_t *exports = ctx->cached_data.exports = malloc(sizeof(pe_exports_t));
 	if (exports == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;

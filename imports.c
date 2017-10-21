@@ -252,10 +252,10 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 }
 
 pe_imports_t *pe_imports(pe_ctx_t *ctx) {
-	if (ctx->imports != NULL)
-		return ctx->imports;
+	if (ctx->cached_data.imports != NULL)
+		return ctx->cached_data.imports;
 
-	pe_imports_t *imports = ctx->imports = malloc(sizeof(pe_imports_t));
+	pe_imports_t *imports = ctx->cached_data.imports = malloc(sizeof(pe_imports_t));
 	if (imports == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;

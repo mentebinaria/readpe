@@ -620,19 +620,29 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		LL_DELETE(head, elt);
 
 	free(elt);
+	freeNodes(head);
 
 	const size_t imphash_string_len = strlen(imphash_string);
 	if (imphash_string_len)
 		imphash_string[imphash_string_len - 1] = '\0'; // remove the last comma sign
 
-	char result[33];
 	const unsigned char *data = (const unsigned char *)imphash_string;
 	const size_t data_size = imphash_string_len;
-	const bool hash_ok = pe_hash_raw_data(result, sizeof(result), "md5", data, data_size);
+
+	const size_t hash_maxsize = pe_hash_recommended_size();
+	char *hash_value = malloc(hash_maxsize);
+	if (hash_value == NULL) {
+		//ret = LIBPE_E_ALLOCATION_FAILURE;
+		return NULL;
+	}
+	memset(hash_value, 0, hash_maxsize);
+
+	const bool hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
 
 	free(imphash_string);
-	freeNodes(head);
-	return hash_ok ? strdup(result) : NULL;
+
+	//printf("### DEBUG imphash_string [%zu] = %s\n", imphash_string_len, imphash_string);
+	return hash_value;
 }
 
 void pe_hash_headers_dealloc(pe_hash_headers_t *obj) {

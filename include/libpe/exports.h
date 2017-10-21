@@ -30,8 +30,9 @@ extern "C" {
 #endif
 
 typedef struct {
-	uint32_t addr;
-	char *name;	// name of the function at that address
+	char *name; // name of the function
+	char *fwd_name; // name of the forwarded function
+	uint32_t address; // address of the function
 } pe_exported_function_t;
 
 typedef struct {
@@ -39,6 +40,8 @@ typedef struct {
 	uint32_t functions_count;
 	pe_exported_function_t *functions; // array of exported functions
 } pe_exports_t;
+
+void pe_exports_dealloc(pe_exports_t *exports);
 
 #ifdef __cplusplus
 } // extern "C"

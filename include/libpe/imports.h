@@ -48,6 +48,8 @@ typedef struct {
 	pe_imported_dll_t *dlls; // array of DLLs
 } pe_imports_t;
 
+void pe_imports_dealloc(pe_imports_t *imports);
+
 /*
  * We have an array of names and an array of functions.
  *

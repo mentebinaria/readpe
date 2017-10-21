@@ -25,21 +25,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
-	pe_exports_t exports;
-	memset(&exports, 0, sizeof(pe_exports_t));
+pe_exports_t *pe_exports(pe_ctx_t *ctx) {
+	if (ctx->exports != NULL)
+		return ctx->exports;
 
-	exports.err = LIBPE_E_OK;
+	pe_exports_t *exports = ctx->exports = malloc(sizeof(pe_exports_t));
+	if (exports == NULL) {
+		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
+		return NULL;
+	}
+	memset(exports, 0, sizeof(pe_exports_t));
+
+	exports->err = LIBPE_E_OK;
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
 	if (dir == NULL) { 
-		exports.err =	LIBPE_E_EXPORTS_DIR;
 		return exports;
 	}
 
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		exports.err = LIBPE_E_EXPORTS_VA;
+		// NOTE: This file has no exported symbols.
 		return exports;
 	}
 
@@ -48,21 +54,21 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 	ofs = pe_rva2ofs(ctx, va);
 	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
-		exports.err = LIBPE_E_EXPORTS_CANT_READ_EXP;
+		exports->err = LIBPE_E_EXPORTS_CANT_READ_DIR;
 		return exports;
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
-		exports.err = LIBPE_E_EXPORTS_CANT_READ_RVA;
+		exports->err = LIBPE_E_EXPORTS_CANT_READ_RVA;
 		return exports;
 	}
 
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
 	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
 	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
-		exports.err = LIBPE_E_EXPORTS_FUNC_NEQ_NAMES;
+		exports->err = LIBPE_E_EXPORTS_FUNC_NEQ_NAMES;
 		return exports;
 	}
 
@@ -78,14 +84,14 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 	// exported by the module. On the other hand, `NumberOfNames` is the number of
 	// functions/symbols exported by name only.
 
-	exports.functions_count = exp->NumberOfFunctions;
+	exports->functions_count = exp->NumberOfFunctions;
 	const size_t functions_size = exp->NumberOfFunctions * sizeof(pe_exported_function_t);
-	exports.functions = malloc(functions_size);
-	if (exports.functions == NULL) {
-		exports.err = LIBPE_E_ALLOCATION_FAILURE;
+	exports->functions = malloc(functions_size);
+	if (exports->functions == NULL) {
+		exports->err = LIBPE_E_ALLOCATION_FAILURE;
 		return exports;
 	}
-	memset(exports.functions, 0, functions_size);
+	memset(exports->functions, 0, functions_size);
 
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
@@ -122,7 +128,7 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 			break;
 		}
 
-		exports.functions[i].addr = entry_va;
+		exports->functions[i].address = entry_va;
 
 		char fname[300] = { 0 };
 		const size_t fname_size = sizeof(fname);
@@ -144,18 +150,21 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 				break;
 			}
 
-			const size_t function_name_size = sizeof(fname) * 2 + 4; // Twice the size plus " -> ".
-			exports.functions[i].name = malloc(function_name_size);
-			if (exports.functions[i].name) {
-				exports.err = LIBPE_E_ALLOCATION_FAILURE;
+			exports->functions[i].name = strdup(fname);
+			if (exports->functions[i].name == NULL) {
+				exports->err = LIBPE_E_ALLOCATION_FAILURE;
 				return exports;
 			}
 
-			snprintf(exports.functions[i].name, function_name_size-1, "%s -> %s", fname, fw_entry_name);
+			exports->functions[i].fwd_name = strdup(fw_entry_name);
+			if (exports->functions[i].fwd_name == NULL) {
+				exports->err = LIBPE_E_ALLOCATION_FAILURE;
+				return exports;
+			}
 		} else {
-			exports.functions[i].name = strdup(fname);
-			if (exports.functions[i].name) {
-				exports.err = LIBPE_E_ALLOCATION_FAILURE;
+			exports->functions[i].name = strdup(fname);
+			if (exports->functions[i].name == NULL) {
+				exports->err = LIBPE_E_ALLOCATION_FAILURE;
 				return exports;
 			}
 		}
@@ -164,10 +173,14 @@ pe_exports_t pe_get_exports(pe_ctx_t *ctx) {
 	return exports;
 }
 
-void pe_dealloc_exports(pe_exports_t obj) {
-	for (uint32_t i=0; i < obj.functions_count; i++) {
-		free(obj.functions[i].name);
+void pe_exports_dealloc(pe_exports_t *obj) {
+	if (obj == NULL)
+		return;
+
+	for (uint32_t i=0; i < obj->functions_count; i++) {
+		free(obj->functions[i].name);
 	}
 
-	free(obj.functions);
+	free(obj->functions);
+	free(obj);
 }

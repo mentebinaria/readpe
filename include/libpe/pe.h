@@ -89,12 +89,23 @@ typedef struct {
 } pe_file_t;
 
 typedef struct {
+	// Parsed directories
+	pe_imports_t *imports;
+	pe_exports_t *exports;
+	// Hashes
+	pe_hash_headers_t *hash_headers;
+	pe_hash_sections_t *hash_sections;
+	pe_hash_t *hash_file;
+} pe_cached_data_t;
+
+typedef struct {
 	FILE *stream;
 	char *path;
 	void *map_addr;
 	off_t map_size;
 	uintptr_t map_end;
 	pe_file_t pe;
+	pe_cached_data_t cached_data;
 } pe_ctx_t;
 
 // General functions
@@ -129,27 +140,19 @@ const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
 
-// Hashes functions
+// Hash functions
 size_t pe_hash_recommended_size(void);
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size);
-pe_hash_headers_t pe_get_headers_hashes(pe_ctx_t *ctx);
-void pe_dealloc_headers_hashes(pe_hash_headers_t obj);
-
-pe_hash_sections_t pe_get_sections_hash(pe_ctx_t *ctx);
-void pe_dealloc_sections_hashes(pe_hash_sections_t obj);
-
-pe_hash_t pe_get_file_hash(pe_ctx_t *ctx);
-void pe_dealloc_hashes(pe_hash_t obj);
-
+pe_hash_headers_t *pe_get_headers_hashes(pe_ctx_t *ctx);
+pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx);
+pe_hash_t *pe_get_file_hash(pe_ctx_t *ctx);
 char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor);
 
 // Imports functions
-pe_imports_t pe_get_imports(pe_ctx_t *ctx);
-void pe_dealloc_imports(pe_imports_t imports);
+pe_imports_t *pe_imports(pe_ctx_t *ctx);
 
 // Exports functions
-pe_exports_t pe_get_exports(pe_ctx_t *ctx);
-void pe_dealloc_exports(pe_exports_t exports);
+pe_exports_t *pe_exports(pe_ctx_t *ctx);
 
 // Resources functions
 pe_final_output_t pe_get_resources(pe_ctx_t *ctx);

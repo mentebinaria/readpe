@@ -35,7 +35,6 @@ typedef enum {
 } pe_imphash_flavor_e;
 
 typedef struct {
-	pe_err_e err;
 	char *name;
 	char *md5;
 	char *ssdeep;
@@ -45,16 +44,20 @@ typedef struct {
 
 typedef struct {
 	pe_err_e err;
-	pe_hash_t dos;
-	pe_hash_t coff;
-	pe_hash_t optional;
+	pe_hash_t *dos;
+	pe_hash_t *coff;
+	pe_hash_t *optional;
 } pe_hash_headers_t;
 
 typedef struct {
 	pe_err_e err;
 	uint32_t count;
-	pe_hash_t *sections;
+	pe_hash_t **sections;
 } pe_hash_sections_t;
+
+void pe_hash_headers_dealloc(pe_hash_headers_t *obj);
+void pe_hash_sections_dealloc(pe_hash_sections_t *obj);
+void pe_hash_dealloc(pe_hash_t *obj);
 
 #ifdef __cplusplus
 } // extern "C"

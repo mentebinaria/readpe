@@ -45,8 +45,6 @@ pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path) {
 }
 
 pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options) {
-	int ret = 0;
-
 	// Cleanup the whole struct.
 	memset(ctx, 0, sizeof(pe_ctx_t));
 
@@ -64,6 +62,8 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 		return LIBPE_E_OPEN_FAILED;
 	}
 
+	int ret = 0;
+	
 	// Stat the fd to retrieve the file informations.
 	// If file is a symlink, fstat will stat the pointed file, not the link.
 	struct stat stat;
@@ -127,6 +127,15 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 	return LIBPE_E_OK;
 }
 
+static void cleanup_cached_data(pe_ctx_t *ctx) {
+	// NOTICE: The referenced pointers are not reset here.
+	pe_imports_dealloc(ctx->cached_data.imports);
+	pe_exports_dealloc(ctx->cached_data.exports);
+	pe_hash_headers_dealloc(ctx->cached_data.hash_headers);
+	pe_hash_sections_dealloc(ctx->cached_data.hash_sections);
+	pe_hash_dealloc(ctx->cached_data.hash_file);
+}
+
 pe_err_e pe_unload(pe_ctx_t *ctx) {
 	if (ctx->stream != NULL) {
 		fclose(ctx->stream);
@@ -137,6 +146,8 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 	// Dealloc internal pointers.
 	free(ctx->pe.directories);
 	free(ctx->pe.sections);
+
+	cleanup_cached_data(ctx);
 
 	// Dealloc the virtual mapping.
 	if (ctx->map_addr != NULL) {

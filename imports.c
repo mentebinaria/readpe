@@ -251,24 +251,31 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 	return LIBPE_E_OK;
 }
 
-pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
-	pe_imports_t imports;
-	memset(&imports, 0, sizeof(pe_imports_t));
+pe_imports_t *pe_imports(pe_ctx_t *ctx) {
+	if (ctx->imports != NULL)
+		return ctx->imports;
 
-	imports.err = LIBPE_E_OK;
+	pe_imports_t *imports = ctx->imports = malloc(sizeof(pe_imports_t));
+	if (imports == NULL) {
+		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
+		return NULL;
+	}
+	memset(imports, 0, sizeof(pe_imports_t));
+
+	imports->err = LIBPE_E_OK;
 	
-	imports.dll_count = get_dll_count(ctx);
-	if (imports.dll_count == 0)
+	imports->dll_count = get_dll_count(ctx);
+	if (imports->dll_count == 0)
 		return imports;
 
 	// Allocate array to store DLLs
-	const size_t dll_array_size = imports.dll_count * sizeof(pe_imported_dll_t);
-	imports.dlls = malloc(dll_array_size);
-	if (imports.dlls == NULL) {
-		imports.err = LIBPE_E_ALLOCATION_FAILURE;
+	const size_t dll_array_size = imports->dll_count * sizeof(pe_imported_dll_t);
+	imports->dlls = malloc(dll_array_size);
+	if (imports->dlls == NULL) {
+		imports->err = LIBPE_E_ALLOCATION_FAILURE;
 		return imports;
 	}
-	memset(imports.dlls, 0, dll_array_size);
+	memset(imports->dlls, 0, dll_array_size);
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL) {
@@ -283,7 +290,7 @@ pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
 
 	uint64_t ofs = pe_rva2ofs(ctx, va);
 
-	for (uint32_t i=0; i < imports.dll_count; i++) {
+	for (uint32_t i=0; i < imports->dll_count; i++) {
 		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
 			break;
@@ -305,13 +312,13 @@ pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
 			break;
 		}
 
-		pe_imported_dll_t * const dll = &imports.dlls[i];
+		pe_imported_dll_t * const dll = &imports->dlls[i];
 
 		// Allocate string to store DLL name
 		const size_t dll_name_size = MAX_DLL_NAME;
 		dll->name = malloc(dll_name_size);
 		if (dll->name == NULL) {
-			imports.err = LIBPE_E_ALLOCATION_FAILURE;
+			imports->err = LIBPE_E_ALLOCATION_FAILURE;
 			return imports;
 		}
 		memset(dll->name, 0, dll_name_size);
@@ -331,7 +338,7 @@ pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
 	
 		pe_err_e parse_err = parse_imported_functions(ctx, dll, ofs);
 		if (parse_err != LIBPE_E_OK) {
-			imports.err = parse_err;
+			imports->err = parse_err;
 			return imports;
 		}
 
@@ -341,9 +348,12 @@ pe_imports_t pe_get_imports(pe_ctx_t *ctx) {
 	return imports;
 }
 
-void pe_dealloc_imports(pe_imports_t imports) {
-	for (uint32_t i=0; i < imports.dll_count; i++) {
-		const pe_imported_dll_t *dll = &imports.dlls[i];
+void pe_imports_dealloc(pe_imports_t *obj) {
+	if (obj == NULL)
+		return;
+
+	for (uint32_t i=0; i < obj->dll_count; i++) {
+		const pe_imported_dll_t *dll = &obj->dlls[i];
 		for (uint32_t j=0; j < dll->functions_count; j++) {
 			const pe_imported_function_t *function = &dll->functions[j];
 			free(function->name);
@@ -351,5 +361,6 @@ void pe_dealloc_imports(pe_imports_t imports) {
 		free(dll->name);
 		free(dll->functions);
 	}
-	free(imports.dlls);
+	free(obj->dlls);
+	free(obj);
 }

@@ -159,10 +159,16 @@ int plugins_load_all_from_directory(const char *path) {
 	// MORE: http://womble.decadent.org.uk/readdir_r-advisory.html
 	// NOTE: readdir is not thread-safe.
 	while ((dir_entry = readdir(dir)) != NULL) {
+
 		switch (dir_entry->d_type) {
 			default: // Unhandled
 				break;
+
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+			case DT_UNKNOWN:
+#else
 			case DT_REG: // Regular file
+#endif
 			{
 				const char *filename = dir_entry->d_name;
 

@@ -166,9 +166,8 @@ int plugins_load_all_from_directory(const char *path) {
 
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 			case DT_UNKNOWN:
-#else
-			case DT_REG: // Regular file
 #endif
+			case DT_REG: // Regular file
 			{
 				const char *filename = dir_entry->d_name;
 

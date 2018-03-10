@@ -107,7 +107,7 @@ static void to_format(
 				default:
 					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
-					printf(INDENT(--indent, "}"));
+					printf(INDENT(--indent, "}\n"));
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
 					printf(INDENT(--indent, "}"));

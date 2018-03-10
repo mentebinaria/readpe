@@ -849,7 +849,7 @@ static void print_exports(pe_ctx_t *ctx)
 
 	const uint64_t va = dir->VirtualAddress;
 	if (va == 0) {
-		fprintf(stderr, "export directory not found\n");
+		//fprintf(stderr, "export directory not found\n");
 		return;
 	}
 

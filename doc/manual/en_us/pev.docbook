@@ -16,7 +16,6 @@ Resources (.rsrc) section but at the time we've decided to simply search for
 the string in the whole binary, without any optimization.
 </para>
 
-
 <para>
 Later on we've decided to parse the PE32 file until reach .rsrc section and
 get the File Version field. In order to do that, we realized we had to parse the
@@ -47,18 +46,20 @@ Legend:
 pev 0.80 - ?
  ! Missing documentation for libpe.
  ! peres does not reconstruct icons and cursors extracted from resources section.
- * Now the -V switch is used by all pev programs to show their version numbers.
+ * Now the -V switch is used by all pev programs to show their version number.
  * pehash: Now the hash of the whole file is shown by default (-c option).
- * pestr: --net option removed (we may readd this in the future).
- * udis86 updated to version 1.7.2.
+ * pestr: --net option removed.
+ * udis86 upgraded to version 1.7.2.
  + Basic plugins support.
  + cpload: new tool for CPL file debugging (Windows only).
- + Fixed: pestr: unable to handle too big strings.
- + Fixed: valid XML and HTML output formats (Jan Seidl)
- + pehash: Import Hash (imphash) support for both Mandiant and pefile's implementation.
- + peres: output the PE File Version with -v option.
+ + pehash: Import Hash (imphash) support.
+ + peres: -v swtich outputs PE File Version from resources section.
  + Support for pev.conf configuration file.
+ + peldd: new tool to display what DLL's a PE file depends on.
+ - pestr: unable to handle big strings.
  - readpe can now read virtual import descriptors.
+ - Valid XML and HTML output formats (Jan Seidl).
+ - readpe: Unecessary error message when there is no export directory.
 
 pev 0.70 - December 26, 2013
  ! Missing full/English documentation.
@@ -134,7 +135,7 @@ pev 0.31 - May 11, 2011
  - Fixed warning with Linux 32-bits boxes when compiling.
 
 pev 0.30 - February 20, 2011
- * Improved memory use.
+ * Improved memory usage.
  * Now pev shows the Product Version with option "-p".
  + Added option "-a" to show all information.
  + Added option "-c" to show the COFF header.

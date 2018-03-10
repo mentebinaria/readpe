@@ -74,7 +74,7 @@ endif
 
 SRC_DIRS = $(srcdir) $(srcdir)/compat
 
-PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres
+PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
 export LIBPE = $(realpath $(srcdir)/../lib/libpe)
@@ -138,6 +138,9 @@ readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
+	
+peldd: $(pev_BUILDDIR)/peldd.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 # Generic rule matching sources

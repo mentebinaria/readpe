@@ -639,10 +639,11 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 	const bool hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
 
-	free(imphash_string);
+	if (imphash_string)
+		free(imphash_string);
 
 	//printf("### DEBUG imphash_string [%zu] = %s\n", imphash_string_len, imphash_string);
-	return hash_value;
+	return hash_ok ? hash_value : NULL;
 }
 
 void pe_hash_headers_dealloc(pe_hash_headers_t *obj) {

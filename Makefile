@@ -94,7 +94,7 @@ else ifeq ($(PLATFORM_OS), Darwin)
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		$(LDFLAGS) -o $(LIBNAME).dylib $^
 else ifeq ($(PLATFORM_OS), CYGWIN)
-	$(LINK) -shared $(LDFLAGS) -o $(LIBNAME).dll $^
+	$(LINK) -shared -o $(LIBNAME).dll $^ $(LDFLAGS)
 endif
 
 $(libpe_BUILDDIR)/%.o: %.c
@@ -119,7 +119,7 @@ else ifeq ($(PLATFORM_OS), OpenBSD)
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).so.$(VERSION) $(LIBNAME).so.1
 else ifeq ($(PLATFORM_OS), Darwin)
-	echo $(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).dylib $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION).dylib
+	$(INSTALL_DATA) $(INSTALL_FLAGS) $(LIBNAME).dylib $(DESTDIR)$(libdir)/$(LIBNAME).$(VERSION).dylib
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).dylib
 	cd $(DESTDIR)$(libdir); $(SYMLINK) $(LIBNAME).$(VERSION).dylib $(LIBNAME).1.dylib
 else ifeq ($(PLATFORM_OS), CYGWIN)

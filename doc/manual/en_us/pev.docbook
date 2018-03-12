@@ -43,7 +43,11 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.80 - ?
+pev 0.81 - January 7, 2017
+
+ + peldd: new tool to display what DLL's a PE file depends on.
+
+pev 0.80 - January 7, 2017
  ! Missing documentation for libpe.
  ! peres does not reconstruct icons and cursors extracted from resources section.
  * Now the -V switch is used by all pev programs to show their version number.
@@ -55,7 +59,6 @@ pev 0.80 - ?
  + pehash: Import Hash (imphash) support.
  + peres: -v swtich outputs PE File Version from resources section.
  + Support for pev.conf configuration file.
- + peldd: new tool to display what DLL's a PE file depends on.
  - pestr: unable to handle big strings.
  - readpe can now read virtual import descriptors.
  - Valid XML and HTML output formats (Jan Seidl).

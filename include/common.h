@@ -57,6 +57,7 @@
 }
 
 #define MAX_MSG 80
+#define MAX_PATH 256
 #define VERSION "0.80"
 #define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
 #define COPY \

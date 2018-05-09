@@ -559,10 +559,7 @@ static void showStatistics(const NODE_PERES *node)
 	output("Total Data Entry", value);
 }
 
-static void printPath(const pe_ctx_t *ctx, const NODE_PERES *node)
-{
-	char path[MAX_PATH];
-	path[0] = 0;		// clear String
+static void getPath(const pe_ctx_t *ctx, const NODE_PERES *node, const char* path){
 
 	for (int level = RDT_LEVEL1; level <= node->nodeLevel; level++) {
 		const char name[MAX_PATH];
@@ -600,7 +597,19 @@ static void printPath(const pe_ctx_t *ctx, const NODE_PERES *node)
 		}
 		strncat(path, name, MAX_PATH - strlen(path));
 	}
-	printf("%s\n", path);
+}
+
+
+static void printPathAndSize(const pe_ctx_t *ctx, const NODE_PERES *node)
+{
+	char path[MAX_PATH];
+	path[0] = 0;		// clear String
+
+	assert(node->nodeType == RDT_DATA_ENTRY);
+	
+	getPath(ctx, node, path);
+
+	printf("%s(%d bytes)\n", path, node->resource.dataEntry->size);
 
 }
 
@@ -614,7 +623,7 @@ static void showList(const pe_ctx_t *ctx, const NODE_PERES *node)
 
 	while (node != NULL) {
 		if (node->nodeType == RDT_DATA_ENTRY) {
-			printPath(ctx, node);
+			printPathAndSize(ctx, node);
 		}
 		node = node->nextNode;
 	}

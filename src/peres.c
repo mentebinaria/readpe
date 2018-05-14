@@ -377,14 +377,14 @@ static void getPath(const pe_ctx_t *ctx, const NODE_PERES *node, char* path){
 
 			const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
 			if (resourceDirectory == NULL || resourceDirectory->Size == 0)
-				return NULL;
+				return;
 
 			const uint64_t offsetString = pe_rva2ofs(ctx, resourceDirectory->VirtualAddress + parent->resource.directoryEntry->DirectoryName.name.NameOffset);
 			const IMAGE_RESOURCE_DATA_STRING *ptr = LIBPE_PTR_ADD(ctx->map_addr, offsetString);
 
 			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
 				// TODO: Should we report something?
-				return NULL;
+				return;
 			}
 			const uint16_t stringSize = ptr->length;
 			if (stringSize + 2 <= MAX_PATH){
@@ -710,7 +710,6 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 	node->nodeLevel = RDT_LEVEL1;
 	node->resource.resourceDirectory = ptr;
 	//showNode(node);
-	NODE_PERES *rootNode = node; // moved here
 
 	for (int i = 1, offsetDirectory1 = 0; i <= (lastNodeByTypeAndLevel(node, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->resource.resourceDirectory->NumberOfNamedEntries +
 												lastNodeByTypeAndLevel(node, RDT_RESOURCE_DIRECTORY, RDT_LEVEL1)->resource.resourceDirectory->NumberOfIdEntries); i++)
@@ -724,7 +723,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		}
 
 		node = createNode(node, RDT_DIRECTORY_ENTRY);
-		// NODE_PERES *rootNode = node; // moved up
+		NODE_PERES *rootNode = node;
 		node->rootNode = rootNode;
 		node->nodeLevel = RDT_LEVEL1;
 		node->resource.directoryEntry = ptr;
@@ -745,7 +744,6 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 			node->rootNode = (NODE_PERES *)lastDirectoryEntryNodeAtLevel1;
 			node->nodeLevel = RDT_LEVEL2;
 			node->resource.resourceDirectory = ptr;
-			rootNode = node; // set new rootNode for lvl2 entries
 			//showNode(node);
 
 			for (int j = 1, offsetDirectory2 = 0; j <= (lastNodeByTypeAndLevel(node, RDT_RESOURCE_DIRECTORY, RDT_LEVEL2)->resource.resourceDirectory->NumberOfNamedEntries +
@@ -776,7 +774,6 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 				node->rootNode = rootNode;
 				node->nodeLevel = RDT_LEVEL3;
 				node->resource.resourceDirectory = ptr;
-				rootNode = node; // set new rootNode for lvl3 entries
 				//showNode(node);
 
 				offset += sizeof(IMAGE_RESOURCE_DIRECTORY);

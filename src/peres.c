@@ -18,19 +18,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -75,8 +75,10 @@ const char *resourceDir = "resources";
 typedef struct {
 	bool all;
 	bool extract;
+	bool namedExtract;
 	bool info;
 	bool statistics;
+	bool list;
 	bool version;
 	bool help;
 } options_t;
@@ -90,12 +92,14 @@ static void usage(void)
 		"\nExample: %s -a putty.exe\n"
 		"\nOptions:\n"
 		" -a, --all                              Show all information, statistics and extract resources\n"
-		" -f, --format <%s>  change output format (default: text)\n"
+		" -f, --format <%s>	Change output format (default: text)\n"
 		" -i, --info                             Show resources information\n"
+		" -l, --list                             Show list view\n"
 		" -s, --statistics                       Show resources statistics\n"
 		" -x, --extract                          Extract resources\n"
+		" -X, --named-extract                    Extract resources with path names\n"
 		" -v, --file-version                     Show File Version from PE resource directory\n"
-		" -V, --version                          show version and exit\n"
+		" -V, --version                          Show version and exit\n"
 		" --help                                 Show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
 }
@@ -114,18 +118,20 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "a:f:isxvV";
+	static const char short_options[] = "a:f:ilsxXvV";
 
 	static const struct option long_options[] = {
-		{ "all",            required_argument,  NULL, 'a' },
-		{ "format",         required_argument,  NULL, 'f' },
-		{ "info",           no_argument,        NULL, 'i' },
-		{ "statistics",	    no_argument,        NULL, 's' },
-		{ "extract",	    no_argument,        NULL, 'x' },
-		{ "file-version",   no_argument,        NULL, 'v' },
-		{ "version",	    no_argument,        NULL, 'V' },
-		{ "help",           no_argument,        NULL,  1  },
-		{ NULL,             0,                  NULL,  0  }
+		{ "all",			required_argument,	NULL, 'a' },
+		{ "format",			required_argument,	NULL, 'f' },
+		{ "info",			no_argument,		NULL, 'i' },
+		{ "list",			no_argument,		NULL, 'l' },
+		{ "statistics",		no_argument,		NULL, 's' },
+		{ "extract",		no_argument,		NULL, 'x' },
+		{ "named-extract",	no_argument,		NULL, 'X' },
+		{ "file-version",	no_argument,		NULL, 'v' },
+		{ "version",		no_argument,		NULL, 'V' },
+		{ "help",			no_argument,		NULL,  1  },
+		{ NULL,				0,					NULL,  0  }
 		};
 
 	int c, ind;
@@ -147,11 +153,18 @@ static options_t *parse_options(int argc, char *argv[])
 			case 'i':
 				options->info = true;
 				break;
+			case 'l':
+				options->list = true;
+				break;
 			case 's':
 				options->statistics = true;
 				break;
 			case 'x':
 				options->extract = true;
+				break;
+			case 'X':
+				options->extract = true;
+				options->namedExtract = true;
 				break;
 			case 'v':
 				options->version = true;
@@ -354,7 +367,78 @@ static const RESOURCE_ENTRY * getResourceEntryByNameOffset(uint32_t nameOffset)
 	return NULL;
 }
 
-static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node)
+static void getPath(const pe_ctx_t *ctx, const NODE_PERES *node, char* path){
+
+	for (int level = RDT_LEVEL1; level <= node->nodeLevel; level++) {
+		const char name[MAX_PATH];
+
+		const NODE_PERES *parent = lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, level);
+		if (parent->resource.directoryEntry->DirectoryName.name.NameIsString) {
+
+			const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
+			if (resourceDirectory == NULL || resourceDirectory->Size == 0)
+				return;
+
+			const uint64_t offsetString = pe_rva2ofs(ctx, resourceDirectory->VirtualAddress + parent->resource.directoryEntry->DirectoryName.name.NameOffset);
+			const IMAGE_RESOURCE_DATA_STRING *ptr = LIBPE_PTR_ADD(ctx->map_addr, offsetString);
+
+			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
+				// TODO: Should we report something?
+				return;
+			}
+			const uint16_t stringSize = ptr->length;
+			if (stringSize + 2 <= MAX_PATH){
+				// quick & dirty UFT16 to ASCII conversion
+				for (uint16_t p = 0; p <= stringSize*2; p += 2){
+					memcpy(name + p/2, (char*)(ptr->string) + p, 1);
+				}
+				strncpy(name + stringSize, " \0", 2);
+			}
+		}
+		else {
+			const RESOURCE_ENTRY *resourceEntry;
+			if (level == RDT_LEVEL1 && (resourceEntry = getResourceEntryByNameOffset(parent->resource.directoryEntry->DirectoryName.name.NameOffset))) {
+				snprintf(name, MAX_PATH, "%s ", resourceEntry->name);
+			} else {
+				snprintf(name, MAX_PATH, "%04x ", parent->resource.directoryEntry->DirectoryName.name.NameOffset);
+			}
+		}
+		strncat(path, name, MAX_PATH - strlen(path));
+	}
+	path[strlen(path)-1] = 0;
+}
+
+static void printPathAndSize(const pe_ctx_t *ctx, const NODE_PERES *node)
+{
+	char path[MAX_PATH];
+	path[0] = 0;		// clear String
+
+	assert(node->nodeType == RDT_DATA_ENTRY);
+	
+	getPath(ctx, node, path);
+
+	printf("%s (%d bytes)\n", path, node->resource.dataEntry->size);
+
+}
+
+static void showList(const pe_ctx_t *ctx, const NODE_PERES *node)
+{
+	assert(node != NULL);
+	
+	while (node->lastNode != NULL) {
+		node = node->lastNode;
+	}
+
+	while (node != NULL) {
+		if (node->nodeType == RDT_DATA_ENTRY) {
+			printPathAndSize(ctx, node);
+		}
+		node = node->nextNode;
+	}
+
+}
+
+static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node, bool namedExtract)
 {
 	assert(node != NULL);
 	const NODE_PERES *dataEntryNode = lastNodeByType(node, RDT_DATA_ENTRY);
@@ -392,13 +476,24 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node)
 	if (stat(dirName, &statDir) == -1)
 		mkdir(dirName, 0700);
 
-	char relativeFileName[100];
+	char relativeFileName[MAX_PATH + 105];
 	memset(relativeFileName, 0, sizeof(relativeFileName));
 
-	snprintf(relativeFileName, sizeof(relativeFileName), "%s/" "%" PRIu32 "%s",
-		dirName,
-		nameNode->resource.directoryEntry->DirectoryName.name.NameOffset,
-		resourceEntry != NULL ? resourceEntry->extension : ".bin");
+	if(namedExtract){
+		char fileName[MAX_PATH];
+		memset(fileName, 0, sizeof(fileName));
+
+		getPath(ctx, node, fileName),
+		snprintf(relativeFileName, sizeof(relativeFileName), "%s/%s%s",
+			dirName,
+			fileName,
+			resourceEntry != NULL ? resourceEntry->extension : ".bin");
+	} else {
+		snprintf(relativeFileName, sizeof(relativeFileName), "%s/" "%" PRIu32 "%s",
+			dirName,
+			nameNode->resource.directoryEntry->DirectoryName.name.NameOffset,
+			resourceEntry != NULL ? resourceEntry->extension : ".bin");
+	}
 
 	FILE *fp = fopen(relativeFileName, "wb+");
 	if (fp == NULL) {
@@ -410,7 +505,7 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node)
 	output("Save On", relativeFileName);
 }
 
-static void extractResources(pe_ctx_t *ctx, const NODE_PERES *node)
+static void extractResources(pe_ctx_t *ctx, const NODE_PERES *node, bool namedExtract)
 {
 	assert(node != NULL);
 	int count = 0;
@@ -425,7 +520,7 @@ static void extractResources(pe_ctx_t *ctx, const NODE_PERES *node)
 			continue;
 		}
 		count++;
-		saveResource(ctx, node);
+		saveResource(ctx, node, namedExtract);
 		node = node->nextNode;
 	}
 }
@@ -504,6 +599,8 @@ static void showInformations(const NODE_PERES *node)
 
 static void showStatistics(const NODE_PERES *node)
 {
+	assert(node != NULL);
+
 	while (node->lastNode != NULL) {
 		node = node->lastNode;
 	}
@@ -608,6 +705,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 
 	NODE_PERES *node = malloc_s(sizeof(NODE_PERES));
 	node->lastNode = NULL; // root
+	node->rootNode = NULL; // root
 	node->nodeType = RDT_RESOURCE_DIRECTORY;
 	node->nodeLevel = RDT_LEVEL1;
 	node->resource.resourceDirectory = ptr;
@@ -775,13 +873,16 @@ int main(int argc, char **argv)
 	if (options->all) {
 		showInformations(node);
 		showStatistics(node);
-		extractResources(&ctx, node);
+		showList(&ctx, node);
+		extractResources(&ctx, node, options->namedExtract);
 		showVersion(&ctx, node);
 	} else {
 		if (options->extract)
-			extractResources(&ctx, node);
+			extractResources(&ctx, node, options->namedExtract);
 		if (options->info)
 			showInformations(node);
+		if (options->list)
+			showList(&ctx, node);
 		if (options->statistics)
 			showStatistics(node);
 		if (options->version)

@@ -92,7 +92,7 @@ static void usage(void)
 		"\nExample: %s -a putty.exe\n"
 		"\nOptions:\n"
 		" -a, --all                              Show all information, statistics and extract resources\n"
-		" -f, --format <%s>	Change output format (default: text)\n"
+		" -f, --format <%s> Change output format (default: text)\n"
 		" -i, --info                             Show resources information\n"
 		" -l, --list                             Show list view\n"
 		" -s, --statistics                       Show resources statistics\n"
@@ -121,17 +121,17 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "a:f:ilsxXvV";
 
 	static const struct option long_options[] = {
-		{ "all",			required_argument,	NULL, 'a' },
-		{ "format",			required_argument,	NULL, 'f' },
-		{ "info",			no_argument,		NULL, 'i' },
-		{ "list",			no_argument,		NULL, 'l' },
-		{ "statistics",		no_argument,		NULL, 's' },
-		{ "extract",		no_argument,		NULL, 'x' },
-		{ "named-extract",	no_argument,		NULL, 'X' },
-		{ "file-version",	no_argument,		NULL, 'v' },
-		{ "version",		no_argument,		NULL, 'V' },
-		{ "help",			no_argument,		NULL,  1  },
-		{ NULL,				0,					NULL,  0  }
+		{ "all",            required_argument,  NULL, 'a' },
+		{ "format",         required_argument,  NULL, 'f' },
+		{ "info",           no_argument,        NULL, 'i' },
+		{ "list",           no_argument,        NULL, 'l' },
+		{ "statistics",	    no_argument,        NULL, 's' },
+		{ "extract",	    no_argument,        NULL, 'x' },
+		{ "named-extract",  no_argument,        NULL, 'X' },
+		{ "file-version",   no_argument,        NULL, 'v' },
+		{ "version",	    no_argument,        NULL, 'V' },
+		{ "help",           no_argument,        NULL,  1  },
+		{ NULL,             0,                  NULL,  0  }
 		};
 
 	int c, ind;
@@ -182,6 +182,13 @@ static options_t *parse_options(int argc, char *argv[])
 	}
 
 	return options;
+}
+
+static void widecharToASCII(const char *ascii, const char *widechar, const uint16_t length){
+    // quick & dirty UFT16 to ASCII conversion
+    for (uint16_t p = 0; p <= length; p += 1){
+        memcpy(ascii + p, (uint16_t*)(widechar) + p, 1);
+    }
 }
 
 static void showNode(const NODE_PERES *node)
@@ -242,6 +249,7 @@ static void showNode(const NODE_PERES *node)
 		case RDT_DATA_STRING:
 		{
 			const IMAGE_RESOURCE_DATA_STRING * const dataString = node->resource.dataString;
+            const char name[MAX_PATH];
 
 			snprintf(value, MAX_MSG, "Data String / %d", node->nodeLevel);
 			output("\nNode Type / Level", value);
@@ -249,7 +257,14 @@ static void showNode(const NODE_PERES *node)
 			snprintf(value, MAX_MSG, "%d", dataString->length);
 			output("String len", value);
 
-			snprintf(value, MAX_MSG, "%d", dataString->string[0]);
+			if (dataString->length + 1 <= MAX_PATH){
+                widecharToASCII(name, dataString->string, dataString->length);
+				strncpy(name + dataString->length, "\0", 1);
+                snprintf(value, MAX_MSG, "%s", name);
+			}
+            else {
+                snprintf(value, MAX_MSG, "%c...", dataString->string[0]);
+            }
 			output("String", value);
 			break;
 		}
@@ -388,10 +403,7 @@ static void getPath(const pe_ctx_t *ctx, const NODE_PERES *node, char* path){
 			}
 			const uint16_t stringSize = ptr->length;
 			if (stringSize + 2 <= MAX_PATH){
-				// quick & dirty UFT16 to ASCII conversion
-				for (uint16_t p = 0; p <= stringSize*2; p += 2){
-					memcpy(name + p/2, (char*)(ptr->string) + p, 1);
-				}
+                widecharToASCII(name, ptr->string, stringSize);
 				strncpy(name + stringSize, " \0", 2);
 			}
 		}
@@ -729,6 +741,20 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 		node->resource.directoryEntry = ptr;
 		//showNode(node);
 
+		if (node->resource.directoryEntry->DirectoryName.name.NameIsString == 1){
+			offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
+			ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
+			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
+				// TODO: Should we report something?
+				goto _error;
+			}
+			node = createNode(node, RDT_DATA_STRING);
+			node->rootNode = rootNode;
+			node->nodeLevel = RDT_LEVEL1;
+			node->resource.dataString = ptr;
+			//showNode(node);
+		}
+
 		const NODE_PERES * lastDirectoryEntryNodeAtLevel1 = lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, RDT_LEVEL1);
 
 		if (lastDirectoryEntryNodeAtLevel1->resource.directoryEntry->DirectoryData.data.DataIsDirectory)
@@ -763,7 +789,23 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 				node->resource.directoryEntry = ptr;
 				//showNode(node);
 
-				offset = resourceDirOffset + node->resource.directoryEntry->DirectoryData.data.OffsetToDirectory; // posiciona em 0x72
+				if (node->resource.directoryEntry->DirectoryName.name.NameIsString == 1){
+					offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
+					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
+					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
+						// TODO: Should we report something?
+						goto _error;
+					}
+					node = createNode(node, RDT_DATA_STRING);
+					node->rootNode = rootNode;
+					node->nodeLevel = RDT_LEVEL2;
+					node->resource.dataString = ptr;
+					//showNode(node);
+				}
+
+				const NODE_PERES * lastDirectoryEntryNodeAtLevel2 = lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, RDT_LEVEL2);
+				offset = resourceDirOffset + lastDirectoryEntryNodeAtLevel2->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
+
 				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 				if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 					// TODO: Should we report something?
@@ -792,22 +834,22 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 					node->resource.directoryEntry = ptr;
 					//showNode(node);
 
-                    if (node->resource.directoryEntry->DirectoryName.name.NameIsString == 1){
-                        offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
-                        ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-                        if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
-                            // TODO: Should we report something?
-                            goto _error;
-                        }
-                        node = createNode(node, RDT_DATA_STRING);
-                        node->rootNode = rootNode;
-                        node->nodeLevel = RDT_LEVEL3;
-                        node->resource.dataString = ptr;
-                        node = node->lastNode;
-                        //showNode(node);
-                    }
+					if (node->resource.directoryEntry->DirectoryName.name.NameIsString == 1){
+						offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
+						ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
+						if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
+							// TODO: Should we report something?
+							goto _error;
+						}
+						node = createNode(node, RDT_DATA_STRING);
+						node->rootNode = rootNode;
+						node->nodeLevel = RDT_LEVEL3;
+						node->resource.dataString = ptr;
+						//showNode(node);
+					}
 
-					offset = resourceDirOffset + node->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
+					const NODE_PERES * lastDirectoryEntryNodeAtLevel3 = lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, RDT_LEVEL3);
+					offset = resourceDirOffset + lastDirectoryEntryNodeAtLevel3->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
 						// TODO: Should we report something?

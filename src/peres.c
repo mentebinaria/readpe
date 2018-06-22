@@ -792,19 +792,22 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 					node->resource.directoryEntry = ptr;
 					//showNode(node);
 
-					offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
-					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
-						// TODO: Should we report something?
-						goto _error;
-					}
-					node = createNode(node, RDT_DATA_STRING);
-					node->rootNode = rootNode;
-					node->nodeLevel = RDT_LEVEL3;
-					node->resource.dataString = ptr;
-					//showNode(node);
+                    if (node->resource.directoryEntry->DirectoryName.name.NameIsString == 1){
+                        offset = resourceDirOffset + node->resource.directoryEntry->DirectoryName.name.NameOffset;
+                        ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
+                        if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
+                            // TODO: Should we report something?
+                            goto _error;
+                        }
+                        node = createNode(node, RDT_DATA_STRING);
+                        node->rootNode = rootNode;
+                        node->nodeLevel = RDT_LEVEL3;
+                        node->resource.dataString = ptr;
+                        node = node->lastNode;
+                        //showNode(node);
+                    }
 
-					offset = resourceDirOffset + node->lastNode->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
+					offset = resourceDirOffset + node->resource.directoryEntry->DirectoryData.data.OffsetToDirectory;
 					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
 						// TODO: Should we report something?

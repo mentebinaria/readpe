@@ -185,10 +185,10 @@ static options_t *parse_options(int argc, char *argv[])
 }
 
 static void widecharToASCII(const char *ascii, const char *widechar, const uint16_t length){
-    // quick & dirty UFT16 to ASCII conversion
-    for (uint16_t p = 0; p <= length; p += 1){
-        memcpy(ascii + p, (uint16_t*)(widechar) + p, 1);
-    }
+	// quick & dirty UFT16 to ASCII conversion
+	for (uint16_t p = 0; p <= length; p += 1){
+		memcpy(ascii + p, (uint16_t*)(widechar) + p, 1);
+	}
 }
 
 static void showNode(const NODE_PERES *node)
@@ -257,14 +257,13 @@ static void showNode(const NODE_PERES *node)
 			snprintf(value, MAX_MSG, "%d", dataString->length);
 			output("String len", value);
 
-			if (dataString->length + 1 <= MAX_PATH){
-                widecharToASCII(name, dataString->string, dataString->length);
-				strncpy(name + dataString->length, "\0", 1);
-                snprintf(value, MAX_MSG, "%s", name);
+			uint16_t stringSize = dataString->length;
+			if (stringSize + 1 > MAX_PATH){
+				stringSize = MAX_PATH - 1;
 			}
-            else {
-                snprintf(value, MAX_MSG, "%c...", dataString->string[0]);
-            }
+			widecharToASCII(name, dataString->string, stringSize);
+			strncpy(name + stringSize, "\0", 2);
+			snprintf(value, MAX_MSG, "%s", name);
 			output("String", value);
 			break;
 		}
@@ -401,11 +400,12 @@ static void getPath(const pe_ctx_t *ctx, const NODE_PERES *node, char* path){
 				// TODO: Should we report something?
 				return;
 			}
-			const uint16_t stringSize = ptr->length;
-			if (stringSize + 2 <= MAX_PATH){
-                widecharToASCII(name, ptr->string, stringSize);
-				strncpy(name + stringSize, " \0", 2);
+			uint16_t stringSize = ptr->length;
+			if (stringSize + 2 > MAX_PATH){
+				stringSize = MAX_PATH -2;
 			}
+			widecharToASCII(name, ptr->string, stringSize);
+			strncpy(name + stringSize, " \0", 2);
 		}
 		else {
 			const RESOURCE_ENTRY *resourceEntry;

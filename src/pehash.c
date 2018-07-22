@@ -259,8 +259,11 @@ int main(int argc, char *argv[])
 		// free(imphash);
 
 		imphash = pe_imphash(&ctx, LIBPE_IMPHASH_FLAVOR_PEFILE);
-		output("imphash", imphash);
-		free(imphash);
+		
+		if (imphash) {
+			output("imphash", imphash);
+			free(imphash);
+		}
 		
 		output_close_scope(); // file
 		if (!options->all) // whole file content only

@@ -654,9 +654,11 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 
-	char timestr[40];
-	strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC",
-		gmtime((time_t *) &header->TimeDateStamp));
+	char timestr[40] = "(invalid)";
+	struct tm *t = gmtime((time_t *) &header->TimeDateStamp);
+	if (t)
+		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+
 	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
 	output("Date/time stamp", s);
 

@@ -563,6 +563,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	}
 
 	uint64_t ofs = pe_rva2ofs(ctx, va);
+	
 	element_t *elt, *tmp, *head = NULL;
 	int count = 0;
 
@@ -580,8 +581,8 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		const uint64_t aux = ofs; // Store current ofs
 
 		ofs = pe_rva2ofs(ctx, id->Name);
-		if (ofs == 0)
-			break;
+		if (ofs == 0 || ofs > ctx->map_size)
+			return NULL;
 
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 		if (!pe_can_read(ctx, dll_name_ptr, 1)) {

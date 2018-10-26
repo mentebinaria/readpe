@@ -211,7 +211,7 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 		size_t len = strlen(buff);
 
 		// ifgore comments and blank lines
-		if (*buff == ';' || *buff == '\n' || *buff == '\r')
+		if (*buff == ';' || *buff == '#' || *buff == '\n' || *buff == '\r')
 			continue;
 
 		// remove newline from buffer

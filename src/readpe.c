@@ -862,6 +862,14 @@ static void print_exports(pe_ctx_t *ctx)
 		return;
 	}
 
+	ofs = pe_rva2ofs(ctx, exp->Name);
+	const uint32_t *name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, name_ptr, 1)) {
+		// TODO: Should we report something?
+		return;
+	}
+
+	const uint32_t ordinal_base = exp->Base;
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
@@ -875,10 +883,17 @@ static void print_exports(pe_ctx_t *ctx)
 	output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
 	// Otherwise `NumberOfNames` should be equal to `NumberOfFunctions`
-	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
+	/*if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
 		//output_close_scope(); // Exported functions
-	}
+	}*/
+
+	char s[MAX_MSG];
+	//snprintf(s, MAX_MSG, "%d", ordinal_base);
+	//output("Ordinal Base", s);
+
+	snprintf(s, MAX_MSG, "%s", name_ptr);
+	output("Name", s);
 
 	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
 	uint64_t offset_to_AddressOfNames = pe_rva2ofs(ctx, exp->AddressOfNames);
@@ -889,18 +904,17 @@ static void print_exports(pe_ctx_t *ctx)
 		offsets_to_Names[i] = 0;
 	}
 
-	//uint64_t offsets_to_Names[exp->NumberOfFunctions] = {0};
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
 		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
 
-		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint32_t))) {
+		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint16_t))) {
 			// TODO: Should we report something?
 			break;
 		}
-		const uint32_t ordinal = *entry_ordinal_list;
+		const uint16_t ordinal = *entry_ordinal_list;
 
-		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * (ordinal - 1);
+		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
 		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
 
 		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
@@ -942,7 +956,7 @@ static void print_exports(pe_ctx_t *ctx)
 		char fname[300] = { 0 };
 		const uint64_t entry_name_ofs = offsets_to_Names[i];
 		if (entry_name_ofs == 0) {
-			sprintf(fname, "#%d", i + 1);
+			sprintf(fname, "#%d", i + ordinal_base);
 		}
 		else {
 			const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
@@ -963,38 +977,40 @@ static void print_exports(pe_ctx_t *ctx)
 
 		// Declared as 11 bytes so that it can store the hexadecimal representation of the maximum
 		// possible value of an uint32_t variable, 0xFFFFFFFF.
-		char addr[11] = { 0 };
-		sprintf(addr, "%#x", entry_va);
+		if (entry_va != 0){
+			char addr[11] = { 0 };
+			sprintf(addr, "%#x", entry_va);
 
-		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
+			output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
 
-		// Check whether the exported function is forwarded.
-		// It's forwarded if its RVA is inside the exports section.
-		if (entry_va >= va && entry_va <= va + dir->Size)
-		{
-			// When a symbol is forwarded, its RVA points to a string containing
-			// the name of the DLL and symbol to which it is forwarded.
-			const uint64_t fw_entry_name_ofs = pe_rva2ofs(ctx, entry_va);
-			const char *fw_entry_name = LIBPE_PTR_ADD(ctx->map_addr, fw_entry_name_ofs);
+			// Check whether the exported function is forwarded.
+			// It's forwarded if its RVA is inside the exports section.
+			if (entry_va >= va && entry_va <= va + dir->Size)
+			{
+				// When a symbol is forwarded, its RVA points to a string containing
+				// the name of the DLL and symbol to which it is forwarded.
+				const uint64_t fw_entry_name_ofs = pe_rva2ofs(ctx, entry_va);
+				const char *fw_entry_name = LIBPE_PTR_ADD(ctx->map_addr, fw_entry_name_ofs);
 
-			// Validate whether it's ok to access at least 1 byte after fw_entry_name.
-			// It might be '\0', for example.
-			if (!pe_can_read(ctx, fw_entry_name, 1)) {
-				// TODO: Should we report something?
-				break;
+				// Validate whether it's ok to access at least 1 byte after fw_entry_name.
+				// It might be '\0', for example.
+				if (!pe_can_read(ctx, fw_entry_name, 1)) {
+					// TODO: Should we report something?
+					break;
+				}
+
+				char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
+				snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
+
+				output(addr, fname_forwarded);
+			}
+			else
+			{
+				output(addr, fname);
 			}
 
-			char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
-			snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
-
-			output(addr, fname_forwarded);
+			output_close_scope(); // Function
 		}
-		else
-		{
-			output(addr, fname);
-		}
-
-		output_close_scope(); // Function
 	}
 
 	output_close_scope(); // Exported functions

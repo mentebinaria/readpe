@@ -48,6 +48,7 @@ typedef struct {
 	bool dirs;
 	bool imports;
 	bool exports;
+	bool timestamps;
 	bool all_headers;
 	bool all_sections;
 } options_t;
@@ -68,6 +69,7 @@ static void usage(void)
 		" -h, --header <dos|coff|optional>       show specific header\n"
 		" -i, --imports                          show imported functions\n"
 		" -e, --exports                          show exported functions\n"
+		" -t, --timestamps                       show timestamps\n"
 		" -V, --version                          show version and exit\n"
 		" --help                                 show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
@@ -99,7 +101,7 @@ static options_t *parse_options(int argc, char *argv[])
 	memset(options, 0, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
-	static const char short_options[] = "AHSh:dief:V";
+	static const char short_options[] = "AHSh:dietf:V";
 
 	static const struct option long_options[] = {
 		{ "help",             no_argument,       NULL,  1  },
@@ -110,6 +112,7 @@ static options_t *parse_options(int argc, char *argv[])
 		{ "imports",          no_argument,       NULL, 'i' },
 		{ "exports",          no_argument,       NULL, 'e' },
 		{ "dirs",             no_argument,       NULL, 'd' },
+		{ "timestamps",       no_argument,       NULL, 't' },
 		{ "format",           required_argument, NULL, 'f' },
 		{ "version",          no_argument,       NULL, 'V' },
 		{  NULL,              0,                 NULL,  0  }
@@ -158,6 +161,10 @@ static options_t *parse_options(int argc, char *argv[])
 			case 'e':
 				options->all = false;
 				options->exports = true;
+				break;
+			case 't':
+				options->all = false;
+				options->timestamps = true;
 				break;
 			case 'f':
 				if (output_set_format_by_name(optarg) < 0)
@@ -654,10 +661,11 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 
-	char timestr[40] = "invalid";
+	char timestr[40] = "(invalid)";
 	struct tm *t = gmtime((time_t *) &header->TimeDateStamp);
 	if (t)
 		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+
 	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
 	output("Date/time stamp", s);
 
@@ -840,6 +848,145 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 
 		output_close_scope(); // Function
 	}
+}
+
+static void print_coff_timestamp(pe_ctx_t *ctx)
+{
+	char s[MAX_MSG];
+	char timestr[40] = "invalid";
+
+    IMAGE_COFF_HEADER *header = pe_coff(ctx);
+
+    if (header)
+    {
+        struct tm *t = gmtime((time_t *) &header->TimeDateStamp);
+        if (t)
+            strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+        snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
+        output("COFF Timestamp", s);
+    }
+}
+
+static void print_import_timestamps(pe_ctx_t *ctx)
+{
+	char s[MAX_MSG];
+    char timestr[40] = "invalid";
+	uint64_t va;
+	uint64_t ofs;
+
+	IMAGE_DATA_DIRECTORY *dir;
+
+	dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
+	if (dir == NULL)
+		return;
+	va = dir->VirtualAddress;
+	if (va == 0) {
+		return;
+	}
+	ofs = pe_rva2ofs(ctx, va);
+	while (1) {
+		IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+			return;
+		}
+		if (!id->u1.OriginalFirstThunk && !id->FirstThunk)
+			break;
+		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
+		const uint64_t aux = ofs; // Store current ofs
+		ofs = pe_rva2ofs(ctx, id->Name);
+		if (ofs == 0)
+			break;
+		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
+		// It might be '\0', for example.
+		if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+			break;
+		}
+
+		char dll_name[MAX_DLL_NAME];
+		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
+		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+		dll_name[sizeof(dll_name) - 1] = '\0';
+		if (id->TimeDateStamp != 0)
+		{
+			struct tm *t = gmtime((time_t *) &id->TimeDateStamp);
+			if (t)
+				strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+			snprintf(s, MAX_MSG, "%d (%s) [%s]", id->TimeDateStamp, timestr, dll_name);
+			output("Import Timestamp", s);
+		}
+		ofs = aux; // Restore previous ofs
+	}
+}
+
+static void print_export_timestamp(pe_ctx_t *ctx)
+{
+	char s[MAX_MSG];
+	char timestr[40] = "invalid";
+	uint64_t va;
+	uint64_t ofs;
+
+	IMAGE_DATA_DIRECTORY *dir;
+
+	dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
+	if (dir == NULL)
+		return;
+	va = dir->VirtualAddress;
+	if (va == 0) {
+		return;
+	}
+	ofs = pe_rva2ofs(ctx, va);
+	const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
+		return;
+	}
+	if (exp->TimeDateStamp == 0) {
+		return;
+	}
+	struct tm *t = gmtime((time_t *) &exp->TimeDateStamp);
+	if (t)
+		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+	snprintf(s, MAX_MSG, "%d (%s)", exp->TimeDateStamp, timestr);
+	output("Export Timestamp", s);
+}
+
+static void print_resource_timestamp(pe_ctx_t *ctx)
+{
+	char s[MAX_MSG];
+	char timestr[40] = "invalid";
+	uint64_t va;
+	uint64_t ofs;
+
+	IMAGE_DATA_DIRECTORY *dir;
+
+	dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
+	if (dir == NULL || dir == 0)
+		return;
+	va = dir->VirtualAddress;
+	if (va == 0) {
+		return;
+	}
+	ofs = pe_rva2ofs(ctx, va);
+	const IMAGE_RESOURCE_DIRECTORY *res = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, res, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
+		return;
+	}
+	if (res->TimeDateStamp == 0) {
+		return;
+	}
+	struct tm *t = gmtime((time_t *) &res->TimeDateStamp);
+	if (t)
+		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+	snprintf(s, MAX_MSG, "%d (%s)", res->TimeDateStamp, timestr);
+	output("Resource Timestamp", s);
+}
+
+static void print_timestamps(pe_ctx_t *ctx)
+{
+	print_coff_timestamp(ctx);
+	print_import_timestamps(ctx);
+	print_export_timestamp(ctx);
+	print_resource_timestamp(ctx);
 }
 
 static void print_exports(pe_ctx_t *ctx)
@@ -1180,6 +1327,13 @@ int main(int argc, char *argv[])
 		if (pe_sections(&ctx) != NULL)
 			print_sections(&ctx);
 		else { EXIT_ERROR("unable to read sections"); }
+	}
+
+	// timestamps
+	if (options->timestamps) {
+		if (pe_sections(&ctx) != NULL)
+			print_timestamps(&ctx);
+		else { EXIT_ERROR("unable to read timestamps"); }
 	}
 
 	output_close_document();

@@ -954,11 +954,11 @@ static void print_exports(pe_ctx_t *ctx)
 		//const uint16_t entry_ordinal = exp->Base + *entry_ordinal_list;
 		const uint32_t entry_va = *entry_va_list;
 		char fname[300] = { 0 };
+		char fordinal[32] = { 0 };
 		const uint64_t entry_name_ofs = offsets_to_Names[i];
-		if (entry_name_ofs == 0) {
-			sprintf(fname, "#%d", i + ordinal_base);
-		}
-		else {
+		sprintf(fordinal, "Function #%d", i + ordinal_base);
+
+		if (entry_name_ofs != 0) {
 			const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
 
 			// Validate whether it's ok to access at least 1 byte after entry_name.
@@ -981,7 +981,7 @@ static void print_exports(pe_ctx_t *ctx)
 			char addr[11] = { 0 };
 			sprintf(addr, "%#x", entry_va);
 
-			output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
+			output_open_scope(fordinal, OUTPUT_SCOPE_TYPE_OBJECT);
 
 			// Check whether the exported function is forwarded.
 			// It's forwarded if its RVA is inside the exports section.
@@ -996,6 +996,7 @@ static void print_exports(pe_ctx_t *ctx)
 				// It might be '\0', for example.
 				if (!pe_can_read(ctx, fw_entry_name, 1)) {
 					// TODO: Should we report something?
+					output_close_scope(); // Function
 					break;
 				}
 

@@ -340,11 +340,11 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 		{ IMAGE_SUBSYSTEM_UNKNOWN,					"Unknown subsystem"		},
 		{ IMAGE_SUBSYSTEM_POSIX_CUI,				"Posix CLI"				},
 		{ IMAGE_SUBSYSTEM_WINDOWS_CE_GUI,			"Windows CE GUI"		},
-		{ IMAGE_SUBSYSTEM_EFI_APPLICATION, 			"EFI application"		},
+		{ IMAGE_SUBSYSTEM_EFI_APPLICATION,			"EFI application"		},
 		{ IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER,	"EFI driver with boot"	},
 		{ IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER,		"EFI run-time driver"	},
-		{ IMAGE_SUBSYSTEM_EFI_ROM, 					"EFI ROM"				},
-		{ IMAGE_SUBSYSTEM_XBOX,			 			"XBOX"					},
+		{ IMAGE_SUBSYSTEM_EFI_ROM,					"EFI ROM"				},
+		{ IMAGE_SUBSYSTEM_XBOX,						"XBOX"					},
 		{ IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION,	"Boot application"		}
 	};
 	static const size_t max_subsystem = LIBPE_SIZEOF_ARRAY(subsystemNames);
@@ -654,11 +654,10 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
 	output("Number of sections", s);
 
-	char timestr[40] = "(invalid)";
+	char timestr[40] = "invalid";
 	struct tm *t = gmtime((time_t *) &header->TimeDateStamp);
 	if (t)
 		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
-
 	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
 	output("Date/time stamp", s);
 
@@ -864,6 +863,14 @@ static void print_exports(pe_ctx_t *ctx)
 		return;
 	}
 
+	ofs = pe_rva2ofs(ctx, exp->Name);
+	const uint32_t *name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, name_ptr, 1)) {
+		// TODO: Should we report something?
+		return;
+	}
+
+	const uint32_t ordinal_base = exp->Base;
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
@@ -876,15 +883,47 @@ static void print_exports(pe_ctx_t *ctx)
 
 	output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
-	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
-	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
+	// Otherwise `NumberOfNames` should be equal to `NumberOfFunctions`
+	/*if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
 		output_close_scope(); // Exported functions
-	}
+	}*/
+
+	char s[MAX_MSG];
+	snprintf(s, MAX_MSG, "%s", name_ptr);
+	output("Name", s);
 
 	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
 	uint64_t offset_to_AddressOfNames = pe_rva2ofs(ctx, exp->AddressOfNames);
 	uint64_t offset_to_AddressOfNameOrdinals = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
+
+	uint64_t offsets_to_Names[exp->NumberOfFunctions];
+	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
+		offsets_to_Names[i] = 0;
+	}
+
+	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
+		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
+		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
+
+		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint16_t))) {
+			// TODO: Should we report something?
+			break;
+		}
+		const uint16_t ordinal = *entry_ordinal_list;
+
+		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
+		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
+
+		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
+			// TODO: Should we report something?
+			break;
+		}
+
+		const uint32_t entry_name_rva = *entry_name_list;
+		const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
+		offsets_to_Names[ordinal] = entry_name_ofs;
+	}
 
 	//
 	// The format of IMAGE_EXPORT_DIRECTORY can be seen in http://i.msdn.microsoft.com/dynimg/IC60608.gif
@@ -894,14 +933,9 @@ static void print_exports(pe_ctx_t *ctx)
 	// exported by the module. On the other hand, `NumberOfNames` is the number of
 	// functions/symbols exported by name only.
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
-		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
-		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
 
 		uint64_t entry_va_list_ptr = offset_to_AddressOfFunctions + sizeof(uint32_t) * i;
 		uint32_t *entry_va_list = LIBPE_PTR_ADD(ctx->map_addr, entry_va_list_ptr);
-
-		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
-		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
 
 		// printf("ctx->map_addr = %p\n", ctx->map_addr);
 		// printf("ctx->map_end = %p\n", ctx->map_end);
@@ -909,17 +943,7 @@ static void print_exports(pe_ctx_t *ctx)
 		// printf("entry_va_list = %p\n", entry_va_list);
 		// printf("entry_name_list = %p\n", entry_name_list);
 
-		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint32_t))) {
-			// TODO: Should we report something?
-			break;
-		}
-
 		if (!pe_can_read(ctx, entry_va_list, sizeof(uint32_t))) {
-			// TODO: Should we report something?
-			break;
-		}
-
-		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
 			// TODO: Should we report something?
 			break;
 		}
@@ -927,58 +951,65 @@ static void print_exports(pe_ctx_t *ctx)
 		// Add `Base` to the element of `AddressOfNameOrdinals` array to get the correct ordinal..
 		//const uint16_t entry_ordinal = exp->Base + *entry_ordinal_list;
 		const uint32_t entry_va = *entry_va_list;
-		const uint32_t entry_name_rva = *entry_name_list;
-		const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
-		const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
-
-		// Validate whether it's ok to access at least 1 byte after entry_name.
-		// It might be '\0', for example.
-		if (!pe_can_read(ctx, entry_name, 1)) {
-			// TODO: Should we report something?
-			break;
-		}
-
-		//printf("ord=%d, va=%x, name=%s\n", entry_ordinal, entry_va, entry_name);
-
-		// Declared as 11 bytes so that it can store the hexadecimal representation of the maximum
-		// possible value of an uint32_t variable, 0xFFFFFFFF.
-		char addr[11] = { 0 };
-		sprintf(addr, "%#x", entry_va);
-
 		char fname[300] = { 0 };
-		strncpy(fname, entry_name, sizeof(fname)-1);
-		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		fname[sizeof(fname) - 1] = '\0';
+		char fordinal[32] = { 0 };
+		const uint64_t entry_name_ofs = offsets_to_Names[i];
+		sprintf(fordinal, "Function #%d", i + ordinal_base);
 
-		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
+		if (entry_name_ofs != 0) {
+			const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
 
-		// Check whether the exported function is forwarded.
-		// It's forwarded if its RVA is inside the exports section.
-		if (entry_va >= va && entry_va <= va + dir->Size)
-		{
-			// When a symbol is forwarded, its RVA points to a string containing
-			// the name of the DLL and symbol to which it is forwarded.
-			const uint64_t fw_entry_name_ofs = pe_rva2ofs(ctx, entry_va);
-			const char *fw_entry_name = LIBPE_PTR_ADD(ctx->map_addr, fw_entry_name_ofs);
-
-			// Validate whether it's ok to access at least 1 byte after fw_entry_name.
+			// Validate whether it's ok to access at least 1 byte after entry_name.
 			// It might be '\0', for example.
-			if (!pe_can_read(ctx, fw_entry_name, 1)) {
+			if (!pe_can_read(ctx, entry_name, 1)) {
 				// TODO: Should we report something?
 				break;
 			}
 
-			char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
-			snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
+			//printf("ord=%d, va=%x, name=%s\n", entry_ordinal, entry_va, entry_name);
 
-			output(addr, fname_forwarded);
-		}
-		else
-		{
-			output(addr, fname);
+			strncpy(fname, entry_name, sizeof(fname)-1);
+			// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+			fname[sizeof(fname) - 1] = '\0';
 		}
 
-		output_close_scope(); // Function
+		// Declared as 11 bytes so that it can store the hexadecimal representation of the maximum
+		// possible value of an uint32_t variable, 0xFFFFFFFF.
+		if (entry_va != 0){
+			char addr[11] = { 0 };
+			sprintf(addr, "%#x", entry_va);
+
+			output_open_scope(fordinal, OUTPUT_SCOPE_TYPE_OBJECT);
+
+			// Check whether the exported function is forwarded.
+			// It's forwarded if its RVA is inside the exports section.
+			if (entry_va >= va && entry_va <= va + dir->Size)
+			{
+				// When a symbol is forwarded, its RVA points to a string containing
+				// the name of the DLL and symbol to which it is forwarded.
+				const uint64_t fw_entry_name_ofs = pe_rva2ofs(ctx, entry_va);
+				const char *fw_entry_name = LIBPE_PTR_ADD(ctx->map_addr, fw_entry_name_ofs);
+
+				// Validate whether it's ok to access at least 1 byte after fw_entry_name.
+				// It might be '\0', for example.
+				if (!pe_can_read(ctx, fw_entry_name, 1)) {
+					// TODO: Should we report something?
+					output_close_scope(); // Function
+					break;
+				}
+
+				char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
+				snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
+
+				output(addr, fname_forwarded);
+			}
+			else
+			{
+				output(addr, fname);
+			}
+
+			output_close_scope(); // Function
+		}
 	}
 
 	output_close_scope(); // Exported functions

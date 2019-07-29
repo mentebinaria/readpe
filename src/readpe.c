@@ -833,10 +833,12 @@ static void print_imported_functions(pe_ctx_t *ctx, uint64_t offset)
 
 		output_open_scope("Function", OUTPUT_SCOPE_TYPE_OBJECT);
 
-		if (is_ordinal)
+		if (is_ordinal) {
 			output("Ordinal", hint_str);
-		else
+		} else {
+			output("Hint", hint_str);
 			output("Name", fname);
+		}
 
 		output_close_scope(); // Function
 	}

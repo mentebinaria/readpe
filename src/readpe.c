@@ -1001,11 +1001,13 @@ static void print_exports(pe_ctx_t *ctx)
 				char fname_forwarded[sizeof(fname) * 2 + 4] = { 0 }; // Twice the size plus " -> ".
 				snprintf(fname_forwarded, sizeof(fname_forwarded)-1, "%s -> %s", fname, fw_entry_name);
 
-				output(addr, fname_forwarded);
+				output("Address", addr);
+				output("Name", fname_forwarded);
 			}
 			else
 			{
-				output(addr, fname);
+				output("Address", addr);
+				output("Name", fname);
 			}
 
 			output_close_scope(); // Function

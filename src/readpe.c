@@ -864,7 +864,7 @@ static void print_exports(pe_ctx_t *ctx)
 	}
 
 	ofs = pe_rva2ofs(ctx, exp->Name);
-	const uint32_t *name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	const char *name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, name_ptr, 1)) {
 		// TODO: Should we report something?
 		return;

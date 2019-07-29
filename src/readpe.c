@@ -886,10 +886,12 @@ static void print_exports(pe_ctx_t *ctx)
 	output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
 	// Otherwise `NumberOfNames` should be equal to `NumberOfFunctions`
-	/*if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
+	/*
+	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
 		fprintf(stderr, "NumberOfFunctions differs from NumberOfNames\n");
 		output_close_scope(); // Exported functions
-	}*/
+	}
+	*/
 
 	char s[MAX_MSG];
 	snprintf(s, MAX_MSG, "%s", name_ptr);
@@ -900,9 +902,7 @@ static void print_exports(pe_ctx_t *ctx)
 	uint64_t offset_to_AddressOfNameOrdinals = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
 
 	uint64_t offsets_to_Names[exp->NumberOfFunctions];
-	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
-		offsets_to_Names[i] = 0;
-	}
+	memset(offsets_to_Names, 0, sizeof(offsets_to_Names));
 
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
@@ -1005,9 +1005,7 @@ static void print_exports(pe_ctx_t *ctx)
 
 				output("Address", addr);
 				output("Name", fname_forwarded);
-			}
-			else
-			{
+			} else {
 				output("Address", addr);
 				output("Name", fname);
 			}

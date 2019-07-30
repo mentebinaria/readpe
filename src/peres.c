@@ -315,6 +315,7 @@ static NODE_PERES * createNode(NODE_PERES *currentNode, NODE_TYPE_PERES typeOfNe
 {
 	assert(currentNode != NULL);
 	NODE_PERES *newNode = malloc_s(sizeof(NODE_PERES));
+	memset(newNode, 0, sizeof(*newNode));
 	newNode->lastNode = currentNode;
 	newNode->nextNode = NULL;
 	newNode->nodeType = typeOfNextNode;
@@ -716,6 +717,7 @@ static NODE_PERES * discoveryNodesPeres(pe_ctx_t *ctx)
 	}
 
 	NODE_PERES *node = malloc_s(sizeof(NODE_PERES));
+	memset(node, 0, sizeof(*node));
 	node->lastNode = NULL; // root
 	node->rootNode = NULL; // root
 	node->nodeType = RDT_RESOURCE_DIRECTORY;

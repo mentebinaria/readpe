@@ -752,7 +752,8 @@ static void print_exports(pe_ctx_t *ctx)
 
 	const pe_exports_t *exports = pe_exports(ctx);
 	
-	output("Name", exports->name);
+	if (exports->functions_count > 0)
+		output("Name", exports->name);
 		
 	for (size_t i=0; i < exports->functions_count; i++) {
 		const pe_exported_function_t *func = &exports->functions[i];
@@ -775,7 +776,7 @@ static void print_exports(pe_ctx_t *ctx)
 				output("Address", address_str);
 				output("Name", func->name);
 			}
-			
+
 			output_close_scope(); // Function
 		}
 	}

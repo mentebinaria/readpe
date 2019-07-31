@@ -58,6 +58,16 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 		return exports;
 	}
 
+	ofs = pe_rva2ofs(ctx, exp->Name);
+	const char *name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	if (!pe_can_read(ctx, name_ptr, 1)) {
+		exports->err = LIBPE_E_EXPORTS_CANT_READ_RVA;
+		return exports;
+	}
+	exports->name = strdup(name_ptr);
+	
+	const uint32_t ordinal_base = exp->Base;
+	
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
@@ -66,15 +76,11 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	}
 
 	// If `NumberOfNames == 0` then all functions are exported by ordinal.
-	// Otherwise `NumberOfNames` must be equal to `NumberOfFunctions`
-	if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
-		exports->err = LIBPE_E_EXPORTS_FUNC_NEQ_NAMES;
-		return exports;
-	}
-
-	uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
-	uint64_t offset_to_AddressOfNames = pe_rva2ofs(ctx, exp->AddressOfNames);
-	uint64_t offset_to_AddressOfNameOrdinals = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
+	// Otherwise `NumberOfNames` should be equal to `NumberOfFunctions`
+	// if (exp->NumberOfNames != 0 && exp->NumberOfNames != exp->NumberOfFunctions) {
+	// 	exports->err = LIBPE_E_EXPORTS_FUNC_NEQ_NAMES;
+	// 	return exports;
+	// }
 
 	//
 	// The format of IMAGE_EXPORT_DIRECTORY can be seen in http://i.msdn.microsoft.com/dynimg/IC60608.gif
@@ -93,48 +99,77 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	}
 	memset(exports->functions, 0, functions_size);
 
-	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
+	const uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
+	const uint64_t offset_to_AddressOfNames = pe_rva2ofs(ctx, exp->AddressOfNames);
+	const uint64_t offset_to_AddressOfNameOrdinals = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
+
+	uint64_t offsets_to_Names[exp->NumberOfFunctions];
+	memset(offsets_to_Names, 0, sizeof(offsets_to_Names));
+
+	//
+	// Names
+	//
+	
+	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
 		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
 
-		uint64_t entry_va_list_ptr = offset_to_AddressOfFunctions + sizeof(uint32_t) * i;
-		uint32_t *entry_va_list = LIBPE_PTR_ADD(ctx->map_addr, entry_va_list_ptr);
+		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint16_t))) {
+			// TODO: Should we report something?
+			break;
+		}
+		const uint16_t ordinal = *entry_ordinal_list;
 
 		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
 		uint32_t *entry_name_list = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
 
-		if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint32_t))) {
+		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
+			// TODO: Should we report something?
 			break;
 		}
+
+		const uint32_t entry_name_rva = *entry_name_list;
+		const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
+		offsets_to_Names[ordinal] = entry_name_ofs;
+	}
+
+	//
+	// Functions
+	//
+
+	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
+		uint64_t entry_va_list_ptr = offset_to_AddressOfFunctions + sizeof(uint32_t) * i;
+		uint32_t *entry_va_list = LIBPE_PTR_ADD(ctx->map_addr, entry_va_list_ptr);
 
 		if (!pe_can_read(ctx, entry_va_list, sizeof(uint32_t))) {
-			break;
-		}
-
-		if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
 			break;
 		}
 
 		// Add `Base` to the element of `AddressOfNameOrdinals` array to get the correct ordinal..
 		//const uint16_t entry_ordinal = exp->Base + *entry_ordinal_list;
 		const uint32_t entry_va = *entry_va_list;
-		const uint32_t entry_name_rva = *entry_name_list;
-		const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
-		const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
+		const uint64_t entry_name_ofs = offsets_to_Names[i];
+		char fname[300] = { 0 };
 
-		// Validate whether it's ok to access at least 1 byte after entry_name.
-		// It might be '\0', for example.
-		if (!pe_can_read(ctx, entry_name, 1)) {
-			break;
+		if (entry_name_ofs != 0) {
+			const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
+
+			// Validate whether it's ok to access at least 1 byte after entry_name.
+			// It might be '\0', for example.
+			if (!pe_can_read(ctx, entry_name, 1)) {
+				break;
+			}
+
+			//printf("ord=%d, va=%x, name=%s\n", entry_ordinal, entry_va, entry_name);
+
+			const size_t fname_size = sizeof(fname);
+			strncpy(fname, entry_name, fname_size-1);
+			// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
+			fname[fname_size - 1] = '\0';
 		}
 
+		exports->functions[i].ordinal = ordinal_base + i;
 		exports->functions[i].address = entry_va;
-
-		char fname[300] = { 0 };
-		const size_t fname_size = sizeof(fname);
-		strncpy(fname, entry_name, fname_size-1);
-		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		fname[fname_size - 1] = '\0';
 
 		// Check whether the exported function is forwarded.
 		// It's forwarded if its RVA is inside the exports section.
@@ -182,5 +217,6 @@ void pe_exports_dealloc(pe_exports_t *obj) {
 	}
 
 	free(obj->functions);
+	free(obj->name);
 	free(obj);
 }

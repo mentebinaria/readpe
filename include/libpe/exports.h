@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 typedef struct {
+	uint32_t ordinal; // ordinal of the function
 	char *name; // name of the function
 	char *fwd_name; // name of the forwarded function
 	uint32_t address; // address of the function
@@ -37,6 +38,7 @@ typedef struct {
 
 typedef struct {
 	pe_err_e err;
+	char *name; // name of the DLL
 	uint32_t functions_count;
 	pe_exported_function_t *functions; // array of exported functions
 } pe_exports_t;

@@ -55,7 +55,7 @@
 #endif
 
 static bool _load_config_cb(pev_config_t * const config, const char *name, const char *value) {
-	//printf("%s=%s\n", name, value);
+	//fprintf(stderr, "DEBUG: %s=%s\n", name, value);
 
 	if (!strcmp("plugins_dir", name)) {
 		config->plugins_path = strdup(value);
@@ -90,7 +90,7 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 		const char *trimmed_param = utils_str_inplace_trim(param);
 		const char *trimmed_value = utils_str_inplace_trim(value);
 
-		//printf("DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
+		//fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
 		const bool processed = pev_cb(config, trimmed_param, trimmed_value);
 
 		if (!processed && config->user_defined.parse_callback != NULL)

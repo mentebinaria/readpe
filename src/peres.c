@@ -484,7 +484,7 @@ static void saveResource(pe_ctx_t *ctx, const NODE_PERES *node, bool namedExtrac
 
 	// TODO(jweyrich): Would it make sense to hardcode `RDT_LEVEL2` rather than use `node->nodeLevel-1` ?
 	const NODE_PERES *nameNode = lastNodeByTypeAndLevel(node, RDT_DIRECTORY_ENTRY, node->nodeLevel - 1);
-	//printf("%d\n", nameNode->resource.directoryEntry->DirectoryName.name.NameOffset);
+	//fprintf(stderr, "DEBUG: %d\n", nameNode->resource.directoryEntry->DirectoryName.name.NameOffset);
 
 	if (stat(dirName, &statDir) == -1)
 		mkdir(dirName, 0700);

@@ -374,9 +374,9 @@ int main(int argc, char *argv[])
 	if (section_ptr != NULL) {
 		if (section_ptr->SizeOfRawData > 0) {
 			const uint8_t *section_data_ptr = LIBPE_PTR_ADD(ctx.map_addr, section_ptr->PointerToRawData);
-			// printf("map_addr = %p\n", ctx.map_addr);
-			// printf("section_data_ptr = %p\n", section_data_ptr);
-			// printf("SizeOfRawData = %u\n", section_ptr->SizeOfRawData);
+			// fprintf(stderr, "map_addr = %p\n", ctx.map_addr);
+			// fprintf(stderr, "section_data_ptr = %p\n", section_data_ptr);
+			// fprintf(stderr, "SizeOfRawData = %u\n", section_ptr->SizeOfRawData);
 			if (!pe_can_read(&ctx, section_data_ptr, section_ptr->SizeOfRawData)) {
 				EXIT_ERROR("The requested section has an invalid size");
 			}

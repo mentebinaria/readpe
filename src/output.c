@@ -165,7 +165,7 @@ void output_set_cmdline(int argc, char *argv[]) {
 		fprintf(stderr, "output: allocation failed for utils_str_array_join\n");
 		abort();
 	}
-	//printf("cmdline = %s\n", g_cmdline);
+	//fprintf(stderr, "DEBUG: cmdline = %s\n", g_cmdline);
 }
 
 const format_t *output_format(void) {
@@ -293,7 +293,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 		scope->parent_type = parent_scope->type;
 	}
 
-	//printf("DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
+	//fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 
@@ -316,7 +316,7 @@ void output_close_scope(void) {
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
 
-	//printf("DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
+	//fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 

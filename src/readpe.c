@@ -253,7 +253,13 @@ static void print_sections(pe_ctx_t *ctx)
 				snprintf(s, MAX_MSG, "%s", flags_name[j]);
 				output(NULL, s);
 #else
-				output(NULL, pe_section_characteristic_name(valid_flags[j]));
+				const char *characteristic_name = pe_section_characteristic_name(valid_flags[j]);
+				char formatted_characteristic_name[32];
+				if (characteristic_name == NULL) {
+					snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", valid_flags[j]);
+					characteristic_name = formatted_characteristic_name;
+				}
+				output(NULL, characteristic_name);
 #endif
 			}
 		}
@@ -446,8 +452,15 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			output_open_scope("DLL characteristics names", OUTPUT_SCOPE_TYPE_ARRAY);
 
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
-				if (header->_32->DllCharacteristics & flag)
-					output(NULL, pe_image_dllcharacteristic_name(flag));
+				if (header->_32->DllCharacteristics & flag) {
+					const char *characteristic_name = pe_image_dllcharacteristic_name(flag);
+					char formatted_characteristic_name[32];
+					if (characteristic_name == NULL) {
+						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+						characteristic_name = formatted_characteristic_name;
+					}
+					output(NULL, characteristic_name);
+				}
 			}
 
 			output_close_scope(); // DLL characteristics names
@@ -550,8 +563,15 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			output_open_scope("DLL characteristics names", OUTPUT_SCOPE_TYPE_ARRAY);
 
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
-				if (header->_64->DllCharacteristics & flag)
-					output(NULL, pe_image_dllcharacteristic_name(flag));
+				if (header->_64->DllCharacteristics & flag) {
+					const char *characteristic_name = pe_image_dllcharacteristic_name(flag);
+					char formatted_characteristic_name[32];
+					if (characteristic_name == NULL) {
+						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+						characteristic_name = formatted_characteristic_name;
+					}
+					output(NULL, characteristic_name);
+				}
 			}
 
 			output_close_scope(); // DLL characteristics names
@@ -676,12 +696,19 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	output_open_scope("Characteristics names", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
-		if (header->Characteristics & flag)
+		if (header->Characteristics & flag) {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 			output(NULL, characteristicsTable[i].name);
 #else
-			output(NULL, pe_image_characteristic_name(flag));
+			const char *characteristic_name = pe_image_characteristic_name(flag);
+			char formatted_characteristic_name[32];
+			if (characteristic_name == NULL) {
+				snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+				characteristic_name = formatted_characteristic_name;
+			}
+			output(NULL, characteristic_name);
 #endif
+		}
 	}
 
 	output_close_scope(); // Characteristics names

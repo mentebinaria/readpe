@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 
 	FILE *dbfile = NULL;
 	if (!loaddb(&dbfile, options))
-		fprintf(stderr, "warning: without valid database file, %s will search in generic mode only\n", PROGRAM);
+		fprintf(stderr, "WARNING: without valid database file, %s will search in generic mode only\n", PROGRAM);
 
 	char value[MAX_MSG];
 

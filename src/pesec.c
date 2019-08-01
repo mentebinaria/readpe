@@ -213,7 +213,7 @@ static void print_certificate(BIO *out, cert_format_e format, X509 *cert)
 			PEM_write_bio_X509(out, cert);
 			break;
 		case CERT_FORMAT_DER:
-			EXIT_ERROR("DER format is not yet supported for output");
+			WARNING("DER format is not yet supported for output");
 			break;
 	}
 }
@@ -238,7 +238,9 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 	}
 
 	switch (input_fmt) {
-		default: EXIT_ERROR("unhandled input format for certificate");
+		default:
+			WARNING("unhandled input format for certificate");
+			break;
 		case CERT_FORMAT_DER:
 			p7 = d2i_PKCS7_bio(in, NULL);
 			break;
@@ -371,23 +373,30 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 
 		fileOffset += utils_round_up(cert->dwLength, 8); // Offset to the next certificate.
 
-		if (fileOffset - directory->VirtualAddress > directory->Size)
-			EXIT_ERROR("either the attribute certificate table or the Size field is corrupted");
+		if (fileOffset - directory->VirtualAddress > directory->Size) {
+			WARNING("either the attribute certificate table or the Size field is corrupted");
+			output_close_scope(); // certificate
+			break; // Exit the while-loop.
+		}
 
 		switch (cert->wRevision) {
 			default:
-				EXIT_ERROR("unknown wRevision");
+				WARNING("unknown wRevision");
+				break;
 			case WIN_CERT_REVISION_1_0:
-				EXIT_ERROR("WIN_CERT_REVISION_1_0 is not supported");
+				WARNING("WIN_CERT_REVISION_1_0 is not supported");
+				break;
 			case WIN_CERT_REVISION_2_0:
 				break;
 		}
 
 		switch (cert->wCertificateType) {
 			default:
-				EXIT_ERROR("unknown wCertificateType");
+				WARNING("unknown wCertificateType");
+				break;
 			case WIN_CERT_TYPE_X509:
-				EXIT_ERROR("WIN_CERT_TYPE_X509 is not supported");
+				WARNING("WIN_CERT_TYPE_X509 is not supported");
+				break;
 			case WIN_CERT_TYPE_PKCS_SIGNED_DATA:
 			{
 				CRYPT_DATA_BLOB p7data;
@@ -397,11 +406,14 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 				break;
 			}
 			case WIN_CERT_TYPE_TS_STACK_SIGNED:
-				EXIT_ERROR("WIN_CERT_TYPE_TS_STACK_SIGNED is not supported");
+				WARNING("WIN_CERT_TYPE_TS_STACK_SIGNED is not supported");
+				break;
 			case WIN_CERT_TYPE_EFI_PKCS115:
-				EXIT_ERROR("WIN_CERT_TYPE_EFI_PKCS115 is not supported");
+				WARNING("WIN_CERT_TYPE_EFI_PKCS115 is not supported");
+				break;
 			case WIN_CERT_TYPE_EFI_GUID:
-				EXIT_ERROR("WIN_CERT_TYPE_EFI_GUID is not supported");
+				WARNING("WIN_CERT_TYPE_EFI_GUID is not supported");
+				break;
 		}
 		output_close_scope(); // certificate
 	}

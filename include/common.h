@@ -52,8 +52,13 @@
 
 #define EXIT_ERROR(msg) \
 { \
-	fprintf(stderr, "%s\n", msg); \
+	fprintf(stderr, "ERROR: %s\n", msg); \
 	exit(1); \
+}
+
+#define WARNING(msg) \
+{ \
+	fprintf(stderr, "WARNING: %s\n", msg); \
 }
 
 #define MAX_MSG 80

@@ -306,7 +306,7 @@ int main(int argc, char *argv[])
       switch (opt_hdr->type) {
          case MAGIC_ROM:
             // Oh boy! We do not support ROM. Abort!
-            fprintf(stderr, "ROM image is not supported\n");
+            WARNING("ROM image is not supported");
             break;
          case MAGIC_PE32:
             if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
@@ -344,15 +344,15 @@ int main(int argc, char *argv[])
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
 			if (!pe_can_read(&ctx, data, data_size)) {
-				EXIT_ERROR("Unable to read section data");
+				WARNING("Unable to read section data");
+			} else {
+				output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
+				output("section_name", (char *)sections[i]->Name);
+				if (data_size) {
+					print_basic_hash(data, data_size);
+				}
+				output_close_scope(); // section
 			}
-
-			output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
-			output("section_name", (char *)sections[i]->Name);
-			if (data_size) {
-				print_basic_hash(data, data_size);
-			}
-			output_close_scope(); // section
 		}
 		//output_close_scope(); // sections
 	} else if (options->sections.name != NULL) {

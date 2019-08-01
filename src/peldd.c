@@ -138,10 +138,11 @@ int main(int argc, char *argv[])
 	output_open_document();
 
 	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
-	if (directories == NULL)
-		EXIT_ERROR("directories not found");
-
-	print_dependencies(&ctx);
+	if (directories == NULL) {
+		WARNING("directories not found");
+	} else {
+		print_dependencies(&ctx);
+	}
 
 	output_close_document();
 

@@ -131,15 +131,18 @@ static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 	const size_t dos_stub_size = sizeof(dos_stub) - 1; // -1 to ignore ending null
 
 	const IMAGE_DOS_HEADER *dos = pe_dos(ctx);
-	if (dos == NULL)
-		EXIT_ERROR("unable to retrieve PE DOS header");
+	if (dos == NULL) {
+		WARNING("unable to retrieve PE DOS header");
+		return false;
+	}
 
 	*stub_offset = dos->e_cparhdr << 4;
 
 	// dos stub starts at e_cparhdr shifted by 4
 	const char *dos_stub_ptr = LIBPE_PTR_ADD(ctx->map_addr, *stub_offset);
 	if (!pe_can_read(ctx, dos_stub_ptr, dos_stub_size)) {
-		EXIT_ERROR("unable to seek in file");
+		WARNING("unable to seek in file");
+		return false;
 	}
 
 	return memcmp(dos_stub, dos_stub_ptr, dos_stub_size) == 0;
@@ -376,10 +379,8 @@ static bool fpu_trick(pe_ctx_t *ctx)
 	return false;
 }
 
-static void print_timestamp(pe_ctx_t *ctx, const options_t *options)
+static void print_timestamp(pe_ctx_t *ctx, const options_t *options, const IMAGE_COFF_HEADER *hdr_coff_ptr)
 {
-	IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
-
 	const time_t now = time(NULL);
 	char value[MAX_MSG];
 
@@ -523,28 +524,29 @@ int main(int argc, char *argv[])
 	output("imagebase", value);
 
 	const IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
-	if (optional == NULL)
-		EXIT_ERROR("unable to read optional header");
-
-	uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
-		(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
-
-	// fake ep
-	if (ep == 0) {
-		snprintf(value, MAX_MSG, "null");
-	} else if (pe_check_fake_entrypoint(&ctx, ep)) {
-		if (options->verbose)
-			snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, pe_rva2ofs(&ctx, ep));
-		else
-			snprintf(value, MAX_MSG, "fake");
+	if (optional == NULL) {
+		WARNING("unable to read optional header");
 	} else {
-		if (options->verbose)
-			snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, pe_rva2ofs(&ctx, ep));
-		else
-			snprintf(value, MAX_MSG, "normal");
-	}
+		uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
+			(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
 
-	output("entrypoint", value);
+		// fake ep
+		if (ep == 0) {
+			snprintf(value, MAX_MSG, "null");
+		} else if (pe_check_fake_entrypoint(&ctx, ep)) {
+			if (options->verbose)
+				snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#"PRIx64, ep, pe_rva2ofs(&ctx, ep));
+			else
+				snprintf(value, MAX_MSG, "fake");
+		} else {
+			if (options->verbose)
+				snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#"PRIx64, ep, pe_rva2ofs(&ctx, ep));
+			else
+				snprintf(value, MAX_MSG, "normal");
+		}
+
+		output("entrypoint", value);
+	}
 
 	// dos stub
 	uint32_t stub_offset;
@@ -572,10 +574,11 @@ int main(int argc, char *argv[])
 
 	// invalid timestamp
 	IMAGE_COFF_HEADER *coff = pe_coff(&ctx);
-	if (coff == NULL)
-		EXIT_ERROR("unable to read coff header");
-
-	print_timestamp(&ctx, options);
+	if (coff == NULL) {
+		WARNING("unable to read coff header");
+	} else {
+		print_timestamp(&ctx, options, coff);
+	}
 
 	// section analysis
 	print_strange_sections(&ctx);

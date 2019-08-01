@@ -913,7 +913,7 @@ int main(int argc, char **argv)
 
 	NODE_PERES *node = discoveryNodesPeres(&ctx);
 	if (node == NULL) {
-		fprintf(stderr, "this file has no resources\n");
+		WARNING("this file has no resources");
 		return EXIT_SUCCESS;
 	}
 

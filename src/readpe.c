@@ -893,7 +893,7 @@ int main(int argc, char *argv[])
 		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
 		if (header_ptr)
 			print_dos_header(header_ptr);
-		else { EXIT_ERROR("unable to read DOS header"); }
+		else { fprintf(stderr, "unable to read DOS header\n"); }
 	}
 
 	// coff/file header
@@ -901,7 +901,7 @@ int main(int argc, char *argv[])
 		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
 		if (header_ptr)
 			print_coff_header(header_ptr);
-		else { EXIT_ERROR("unable to read COFF file header"); }
+		else { fprintf(stderr, "unable to read COFF file header\n"); }
 	}
 
 	// optional header
@@ -909,7 +909,7 @@ int main(int argc, char *argv[])
 		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
 		if (header_ptr)
 			print_optional_header(header_ptr);
-		else { EXIT_ERROR("unable to read Optional (Image) file header"); }
+		else { fprintf(stderr, "unable to read Optional (Image) file header\n"); }
 	}
 
 	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
@@ -949,7 +949,7 @@ int main(int argc, char *argv[])
 	if (options->all_sections || options->all) {
 		if (pe_sections(&ctx) != NULL)
 			print_sections(&ctx);
-		else { EXIT_ERROR("unable to read sections"); }
+		else { fprintf(stderr, "unable to read sections\n"); }
 	}
 
 	output_close_document();

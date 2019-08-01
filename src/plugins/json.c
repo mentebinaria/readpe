@@ -45,10 +45,10 @@ const pev_api_t *g_pev_api = NULL;
 // REFERENCE: https://tools.ietf.org/html/rfc7159
 // JSON entities '"', '\', ...
 static const entity_t g_entities[255] = {
-	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	"\\b",	NULL, // 0-9
-	"\\n",	"\\t",	NULL,	"\\r",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 10-19
-	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 20-29
-	NULL,	NULL,	NULL,	NULL,	"\\\"",	NULL,	NULL,	NULL,	NULL,	NULL, // 30-39
+	NULL,	"\\u0001","\\u0002","\\u0003","\\u0004","\\u0005","\\u0006","\\u0007","\\b","\\u0009", // 0-9
+	"\\n",	"\\t",	"\\u000c","\\r","\\u000e","\\u000f","\\u0010","\\u0011","\\u0012","\\u0013", // 10-19
+	"\\u0014","\\u0015","\\u0016","\\u0017","\\u0018","\\u0019","\\u001a","\\u001b","\\u001c","\\u001d", // 20-29
+	"\\u001e","\\u001f",NULL,	NULL,	"\\\"",	NULL,	NULL,	NULL,	NULL,	NULL, // 30-39
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 40-49
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 50-59
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 60-69
@@ -57,7 +57,7 @@ static const entity_t g_entities[255] = {
 	NULL,	NULL,	"\\\\",	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 90-99
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 100-109
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 110-119
-	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 120-129
+	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	"\\u007f",NULL,	NULL, // 120-129
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 130-139
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 140-149
 	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL, // 150-159

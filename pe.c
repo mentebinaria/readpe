@@ -174,7 +174,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
 		ctx->pe.dos_hdr->e_lfanew);
-	if (!pe_can_read(ctx, signature_ptr, sizeof(uint32_t)))
+	if (!pe_can_read(ctx, signature_ptr, LIBPE_SIZEOF_MEMBER(pe_file_t, signature)))
 		return LIBPE_E_INVALID_LFANEW;
 
 	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
@@ -250,11 +250,11 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
 		ctx->pe.optional_hdr.length);
-	// If there are no directories, sections_ptr will point right
-	// after the OPTIONAL header, otherwise, it will point right
-	// after the directories.
-	ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.directories_ptr,
-		ctx->pe.num_directories * sizeof(IMAGE_DATA_DIRECTORY));
+
+	uint32_t sections_offset = LIBPE_SIZEOF_MEMBER(pe_file_t, signature)
+		+ sizeof(IMAGE_FILE_HEADER)
+		+ (uint32_t)ctx->pe.coff_hdr->SizeOfOptionalHeader;
+	ctx->pe.sections_ptr = LIBPE_PTR_ADD(signature_ptr, sections_offset);
 
 	if (ctx->pe.num_directories > 0) {
 		ctx->pe.directories = malloc(ctx->pe.num_directories

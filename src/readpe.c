@@ -232,14 +232,14 @@ static void print_sections(pe_ctx_t *ctx)
 		snprintf(s, MAX_MSG, "%#x", sections[i]->Misc.PhysicalAddress);
 		output("Physical Address", s);
 
-		snprintf(s, MAX_MSG, "%#x (%d bytes)", sections[i]->SizeOfRawData,
+		snprintf(s, MAX_MSG, "%#x (%" PRIu32 " bytes)", sections[i]->SizeOfRawData,
 			sections[i]->SizeOfRawData);
 		output("Size", s);
 
 		snprintf(s, MAX_MSG, "%#x", sections[i]->PointerToRawData);
 		output("Pointer To Data", s);
 
-		snprintf(s, MAX_MSG, "%d", sections[i]->NumberOfRelocations);
+		snprintf(s, MAX_MSG, "%" PRIu16, sections[i]->NumberOfRelocations);
 		output("Relocations", s);
 
 		snprintf(s, MAX_MSG, "%#x", sections[i]->Characteristics);
@@ -314,7 +314,7 @@ static void print_directories(pe_ctx_t *ctx)
 	for (uint32_t i=0; i < num_directories; i++) {
 		if (directories[i]->Size) {
 			output_open_scope("Directory", OUTPUT_SCOPE_TYPE_OBJECT);
-			snprintf(s, MAX_MSG, "%#x (%d bytes)",
+			snprintf(s, MAX_MSG, "%#x (%" PRIu32 " bytes)",
 					directories[i]->VirtualAddress,
 					directories[i]->Size);
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
@@ -370,10 +370,10 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, "PE32");
 			output("Magic number", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MajorLinkerVersion);
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_32->MajorLinkerVersion);
 			output("Linker major version", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MinorLinkerVersion);
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_32->MinorLinkerVersion);
 			output("Linker minor version", s);
 
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfCode);
@@ -403,22 +403,22 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x", header->_32->FileAlignment);
 			output("Alignment factor", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MajorOperatingSystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MajorOperatingSystemVersion);
 			output("Major version of required OS", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MinorOperatingSystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MinorOperatingSystemVersion);
 			output("Minor version of required OS", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MajorImageVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MajorImageVersion);
 			output("Major version of image", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MinorImageVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MinorImageVersion);
 			output("Minor version of image", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MajorSubsystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MajorSubsystemVersion);
 			output("Major version of subsystem", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_32->MinorSubsystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MinorSubsystemVersion);
 			output("Minor version of subsystem", s);
 
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfImage);
@@ -484,10 +484,10 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x (%s)", header->_64->Magic, "PE32+");
 			output("Magic number", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MajorLinkerVersion);
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_64->MajorLinkerVersion);
 			output("Linker major version", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MinorLinkerVersion);
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_64->MinorLinkerVersion);
 			output("Linker minor version", s);
 
 			snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfCode);
@@ -514,22 +514,22 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%#x", header->_64->FileAlignment);
 			output("Alignment factor", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MajorOperatingSystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MajorOperatingSystemVersion);
 			output("Major version of required OS", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MinorOperatingSystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MinorOperatingSystemVersion);
 			output("Minor version of required OS", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MajorImageVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MajorImageVersion);
 			output("Major version of image", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MinorImageVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MinorImageVersion);
 			output("Minor version of image", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MajorSubsystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MajorSubsystemVersion);
 			output("Major version of subsystem", s);
 
-			snprintf(s, MAX_MSG, "%d", header->_64->MinorSubsystemVersion);
+			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MinorSubsystemVersion);
 			output("Minor version of subsystem", s);
 
 			snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfImage);
@@ -671,20 +671,20 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%#x %s", header->Machine, machine);
 	output("Machine", s);
 
-	snprintf(s, MAX_MSG, "%d", header->NumberOfSections);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->NumberOfSections);
 	output("Number of sections", s);
 
 	char timestr[40] = "invalid";
 	struct tm *t = gmtime((time_t *) &header->TimeDateStamp);
 	if (t)
 		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
-	snprintf(s, MAX_MSG, "%d (%s)", header->TimeDateStamp, timestr);
+	snprintf(s, MAX_MSG, "%" PRIu32 " (%s)", header->TimeDateStamp, timestr);
 	output("Date/time stamp", s);
 
 	snprintf(s, MAX_MSG, "%#x", header->PointerToSymbolTable);
 	output("Symbol Table offset", s);
 
-	snprintf(s, MAX_MSG, "%d", header->NumberOfSymbols);
+	snprintf(s, MAX_MSG, "%" PRIu32, header->NumberOfSymbols);
 	output("Number of symbols", s);
 
 	snprintf(s, MAX_MSG, "%#x", header->SizeOfOptionalHeader);
@@ -725,22 +725,22 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 	snprintf(s, MAX_MSG, "%#x (MZ)", header->e_magic);
 	output("Magic number", s);
 
-	snprintf(s, MAX_MSG, "%d", header->e_cblp);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->e_cblp);
 	output("Bytes in last page", s);
 
-	snprintf(s, MAX_MSG, "%d", header->e_cp);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->e_cp);
 	output("Pages in file", s);
 
-	snprintf(s, MAX_MSG, "%d", header->e_crlc);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->e_crlc);
 	output("Relocations", s);
 
-	snprintf(s, MAX_MSG, "%d", header->e_cparhdr);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->e_cparhdr);
 	output("Size of header in paragraphs", s);
 
-	snprintf(s, MAX_MSG, "%d", header->e_minalloc);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->e_minalloc);
 	output("Minimum extra paragraphs", s);
 
-	snprintf(s, MAX_MSG, "%d", header->e_maxalloc);
+	snprintf(s, MAX_MSG, "%" PRIu16, header->e_maxalloc);
 	output("Maximum extra paragraphs", s);
 
 	snprintf(s, MAX_MSG, "%#x", header->e_ss);

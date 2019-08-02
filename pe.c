@@ -420,10 +420,17 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 		return NULL;
 
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		if (strcmp((const char *)ctx->pe.sections[i]->Name, name) == 0)
+		if (strncmp((const char *)ctx->pe.sections[i]->Name, name, SECTION_NAME_SIZE) == 0)
 			return ctx->pe.sections[i];
 	}
 	return NULL;
+}
+
+const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *section_hdr, char *out_name, size_t out_name_size) {
+	assert(out_name_size >= SECTION_NAME_SIZE+1);
+	strncpy(out_name, (const char *)section_hdr->Name, SECTION_NAME_SIZE);
+	out_name[SECTION_NAME_SIZE-1] = '\0';
+	return out_name;
 }
 
 const char *pe_machine_type_name(MachineType type) {

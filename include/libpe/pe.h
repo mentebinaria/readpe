@@ -132,6 +132,7 @@ IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry e
 uint16_t pe_sections_count(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name);
+const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *section_hdr, char *out_name, size_t out_name_size);
 
 const char *pe_machine_type_name(MachineType type);
 const char *pe_image_characteristic_name(ImageCharacteristics characteristic);

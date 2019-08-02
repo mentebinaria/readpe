@@ -223,7 +223,9 @@ static void print_sections(pe_ctx_t *ctx)
 	{
 		output_open_scope("Section", OUTPUT_SCOPE_TYPE_OBJECT);
 
-		snprintf(s, MAX_MSG, "%s", sections[i]->Name);
+		char section_name_buffer[SECTION_NAME_SIZE+1];
+		const char *section_name = pe_section_name(ctx, sections[i], section_name_buffer, sizeof(section_name_buffer));
+		snprintf(s, MAX_MSG, "%s", section_name);
 		output("Name", s);
 
 		snprintf(s, MAX_MSG, "%#x", sections[i]->VirtualAddress);

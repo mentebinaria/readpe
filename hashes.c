@@ -612,6 +612,8 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	char *imphash_string = malloc(imphash_string_size);
 	if (imphash_string == NULL) {
 		// TODO: Handle allocation failure.
+		free(elt);
+		freeNodes(head);
 		abort();
 	}
 	memset(imphash_string, 0, imphash_string_size);
@@ -633,15 +635,15 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	const size_t hash_maxsize = pe_hash_recommended_size();
 	char *hash_value = malloc(hash_maxsize);
 	if (hash_value == NULL) {
-		//ret = LIBPE_E_ALLOCATION_FAILURE;
+		//ret = LIBPE_E_ALLOCATION_FAILURE
+		free(imphash_string);
 		return NULL;
 	}
 	memset(hash_value, 0, hash_maxsize);
 
 	const bool hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
 
-	if (imphash_string)
-		free(imphash_string);
+	free(imphash_string);
 
 	//printf("### DEBUG imphash_string [%zu] = %s\n", imphash_string_len, imphash_string);
 	return hash_ok ? hash_value : NULL;

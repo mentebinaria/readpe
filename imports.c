@@ -158,7 +158,7 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 			{
 				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 				if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
-					imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
+					imported_dll->err = LIBPE_E_INVALID_THUNK;
 					return imported_dll->err;
 				}
 
@@ -213,7 +213,7 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
 				if (is_ordinal) {
-					hint = 0;
+					hint = 0; // No hint
 					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64) & 0xffff;
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
@@ -224,7 +224,7 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 					}
 
 					hint = imp_name->Hint;
-					ordinal = 0;
+					ordinal = 0; // No ordinal
 
 					strncpy(fname, (char *)imp_name->Name, size_fname-1);
 					// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.

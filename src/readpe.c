@@ -227,21 +227,22 @@ static void print_sections(pe_ctx_t *ctx)
 		const char *section_name = pe_section_name(ctx, sections[i], section_name_buffer, sizeof(section_name_buffer));
 		output("Name", section_name);
 
+		snprintf(s, MAX_MSG, "%#x (%" PRIu32 " bytes)", sections[i]->Misc.VirtualSize,
+			sections[i]->Misc.VirtualSize);
+		output("Virtual Size", s);
+
 		snprintf(s, MAX_MSG, "%#x", sections[i]->VirtualAddress);
 		output("Virtual Address", s);
 
-		snprintf(s, MAX_MSG, "%#x", sections[i]->Misc.PhysicalAddress);
-		output("Physical Address", s);
-
 		snprintf(s, MAX_MSG, "%#x (%" PRIu32 " bytes)", sections[i]->SizeOfRawData,
 			sections[i]->SizeOfRawData);
-		output("Size", s);
+		output("Size Of Raw Data", s);
 
 		snprintf(s, MAX_MSG, "%#x", sections[i]->PointerToRawData);
-		output("Pointer To Data", s);
+		output("Pointer To Raw Data", s);
 
 		snprintf(s, MAX_MSG, "%" PRIu16, sections[i]->NumberOfRelocations);
-		output("Relocations", s);
+		output("Number Of Relocations", s);
 
 		snprintf(s, MAX_MSG, "%#x", sections[i]->Characteristics);
 		output("Characteristics", s);

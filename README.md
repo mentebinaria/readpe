@@ -9,12 +9,12 @@ This is the current source for a likely unreleased version. Use at your own risk
 ## How to get the source code?
 
 	git clone --recursive https://github.com/merces/pev.git
+	cd pev
+	git submodule init && git submodule update
 
 ## How to build on Linux?
 
 	cd pev
-	# Update git submodules if you have cloned via git
-	git submodule init && git submodule update
 	make
 
 **NOTE**: You may need to install OpenSSL and PCRE using your package manager. Examples:

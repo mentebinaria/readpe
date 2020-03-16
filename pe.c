@@ -427,6 +427,7 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 }
 
 const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *section_hdr, char *out_name, size_t out_name_size) {
+	assert(ctx != NULL); // TODO we don't actually need *ctx here
 	assert(out_name_size >= SECTION_NAME_SIZE+1);
 	strncpy(out_name, (const char *)section_hdr->Name, SECTION_NAME_SIZE);
 	out_name[SECTION_NAME_SIZE-1] = '\0';

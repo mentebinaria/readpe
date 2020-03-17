@@ -581,7 +581,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		const uint64_t aux = ofs; // Store current ofs
 
 		ofs = pe_rva2ofs(ctx, id->Name);
-		if (ofs == 0 || ofs > ctx->map_size)
+		if (ofs == 0 || ofs > (uint64_t) ctx->map_size)
 			return NULL;
 
 		const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);

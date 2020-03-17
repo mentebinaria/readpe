@@ -53,7 +53,7 @@ static void usage(void)
 		"Search for suspicious things in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -f, --format <%s>  Change output format (default: text)\n"
+		" -f, --format <%s>  Change output format (default: text).\n"
 		" -v, --verbose                          Show more information about found items.\n"
 		" -V, --version                          Show version.\n"
 		" --help                                 Show this help.\n",
@@ -379,7 +379,7 @@ static bool fpu_trick(pe_ctx_t *ctx)
 	return false;
 }
 
-static void print_timestamp(pe_ctx_t *ctx, const options_t *options, const IMAGE_COFF_HEADER *hdr_coff_ptr)
+static void print_timestamp(const options_t *options, const IMAGE_COFF_HEADER *hdr_coff_ptr)
 {
 	const time_t now = time(NULL);
 	char value[MAX_MSG];
@@ -577,7 +577,7 @@ int main(int argc, char *argv[])
 	if (coff == NULL) {
 		WARNING("unable to read coff header");
 	} else {
-		print_timestamp(&ctx, options, coff);
+		print_timestamp(options, coff);
 	}
 
 	// section analysis
@@ -585,10 +585,8 @@ int main(int argc, char *argv[])
 
 	output_close_document();
 
-	// libera a memoria
+	// free memory
 	free_options(options);
-
-	// free
 	err = pe_unload(&ctx);
 	if (err != LIBPE_E_OK) {
 		pe_error_print(stderr, err);

@@ -3,7 +3,7 @@
 
 	common.h - common defitions for the pev toolkit.
 
-	Copyright (C) 2013 - 2015 pev authors
+	Copyright (C) 2013 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -63,8 +63,8 @@
 
 #define MAX_MSG 80
 #define MAX_PATH 256
-#define VERSION "0.80"
-#define TOOLKIT "from pev " VERSION " <http://pev.sf.net> toolkit"
+#define VERSION "0.81"
+#define TOOLKIT "from pev " VERSION " <https://github.com/merces/pev/> toolkit"
 #define COPY \
 "License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.\n" \
 "This is free software: you are free to change and redistribute it.\n" \

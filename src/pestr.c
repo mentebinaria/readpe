@@ -3,7 +3,7 @@
 
 	pestr.c - search for strings in PE files.
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -54,11 +54,11 @@ static void usage(void)
 		"Search for strings in PE files\n"
 		"\nExample: %s acrobat.exe\n"
 		"\nOptions:\n"
-		" -n, --min-length                       set minimum string length (default: 4)\n"
-		" -o, --offset                           show string offset in file\n"
-		" -s, --section                          show string section, if exists\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -n, --min-length                       Set minimum string length (default: 4).\n"
+		" -o, --offset                           Show string offset in file.\n"
+		" -s, --section                          Show string section, if exists.\n"
+		" -V, --version                          Show version.\n"
+		" --help                                 Show this help.\n",
 		PROGRAM, PROGRAM);
 }
 

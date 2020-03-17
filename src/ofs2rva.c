@@ -3,7 +3,7 @@
 
 	ofs2rva.c - converts raw file offset to RVA
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@ static void usage(void)
 		"Convert raw file offset to RVA\n"
 		"\nExample: %s 0x1b9b8 calc.exe\n"
 		"\nOptions:\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -V, --version                          Show version.\n"
+		" --help                                 Show this help.\n",
 		PROGRAM, PROGRAM);
 }
 

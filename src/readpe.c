@@ -3,7 +3,7 @@
 
 	readpe.c - show PE file headers
 
-	Copyright (C) 2013 - 2017 pev authors
+	Copyright (C) 2013 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -60,16 +60,16 @@ static void usage(void)
 		"Show PE file headers\n"
 		"\nExample: %s --header optional winzip.exe\n"
 		"\nOptions:\n"
-		" -A, --all                              full output (default)\n"
-		" -H, --all-headers                      print all PE headers\n"
-		" -S, --all-sections                     print all PE sections headers\n"
-		" -f, --format <%s>  change output format (default: text)\n"
-		" -d, --dirs                             show data directories\n"
-		" -h, --header <dos|coff|optional>       show specific header\n"
-		" -i, --imports                          show imported functions\n"
-		" -e, --exports                          show exported functions\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -A, --all                              Full output (default).\n"
+		" -H, --all-headers                      Show all PE headers.\n"
+		" -S, --all-sections                     Show PE section headers.\n"
+		" -f, --format <%s>  Change output format (default: text).\n"
+		" -d, --dirs                             Show data directories.\n"
+		" -h, --header <dos|coff|optional>       Show specific header. It can be used multiple times.\n"
+		" -i, --imports                          Show imported functions.\n"
+		" -e, --exports                          Show exported functions.\n"
+		" -V, --version                          Show version.\n"
+		" --help                                 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 

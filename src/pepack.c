@@ -3,7 +3,7 @@
 
 	pepack.c - search packers in PE files
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -51,10 +51,10 @@ static void usage(void)
 		"Search for packers in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -d, --database <file>                  use database file (default: ./userdb.txt)\n"
-		" -f, --format <%s>  change output format (default: text)\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -d, --database <file>                  Use database file (default: ./userdb.txt).\n"
+		" -f, --format <%s>  Change output format (default: text).\n"
+		" -V, --version                          Show version.\n"
+		" --help                                 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 

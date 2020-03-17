@@ -3,7 +3,7 @@
 
 	pedis.c - PE disassembler
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -66,17 +66,17 @@ static void usage(void)
 		"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
 		"\nExample: %s -r 0x4c4df putty.exe\n"
 		"\nOptions:\n"
-		" --att                                  set AT&T syntax\n"
-		" -e, --entrypoint                       disassemble entrypoint\n"
-		" -f, --format <%s>  change output format (default: text)\n"
-		" -m, --mode <16|32|64>                  disassembly mode (default: auto)\n"
-		" -i, <number>                           number of instructions to be disassembled\n"
-		" -n, <number>                           number of bytes to be disassembled\n"
-		" -o, --offset <offset>                  disassemble at specified file offset\n"
-		" -r, --rva <rva>                        disassemble at specified RVA\n"
-		" -s, --section <section_name>           disassemble entire section given\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" --att                                  Set AT&T assembly syntax (default: Intel).\n"
+		" -e, --entrypoint                       Disassemble the entire entrypoint function.\n"
+		" -f, --format <%s>  Change output format (default: text).\n"
+		" -m, --mode <16|32|64>                  Disassembly mode (default: auto).\n"
+		" -i <number>                            Number of instructions to disassemble.\n"
+		" -n <number>                            Number of bytes to disassemble\n"
+		" -o, --offset <offset>                  Disassemble at specified offset, either in decimal or hexadecimal format (prefixed with 0x).\n"
+		" -r, --rva <rva>                        Disassemble at specified RVA, either in decimal or hexadecimal format (prefixed with 0x).\n"
+		" -s, --section <section_name>           Disassemble en entire section given.\n"
+		" -V, --version                          Show version.\n"
+		" --help                                 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 

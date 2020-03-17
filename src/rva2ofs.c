@@ -3,7 +3,7 @@
 
 	rva2ofs.c - converts RVA to raw file offset
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@ static void usage(void)
 		"Convert RVA to raw file offset\n"
 		"\nExample: %s 0x12db cards.dll\n"
 		"\nOptions:\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -V, --version                          Show version.\n"
+		" --help                                 Show this help.\n",
 		PROGRAM, PROGRAM);
 }
 

@@ -3,7 +3,7 @@
 
 	peres.c - retrive informations and binary data of resources
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ static void usage(void)
 		"\nExample: %s -a putty.exe\n"
 		"\nOptions:\n"
 		" -a, --all                              Show all information, statistics and extract resources\n"
-		" -f, --format <%s> Change output format (default: text)\n"
+		" -f, --format <%s>  change output format (default: text)\n"
 		" -i, --info                             Show resources information\n"
 		" -l, --list                             Show list view\n"
 		" -s, --statistics                       Show resources statistics\n"

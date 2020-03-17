@@ -1,9 +1,9 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	peldd.c - display PE library dependencies
+	peldd.c - shows library dependencies for a given PE file
 
-	Copyright (C) 2018 pev authors
+	Copyright (C) 2018 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -47,9 +47,9 @@ static void usage(void)
 		"Display PE library dependencies\n"
 		"\nExample: %s winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <%s>  change output format (default: text)\n"
-		" -V, --version                          show version and exit\n"
-		" --help                                 show this help and exit\n",
+		" -f, --format <%s>  Change output format (default: text).\n"
+		" -V, --version                          Show version.\n"
+		" --help                                 Show help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
 	output_set_cmdline(argc, argv);
 
-	parse_options(argc, argv); // opcoes
+	parse_options(argc, argv);
 
 	pe_ctx_t ctx;
 

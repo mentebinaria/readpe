@@ -3,7 +3,7 @@
 
 	pehash.c - calculate hashes of PE pieces
 
-	Copyright (C) 2012 - 2017 pev authors
+	Copyright (C) 2012 - 2020 pev authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -64,14 +64,14 @@ static void usage(void)
 		"Calculate hashes of PE pieces\n"
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
-		" -f, --format <%s> change output format (default: text)\n"
-		" -a, --all                             hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash\n"
-		" -c, --content                         hash only the file content (default)\n"
-		" -h, --header <dos|coff|optional>      hash only the header with the specified name\n"
-		" -s, --section <section_name>          hash only the section with the specified name\n"
-		" --section-index <section_index>       hash only the section at the specified index (1..n)\n"
-		" -V, --version                         show version and exit\n"
-		" --help                                show this help and exit\n",
+		" -f, --format <%s> Change output format (default: text).\n"
+		" -a, --all                             Hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash.\n"
+		" -c, --content                         Hash only the file content (default).\n"
+		" -h, --header <dos|coff|optional>      Hash only the header with the specified name.\n"
+		" -s, --section <section_name>          Hash only the section with the specified name.\n"
+		" --section-index <section_index>       Hash only the section at the specified index (1..n).\n"
+		" -V, --version                         Show version.\n"
+		" --help                                Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 

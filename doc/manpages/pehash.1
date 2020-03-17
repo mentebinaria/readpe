@@ -15,35 +15,35 @@ pehash uses libssl, libfuzzy and other black magic to calculate PE file hashes. 
 .SH OPTIONS
 .TP
 .BR \-a ", " \-\-all
-hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash
+Hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash.
 
 .TP
 .BR \-c ", " \-\-content
-hash only the file content (default)
+Hash only the file content (default).
 
 .TP
 .BR \-f ", " \-\-format\ <text|csv|xml|html>
-change output format (default is text).
+Change output format (default is text).
 
 .TP
 .BR \-h ", " \-\-header\ <dos|coff|optional>
-hash only the header with the specified name.
+Hash only the header with the specified name.
 
 .TP
 .BR \-s ", " \-\-section\ <section_name>
-hash only the section with the specified name.
+Hash only the section with the specified name.
 
 .TP
 .BR \-\-section-\index\ <section_index>
-hash only the section at the specified index (1..n).
+Hash only the section at the specified index (1..n).
 
 .TP
 .BR \-V ", " \-\-version
-show program version and exit.
+Show version.
 
 .TP
 .BR \-\-help
-show help.
+Show this help.
 
 .SH EXAMPLES
 Check all supported checksums of \fBputty.exe\fP file:
@@ -57,5 +57,5 @@ Please, check the latest development code and report at https://github.com/merce
 \fBofs2rva\fP(1), \fBpedis\fP(1), \fBpepack\fP(1), \fBperes\fP(1), \fBpescan\fP(1), \fBpesec\fP(1), \fBpestr\fP(1), \fBreadpe\fP(1), \fBrva2ofs\fP(1)
 
 .SH COPYRIGHT
-Copyright © 2017 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright (C) 2012 - 2020 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

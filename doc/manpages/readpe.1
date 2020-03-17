@@ -15,43 +15,43 @@ readpe can read and display all PE file headers, fields and values. It's part of
 .SH OPTIONS
 .TP
 .BR \-A ", " \-\-all
-full output (default).
+Full output (default).
 
 .TP
 .BR \-H ", " \-\-all-headers
-display all PE headers.
+Show all PE headers.
 
 .TP
 .BR \-S ", " \-\-all-sections
-display all PE sections headers.
+Show PE section headers.
 
 .TP
 .BR \-f ", " \-\-format\ <text|csv|xml|html>
-change output format (default is text).
+Change output format (default: text).
 
 .TP
 .BR \-d ", " \-\-dirs
-display data directories.
+Show data directories.
 
 .TP
 .BR \-h ", " \-\-header\ <dos|coff|optional>
-display specific header.
+Show specific header. It can be used multiple times.
 
 .TP
 .BR \-i ", " \-\-imports
-display imported functions names.
+Show imported functions.
 
 .TP
 .BR \-e ", " \-\-exports
-display exported functions names.
+Show exported functions.
 
 .TP
 .BR \-V ", " \-\-version
-show program version and exit.
+Show version.
 
 .TP
 .BR \-\-help
-show help.
+Show this help.
 
 .SH EXAMPLES
 Display the Optional file header of \fBputty.exe\fP:
@@ -75,5 +75,5 @@ Please, check the latest development code and report at https://github.com/merce
 \fBofs2rva\fP(1), \fBpedis\fP(1), \fBpehash\fP(1), \fBpepack\fP(1), \fBperes\fP(1), \fBpescan\fP(1), \fBpesec\fP(1), \fBpestr\fP(1), \fBrva2ofs\fP(1)
 
 .SH COPYRIGHT
-Copyright © 2017 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright (C) 2013 - 2020 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

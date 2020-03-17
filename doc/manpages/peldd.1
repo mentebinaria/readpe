@@ -1,6 +1,6 @@
-.TH PESCAN 1
+.TH PELDD 1
 .SH NAME
-pescan - identify suspicious characteristics in PE files
+pescan - shows library dependencies for a given PE file
 
 .SH SYNOPSIS
 .B pescan
@@ -8,8 +8,7 @@ pescan - identify suspicious characteristics in PE files
 .IR pefile
 
 .SH DESCRIPTION
-pescan analyze a PE file statically to determine if it contains suspicious characteristics.
-It's part of pev, the PE file analysis toolkit.
+pescan shows library dependencies for a given PE file. It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
@@ -42,5 +41,5 @@ Please, check the latest development code and report at https://github.com/merce
 \fBofs2rva\fP(1), \fBpedis\fP(1), \fBpehash\fP(1), \fBpepack\fP(1), \fBperes\fP(1), \fBpesec\fP(1), \fBpestr\fP(1), \fBreadpe\fP(1), \fBrva2ofs\fP(1)
 
 .SH COPYRIGHT
-Copyright (C) 2013 - 2020 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
+Copyright (C) 2018 - 2020 pev authors. License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.
 This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.

@@ -449,7 +449,8 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
 
-		for (unsigned i=0; i < strlen(dll_name); i++)
+		const size_t dll_name_len = strlen(dll_name);
+		for (unsigned i=0; i < dll_name_len; i++)
 			dll_name[i] = tolower(dll_name[i]);
 
 		char *aux = NULL;
@@ -483,7 +484,8 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		if (aux)
 			*aux = '\0';
 
-		for (size_t i=0; i < strlen(fname); i++)
+		const size_t fname_len = strlen(fname);
+		for (size_t i=0; i < fname_len; i++)
 			fname[i] = tolower(fname[i]);
 
 		element_t *el = malloc(sizeof(element_t));
@@ -530,7 +532,8 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			}
 		}
 
-		for (size_t i=0; i < strlen(el->function_name); i++)
+		const size_t function_name_len = strlen(el->function_name);
+		for (size_t i=0; i < function_name_len; i++)
 			el->function_name[i] = tolower(el->function_name[i]);
 
 		LL_APPEND(*head, el);

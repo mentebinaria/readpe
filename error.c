@@ -45,15 +45,11 @@ const char *pe_error_msg(pe_err_e error) {
 		"too many sections", // LIBPE_E_TOO_MANY_SECTIONS,
 		"type punning failed", // LIBPE_E_TYPE_PUNNING_FAILED
 		// Exports errors
-		"failed reading directory", // LIBPE_E_EXPORTS_DIR
-		"failed reading virtual address", // LIBPE_E_EXPORTS_VA
-		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA	
-		"number of function not equal to no of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA
+		"cannot read exports directory", // LIBPE_E_EXPORTS_CANT_READ_DIR
+		"number of functions not equal to number of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
 		// Hashes Errors
-		"error getting md5 hash", // LIBPE_E_HASHES_MD5
-		"error getting sha1 hash", // LIBPE_E_HASHES_SHA1
-		"error getting sha256 hash", // LIBPE_E_HASHES_SHA256
-		"error getting ssdeep hash", // LIBPE_E_HASHES_SSDEEP
+		"error calculating hash", // LIBPE_E_HASHING_FAILED
 		// Misc
 		"no callbacks found", //LIBPE_E_NO_CALLBACKS_FOUND
 		"no functions found", //LIBPE_E_NO_FUNCIONS_FOUND

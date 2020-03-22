@@ -608,7 +608,8 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 	LL_COUNT(head, elt, count);
 
-	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME) + 1;
+	// Allocate enough memory to store N times "dll_name.func_name,", plus 1 byte for the NUL terminator.
+	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME + 2) + 1;
 	char *imphash_string = malloc(imphash_string_size);
 	if (imphash_string == NULL) {
 		// TODO: Handle allocation failure.
@@ -624,10 +625,15 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	freeNodes(head);
 
 	size_t imphash_string_len = strlen(imphash_string);
-	if (imphash_string_len)
-		imphash_string[imphash_string_len-- - 1] = '\0'; // remove the last comma sign and upate its lenght
-	else
-		return false;
+	if (imphash_string_len == 0) {
+		free(imphash_string);
+		//ret = LIBPE_E_ALLOCATION_FAILURE;
+		return NULL;
+	}
+
+	// Remove the last comma sign and decrement the string length by 1.
+	imphash_string[imphash_string_len-1] = '\0';
+	imphash_string_len--;
 
 	const unsigned char *data = (const unsigned char *)imphash_string;
 	const size_t data_size = imphash_string_len;
@@ -635,6 +641,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	const size_t hash_maxsize = pe_hash_recommended_size();
 	char *hash_value = malloc(hash_maxsize);
 	if (hash_value == NULL) {
+		free(imphash_string);
 		//ret = LIBPE_E_ALLOCATION_FAILURE;
 		return NULL;
 	}
@@ -642,8 +649,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 	const bool hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
 
-	if (imphash_string)
-		free(imphash_string);
+	free(imphash_string);
 
 	//printf("### DEBUG imphash_string [%zu] = %s\n", imphash_string_len, imphash_string);
 	return hash_ok ? hash_value : NULL;

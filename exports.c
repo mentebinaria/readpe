@@ -171,6 +171,12 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 		exports->functions[i].ordinal = ordinal_base + i;
 		exports->functions[i].address = entry_va;
 
+		exports->functions[i].name = strdup(fname);
+		if (exports->functions[i].name == NULL) {
+			exports->err = LIBPE_E_ALLOCATION_FAILURE;
+			return exports;
+		}
+
 		// Check whether the exported function is forwarded.
 		// It's forwarded if its RVA is inside the exports section.
 		if (entry_va >= va && entry_va <= va + dir->Size) {
@@ -185,20 +191,8 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 				break;
 			}
 
-			exports->functions[i].name = strdup(fname);
-			if (exports->functions[i].name == NULL) {
-				exports->err = LIBPE_E_ALLOCATION_FAILURE;
-				return exports;
-			}
-
 			exports->functions[i].fwd_name = strdup(fw_entry_name);
 			if (exports->functions[i].fwd_name == NULL) {
-				exports->err = LIBPE_E_ALLOCATION_FAILURE;
-				return exports;
-			}
-		} else {
-			exports->functions[i].name = strdup(fname);
-			if (exports->functions[i].name == NULL) {
 				exports->err = LIBPE_E_ALLOCATION_FAILURE;
 				return exports;
 			}

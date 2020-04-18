@@ -31,94 +31,31 @@ extern "C" {
 #endif
 
 typedef enum {
-	RDT_LEVEL1 = 1,
-	RDT_LEVEL2 = 2,
-	RDT_LEVEL3 = 3
-} NODE_LEVEL_PERES;
+	LIBPE_RDT_LEVEL1 = 1,
+	LIBPE_RDT_LEVEL2 = 2,
+	LIBPE_RDT_LEVEL3 = 3
+} LIBPE_RESOURCE_LEVEL;
 
 typedef enum {
-	RDT_RESOURCE_DIRECTORY = 1,
-	RDT_DIRECTORY_ENTRY = 2,
-	RDT_DATA_STRING = 3,
-	RDT_DATA_ENTRY = 4
-} NODE_TYPE_PERES;
+	LIBPE_RDT_RESOURCE_DIRECTORY = 1,
+	LIBPE_RDT_DIRECTORY_ENTRY = 2,
+	LIBPE_RDT_DATA_STRING = 3,
+	LIBPE_RDT_DATA_ENTRY = 4
+} LIBPE_RESOURCE_NODE_TYPE;
 
-typedef struct _NODE_PERES {
-	NODE_TYPE_PERES nodeType;
-	NODE_LEVEL_PERES nodeLevel;
+typedef struct libpe_resource_node {
+	LIBPE_RESOURCE_NODE_TYPE nodeType;
+	LIBPE_RESOURCE_LEVEL nodeLevel;
 	union {
 		IMAGE_RESOURCE_DIRECTORY *resourceDirectory; // nodeType == 1
 		IMAGE_RESOURCE_DIRECTORY_ENTRY *directoryEntry; // nodeType == 2
 		IMAGE_RESOURCE_DATA_STRING *dataString; // nodeType == 3
 		IMAGE_RESOURCE_DATA_ENTRY *dataEntry; // nodeType == 4
 	} resource;
-	struct _NODE_PERES *nextNode;
-	struct _NODE_PERES *lastNode;
-	struct _NODE_PERES *rootNode;
-} NODE_PERES;
-
-typedef struct {
-	int NodeType;
-	int Characteristics;
-	int TimeDateStamp;
-	int MajorVersion;
-	int MinorVersion;
-	int NumberOfNamedEntries;
-	int NumberOfIdEntries;
-} type_RDT_RESOURCE_DIRECTORY;
-
-typedef struct {
-	int NodeType;
-	int NameOffset;
-	int NameIsString;
-	int OffsetIsDirectory;
-	int DataIsDirectory;
-} type_RDT_DIRECTORY_ENTRY;
-
-typedef struct {
-	int NodeType;
-	int Strlen;
-	int String;
-} type_RDT_DATA_STRING;
-
-typedef struct {
-	int NodeType;
-	int OffsetToData;
-	int Size;
-	int CodePage;
-	int Reserved;
-} type_RDT_DATA_ENTRY;
-
-typedef struct {
-	NODE_TYPE_PERES kind;
-	union {
-		type_RDT_RESOURCE_DIRECTORY resourcesDirectory;
-		type_RDT_DIRECTORY_ENTRY directoryEntry;
-		type_RDT_DATA_STRING dataString;
-		type_RDT_DATA_ENTRY dataEntry;
-	}node_type;
-
-} output_node_t;
-
-// counting
-typedef struct {
-	int resourcesDirectory;
-	int directoryEntry;
-	int dataString;
-	int dataEntry;
-} pe_resources_count_t;
-
-typedef struct {
-	NODE_TYPE_PERES kind;
-} count_output_node_t;
-
-typedef struct {
-	pe_err_e err;
-	type_RDT_RESOURCE_DIRECTORY *resourcesDirectory;
-	type_RDT_DIRECTORY_ENTRY *directoryEntry;
-	type_RDT_DATA_STRING *dataString;
-	type_RDT_DATA_ENTRY *dataEntry;
-} pe_final_output_t;
+	struct libpe_resource_node *nextNode;
+	struct libpe_resource_node *lastNode;
+	struct libpe_resource_node *rootNode;
+} libpe_resource_node_t;
 
 #ifdef __cplusplus
 } // extern "C"

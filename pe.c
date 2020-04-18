@@ -317,9 +317,9 @@ IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva) {
 		return NULL;
 
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {
-		if (rva >= ctx->pe.sections[i]->VirtualAddress &&
-			rva <= ctx->pe.sections[i]->VirtualAddress
-				+ ctx->pe.sections[i]->Misc.VirtualSize)
+		const uint64_t start = ctx->pe.sections[i]->VirtualAddress;
+		const uint64_t end = ctx->pe.sections[i]->VirtualAddress + ctx->pe.sections[i]->Misc.VirtualSize;
+		if (rva >= start && rva <= end)
 			return ctx->pe.sections[i];
 	}
 	return NULL;
@@ -369,7 +369,7 @@ uint64_t pe_ofs2rva(const pe_ctx_t *ctx, uint64_t ofs) {
 			return 0;
 
 		if (ctx->pe.sections[i]->PointerToRawData <= ofs) {
-			if ((ctx->pe.sections[i]->PointerToRawData + 
+			if ((ctx->pe.sections[i]->PointerToRawData +
 			 ctx->pe.sections[i]->SizeOfRawData) > ofs) {
 			 	ofs -= ctx->pe.sections[i]->PointerToRawData;
 				ofs += ctx->pe.sections[i]->VirtualAddress;

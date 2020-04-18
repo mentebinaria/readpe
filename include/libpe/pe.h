@@ -155,11 +155,6 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx);
 // Exports functions
 pe_exports_t *pe_exports(pe_ctx_t *ctx);
 
-// Resources functions
-pe_final_output_t pe_get_resources(pe_ctx_t *ctx);
-pe_resources_count_t pe_get_resources_count(pe_ctx_t *ctx);
-void pe_dealloc_resources(pe_final_output_t obj);
-
 // Misc functions
 double pe_calculate_entropy_file(pe_ctx_t *ctx);
 bool pe_fpu_trick(pe_ctx_t *ctx);

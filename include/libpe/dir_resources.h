@@ -23,6 +23,7 @@
 #define LIBPE_DIR_RESOURCES_H
 
 #include <stdint.h>
+#include <wchar.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,38 +72,37 @@ typedef struct {
 		struct {
 			uint32_t NameOffset:31;
 			uint32_t NameIsString:1;
-		} name;
+		} data;
 		uint32_t Name;
-	} DirectoryName;
+        uint16_t Id;
+	} u0;
 	union {
 		uint32_t OffsetToData;
 		struct {
 			uint32_t OffsetToDirectory:31;
 			uint32_t DataIsDirectory:1;
 		} data;
-	} DirectoryData;
+	} u1;
 } IMAGE_RESOURCE_DIRECTORY_ENTRY;
 
 typedef struct {
-	uint16_t length;
-	uint16_t string[1];
+	uint16_t Length;
+	char String[1];
 } IMAGE_RESOURCE_DATA_STRING;
 
 typedef struct {
-	uint32_t offsetToData;
-	uint32_t size;
-	uint32_t codePage;
-	uint32_t reserved;
+	uint16_t Length;
+	wchar_t String[1];
+} IMAGE_RESOURCE_DATA_STRING_U;
+
+typedef struct {
+	uint32_t OffsetToData;
+	uint32_t Size;
+	uint32_t CodePage;
+	uint32_t Reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
 
 typedef struct {
-	char name[20];
-	uint32_t nameOffset;
-	char extension[20];
-	char dirName[20];
-} RESOURCE_ENTRY;
-
-typedef struct tagVS_FIXEDFILEINFO {
    uint32_t dwSignature;
    uint32_t dwStrucVersion;
    uint32_t dwFileVersionMS;

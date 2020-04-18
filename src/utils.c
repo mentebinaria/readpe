@@ -42,6 +42,7 @@
 #include <sys/stat.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 bool utils_str_ends_with(const char *str, const char *suffix) {
 	if (str == NULL || suffix == NULL)
@@ -141,6 +142,12 @@ char *utils_str_array_join(char *strings[], size_t count, char delimiter) {
 	return result;
 }
 
+void utils_str_widechar2ascii(char *output, const char *widechar, size_t length) {
+	// quick & dirty UFT16 to ASCII conversion
+	for (size_t p = 0; p <= length; p++) {
+		memcpy(output + p, (uint16_t *)(widechar) + p, 1);
+	}
+}
 
 int utils_round_up(int num_to_round, int multiple) {
 	if (multiple == 0)

@@ -43,6 +43,7 @@ char *utils_str_inplace_ltrim(char *str);
 char *utils_str_inplace_rtrim(char *str);
 char *utils_str_inplace_trim(char *str);
 char *utils_str_array_join(char *strings[], size_t count, char delimiter);
+void utils_str_widechar2ascii(char *output, const char *widechar, size_t size);
 
 int utils_round_up(int num_to_round, int multiple);
 int utils_is_file_readable(const char *path);

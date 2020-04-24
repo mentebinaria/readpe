@@ -46,6 +46,7 @@ typedef struct {
 	char dir_name[20];
 } PERES_RESOURCE_ENTRY_LOOKUP;
 
+// REFERENCE: https://msdn.microsoft.com/en-us/library/ms648009(v=vs.85).aspx
 static const PERES_RESOURCE_ENTRY_LOOKUP g_resource_entry_lookup_table[] = {
 	{ "RT_CURSOR",			1, ".cur",		"cursors"		},
 	{ "RT_BITMAP",			2, ".bmp",		"bitmaps"		},
@@ -272,12 +273,9 @@ static void peres_show_node(const libpe_resource_node_t *node)
 			snprintf(value, MAX_MSG, "%d", dataString->Length);
 			output("String len", value);
 
-			uint16_t stringSize = dataString->Length;
-			if (stringSize + 1 > MAX_PATH){
-				stringSize = MAX_PATH - 1;
-			}
+			uint16_t stringSize = (size_t)dataString->Length + 1 > sizeof(name) ? sizeof(name) - 1 : dataString->Length; // min(sizeof(name) - 1, dataString->length)
 			utils_str_widechar2ascii(name, dataString->String, stringSize);
-			strncpy(name + stringSize, "\0", 2);
+			name[stringSize] = '\0';
 			snprintf(value, MAX_MSG, "%s", name);
 			output("String", value);
 			break;
@@ -375,7 +373,6 @@ static void peres_build_node_relative_path(pe_ctx_t *ctx, const libpe_resource_n
 
 		const libpe_resource_node_t *parent = peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, level);
 		if (parent->resource.directoryEntry->u0.data.NameIsString) {
-
 			const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
 			if (resourceDirectory == NULL || resourceDirectory->Size == 0)
 				return;
@@ -387,15 +384,16 @@ static void peres_build_node_relative_path(pe_ctx_t *ctx, const libpe_resource_n
 				// TODO: Should we report something?
 				return;
 			}
-			const uint16_t stringSize = ptr->Length + 2 > MAX_PATH ? MAX_PATH - 2 : ptr->Length; // Using min() would be cleaner.
+			const uint16_t stringSize = (size_t)ptr->Length + 2 > sizeof(partial_path) ? sizeof(partial_path) - 2 : ptr->Length; // min(sizeof(partial_path) - 2, ptr->Length)
 			utils_str_widechar2ascii(partial_path, ptr->String, stringSize);
-			strncpy(partial_path + stringSize, " \0", 2);
+			partial_path[stringSize] = ' ';
+			partial_path[stringSize + 1] = '\0';
 		} else {
 			const PERES_RESOURCE_ENTRY_LOOKUP *resourceEntry = pe_resource_entry_lookup(parent->resource.directoryEntry->u0.data.NameOffset);
 			if (level == LIBPE_RDT_LEVEL1 && resourceEntry != NULL) {
-				snprintf(partial_path, MAX_PATH, "%s ", resourceEntry->name);
+				snprintf(partial_path, sizeof(partial_path), "%s ", resourceEntry->name);
 			} else {
-				snprintf(partial_path, MAX_PATH, "%04x ", parent->resource.directoryEntry->u0.data.NameOffset);
+				snprintf(partial_path, sizeof(partial_path), "%04x ", parent->resource.directoryEntry->u0.data.NameOffset);
 			}
 		}
 
@@ -417,6 +415,7 @@ static void peres_show_list(pe_ctx_t *ctx, const libpe_resource_node_t *node)
 	while (node != NULL) {
 		if (node->nodeType == LIBPE_RDT_DATA_ENTRY) {
 			char path[MAX_PATH];
+			memset(path, 0, sizeof(path));
 			peres_build_node_relative_path(ctx, node, path, sizeof(path));
 			printf("%s (%d bytes)\n", path, node->resource.dataEntry->Size);
 		}
@@ -468,7 +467,7 @@ static void peres_save_resource(pe_ctx_t *ctx, const libpe_resource_node_t *node
 	char relativeFileName[MAX_PATH + 105];
 	memset(relativeFileName, 0, sizeof(relativeFileName));
 
-	if(namedExtract){
+	if(namedExtract) {
 		char fileName[MAX_PATH];
 		memset(fileName, 0, sizeof(fileName));
 

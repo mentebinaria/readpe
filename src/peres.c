@@ -366,7 +366,7 @@ static const libpe_resource_node_t * peres_last_node_by_type_and_level(const lib
 	return NULL;
 }
 
-static void peres_build_node_relative_path(pe_ctx_t *ctx, const libpe_resource_node_t *node, char *output, size_t output_size)
+static void peres_build_node_filename(pe_ctx_t *ctx, const libpe_resource_node_t *node, char *output, size_t output_size)
 {
 	for (uint32_t level = LIBPE_RDT_LEVEL1; level <= node->nodeLevel; level++) {
 		char partial_path[MAX_PATH];
@@ -401,7 +401,7 @@ static void peres_build_node_relative_path(pe_ctx_t *ctx, const libpe_resource_n
 	}
 
 	size_t length = strlen(output);
-	output[length-1] = 0;
+	output[length-1] = '\0';
 }
 
 static void peres_show_list(pe_ctx_t *ctx, const libpe_resource_node_t *node)
@@ -414,10 +414,10 @@ static void peres_show_list(pe_ctx_t *ctx, const libpe_resource_node_t *node)
 
 	while (node != NULL) {
 		if (node->nodeType == LIBPE_RDT_DATA_ENTRY) {
-			char path[MAX_PATH];
-			memset(path, 0, sizeof(path));
-			peres_build_node_relative_path(ctx, node, path, sizeof(path));
-			printf("%s (%d bytes)\n", path, node->resource.dataEntry->Size);
+			char fileName[MAX_PATH];
+			memset(fileName, 0, sizeof(fileName));
+			peres_build_node_filename(ctx, node, fileName, sizeof(fileName));
+			printf("%s (%d bytes)\n", fileName, node->resource.dataEntry->Size);
 		}
 		node = node->nextNode;
 	}
@@ -467,11 +467,11 @@ static void peres_save_resource(pe_ctx_t *ctx, const libpe_resource_node_t *node
 	char relativeFileName[MAX_PATH + 105];
 	memset(relativeFileName, 0, sizeof(relativeFileName));
 
-	if(namedExtract) {
+	if (namedExtract) {
 		char fileName[MAX_PATH];
 		memset(fileName, 0, sizeof(fileName));
 
-		peres_build_node_relative_path(ctx, node, fileName, sizeof(fileName)),
+		peres_build_node_filename(ctx, node, fileName, sizeof(fileName)),
 		snprintf(relativeFileName, sizeof(relativeFileName), "%s/%s%s",
 			dirName,
 			fileName,

@@ -53,12 +53,12 @@ endif
 ####### Compiler options
 
 override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm
-override CFLAGS += -I$(LIBPE)/include -I"../include" \
-	-W -Wall -Wextra -std=c99 -pedantic -O0 -g3
+override CFLAGS += -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
 # Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
 # undefine it first to avoid redefinition warnings.
 override CPPFLAGS += \
 	-D_GNU_SOURCE \
+	-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 \
 	-DSHAREDIR="\"$(SHAREDIR)"\" \
 	-DPLUGINSDIR="\"$(pluginsdir)"\"
 
@@ -74,7 +74,7 @@ endif
 
 SRC_DIRS = $(srcdir) $(srcdir)/compat
 
-PROGS = poc readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd
+PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
 export LIBPE = $(realpath $(srcdir)/../lib/libpe)
@@ -133,15 +133,12 @@ pesec: $(pev_BUILDDIR)/pesec.o $(pev_OBJS)
 pestr: $(pev_BUILDDIR)/pestr.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
-poc: $(pev_BUILDDIR)/poc.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
-
 readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
-
+	
 peldd: $(pev_BUILDDIR)/peldd.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 

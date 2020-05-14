@@ -316,7 +316,7 @@ void output_close_scope(void) {
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
 
-	//fprintf(stderr, "DEBUG: output_close_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
+	//fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 

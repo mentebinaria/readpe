@@ -19,8 +19,8 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LIBPE_HASHES
-#define LIBPE_HASHES
+#ifndef LIBPE_HASHES_H
+#define LIBPE_HASHES_H
 
 #include <stdint.h>
 #include "error.h"

@@ -19,8 +19,8 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LIBPE_IMPORTS
-#define LIBPE_IMPORTS
+#ifndef LIBPE_IMPORTS_H
+#define LIBPE_IMPORTS_H
 
 #include <stdint.h>
 #include "error.h"

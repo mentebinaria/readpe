@@ -19,8 +19,8 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LIBPE_PERES
-#define LIBPE_PERES
+#ifndef LIBPE_RESOURCES_H
+#define LIBPE_RESOURCES_H
 
 #include <stdint.h>
 #include "error.h"

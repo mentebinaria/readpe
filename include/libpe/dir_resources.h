@@ -29,6 +29,9 @@
 extern "C" {
 #endif
 
+#define IMAGE_RESOURCE_NAME_IS_STRING		0x80000000
+#define IMAGE_RESOURCE_DATA_IS_DIRECTORY	0x80000000
+
 // resources types
 typedef enum {
 	RT_CURSOR			= 1, // cursor image
@@ -91,7 +94,7 @@ typedef struct {
 } IMAGE_RESOURCE_DATA_STRING;
 
 typedef struct {
-	uint16_t Length;
+	uint16_t Length; // Number of Unicode characters
 	wchar_t String[1];
 } IMAGE_RESOURCE_DATA_STRING_U;
 

@@ -128,12 +128,14 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 }
 
 static void cleanup_cached_data(pe_ctx_t *ctx) {
-	// NOTICE: The referenced pointers are not reset here.
 	pe_imports_dealloc(ctx->cached_data.imports);
 	pe_exports_dealloc(ctx->cached_data.exports);
 	pe_hash_headers_dealloc(ctx->cached_data.hash_headers);
 	pe_hash_sections_dealloc(ctx->cached_data.hash_sections);
 	pe_hash_dealloc(ctx->cached_data.hash_file);
+	pe_resources_dealloc(ctx->cached_data.resources);
+
+	memset(&ctx->cached_data, 0, sizeof(pe_cached_data_t));
 }
 
 pe_err_e pe_unload(pe_ctx_t *ctx) {

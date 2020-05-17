@@ -30,6 +30,11 @@ extern "C" {
 #define LIBPE_SIZEOF_ARRAY(array)				(sizeof(array) / sizeof(array[0]))
 #define LIBPE_SIZEOF_MEMBER(type, member)		sizeof(((type *)0)->member)
 
+#define LIBPE_WARNING(msg) \
+{ \
+	fprintf(stderr, "WARNING: %s [at %s:%d]\n", msg, __FILE__, __LINE__); \
+}
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -43,6 +43,7 @@ extern "C" {
 #include "imports.h"
 #include "exports.h"
 #include "resources.h"
+#include "utils.h"
 
 #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
@@ -96,6 +97,8 @@ typedef struct {
 	pe_hash_headers_t *hash_headers;
 	pe_hash_sections_t *hash_sections;
 	pe_hash_t *hash_file;
+	// Resources
+	pe_resources_t *resources;
 } pe_cached_data_t;
 
 typedef struct {
@@ -154,6 +157,9 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx);
 
 // Exports functions
 pe_exports_t *pe_exports(pe_ctx_t *ctx);
+
+// Resources functions
+pe_resources_t *pe_resources(pe_ctx_t *ctx);
 
 // Misc functions
 double pe_calculate_entropy_file(pe_ctx_t *ctx);

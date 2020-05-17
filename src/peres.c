@@ -417,26 +417,19 @@ bool peres_contains_version_node(const pe_resource_node_t *node) {
 	return true;
 }
 
-bool peres_is_version_node(const pe_resource_node_t *node) {
-	return node->type == LIBPE_RDT_DATA_ENTRY;
-}
-
 static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
 	assert(node != NULL);
 
-	pe_resource_node_search_result_t result_contains_version_node = {0};
-	pe_resource_search_nodes(&result_contains_version_node, node, peres_contains_version_node);
+	pe_resource_node_search_result_t search_result = {0};
+	pe_resource_search_nodes(&search_result, node, peres_contains_version_node);
 
-	pe_resource_node_search_result_item_t *item_parent = {0};
-	LL_FOREACH(result_contains_version_node.items, item_parent) {
-		pe_resource_node_search_result_t result_is_version_node = {0};
-		pe_resource_search_nodes(&result_is_version_node, item_parent->node, peres_is_version_node);
-
-		pe_resource_node_search_result_item_t *item_child = {0};
-		LL_FOREACH(result_is_version_node.items, item_child) {
-			const uint64_t data_offset = pe_rva2ofs(ctx, item_child->node->raw.dataEntry->OffsetToData);
-			const size_t data_size = item_child->node->raw.dataEntry->Size;
+	pe_resource_node_search_result_item_t *result_item = {0};
+	LL_FOREACH(search_result.items, result_item) {
+		const pe_resource_node_t *version_node = pe_resource_find_node_by_type_and_level(result_item->node, LIBPE_RDT_DATA_ENTRY, LIBPE_RDT_LEVEL3);
+		if (version_node != NULL) {
+			const uint64_t data_offset = pe_rva2ofs(ctx, version_node->raw.dataEntry->OffsetToData);
+			const size_t data_size = version_node->raw.dataEntry->Size;
 			const void *data_ptr = LIBPE_PTR_ADD(ctx->map_addr, 32 + data_offset); // TODO(jweyrich): The literal 32 refers to the size of the 
 			if (!pe_can_read(ctx, data_ptr, data_size)) {
 				LIBPE_WARNING("Cannot read VS_FIXEDFILEINFO");
@@ -460,9 +453,8 @@ static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 				(uint32_t)info_ptr->dwProductVersionLS & 0x0000ffff);
 			output("Product Version", value);
 		}
-		pe_resources_dealloc_node_search_result(&result_is_version_node);
 	}
-	pe_resources_dealloc_node_search_result(&result_contains_version_node);
+	pe_resources_dealloc_node_search_result(&search_result);
 }
 
 typedef struct {

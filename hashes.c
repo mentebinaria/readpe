@@ -512,7 +512,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					for (size_t i=0; i < sizeof(oleaut32_arr) / sizeof(ord_t); i++)
 						if (hint == oleaut32_arr[i].number)
 							el->function_name = strdup(oleaut32_arr[i].fname);
-				} else if ( strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
+				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
 					for (size_t i=0; i < sizeof(ws2_32_arr) / sizeof(ord_t); i++)
 						if (hint == ws2_32_arr[i].number)
 							el->function_name = strdup(ws2_32_arr[i].fname);
@@ -620,9 +620,10 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	}
 	memset(imphash_string, 0, imphash_string_size);
 
-	LL_FOREACH_SAFE(head, elt, tmp) \
-		sprintf(imphash_string + strlen(imphash_string), "%s.%s,", elt->dll_name, elt->function_name); \
+	LL_FOREACH_SAFE(head, elt, tmp) {
+		sprintf(imphash_string + strlen(imphash_string), "%s.%s,", elt->dll_name, elt->function_name);
 		LL_DELETE(head, elt);
+	}
 
 	free(elt);
 	freeNodes(head);

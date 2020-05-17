@@ -34,7 +34,7 @@
 */
 
 #include "config.h"
-#include "utils.h"
+#include <libpe/utils.h>
 #include <libpe/error.h>
 #include <stdlib.h>
 #include <string.h>
@@ -87,8 +87,8 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 
 		char *param = strtok(line, "=");
 		char *value = strtok(NULL, "=");
-		const char *trimmed_param = utils_str_inplace_trim(param);
-		const char *trimmed_value = utils_str_inplace_trim(value);
+		const char *trimmed_param = pe_utils_str_inplace_trim(param);
+		const char *trimmed_value = pe_utils_str_inplace_trim(value);
 
 		//fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
 		const bool processed = pev_cb(config, trimmed_param, trimmed_value);
@@ -105,15 +105,15 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 int pev_load_config(pev_config_t * const config) {
 	char buff[PATH_MAX];
 
-	int ret = utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
+	int ret = pe_utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
 	if (ret == LIBPE_E_OK) {
 		ret = _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME, _load_config_cb);
 		if (ret < 0)
 			return ret;
 	}
 
-	snprintf(buff, sizeof(buff), "%s/%s", utils_get_homedir(), DEFAULT_CONFIG_PATH);
-	ret = utils_is_file_readable(buff);
+	snprintf(buff, sizeof(buff), "%s/%s", pe_utils_get_homedir(), DEFAULT_CONFIG_PATH);
+	ret = pe_utils_is_file_readable(buff);
 
 	if (ret == LIBPE_E_OK) {
 		ret = _load_config_and_parse(config, buff, _load_config_cb);

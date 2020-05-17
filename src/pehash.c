@@ -35,7 +35,6 @@
 
 #include "common.h"
 #include "plugins.h"
-#include "utils.h"
 
 #define PROGRAM "pehash"
 
@@ -306,7 +305,7 @@ int main(int argc, char *argv[])
       switch (opt_hdr->type) {
          case MAGIC_ROM:
             // Oh boy! We do not support ROM. Abort!
-            WARNING("ROM image is not supported");
+            LIBPE_WARNING("ROM image is not supported");
             break;
          case MAGIC_PE32:
             if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
@@ -344,7 +343,7 @@ int main(int argc, char *argv[])
 			data = LIBPE_PTR_ADD(ctx.map_addr, sections[i]->PointerToRawData);
 
 			if (!pe_can_read(&ctx, data, data_size)) {
-				WARNING("Unable to read section data");
+				LIBPE_WARNING("Unable to read section data");
 			} else {
 				output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
 				output("section_name", (char *)sections[i]->Name);

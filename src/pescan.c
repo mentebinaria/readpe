@@ -132,7 +132,7 @@ static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 
 	const IMAGE_DOS_HEADER *dos = pe_dos(ctx);
 	if (dos == NULL) {
-		WARNING("unable to retrieve PE DOS header");
+		LIBPE_WARNING("unable to retrieve PE DOS header");
 		return false;
 	}
 
@@ -141,7 +141,7 @@ static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 	// dos stub starts at e_cparhdr shifted by 4
 	const char *dos_stub_ptr = LIBPE_PTR_ADD(ctx->map_addr, *stub_offset);
 	if (!pe_can_read(ctx, dos_stub_ptr, dos_stub_size)) {
-		WARNING("unable to seek in file");
+		LIBPE_WARNING("unable to seek in file");
 		return false;
 	}
 
@@ -525,7 +525,7 @@ int main(int argc, char *argv[])
 
 	const IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
 	if (optional == NULL) {
-		WARNING("unable to read optional header");
+		LIBPE_WARNING("unable to read optional header");
 	} else {
 		uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
 			(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
@@ -575,7 +575,7 @@ int main(int argc, char *argv[])
 	// invalid timestamp
 	IMAGE_COFF_HEADER *coff = pe_coff(&ctx);
 	if (coff == NULL) {
-		WARNING("unable to read coff header");
+		LIBPE_WARNING("unable to read coff header");
 	} else {
 		print_timestamp(options, coff);
 	}

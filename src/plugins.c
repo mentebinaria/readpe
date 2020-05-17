@@ -38,7 +38,7 @@
 #include "dylib.h"
 #include "common.h"
 #include "compat/sys/queue.h"
-#include "utils.h"
+#include <libpe/utils.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
@@ -173,11 +173,11 @@ int plugins_load_all_from_directory(const char *path) {
 
 				// TODO(jweyrich): Use macro conditions for each system: .so, .dylib, .dll
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
-				const bool possible_plugin = utils_str_ends_with(filename, ".so") != 0;
+				const bool possible_plugin = pe_utils_str_ends_with(filename, ".so") != 0;
 #elif defined(__APPLE__)
-				const bool possible_plugin = utils_str_ends_with(filename, ".dylib") != 0;
+				const bool possible_plugin = pe_utils_str_ends_with(filename, ".dylib") != 0;
 #elif defined(__CYGWIN__)
-				const bool possible_plugin = utils_str_ends_with(filename, ".dll") != 0;
+				const bool possible_plugin = pe_utils_str_ends_with(filename, ".dll") != 0;
 #else
 #error Not supported
 #endif

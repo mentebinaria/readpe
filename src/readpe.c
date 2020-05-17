@@ -895,7 +895,7 @@ int main(int argc, char *argv[])
 		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
 		if (header_ptr)
 			print_dos_header(header_ptr);
-		else { WARNING("unable to read DOS header"); }
+		else { LIBPE_WARNING("unable to read DOS header"); }
 	}
 
 	// coff/file header
@@ -903,7 +903,7 @@ int main(int argc, char *argv[])
 		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
 		if (header_ptr)
 			print_coff_header(header_ptr);
-		else { WARNING("unable to read COFF file header"); }
+		else { LIBPE_WARNING("unable to read COFF file header"); }
 	}
 
 	// optional header
@@ -911,7 +911,7 @@ int main(int argc, char *argv[])
 		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
 		if (header_ptr)
 			print_optional_header(header_ptr);
-		else { WARNING("unable to read Optional (Image) file header"); }
+		else { LIBPE_WARNING("unable to read Optional (Image) file header"); }
 	}
 
 	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
@@ -922,7 +922,7 @@ int main(int argc, char *argv[])
 		if (directories != NULL)
 			print_directories(&ctx);
 		else if (!directories_warned) {
-			WARNING("directories not found");
+			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
 	}
@@ -932,7 +932,7 @@ int main(int argc, char *argv[])
 		if (directories != NULL)
 			print_imports(&ctx);
 		else if (!directories_warned) {
-			WARNING("directories not found");
+			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
 	}
@@ -942,7 +942,7 @@ int main(int argc, char *argv[])
 		if (directories != NULL)
 			print_exports(&ctx);
 		else if (!directories_warned) {
-			WARNING("directories not found");
+			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
 	}
@@ -951,7 +951,7 @@ int main(int argc, char *argv[])
 	if (options->all_sections || options->all) {
 		if (pe_sections(&ctx) != NULL)
 			print_sections(&ctx);
-		else { WARNING("unable to read sections"); }
+		else { LIBPE_WARNING("unable to read sections"); }
 	}
 
 	output_close_document();

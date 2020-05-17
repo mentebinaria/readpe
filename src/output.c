@@ -38,7 +38,7 @@
 #include "stack.h"
 #include "compat/strlcat.h"
 #include "compat/sys/queue.h"
-#include "utils.h"
+#include <libpe/utils.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -160,9 +160,9 @@ void output_set_cmdline(int argc, char *argv[]) {
 	if (g_cmdline != NULL)
 		free(g_cmdline);
 
-	g_cmdline = utils_str_array_join(g_argv, g_argc, ' ');
+	g_cmdline = pe_utils_str_array_join(g_argv, g_argc, ' ');
 	if (g_cmdline == NULL) {
-		fprintf(stderr, "output: allocation failed for utils_str_array_join\n");
+		fprintf(stderr, "output: allocation failed for pe_utils_str_array_join\n");
 		abort();
 	}
 	//fprintf(stderr, "DEBUG: cmdline = %s\n", g_cmdline);

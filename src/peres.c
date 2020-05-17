@@ -443,7 +443,7 @@ static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 				return;
 			}
 
-			VS_FIXEDFILEINFO *info_ptr = (VS_FIXEDFILEINFO *)data_ptr;
+			const VS_FIXEDFILEINFO *info_ptr = data_ptr;
 			
 			char value[MAX_MSG];
 			snprintf(value, MAX_MSG, "%u.%u.%u.%u",
@@ -452,6 +452,13 @@ static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 				(uint32_t)(info_ptr->dwFileVersionLS & 0xffff0000) >> 16,
 				(uint32_t)info_ptr->dwFileVersionLS & 0x0000ffff);
 			output("File Version", value);
+
+			snprintf(value, MAX_MSG, "%u.%u.%u.%u",
+				(uint32_t)(info_ptr->dwProductVersionMS & 0xffff0000) >> 16,
+				(uint32_t)info_ptr->dwProductVersionMS & 0x0000ffff,
+				(uint32_t)(info_ptr->dwProductVersionLS & 0xffff0000) >> 16,
+				(uint32_t)info_ptr->dwProductVersionLS & 0x0000ffff);
+			output("Product Version", value);
 		}
 		pe_resources_dealloc_node_search_result(&result_is_version_node);
 	}

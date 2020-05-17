@@ -34,58 +34,16 @@
 */
 
 #include "common.h"
-#include "utils.h"
-#include <string.h>
-
-#define PROGRAM "peres"
-
-typedef struct {
-	char name[20];
-	uint32_t name_offset;
-	char extension[20];
-	char dir_name[20];
-} PERES_RESOURCE_ENTRY_LOOKUP;
-
-// REFERENCE: https://msdn.microsoft.com/en-us/library/ms648009(v=vs.85).aspx
-static const PERES_RESOURCE_ENTRY_LOOKUP g_resource_entry_lookup_table[] = {
-	{ "RT_CURSOR",			1, ".cur",		"cursors"		},
-	{ "RT_BITMAP",			2, ".bmp",		"bitmaps"		},
-	{ "RT_ICON",			3, ".ico",		"icons"			},
-	{ "RT_MENU",			4, ".rc",		"menus"			},
-	{ "RT_DIALOG",			5, ".dlg",		"dialogs"		},
-	{ "RT_STRING",			6, ".rc",		"strings"		},
-	{ "RT_FONTDIR",			7, ".fnt",		"fontdirs"		},
-	{ "RT_FONT",			8, ".fnt",		"fonts"			},
-	{ "RT_ACCELERATOR",		9, ".rc",		"accelerators"	},
-	{ "RT_RCDATA",			10, ".rc",		"rcdatas"		},
-	{ "RT_MESSAGETABLE",	11, ".mc",		"messagetables"	},
-	{ "RT_GROUP_CURSOR",	12, ".cur",		"groupcursors"	},
-	{ "RT_GROUP_ICON",		14, ".ico",		"groupicons"	},
-	{ "RT_VERSION",			16, ".rc",		"versions"		},
-	{ "RT_DLGINCLUDE",		17, ".rc",		"dlgincludes"	},
-	{ "RT_PLUGPLAY",		19, ".rc",		"plugplays"		},
-	{ "RT_VXD",				20, ".rc",		"xvds"			},
-	{ "RT_ANICURSOR",		21, ".rc",		"anicursors"	},
-	{ "RT_ANIICON",			22, ".rc",		"aniicons"		},
-	{ "RT_HTML",			23, ".html",	"htmls"			},
-	{ "RT_MANIFEST",		24, ".xml",		"manifests"		},
-	{ "RT_DLGINIT",			240, ".rc",		"dlginits"		},
-	{ "RT_TOOLBAR",			241, ".rc",		"toolbars"		}
-};
-
-typedef struct {
-	char name[20];
-	uint32_t nameOffset;
-	char extension[20];
-	char dirName[20];
-} PERES_RESOURCE_ENTRY;
-
-const char *g_resourceDir = "resources";
-
+#include <libpe/utlist.h>
 #include <assert.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#define PROGRAM "peres"
+
+const char *g_resourceDir = "resources";
 
 typedef struct {
 	bool all;
@@ -199,28 +157,20 @@ static options_t *parse_options(int argc, char *argv[])
 	return options;
 }
 
-static const PERES_RESOURCE_ENTRY_LOOKUP * pe_resource_entry_lookup(uint32_t name_offset) {
-	for (size_t i = 0; i < LIBPE_SIZEOF_ARRAY(g_resource_entry_lookup_table); i++) {
-		if (g_resource_entry_lookup_table[i].name_offset == name_offset)
-			return &g_resource_entry_lookup_table[i];
-	}
-	return NULL;
-}
-
-static void peres_show_node(const libpe_resource_node_t *node)
+static void peres_show_node(const pe_resource_node_t *node)
 {
 	char value[MAX_MSG];
 
-	switch (node->nodeType)
+	switch (node->type)
 	{
 		default:
-			WARNING("Invalid node type");
+			LIBPE_WARNING("Invalid node type");
 			break;
 		case LIBPE_RDT_RESOURCE_DIRECTORY:
 		{
-			const IMAGE_RESOURCE_DIRECTORY * const resourceDirectory = node->resource.resourceDirectory;
+			const IMAGE_RESOURCE_DIRECTORY * const resourceDirectory = node->raw.resourceDirectory;
 
-			snprintf(value, MAX_MSG, "Resource Directory / %d", node->nodeLevel);
+			snprintf(value, MAX_MSG, "Resource Directory / %d", node->dirLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%d", resourceDirectory->Characteristics);
@@ -244,9 +194,9 @@ static void peres_show_node(const libpe_resource_node_t *node)
 		}
 		case LIBPE_RDT_DIRECTORY_ENTRY:
 		{
-			const IMAGE_RESOURCE_DIRECTORY_ENTRY * const directoryEntry = node->resource.directoryEntry;
+			const IMAGE_RESOURCE_DIRECTORY_ENTRY * const directoryEntry = node->raw.directoryEntry;
 
-			snprintf(value, MAX_MSG, "Directory Entry / %d", node->nodeLevel);
+			snprintf(value, MAX_MSG, "Directory Entry / %d", node->dirLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%d", directoryEntry->u0.data.NameOffset);
@@ -264,27 +214,28 @@ static void peres_show_node(const libpe_resource_node_t *node)
 		}
 		case LIBPE_RDT_DATA_STRING:
 		{
-			const IMAGE_RESOURCE_DATA_STRING * const dataString = node->resource.dataString;
-            char name[MAX_PATH];
+			const IMAGE_RESOURCE_DATA_STRING_U * const dataString = node->raw.dataString;
 
-			snprintf(value, MAX_MSG, "Data String / %d", node->nodeLevel);
+			snprintf(value, MAX_MSG, "Data String / %d", node->dirLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%d", dataString->Length);
 			output("String len", value);
 
-			uint16_t stringSize = (size_t)dataString->Length + 1 > sizeof(name) ? sizeof(name) - 1 : dataString->Length; // min(sizeof(name) - 1, dataString->length)
-			utils_str_widechar2ascii(name, dataString->String, stringSize);
-			name[stringSize] = '\0';
-			snprintf(value, MAX_MSG, "%s", name);
+			char ascii_string[MAX_MSG];
+			size_t min_size = pe_utils_min(sizeof(ascii_string), dataString->Length + 1);
+			pe_utils_str_widechar2ascii(ascii_string, (const char *)dataString->String, min_size);
+			ascii_string[min_size - 1] = '\0'; // Null terminate it.
+
+			snprintf(value, MAX_MSG, "%s", ascii_string);
 			output("String", value);
 			break;
 		}
 		case LIBPE_RDT_DATA_ENTRY:
 		{
-			const IMAGE_RESOURCE_DATA_ENTRY * const dataEntry = node->resource.dataEntry;
+			const IMAGE_RESOURCE_DATA_ENTRY * const dataEntry = node->raw.dataEntry;
 
-			snprintf(value, MAX_MSG, "Data Entry / %d", node->nodeLevel);
+			snprintf(value, MAX_MSG, "Data Entry / %d", node->dirLevel);
 			output("\nNode Type / Level", value);
 
 			snprintf(value, MAX_MSG, "%x", dataEntry->OffsetToData);
@@ -303,97 +254,39 @@ static void peres_show_node(const libpe_resource_node_t *node)
 	}
 }
 
-static void peres_free_nodes(libpe_resource_node_t *currentNode)
+static void peres_show_nodes(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
-	if (currentNode == NULL)
+	if (node == NULL)
 		return;
 
-	while (currentNode->nextNode != NULL) {
-		currentNode = currentNode->nextNode;
-	}
-
-	while (currentNode != NULL) {
-		if (currentNode->lastNode == NULL) {
-			free(currentNode);
-			break;
-		} else {
-			currentNode = currentNode->lastNode;
-			if (currentNode->nextNode != NULL)
-				free(currentNode->nextNode);
-		}
-	}
+	peres_show_node(node);
+		
+	peres_show_nodes(ctx, node->childNode);
+	peres_show_nodes(ctx, node->nextNode);
 }
 
-static libpe_resource_node_t * peres_create_node(libpe_resource_node_t *currentNode, LIBPE_RESOURCE_NODE_TYPE typeOfNextNode)
+static void peres_build_node_filename(pe_ctx_t *ctx, const pe_resource_node_t *node, char *output, size_t output_size)
 {
-	assert(currentNode != NULL);
-	libpe_resource_node_t *newNode = malloc_s(sizeof(libpe_resource_node_t));
-	memset(newNode, 0, sizeof(*newNode));
-	newNode->lastNode = currentNode;
-	newNode->nextNode = NULL;
-	newNode->nodeType = typeOfNextNode;
-	currentNode->nextNode = newNode;
-	return newNode;
-}
-
-static const libpe_resource_node_t * peres_last_node_by_type(const libpe_resource_node_t *currentNode, LIBPE_RESOURCE_NODE_TYPE nodeTypeSearch)
-{
-	assert(currentNode != NULL);
-	if (currentNode->nodeType == nodeTypeSearch)
-		return currentNode;
-
-	while (currentNode != NULL) {
-		currentNode = currentNode->lastNode;
-		if (currentNode != NULL && currentNode->nodeType == nodeTypeSearch)
-			return currentNode;
-	}
-
-	return NULL;
-}
-
-static const libpe_resource_node_t * peres_last_node_by_type_and_level(const libpe_resource_node_t *currentNode, LIBPE_RESOURCE_NODE_TYPE nodeTypeSearch, LIBPE_RESOURCE_LEVEL nodeLevelSearch)
-{
-	assert(currentNode != NULL);
-	if (currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
-		return currentNode;
-
-	while (currentNode != NULL) {
-		currentNode = currentNode->lastNode;
-		if (currentNode != NULL && currentNode->nodeType == nodeTypeSearch && currentNode->nodeLevel == nodeLevelSearch)
-			return currentNode;
-	}
-
-	return NULL;
-}
-
-static void peres_build_node_filename(pe_ctx_t *ctx, const libpe_resource_node_t *node, char *output, size_t output_size)
-{
-	for (uint32_t level = LIBPE_RDT_LEVEL1; level <= node->nodeLevel; level++) {
+	for (uint32_t level = 1; level <= node->dirLevel; level++) {
 		char partial_path[MAX_PATH];
 
-		const libpe_resource_node_t *parent = peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, level);
-		if (parent->resource.directoryEntry->u0.data.NameIsString) {
-			const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-			if (resourceDirectory == NULL || resourceDirectory->Size == 0)
-				return;
-
-			const uint64_t offsetString = pe_rva2ofs(ctx, resourceDirectory->VirtualAddress + parent->resource.directoryEntry->u0.data.NameOffset);
-			const IMAGE_RESOURCE_DATA_STRING *ptr = LIBPE_PTR_ADD(ctx->map_addr, offsetString);
-
-			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
-				// TODO: Should we report something?
+		const pe_resource_node_t *dir_entry_node = pe_resource_find_parent_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, level);
+		if (dir_entry_node->raw.directoryEntry->u0.data.NameIsString) {
+			const IMAGE_RESOURCE_DATA_STRING_U *string_ptr = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, dir_entry_node->raw.directoryEntry->u0.data.NameOffset);
+			if (!pe_can_read(ctx, string_ptr, sizeof(IMAGE_RESOURCE_DATA_STRING_U))) {
+				LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_STRING_U");
 				return;
 			}
-			const uint16_t stringSize = (size_t)ptr->Length + 2 > sizeof(partial_path) ? sizeof(partial_path) - 2 : ptr->Length; // min(sizeof(partial_path) - 2, ptr->Length)
-			utils_str_widechar2ascii(partial_path, ptr->String, stringSize);
-			partial_path[stringSize] = ' ';
-			partial_path[stringSize + 1] = '\0';
+			const size_t string_size = pe_utils_min(sizeof(partial_path) - 2, string_ptr->Length); // Decrement 2 because we want an extra space: ' \0';
+			pe_utils_str_widechar2ascii(partial_path, (const char *)string_ptr->String, string_size);
+			partial_path[string_size] = ' ';
+			partial_path[string_size + 1] = '\0';
 		} else {
-			const PERES_RESOURCE_ENTRY_LOOKUP *resourceEntry = pe_resource_entry_lookup(parent->resource.directoryEntry->u0.data.NameOffset);
-			if (level == LIBPE_RDT_LEVEL1 && resourceEntry != NULL) {
-				snprintf(partial_path, sizeof(partial_path), "%s ", resourceEntry->name);
+			const pe_resource_entry_info_t *match = pe_resource_entry_info_lookup(dir_entry_node->raw.directoryEntry->u0.data.NameOffset);
+			if (level == 1 && match != NULL) {
+				snprintf(partial_path, sizeof(partial_path), "%s ", match->name);
 			} else {
-				snprintf(partial_path, sizeof(partial_path), "%04x ", parent->resource.directoryEntry->u0.data.NameOffset);
+				snprintf(partial_path, sizeof(partial_path), "%04x ", dir_entry_node->raw.directoryEntry->u0.data.NameOffset);
 			}
 		}
 
@@ -404,39 +297,42 @@ static void peres_build_node_filename(pe_ctx_t *ctx, const libpe_resource_node_t
 	output[length-1] = '\0';
 }
 
-static void peres_show_list(pe_ctx_t *ctx, const libpe_resource_node_t *node)
+static void peres_show_list_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
-	assert(node != NULL);
-
-	while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}
-
-	while (node != NULL) {
-		if (node->nodeType == LIBPE_RDT_DATA_ENTRY) {
-			char fileName[MAX_PATH];
-			memset(fileName, 0, sizeof(fileName));
-			peres_build_node_filename(ctx, node, fileName, sizeof(fileName));
-			printf("%s (%d bytes)\n", fileName, node->resource.dataEntry->Size);
-		}
-		node = node->nextNode;
+	if (node->type == LIBPE_RDT_DATA_ENTRY) {
+		char node_info[MAX_PATH];
+		memset(node_info, 0, sizeof(node_info));
+		peres_build_node_filename(ctx, node, node_info, sizeof(node_info));
+		printf("%s (%d bytes)\n", node_info, node->raw.dataEntry->Size);
 	}
 }
 
-static void peres_save_resource(pe_ctx_t *ctx, const libpe_resource_node_t *node, bool namedExtract)
+static void peres_show_list(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
-	assert(node != NULL);
-	const libpe_resource_node_t *dataEntryNode = peres_last_node_by_type(node, LIBPE_RDT_DATA_ENTRY);
-	if (dataEntryNode == NULL)
+	if (node == NULL)
 		return;
 
-	const uint64_t raw_data_offset = pe_rva2ofs(ctx, dataEntryNode->resource.dataEntry->OffsetToData);
-	const size_t raw_data_size = dataEntryNode->resource.dataEntry->Size;
+	peres_show_list_node(ctx, node);
+
+	peres_show_list(ctx, node->childNode);
+	peres_show_list(ctx, node->nextNode);
+}
+
+static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
+{
+	assert(node != NULL);
+	assert(node->type == LIBPE_RDT_DATA_ENTRY);
+	assert(node->dirLevel == LIBPE_RDT_LEVEL3);
+
+	const IMAGE_RESOURCE_DATA_ENTRY *entry = node->raw.dataEntry;
+
+	const uint64_t raw_data_offset = pe_rva2ofs(ctx, entry->OffsetToData);
+	const size_t raw_data_size = entry->Size;
 	uint8_t *raw_data_ptr = LIBPE_PTR_ADD(ctx->map_addr, raw_data_offset);
 	if (!pe_can_read(ctx, raw_data_ptr, raw_data_size)) {
 		// TODO: Should we report something?
-		printf("Attempted to read range [ %p, %p ] which is not within the mapped range [ %p, %lx ]\n",
-			raw_data_ptr, LIBPE_PTR_ADD(raw_data_ptr, raw_data_size),
+		fprintf(stderr, "Attempted to read range [ %p, %p ] which is not within the mapped range [ %p, %lx ]\n",
+			(void *)raw_data_ptr, LIBPE_PTR_ADD(raw_data_ptr, raw_data_size),
 			ctx->map_addr, ctx->map_end);
 		return;
 	}
@@ -448,23 +344,26 @@ static void peres_save_resource(pe_ctx_t *ctx, const libpe_resource_node_t *node
 	char dirName[100];
 	memset(dirName, 0, sizeof(dirName));
 
-	uint32_t nameOffset = node->rootNode->resource.directoryEntry->u0.data.NameOffset;
-	const PERES_RESOURCE_ENTRY_LOOKUP *resourceEntry = pe_resource_entry_lookup(nameOffset);
-
-	if (resourceEntry != NULL) {
-		snprintf(dirName, sizeof(dirName), "%s/%s", g_resourceDir, resourceEntry->dir_name);
+	const pe_resource_node_t *folder_node = pe_resource_find_parent_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL1); // dirLevel == 1 is where Resource Types are defined.
+	const pe_resource_entry_info_t *entry_info = pe_resource_entry_info_lookup(folder_node->raw.directoryEntry->u0.Name);
+	if (entry_info != NULL) {
+		snprintf(dirName, sizeof(dirName), "%s/%s", g_resourceDir, entry_info->dir_name);
 	} else {
 		snprintf(dirName, sizeof(dirName), "%s", g_resourceDir);
 	}
 
-	// TODO(jweyrich): Would it make sense to hardcode `LIBPE_RDT_LEVEL2` rather than use `node->nodeLevel-1` ?
-	const libpe_resource_node_t *nameNode = peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, node->nodeLevel - 1);
-	//fprintf(stderr, "DEBUG: %d\n", nameNode->resource.directoryEntry->u0.data.NameOffset);
-
 	if (stat(dirName, &statDir) == -1)
 		mkdir(dirName, 0700);
 
-	char relativeFileName[MAX_PATH + 105];
+	const pe_resource_node_t *name_node = pe_resource_find_parent_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL2); // dirLevel == 2
+	if (name_node == NULL) {
+		// TODO: Should we report something?
+		fprintf(stderr, "pe_resource_find_parent_node_by_type_and_level returned NULL\n");
+		return;
+	}
+	//fprintf(stderr, "DEBUG: Name=%d\n", name_node->raw.directoryEntry->u0.Name);
+
+	char relativeFileName[MAX_PATH]; // Wait, WHAT?!
 	memset(relativeFileName, 0, sizeof(relativeFileName));
 
 	if (namedExtract) {
@@ -475,15 +374,14 @@ static void peres_save_resource(pe_ctx_t *ctx, const libpe_resource_node_t *node
 		snprintf(relativeFileName, sizeof(relativeFileName), "%s/%s%s",
 			dirName,
 			fileName,
-			resourceEntry != NULL ? resourceEntry->extension : ".bin");
+			entry_info != NULL ? entry_info->extension : ".bin");
 	} else {
 		snprintf(relativeFileName, sizeof(relativeFileName), "%s/" "%" PRIu32 "%s",
 			dirName,
-			nameNode->resource.directoryEntry->u0.data.NameOffset,
-			resourceEntry != NULL ? resourceEntry->extension : ".bin");
+			name_node->raw.directoryEntry->u0.data.NameOffset,
+			entry_info != NULL ? entry_info->extension : ".bin");
 	}
-
-	//printf("raw_data_offset=%#lx, raw_data_size=%ld, relativeFileName=%s\n", raw_data_offset, raw_data_size, relativeFileName);
+	//printf("DEBUG: raw_data_offset=%#llx, raw_data_size=%ld, relativeFileName=%s\n", raw_data_offset, raw_data_size, relativeFileName);
 
 	FILE *fp = fopen(relativeFileName, "wb+");
 	if (fp == NULL) {
@@ -492,326 +390,135 @@ static void peres_save_resource(pe_ctx_t *ctx, const libpe_resource_node_t *node
 	}
 	fwrite(raw_data_ptr, raw_data_size, 1, fp);
 	fclose(fp);
+
 	output("Save On", relativeFileName);
 }
 
-static void peres_save_all_resources(pe_ctx_t *ctx, const libpe_resource_node_t *node, bool namedExtract)
+static void peres_save_all_resources(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
 {
-	assert(node != NULL);
-	int count = 0;
+	if (node == NULL)
+		return;
 
-	while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}
-
-	while (node != NULL) {
-		if (node->nodeType != LIBPE_RDT_DATA_ENTRY) {
-			node = node->nextNode;
-			continue;
-		}
-		count++;
+	if (node->type == LIBPE_RDT_DATA_ENTRY && node->dirLevel == 3) {
 		peres_save_resource(ctx, node, namedExtract);
-		node = node->nextNode;
 	}
+
+	peres_save_all_resources(ctx, node->childNode, namedExtract);
+	peres_save_all_resources(ctx, node->nextNode, namedExtract);
 }
 
-static void peres_show_version(pe_ctx_t *ctx, const libpe_resource_node_t *node)
+bool peres_contains_version_node(const pe_resource_node_t *node) {
+	if (node->type != LIBPE_RDT_DIRECTORY_ENTRY)
+		return false;
+	if (node->dirLevel != LIBPE_RDT_LEVEL1) // dirLevel == 1 belongs to the resource type directory.
+		return false;
+	if (node->raw.directoryEntry->u0.data.NameOffset != RT_VERSION)
+		return false;
+	return true;
+}
+
+bool peres_is_version_node(const pe_resource_node_t *node) {
+	return node->type == LIBPE_RDT_DATA_ENTRY;
+}
+
+static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
 	assert(node != NULL);
 
-	int count = 0;
-	const libpe_resource_node_t *dataEntryNode;
-	uint32_t nameOffset;
-	bool found = false;
+	pe_resource_node_search_result_t result_contains_version_node = {0};
+	pe_resource_search_nodes(&result_contains_version_node, node, peres_contains_version_node);
 
-	while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}
+	pe_resource_node_search_result_item_t *item_parent = {0};
+	LL_FOREACH(result_contains_version_node.items, item_parent) {
+		pe_resource_node_search_result_t result_is_version_node = {0};
+		pe_resource_search_nodes(&result_is_version_node, item_parent->node, peres_is_version_node);
 
-	while (node != NULL) {
-		if (node->nodeType != LIBPE_RDT_DATA_ENTRY) {
-			node = node->nextNode;
-			continue;
+		pe_resource_node_search_result_item_t *item_child = {0};
+		LL_FOREACH(result_is_version_node.items, item_child) {
+			const uint64_t data_offset = pe_rva2ofs(ctx, item_child->node->raw.dataEntry->OffsetToData);
+			const size_t data_size = item_child->node->raw.dataEntry->Size;
+			const void *data_ptr = LIBPE_PTR_ADD(ctx->map_addr, 32 + data_offset); // TODO(jweyrich): The literal 32 refers to the size of the 
+			if (!pe_can_read(ctx, data_ptr, data_size)) {
+				LIBPE_WARNING("Cannot read VS_FIXEDFILEINFO");
+				return;
+			}
+
+			VS_FIXEDFILEINFO *info_ptr = (VS_FIXEDFILEINFO *)data_ptr;
+			
+			char value[MAX_MSG];
+			snprintf(value, MAX_MSG, "%u.%u.%u.%u",
+				(uint32_t)(info_ptr->dwFileVersionMS & 0xffff0000) >> 16,
+				(uint32_t)info_ptr->dwFileVersionMS & 0x0000ffff,
+				(uint32_t)(info_ptr->dwFileVersionLS & 0xffff0000) >> 16,
+				(uint32_t)info_ptr->dwFileVersionLS & 0x0000ffff);
+			output("File Version", value);
 		}
-		count++;
-		//if (count==19)
-		dataEntryNode = peres_last_node_by_type(node, LIBPE_RDT_DATA_ENTRY);
-		if (dataEntryNode == NULL)
-			return;
-		nameOffset = node->rootNode->resource.directoryEntry->u0.data.NameOffset;
-		if (nameOffset == 16) {
-			found = true;
+		pe_resources_dealloc_node_search_result(&result_is_version_node);
+	}
+	pe_resources_dealloc_node_search_result(&result_contains_version_node);
+}
+
+typedef struct {
+	int totalCount;
+	int totalResourceDirectory;
+	int totalDirectoryEntry;
+	int totalDataString;
+	int totalDataEntry;
+} peres_stats_t;
+
+static void peres_generate_stats(peres_stats_t *stats, const pe_resource_node_t *node) {
+	if (node == NULL)
+		return;
+	
+	stats->totalCount++;
+	
+	switch (node->type) {
+		case LIBPE_RDT_RESOURCE_DIRECTORY:
+			stats->totalResourceDirectory++;
 			break;
-		}
-		node = node->nextNode;
+		case LIBPE_RDT_DIRECTORY_ENTRY:
+			stats->totalDirectoryEntry++;
+			break;
+		case LIBPE_RDT_DATA_STRING:
+			stats->totalDataString++;
+			break;
+		case LIBPE_RDT_DATA_ENTRY:
+			stats->totalDataEntry++;
+			break;
+	}
+	
+	if (node->childNode) {
+		peres_generate_stats(stats, node->childNode);
 	}
 
-	if (!found)
-		return;
-
-	const uint64_t offsetData = pe_rva2ofs(ctx, dataEntryNode->resource.dataEntry->OffsetToData);
-	const size_t dataEntrySize = dataEntryNode->resource.dataEntry->Size;
-	const char *buffer = LIBPE_PTR_ADD(ctx->map_addr, 32 + offsetData);
-	if (!pe_can_read(ctx, buffer, dataEntrySize)) {
-		// TODO: Should we report something?
-		return;
-	}
-
-	VS_FIXEDFILEINFO *info = (VS_FIXEDFILEINFO *) buffer;
-	char value[MAX_MSG];
-
-	//snprintf(value, MAX_MSG, "%d", totalCount);
-
-	snprintf(value, MAX_MSG, "%u.%u.%u.%u",
-		(unsigned int)(info->dwProductVersionMS & 0xffff0000) >> 16,
-		(unsigned int)info->dwProductVersionMS & 0x0000ffff,
-		(unsigned int)(info->dwProductVersionLS & 0xffff0000) >> 16,
-		(unsigned int)info->dwProductVersionLS & 0x0000ffff);
-
-	output("File Version", value);
-}
-
-static void peres_show_nodes(const libpe_resource_node_t *node)
-{
-	assert(node != NULL);
-
-	while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}
-
-	while (node != NULL) {
-		peres_show_node(node);
-		node = node->nextNode;
+	if (node->nextNode) {
+		peres_generate_stats(stats, node->nextNode);
 	}
 }
 
-static void peres_show_stats(const libpe_resource_node_t *node)
+static void peres_show_stats(const pe_resource_node_t *node)
 {
-	assert(node != NULL);
+	peres_stats_t stats;
+	memset(&stats, 0, sizeof(stats));
 
-	while (node->lastNode != NULL) {
-		node = node->lastNode;
-	}
-
-	int totalCount = 0;
-	int totalResourceDirectory = 0;
-	int totalDirectoryEntry = 0;
-	int totalDataString = 0;
-	int totalDataEntry = 0;
-
-	while (node != NULL) {
-		totalCount++;
-		switch (node->nodeType) {
-			case LIBPE_RDT_RESOURCE_DIRECTORY:
-				totalResourceDirectory++;
-				break;
-			case LIBPE_RDT_DIRECTORY_ENTRY:
-				totalDirectoryEntry++;
-				break;
-			case LIBPE_RDT_DATA_STRING:
-				totalDataString++;
-				break;
-			case LIBPE_RDT_DATA_ENTRY:
-				totalDataEntry++;
-				break;
-		}
-		node = node->nextNode;
-	}
+	peres_generate_stats(&stats, node);
 
 	char value[MAX_MSG];
 
-	snprintf(value, MAX_MSG, "%d", totalCount);
+	snprintf(value, MAX_MSG, "%d", stats.totalCount);
 	output("Total Structs", value);
 
-	snprintf(value, MAX_MSG, "%d", totalResourceDirectory);
+	snprintf(value, MAX_MSG, "%d", stats.totalResourceDirectory);
 	output("Total Resource Directory", value);
 
-	snprintf(value, MAX_MSG, "%d", totalDirectoryEntry);
+	snprintf(value, MAX_MSG, "%d", stats.totalDirectoryEntry);
 	output("Total Directory Entry", value);
 
-	snprintf(value, MAX_MSG, "%d", totalDataString);
+	snprintf(value, MAX_MSG, "%d", stats.totalDataString);
 	output("Total Data String", value);
 
-	snprintf(value, MAX_MSG, "%d", totalDataEntry);
+	snprintf(value, MAX_MSG, "%d", stats.totalDataEntry);
 	output("Total Data Entry", value);
-}
-
-static libpe_resource_node_t * peres_parse_resources(pe_ctx_t *ctx)
-{
-	const IMAGE_DATA_DIRECTORY * const resourceDirectory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-	if (resourceDirectory == NULL || resourceDirectory->Size == 0)
-		return NULL;
-
-	uint64_t resourceDirOffset = pe_rva2ofs(ctx, resourceDirectory->VirtualAddress);
-
-	uintptr_t offset = resourceDirOffset;
-	void *ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-	if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
-		// TODO: Should we report something?
-		return NULL;
-	}
-
-	libpe_resource_node_t *node = malloc_s(sizeof(libpe_resource_node_t));
-	memset(node, 0, sizeof(*node));
-	node->lastNode = NULL; // root
-	node->rootNode = NULL; // root
-	node->nodeType = LIBPE_RDT_RESOURCE_DIRECTORY;
-	node->nodeLevel = LIBPE_RDT_LEVEL1;
-	node->resource.resourceDirectory = ptr;
-	//peres_show_node(node);
-
-	const libpe_resource_node_t * lastResourceDirNodeAtLevel1 = peres_last_node_by_type_and_level(node, LIBPE_RDT_RESOURCE_DIRECTORY, LIBPE_RDT_LEVEL1);
-	size_t total_entries = lastResourceDirNodeAtLevel1->resource.resourceDirectory->NumberOfNamedEntries
-		+ lastResourceDirNodeAtLevel1->resource.resourceDirectory->NumberOfIdEntries;
-	for (size_t i = 1, offsetDirectory1 = 0; i <= total_entries; i++)
-	{
-		offsetDirectory1 += (i == 1) ? 16 : 8;
-		offset = resourceDirOffset + offsetDirectory1;
-		ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-		if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
-			// TODO: Should we report something?
-			goto _error;
-		}
-
-		node = peres_create_node(node, LIBPE_RDT_DIRECTORY_ENTRY);
-		libpe_resource_node_t *rootNode = node;
-		node->rootNode = rootNode;
-		node->nodeLevel = LIBPE_RDT_LEVEL1;
-		node->resource.directoryEntry = ptr;
-		//peres_show_node(node);
-
-		if (node->resource.directoryEntry->u0.data.NameIsString == 1){
-			offset = resourceDirOffset + node->resource.directoryEntry->u0.data.NameOffset;
-			ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
-				// TODO: Should we report something?
-				goto _error;
-			}
-			node = peres_create_node(node, LIBPE_RDT_DATA_STRING);
-			node->rootNode = rootNode;
-			node->nodeLevel = LIBPE_RDT_LEVEL1;
-			node->resource.dataString = ptr;
-			//peres_show_node(node);
-		}
-
-		const libpe_resource_node_t * lastDirectoryEntryNodeAtLevel1 = peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL1);
-
-		if (lastDirectoryEntryNodeAtLevel1->resource.directoryEntry->u1.data.DataIsDirectory)
-		{
-			offset = resourceDirOffset + lastDirectoryEntryNodeAtLevel1->resource.directoryEntry->u1.data.OffsetToDirectory;
-			ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-			if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
-				// TODO: Should we report something?
-				goto _error;
-			}
-
-			node = peres_create_node(node, LIBPE_RDT_RESOURCE_DIRECTORY);
-			node->rootNode = (libpe_resource_node_t *)lastDirectoryEntryNodeAtLevel1;
-			node->nodeLevel = LIBPE_RDT_LEVEL2;
-			node->resource.resourceDirectory = ptr;
-			//peres_show_node(node);
-
-			for (int j = 1, offsetDirectory2 = 0; j <= (peres_last_node_by_type_and_level(node, LIBPE_RDT_RESOURCE_DIRECTORY, LIBPE_RDT_LEVEL2)->resource.resourceDirectory->NumberOfNamedEntries +
-					peres_last_node_by_type_and_level(node, LIBPE_RDT_RESOURCE_DIRECTORY, LIBPE_RDT_LEVEL2)->resource.resourceDirectory->NumberOfIdEntries); j++)
-			{
-				offsetDirectory2 += (j == 1) ? 16 : 8;
-				offset = resourceDirOffset + peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL1)->resource.directoryEntry->u1.data.OffsetToDirectory + offsetDirectory2;
-				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-				if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
-					// TODO: Should we report something?
-					goto _error;
-				}
-
-				node = peres_create_node(node, LIBPE_RDT_DIRECTORY_ENTRY);
-				node->rootNode = rootNode;
-				node->nodeLevel = LIBPE_RDT_LEVEL2;
-				node->resource.directoryEntry = ptr;
-				//peres_show_node(node);
-
-				if (node->resource.directoryEntry->u0.data.NameIsString == 1){
-					offset = resourceDirOffset + node->resource.directoryEntry->u0.data.NameOffset;
-					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
-						// TODO: Should we report something?
-						goto _error;
-					}
-					node = peres_create_node(node, LIBPE_RDT_DATA_STRING);
-					node->rootNode = rootNode;
-					node->nodeLevel = LIBPE_RDT_LEVEL2;
-					node->resource.dataString = ptr;
-					//peres_show_node(node);
-				}
-
-				const libpe_resource_node_t * lastDirectoryEntryNodeAtLevel2 = peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL2);
-				offset = resourceDirOffset + lastDirectoryEntryNodeAtLevel2->resource.directoryEntry->u1.data.OffsetToDirectory;
-
-				ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-				if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
-					// TODO: Should we report something?
-					goto _error;
-				}
-
-				node = peres_create_node(node, LIBPE_RDT_RESOURCE_DIRECTORY);
-				node->rootNode = rootNode;
-				node->nodeLevel = LIBPE_RDT_LEVEL3;
-				node->resource.resourceDirectory = ptr;
-				//peres_show_node(node);
-
-				offset += sizeof(IMAGE_RESOURCE_DIRECTORY);
-
-				for (int y = 1; y <= (peres_last_node_by_type_and_level(node, LIBPE_RDT_RESOURCE_DIRECTORY, LIBPE_RDT_LEVEL3)->resource.resourceDirectory->NumberOfNamedEntries +
-									peres_last_node_by_type_and_level(node, LIBPE_RDT_RESOURCE_DIRECTORY, LIBPE_RDT_LEVEL3)->resource.resourceDirectory->NumberOfIdEntries); y++)
-				{
-					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
-						// TODO: Should we report something?
-						goto _error;
-					}
-					node = peres_create_node(node, LIBPE_RDT_DIRECTORY_ENTRY);
-					node->rootNode = rootNode;
-					node->nodeLevel = LIBPE_RDT_LEVEL3;
-					node->resource.directoryEntry = ptr;
-					//peres_show_node(node);
-
-					if (node->resource.directoryEntry->u0.data.NameIsString == 1){
-						offset = resourceDirOffset + node->resource.directoryEntry->u0.data.NameOffset;
-						ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-						if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_STRING))) {
-							// TODO: Should we report something?
-							goto _error;
-						}
-						node = peres_create_node(node, LIBPE_RDT_DATA_STRING);
-						node->rootNode = rootNode;
-						node->nodeLevel = LIBPE_RDT_LEVEL3;
-						node->resource.dataString = ptr;
-						//peres_show_node(node);
-					}
-
-					const libpe_resource_node_t * lastDirectoryEntryNodeAtLevel3 = peres_last_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL3);
-					offset = resourceDirOffset + lastDirectoryEntryNodeAtLevel3->resource.directoryEntry->u1.data.OffsetToDirectory;
-					ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
-					if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
-						// TODO: Should we report something?
-						goto _error;
-					}
-					node = peres_create_node(node, LIBPE_RDT_DATA_ENTRY);
-					node->rootNode = rootNode;
-					node->nodeLevel = LIBPE_RDT_LEVEL3;
-					node->resource.dataEntry = ptr;
-					//peres_show_node(node);
-
-					offset += sizeof(IMAGE_RESOURCE_DATA_ENTRY);
-				}
-			}
-		}
-	}
-
-	return node;
-
-_error:
-	if (node != NULL)
-		peres_free_nodes(node);
-	return NULL;
 }
 
 int main(int argc, char **argv)
@@ -848,14 +555,16 @@ int main(int argc, char **argv)
 
 	output_open_document();
 
-	libpe_resource_node_t *root_node = peres_parse_resources(&ctx);
-	if (root_node == NULL) {
-		WARNING("this file has no resources");
+	pe_resources_t *resources = pe_resources(&ctx);
+	if (resources == NULL || resources->err != LIBPE_E_OK) {
+		LIBPE_WARNING("This file has no resources");
 		return EXIT_SUCCESS;
 	}
 
+	pe_resource_node_t *root_node = resources->root_node;
+
 	if (options->all) {
-		peres_show_nodes(root_node);
+		peres_show_nodes(&ctx, root_node);
 		peres_show_stats(root_node);
 		peres_show_list(&ctx, root_node);
 		peres_save_all_resources(&ctx, root_node, options->namedExtract);
@@ -864,7 +573,7 @@ int main(int argc, char **argv)
 		if (options->extract)
 			peres_save_all_resources(&ctx, root_node, options->namedExtract);
 		if (options->info)
-			peres_show_nodes(root_node);
+			peres_show_nodes(&ctx, root_node);
 		if (options->list)
 			peres_show_list(&ctx, root_node);
 		if (options->statistics)
@@ -872,8 +581,6 @@ int main(int argc, char **argv)
 		if (options->version)
 			peres_show_version(&ctx, root_node);
 	}
-
-	peres_free_nodes(root_node);
 
 	output_close_document();
 

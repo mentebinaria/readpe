@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 
 	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
 	if (directories == NULL) {
-		WARNING("directories not found");
+		LIBPE_WARNING("directories not found");
 	} else {
 		print_dependencies(&ctx);
 	}

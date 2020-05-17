@@ -91,7 +91,6 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/config.o \
 	$(pev_BUILDDIR)/dylib.o \
 	$(pev_BUILDDIR)/malloc_s.o \
-	$(pev_BUILDDIR)/utils.o \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
 	$(pev_BUILDDIR)/output.o \

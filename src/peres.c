@@ -312,6 +312,124 @@ static void peres_show_list(pe_ctx_t *ctx, const pe_resource_node_t *node)
 	peres_show_list(ctx, node->nextNode);
 }
 
+#pragma pack(push, 1)
+typedef struct {
+	uint32_t biSize;
+	int32_t  biWidth;
+	int32_t  biHeight;
+	uint16_t biPlanes;
+	uint16_t biBitCount;
+	uint32_t biCompression;
+	uint32_t biSizeImage;
+	int32_t  biXPelsPerMeter;
+	int32_t  biYPelsPerMeter;
+	uint32_t biClrUsed;
+	uint32_t biClrImportant;
+} BITMAPINFOHEADER;
+#pragma pack(pop)
+
+#pragma pack(push, 2)
+typedef struct {
+	uint16_t icReserved;   // Always zero
+	uint16_t icType;       // 1 for .ico, 2 for .cur, other values are invalid
+	uint16_t icImageCount; // number of images in the file
+} ICOFILEHEADER;
+
+typedef struct {
+	uint8_t biWidth;        // Width of image
+	uint8_t biHeight;       // Height of image
+	uint8_t biClrUsed;      // Number of colors used
+	uint8_t biReserved;     // Reserved
+	union {
+		uint16_t biPlanes;   // ICO - Number of color planes. Should be 0 or 1
+		uint16_t biXHotspot; // CUR - Horizontal coord of the hotspot in number of pixels from the left
+	} u0;
+	union {
+		uint16_t biBitCount; // ICO - Number of bits per pixel
+		uint16_t biYHotspot; // CUR - Vertical coord of the hotspot in number of pixels from the top
+	} u1;
+	uint32_t biSizeImage;   // Size of image data in bytes
+	uint32_t biOffBits;     // Offset of BMP or PNG data from the beggining of the ICO/CUR file
+} ICODIRENTRY;
+#pragma pack(pop)
+
+typedef struct {
+	bool is_modified;
+	uint8_t *restore_buffer;
+	size_t restore_size;
+} peres_resource_restore_t;
+
+static void peres_restore_resource_icon(peres_resource_restore_t *restore, const pe_resource_entry_info_t *entry_info, void *raw_data_ptr, size_t raw_data_size)
+{
+	if (memcmp(raw_data_ptr, "\x89PNG", 4) == 0) {
+		// A PNG icon is stored along with its original header, so just return untouched.
+		return;
+	}
+
+	const BITMAPINFOHEADER *bitmap = raw_data_ptr;
+
+	// Is it valid?
+	if (bitmap->biSize != 40) {
+		LIBPE_WARNING("RT_ICON bitmap is not valid");
+		return;
+	}
+
+	ICOFILEHEADER fileheader = {
+		.icReserved = 0,
+		.icType = 1,
+		.icImageCount = 1,
+	};
+	ICODIRENTRY direntry = {
+		.biWidth = bitmap->biWidth,
+		.biHeight = bitmap->biHeight / ((entry_info->type == RT_ICON || entry_info->type == RT_CURSOR || entry_info->type == RT_BITMAP) ? 2 : 1),
+		.biClrUsed = 0, // What should we put here?
+		.biReserved = 0,
+		.u0 = { .biPlanes = 1 },
+		.u1 = { .biBitCount = bitmap->biBitCount },
+		.biSizeImage = bitmap->biSizeImage,
+		.biOffBits = sizeof(ICOFILEHEADER) + sizeof(ICODIRENTRY)
+	};
+
+	size_t written = 0;
+	uint8_t *buffer = malloc_s(sizeof(ICOFILEHEADER) + sizeof(ICODIRENTRY) + raw_data_size);
+
+#define PERES_APPEND(dst, src, size)	memcpy(dst + written, src, size); written += size
+	PERES_APPEND(buffer, &fileheader, sizeof(ICOFILEHEADER));
+	PERES_APPEND(buffer, &direntry, sizeof(ICODIRENTRY));
+	PERES_APPEND(buffer, raw_data_ptr, raw_data_size);
+#undef PERES_APPEND
+
+	restore->is_modified = true;
+	restore->restore_buffer = buffer;
+	restore->restore_size = written;
+}
+
+static void peres_restore_resource(peres_resource_restore_t *restore, const pe_resource_entry_info_t *entry_info, void *raw_data_ptr, size_t raw_data_size)
+{
+	assert(restore != NULL);
+	assert(raw_data_ptr != NULL);
+
+	// If we don't know this type or the data size is 0, just return with the raw information untouched.
+	if (entry_info == NULL || raw_data_size == 0) {
+		goto fallback_untouched;
+	}
+
+	switch (entry_info->type) {
+		default: goto fallback_untouched;
+		case RT_ICON:
+			peres_restore_resource_icon(restore, entry_info, raw_data_ptr, raw_data_size);
+			break;
+	}
+
+	if (restore->is_modified)
+		return;
+
+fallback_untouched:
+	restore->is_modified = false;
+	restore->restore_buffer = raw_data_ptr;
+	restore->restore_size = raw_data_size;
+}
+
 static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
 {
 	UNUSED(ctx);
@@ -378,13 +496,20 @@ static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, b
 	}
 	//printf("DEBUG: raw_data_offset=%#llx, raw_data_size=%ld, relativeFileName=%s\n", raw_data_offset, raw_data_size, relativeFileName);
 
+	peres_resource_restore_t restore = {0};
+	peres_restore_resource(&restore, entry_info, raw_data_ptr, raw_data_size);
+
 	FILE *fp = fopen(relativeFileName, "wb+");
 	if (fp == NULL) {
 		// TODO: Should we report something?
 		return;
 	}
-	fwrite(raw_data_ptr, raw_data_size, 1, fp);
+	fwrite(restore.restore_buffer, restore.restore_size, 1, fp);
 	fclose(fp);
+
+	if (restore.is_modified) {
+		free(restore.restore_buffer);
+	}
 
 	output("Save On", relativeFileName);
 }
@@ -492,9 +617,7 @@ static void peres_generate_stats(peres_stats_t *stats, const pe_resource_node_t 
 
 static void peres_show_stats(const pe_resource_node_t *node)
 {
-	peres_stats_t stats;
-	memset(&stats, 0, sizeof(stats));
-
+	peres_stats_t stats = {0};
 	peres_generate_stats(&stats, node);
 
 	char value[MAX_MSG];

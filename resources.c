@@ -449,8 +449,7 @@ static pe_resource_node_t *pe_resource_create_node(uint8_t depth, pe_resource_no
 	return node;
 }
 
-static void pe_resource_free_nodes(pe_resource_node_t *node)
-{
+static void pe_resource_free_nodes(pe_resource_node_t *node) {
 	if (node == NULL)
 		return;
 
@@ -461,8 +460,7 @@ static void pe_resource_free_nodes(pe_resource_node_t *node)
 	free(node);
 }
 
-static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
-{
+static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 	switch (node->type) {
 		default:
 			LIBPE_WARNING("Invalid node type");
@@ -566,21 +564,29 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
 	return true;
 }
 
-static pe_resource_node_t *pe_resource_parse(pe_ctx_t *ctx, void *resource_base_ptr)
-{
+static pe_resource_node_t *pe_resource_parse(pe_ctx_t *ctx, void *resource_base_ptr) {
 	pe_resource_node_t *root_node = pe_resource_create_node(0, LIBPE_RDT_RESOURCE_DIRECTORY, resource_base_ptr, NULL);
 	pe_resource_parse_nodes(ctx, root_node);
 	pe_resource_debug_nodes(ctx, root_node);
 	return root_node;
 }
 
-static void *pe_resource_base_ptr(pe_ctx_t *ctx)
-{
+static void *pe_resource_base_ptr(pe_ctx_t *ctx) {
 	const IMAGE_DATA_DIRECTORY * const directory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_RESOURCE);
-	if (directory == NULL || directory->VirtualAddress == 0 || directory->Size == 0)
+	if (directory == NULL) {
+		LIBPE_WARNING("Resource directory does not exist")
 		return NULL;
+	}
+	if (directory->VirtualAddress == 0 || directory->Size == 0) {
+		LIBPE_WARNING("Resource directory VA is zero")
+		return NULL;
+	}
+	if (directory->Size == 0) {
+		LIBPE_WARNING("Resource directory size is 0")
+		return NULL;
+	}
 
-	uintptr_t offset = pe_rva2ofs(ctx, directory->VirtualAddress);
+	const uintptr_t offset = pe_rva2ofs(ctx, directory->VirtualAddress);
 	void *ptr = LIBPE_PTR_ADD(ctx->map_addr, offset);
 	if (!pe_can_read(ctx, ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 		LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DIRECTORY");
@@ -604,7 +610,9 @@ pe_resources_t *pe_resources(pe_ctx_t *ctx) {
 	ctx->cached_data.resources = res_ptr;
 	ctx->cached_data.resources->err = LIBPE_E_OK;
 	ctx->cached_data.resources->resource_base_ptr = pe_resource_base_ptr(ctx); // Various parts of the parsing rely on `resource_base_ptr`.
-	ctx->cached_data.resources->root_node = pe_resource_parse(ctx, ctx->cached_data.resources->resource_base_ptr);
+	if (ctx->cached_data.resources->resource_base_ptr != NULL) {
+		ctx->cached_data.resources->root_node = pe_resource_parse(ctx, ctx->cached_data.resources->resource_base_ptr);
+	}
 	
 	return ctx->cached_data.resources;
 }

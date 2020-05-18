@@ -73,7 +73,7 @@ typedef struct {
 
 typedef struct {
 	char name[20];
-	uint32_t name_offset;
+	ResourceType type;
 	char extension[20];
 	char dir_name[20];
 } pe_resource_entry_info_t;

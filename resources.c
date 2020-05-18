@@ -63,7 +63,7 @@ static const pe_resource_entry_info_t g_resource_dataentry_info_table[] = {
 
 const pe_resource_entry_info_t *pe_resource_entry_info_lookup(uint32_t name_offset) {
 	for (size_t i = 0; i < LIBPE_SIZEOF_ARRAY(g_resource_dataentry_info_table); i++) {
-		if (g_resource_dataentry_info_table[i].name_offset == name_offset)
+		if (g_resource_dataentry_info_table[i].type == name_offset)
 			return &g_resource_dataentry_info_table[i];
 	}
 	return NULL;

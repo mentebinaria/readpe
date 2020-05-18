@@ -32,7 +32,7 @@ extern "C" {
 #define IMAGE_RESOURCE_NAME_IS_STRING		0x80000000
 #define IMAGE_RESOURCE_DATA_IS_DIRECTORY	0x80000000
 
-// resources types
+// REFERENCE: https://docs.microsoft.com/en-us/windows/win32/menurc/resource-types
 typedef enum {
 	RT_CURSOR			= 1, // cursor image
 	RT_BITMAP			= 2, // bitmap (.bmp)

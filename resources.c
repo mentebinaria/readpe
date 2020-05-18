@@ -211,13 +211,22 @@ static char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t outp
 	return output;
 }
 
-static bool pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_name_size, uint32_t id) {
+static char *pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_name_size, uint32_t id) {
 	const bool is_string = id & IMAGE_RESOURCE_NAME_IS_STRING; // entry->u0.data.NameIsString
-	
+
 	// If it's a regular ID, simply use it.
 	if (!is_string) {
+		if (out_name == NULL) {
+			const size_t estimated_size = 8 + 1; // 8 == strlen("FFFFFFFF"), +1 for the `\0`.
+			out_name = malloc(estimated_size);
+			if (out_name == NULL) {
+				// TODO: Handle allocation failure.
+				abort();
+			}
+		}
+
 		snprintf(out_name, out_name_size, "%X", id);
-		return true;
+		return out_name;
 	}
 
 	id &= ~(uint32_t)IMAGE_RESOURCE_NAME_IS_STRING; // Ignore the highest bit.
@@ -227,23 +236,36 @@ static bool pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_n
 		return false;
 	}
 
-	char *result = pe_resource_parse_string_u(ctx, out_name, out_name_size, data_string_u);
-	return result != NULL;
+	out_name = pe_resource_parse_string_u(ctx, out_name, out_name_size, data_string_u);
+	return out_name;
 }
 
-static bool pe_resource_type_name(char *out_name, size_t out_name_size, uint32_t type) {
+static char *pe_resource_name_from_type(char *out_name, size_t out_name_size, uint32_t type) {
 	const pe_resource_entry_info_t *match = pe_resource_entry_info_lookup(type);
-	if (match != NULL)
+
+	if (out_name == NULL) {
+		const size_t estimated_size = (match != NULL ? strlen(match->name) : 8) + 1; // 8 == strlen("FFFFFFFF"), +1 for the `\0`.
+		out_name = malloc(estimated_size);
+		if (out_name == NULL) {
+			// TODO: Handle allocation failure.
+			abort();
+		}
+	}
+	
+	if (match != NULL) {
 		strncpy(out_name, match->name, out_name_size);
-	else 
-		snprintf(out_name, out_name_size, "%X", type);
-	return true;
+		out_name[out_name_size - 1] = '\0';
+	} else {
+		snprintf(out_name, out_name_size, "%" PRIX32, type);
+	}
+	
+	return out_name;
 }
 
 static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node) {
 	if (node == NULL)
 		return;
-	
+
 	switch (node->type) {
 		default:
 			LIBPE_WARNING("Invalid node type");
@@ -260,7 +282,7 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 					if (dir_entry->u0.data.NameIsString) {
 						pe_resource_name_from_id(ctx, resource_name, resource_name_size, dir_entry->u0.Name);
 					} else {
-						pe_resource_type_name(resource_name, resource_name_size, dir_entry->u0.Name);
+						pe_resource_name_from_type(resource_name, resource_name_size, dir_entry->u0.Name);
 					}
 				}
 			} else {
@@ -514,6 +536,8 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
 				break;
 			}
 
+			// TODO(jweyrich): We should store the result in the node to be useful,
+			// but we still don't store specific data in the node, except for its name.
 			char *buffer = pe_resource_parse_string_u(ctx, NULL, 0, data_string_ptr);
 			fprintf(stdout, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
 			free(buffer);

@@ -35,7 +35,7 @@ typedef enum {
 	LIBPE_RDT_LEVEL1 = 1,
 	LIBPE_RDT_LEVEL2 = 2,
 	LIBPE_RDT_LEVEL3 = 3
-} pe_resouces_level_e;
+} pe_resource_level_e;
 
 typedef enum {
 	LIBPE_RDT_RESOURCE_DIRECTORY = 1,

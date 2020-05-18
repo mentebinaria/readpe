@@ -184,32 +184,31 @@ pe_resource_node_t *pe_resource_find_parent_node_by_type_and_level(const pe_reso
 	return NULL;
 }
 
-static char *pe_resource_parse_string_u(pe_ctx_t *ctx, uint32_t name_offset) {
-	IMAGE_RESOURCE_DATA_STRING_U *data_string = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, name_offset);
-	if (!pe_can_read(ctx, data_string, sizeof(IMAGE_RESOURCE_DATA_STRING_U))) {
-		LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_STRING_U");
+static char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size, const IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr) {
+	if (data_string_ptr == NULL)
+		return NULL;
+
+	const size_t buffer_size = pe_utils_min(output_size <= 0 ? 256 : output_size, data_string_ptr->Length + 1);
+	if (!pe_can_read(ctx, data_string_ptr->String, buffer_size)) {
+		LIBPE_WARNING("Cannot read string from IMAGE_RESOURCE_DATA_STRING_U");
 		return NULL;
 	}
 
-	size_t buffer_size = pe_utils_min(256, data_string->Length + 1);
-	char *buffer = malloc(buffer_size);
-	if (buffer == NULL) {
-		// TODO: Handle allocation failure.
-		abort();
-	}
-	memset(buffer, 0, buffer_size);
-
-	if (!pe_can_read(ctx, data_string->String, buffer_size)) {
-		LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_STRING_U");
-		return NULL;
+	// If the caller provided a NULL pointer, we do the allocation and return it.
+	if (output == NULL) {
+		output = malloc(buffer_size);
+		if (output == NULL) {
+			// TODO: Handle allocation failure.
+			abort();
+		}
 	}
 	
-	//strncpy(buffer, data_string->String, buffer_size);
-	pe_utils_str_widechar2ascii(buffer, (const char *)data_string->String, buffer_size);
+	//strncpy(buffer, data_string_ptr->String, buffer_size);
+	pe_utils_str_widechar2ascii(output, (const char *)data_string_ptr->String, buffer_size);
 
-	buffer[buffer_size - 1] = '\0';
+	output[buffer_size - 1] = '\0';
 
-	return buffer;
+	return output;
 }
 
 static bool pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_name_size, uint32_t id) {
@@ -228,11 +227,8 @@ static bool pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_n
 		return false;
 	}
 
-	size_t min_size = pe_utils_min(out_name_size, data_string_u->Length + 1);
-	pe_utils_str_widechar2ascii(out_name, (const char *)data_string_u->String, min_size);
-	out_name[min_size - 1] = '\0'; // Null terminate it.
-
-	return true;
+	char *result = pe_resource_parse_string_u(ctx, out_name, out_name_size, data_string_u);
+	return result != NULL;
 }
 
 static bool pe_resource_type_name(char *out_name, size_t out_name_size, uint32_t type) {
@@ -330,9 +326,7 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 			const IMAGE_RESOURCE_DATA_STRING_U * const dataString = node->raw.dataString;
 
 			char ascii_string[256];
-			size_t min_size = pe_utils_min(sizeof(ascii_string), dataString->Length + 1);
-			pe_utils_str_widechar2ascii(ascii_string, (const char *)dataString->String, min_size);
-			ascii_string[min_size - 1] = '\0'; // Null terminate it.
+			pe_resource_parse_string_u(ctx, ascii_string, sizeof(ascii_string), dataString);
 
 			// Indentation.
 			for (size_t i=0; i < node->depth; i++)
@@ -453,9 +447,9 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
 			return false;
 		case LIBPE_RDT_RESOURCE_DIRECTORY:
 		{
-			const IMAGE_RESOURCE_DIRECTORY * const res_dir = node->raw.resourceDirectory;
-			IMAGE_RESOURCE_DIRECTORY_ENTRY *first_entry_ptr = LIBPE_PTR_ADD(res_dir, sizeof(IMAGE_RESOURCE_DIRECTORY));
-			const size_t total_entries = res_dir->NumberOfIdEntries + res_dir->NumberOfNamedEntries;
+			const IMAGE_RESOURCE_DIRECTORY * const resdir_ptr = node->raw.resourceDirectory;
+			IMAGE_RESOURCE_DIRECTORY_ENTRY *first_entry_ptr = LIBPE_PTR_ADD(resdir_ptr, sizeof(IMAGE_RESOURCE_DIRECTORY));
+			const size_t total_entries = resdir_ptr->NumberOfIdEntries + resdir_ptr->NumberOfNamedEntries;
 			
 			for (size_t i = 0; i < total_entries; i++) {
 				IMAGE_RESOURCE_DIRECTORY_ENTRY *entry = &first_entry_ptr[i];
@@ -471,40 +465,41 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
 		}
 		case LIBPE_RDT_DIRECTORY_ENTRY:
 		{
-			const IMAGE_RESOURCE_DIRECTORY_ENTRY *entry = node->raw.directoryEntry;
+			const IMAGE_RESOURCE_DIRECTORY_ENTRY *entry_ptr = node->raw.directoryEntry;
 
-			fprintf(stdout, "DEBUG: id=%#x, dataOffset=%#x\n", entry->u0.Id, entry->u1.OffsetToData);
+			fprintf(stdout, "DEBUG: id=%#x, dataOffset=%#x\n", entry_ptr->u0.Id, entry_ptr->u1.OffsetToData);
 
 			pe_resource_node_t *new_node = NULL;
 
 			// This resource has a name?
-			if (entry->u0.data.NameIsString) { // entry->u0.Name & IMAGE_RESOURCE_NAME_IS_STRING
-				node->name = pe_resource_parse_string_u(ctx, entry->u0.data.NameOffset);
-				
-				IMAGE_RESOURCE_DATA_STRING_U *data_string = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, entry->u0.data.NameOffset);
-				if (!pe_can_read(ctx, data_string, sizeof(IMAGE_RESOURCE_DATA_STRING_U))) {
+			if (entry_ptr->u0.data.NameIsString) { // entry->u0.Name & IMAGE_RESOURCE_NAME_IS_STRING
+				IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, entry_ptr->u0.data.NameOffset);
+				if (!pe_can_read(ctx, data_string_ptr, sizeof(IMAGE_RESOURCE_DATA_STRING_U))) {
 					LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_STRING_U");
 					return NULL;
 				}
-				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_DATA_STRING, data_string, node);
+
+				node->name = pe_resource_parse_string_u(ctx, NULL, 0, data_string_ptr);
+
+				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_DATA_STRING, data_string_ptr, node);
 				pe_resource_parse_nodes(ctx, new_node);
 			}
 
 			// Is it a directory?
-			if (entry->u1.data.DataIsDirectory) { // entry->u1.OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY
-				IMAGE_RESOURCE_DIRECTORY *child_res_dir = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, entry->u1.data.OffsetToDirectory);
-				if (!pe_can_read(ctx, child_res_dir, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
+			if (entry_ptr->u1.data.DataIsDirectory) { // entry->u1.OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY
+				IMAGE_RESOURCE_DIRECTORY *child_resdir_ptr = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, entry_ptr->u1.data.OffsetToDirectory);
+				if (!pe_can_read(ctx, child_resdir_ptr, sizeof(IMAGE_RESOURCE_DIRECTORY))) {
 					LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DIRECTORY");
 					break;
 				}
-				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_RESOURCE_DIRECTORY, child_res_dir, node);
+				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_RESOURCE_DIRECTORY, child_resdir_ptr, node);
 			} else { // Not a directory
-				IMAGE_RESOURCE_DATA_ENTRY *data_entry = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, entry->u1.data.OffsetToDirectory);
-				if (!pe_can_read(ctx, data_entry, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
+				IMAGE_RESOURCE_DATA_ENTRY *data_entry_ptr = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr, entry_ptr->u1.data.OffsetToDirectory);
+				if (!pe_can_read(ctx, data_entry_ptr, sizeof(IMAGE_RESOURCE_DATA_ENTRY))) {
 					LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_ENTRY");
 					break;
 				}
-				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_DATA_ENTRY, data_entry, node);
+				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_DATA_ENTRY, data_entry_ptr, node);
 			}
 			
 			pe_resource_parse_nodes(ctx, new_node);
@@ -513,36 +508,29 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
 		}
 		case LIBPE_RDT_DATA_STRING:
 		{
-			const IMAGE_RESOURCE_DATA_STRING_U *data_string = node->raw.dataString;
-
-			size_t buffer_size = pe_utils_min(256, data_string->Length + 1);
-			char *buffer = malloc(buffer_size);
-			if (buffer == NULL) {
-				// TODO: Handle allocation failure.
-				abort();
+			const IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr = node->raw.dataString;
+			if (!pe_can_read(ctx, data_string_ptr, sizeof(IMAGE_RESOURCE_DATA_STRING_U))) {
+				LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_STRING_U");
+				break;
 			}
-			memset(buffer, 0, buffer_size);
-			//strncpy(buffer, data_string->String, buffer_size);
-			pe_utils_str_widechar2ascii(buffer, (const char *)data_string->String, buffer_size);
-			buffer[buffer_size - 1] = '\0';
 
-			fprintf(stdout, "DEBUG: Length=%d, String=%s\n", data_string->Length, buffer);
-			
+			char *buffer = pe_resource_parse_string_u(ctx, NULL, 0, data_string_ptr);
+			fprintf(stdout, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
 			free(buffer);
 			break;
 		}
 		case LIBPE_RDT_DATA_ENTRY:
 		{
-			const IMAGE_RESOURCE_DATA_ENTRY *data_entry = node->raw.dataEntry;
+			const IMAGE_RESOURCE_DATA_ENTRY *data_entry_ptr = node->raw.dataEntry;
 
 			fprintf(stdout, "DEBUG: CodePage=%u, OffsetToData=%u[%#x], Reserved=%u[%#x], Size=%u[%#x]\n",
-				data_entry->CodePage,
-				data_entry->OffsetToData,
-				data_entry->OffsetToData,
-				data_entry->Reserved,
-				data_entry->Reserved,
-				data_entry->Size,
-				data_entry->Size);
+				data_entry_ptr->CodePage,
+				data_entry_ptr->OffsetToData,
+				data_entry_ptr->OffsetToData,
+				data_entry_ptr->Reserved,
+				data_entry_ptr->Reserved,
+				data_entry_ptr->Size,
+				data_entry_ptr->Size);
 
 			////////////////////////////////////////////////////////////////////////////////////
 			// TODO(jweyrich): To be written.

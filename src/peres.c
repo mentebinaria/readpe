@@ -539,7 +539,8 @@ bool peres_contains_version_node(const pe_resource_node_t *node) {
 
 static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
-	assert(node != NULL);
+	if (node == NULL)
+		return;
 
 	pe_resource_node_search_result_t search_result = {0};
 	pe_resource_search_nodes(&search_result, node, peres_contains_version_node);

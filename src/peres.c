@@ -265,12 +265,12 @@ static void peres_show_nodes(pe_ctx_t *ctx, const pe_resource_node_t *node)
 	peres_show_nodes(ctx, node->nextNode);
 }
 
-static void peres_build_node_filename(pe_ctx_t *ctx, const pe_resource_node_t *node, char *output, size_t output_size)
+static void peres_build_node_filename(pe_ctx_t *ctx, char *output, size_t output_size, const pe_resource_node_t *node)
 {
 	UNUSED(ctx);
-	for (pe_resource_level_e level = LIBPE_RDT_LEVEL1; level <= node->dirLevel; level++) {
-		char partial_path[MAX_PATH];
+	char partial_path[MAX_PATH];
 
+	for (pe_resource_level_e level = LIBPE_RDT_LEVEL1; level <= node->dirLevel; level++) {
 		const pe_resource_node_t *dir_entry_node = pe_resource_find_parent_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, level);
 		if (dir_entry_node->raw.directoryEntry->u0.data.NameIsString) {
 			snprintf(partial_path, sizeof(partial_path), "%s ", dir_entry_node->name);
@@ -287,7 +287,7 @@ static void peres_build_node_filename(pe_ctx_t *ctx, const pe_resource_node_t *n
 	}
 
 	size_t length = strlen(output);
-	output[length-1] = '\0';
+	output[length - 1] = '\0'; // Remove the last whitespace.
 }
 
 static void peres_show_list_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
@@ -297,7 +297,7 @@ static void peres_show_list_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 
 	char node_info[MAX_PATH];
 	memset(node_info, 0, sizeof(node_info));
-	peres_build_node_filename(ctx, node, node_info, sizeof(node_info));
+	peres_build_node_filename(ctx, node_info, sizeof(node_info), node);
 	printf("%s (%d bytes)\n", node_info, node->raw.dataEntry->Size);
 }
 
@@ -365,7 +365,7 @@ static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, b
 		char fileName[MAX_PATH];
 		memset(fileName, 0, sizeof(fileName));
 
-		peres_build_node_filename(ctx, node, fileName, sizeof(fileName)),
+		peres_build_node_filename(ctx, fileName, sizeof(fileName), node),
 		snprintf(relativeFileName, sizeof(relativeFileName), "%s/%s%s",
 			dirName,
 			fileName,

@@ -68,8 +68,47 @@ void pe_error_print(FILE *stream, pe_err_e error) {
 		fprintf(stream, "ERROR [%d]: %s\n", error, pe_error_msg(error));
 	} else {
 		char errmsg[255];
-		strerror_r(errno, errmsg, sizeof(errmsg));
+		memset(errmsg, 0, sizeof(errmsg));
+
+		/*
+		 * Quotes from https://linux.die.net/man/3/strerror_r
+		 *
+		 * The strerror_r() function is similar to strerror(), but is thread safe. This function
+		 * is available in two versions: an XSI-compliant version specified in POSIX.1-2001
+		 * (available since glibc 2.3.4, but not POSIX-compliant until glibc 2.13), and a
+		 * GNU-specific version (available since glibc 2.0). The XSI-compliant version is provided
+		 * with the feature test macros settings shown in the SYNOPSIS; otherwise the GNU-specific
+		 * version is provided. If no feature test macros are explicitly defined, then (since
+		 * glibc 2.4) _POSIX_SOURCE is defined by default with the value 200112L, so that the
+		 * XSI-compliant version of strerror_r() is provided by default.
+		 *
+		 * The XSI-compliant strerror_r() is preferred for portable applications. It returns the
+		 * error string in the user-supplied buffer buf of length buflen.
+		 *
+		 * The GNU-specific strerror_r() returns a pointer to a string containing the error
+		 * message. This may be either a pointer to a string that the function stores in buf, or
+		 * a pointer to some (immutable) static string (in which case buf is unused). If the
+		 * function stores a string in buf, then at most buflen bytes are stored (the string may
+		 * be truncated if buflen is too small and errnum is unknown). The string always includes
+		 * a terminating null byte.
+		 */
+
+		// Since we define _GNU_SOURCE in our Makefile, strerror_r should be GNU-compliant.
+		// However, looks like if you're on macOS, strerror_r is XSI-compliant.
+
+#if defined(__DARWIN_C_LEVEL) // XSI-compliant
+		/* int ret = */ strerror_r(errno, errmsg, sizeof(errmsg));
+		const char *errmsg_ptr = errmsg;
+#elif (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! defined(_GNU_SOURCE) // GNU-compliant
+		const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof(errmsg));
+#elif defined(_GNU_SOURCE) // GNU-compliant
+		/* int ret = */ strerror_r(errno, errmsg, sizeof(errmsg));
+		const char *errmsg_ptr = errmsg;
+#else // Fallback to XSI-compliant version
+		const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof(errmsg));
+#endif
+
 		fprintf(stream, "ERROR [%d]: %s (%s)\n", error, pe_error_msg(error),
-			errmsg);
+			errmsg_ptr);
 	}
 }

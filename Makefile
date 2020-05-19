@@ -77,7 +77,7 @@ all: libpe
 
 libpe: CPPFLAGS += -D_GNU_SOURCE
 ifeq ($(PLATFORM_OS), CYGWIN)
-libpe: CPPFLAGS += -D_XOPEN_SOURCE=500
+libpe: CPPFLAGS += -D_XOPEN_SOURCE=600
 endif
 libpe: $(libpe_OBJS)
 ifeq ($(PLATFORM_OS), Linux)

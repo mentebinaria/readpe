@@ -188,7 +188,7 @@ static char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t outp
 	if (data_string_ptr == NULL)
 		return NULL;
 
-	const size_t buffer_size = pe_utils_min(output_size <= 0 ? 256 : output_size, data_string_ptr->Length + 1);
+	const size_t buffer_size = pe_utils_min(output_size <= 0 ? 256 : output_size, (size_t)data_string_ptr->Length + 1);
 	if (!pe_can_read(ctx, data_string_ptr->String, buffer_size)) {
 		LIBPE_WARNING("Cannot read string from IMAGE_RESOURCE_DATA_STRING_U");
 		return NULL;

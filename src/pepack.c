@@ -288,14 +288,14 @@ int main(int argc, char *argv[])
 	if (!loaddb(&dbfile, options))
 		fprintf(stderr, "WARNING: without valid database file, %s will search in generic mode only\n", PROGRAM);
 
-	char value[MAX_MSG];
+	char value[MAX_MSG + 1];
 
 	// TODO(jweyrich): Create a new API to retrieve map_addr.
 	// TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)` instead?
 	const unsigned char *pe_data = ctx.map_addr;
 
 	// packer by signature
-	if (compare_signature(pe_data, ep_offset, dbfile, value, sizeof(value)))
+	if (compare_signature(pe_data, ep_offset, dbfile, value, sizeof(value) - 1))
 		;
 	// generic detection
 	else if (generic_packer(&ctx, ep_offset))

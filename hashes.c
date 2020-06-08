@@ -625,7 +625,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		LL_DELETE(head, elt);
 	}
 
-	free(elt);
+	assert(!elt);
 	freeNodes(head);
 
 	size_t imphash_string_len = strlen(imphash_string);

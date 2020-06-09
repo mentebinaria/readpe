@@ -366,7 +366,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 	uint64_t ofs = offset;
 
-	char hint_str[16];
+	char hint_str[32];
 	char fname[MAX_FUNCTION_NAME];
 	bool is_ordinal = false;
 
@@ -625,7 +625,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		LL_DELETE(head, elt);
 	}
 
-	free(elt);
+	assert(!elt);
 	freeNodes(head);
 
 	size_t imphash_string_len = strlen(imphash_string);

@@ -74,3 +74,12 @@ Compile with:
 
     cc -o example example.c -lpe
 
+## Troubleshooting
+- **Error while loading shared libraries: libpe.so.1**
+  - The prefix used in libpe's makefile is `/usr/local/lib`
+  - If your system isn't set to look here, you can add it to `ld.so.conf`
+  - Alternatively, change prefix to whatever suits, ie. `/usr/lib`
+  
+- **Undefined reference to `log`**
+  - Linux' glibc does not define math functions, they live instead in libm
+  - Link against both libpe and libm to fix this (ie. `-lm`)

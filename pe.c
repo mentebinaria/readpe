@@ -100,7 +100,7 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 
 	if (options & LIBPE_OPT_NOCLOSE_FD) {
 		// The file descriptor is not dup'ed, and will be closed when the stream created by fdopen() is closed.
-		FILE *fp = fdopen(fd, "r+b"); // NOTE: 'b' is ignored on all POSIX conforming systems.
+		FILE *fp = fdopen(fd,  options & LIBPE_OPT_OPEN_RW ? "r+b" : "rb"); // NOTE: 'b' is ignored on all POSIX conforming systems.
 		if (fp == NULL) {
 			//perror("fdopen");
 			return LIBPE_E_FDOPEN_FAILED;

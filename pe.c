@@ -134,7 +134,8 @@ static void cleanup_cached_data(pe_ctx_t *ctx) {
 	pe_hash_sections_dealloc(ctx->cached_data.hash_sections);
 	pe_hash_dealloc(ctx->cached_data.hash_file);
 	pe_resources_dealloc(ctx->cached_data.resources);
-
+	if (ctx->cached_data.resources != NULL)
+		free(ctx->cached_data.resources);
 	memset(&ctx->cached_data, 0, sizeof(pe_cached_data_t));
 }
 

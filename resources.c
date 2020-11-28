@@ -621,7 +621,5 @@ void pe_resources_dealloc(pe_resources_t *obj) {
 	if (obj == NULL)
 		return;
 	pe_resource_free_nodes(obj->root_node);
-	obj->root_node = NULL;
-	obj->resource_base_ptr = NULL;
 	free(obj);
 }

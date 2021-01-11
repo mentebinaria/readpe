@@ -2,7 +2,7 @@
 	libpe - the PE library
 
 	Copyright (C) 2010 - 2017 libpe authors
-	
+
 	This file is part of libpe.
 
 	libpe is free software: you can redistribute it and/or modify
@@ -20,6 +20,7 @@
 */
 
 #include "libpe/resources.h"
+#include "libpe/dir_resources.h"
 #include "libpe/pe.h"
 #include "libpe/utlist.h"
 #include <stdlib.h>
@@ -120,7 +121,7 @@ pe_resource_node_t *pe_resource_root_node(const pe_resource_node_t *node) {
 		// Move to the next parent node.
 		parent = parent->parentNode;
 	}
-	
+
 	return (pe_resource_node_t *)node; // Return the node itself if it has no parent.
 }
 
@@ -138,7 +139,7 @@ pe_resource_node_t *pe_resource_last_child_node(const pe_resource_node_t *parent
 		// Move to the next node.
 		child = child->nextNode;
 	}
-	
+
 	return NULL;
 }
 
@@ -162,7 +163,7 @@ pe_resource_node_t *pe_resource_find_node_by_type_and_level(const pe_resource_no
 	// Found the matching node. Return it.
 	if (sibling != NULL)
 		return (pe_resource_node_t *)sibling;
-	
+
 	return NULL;
 }
 
@@ -202,7 +203,7 @@ static char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t outp
 			abort();
 		}
 	}
-	
+
 	//strncpy(buffer, data_string_ptr->String, buffer_size);
 	pe_utils_str_widechar2ascii(output, (const char *)data_string_ptr->String, buffer_size);
 
@@ -251,14 +252,14 @@ static char *pe_resource_name_from_type(char *out_name, size_t out_name_size, ui
 			abort();
 		}
 	}
-	
+
 	if (match != NULL) {
 		strncpy(out_name, match->name, out_name_size);
 		out_name[out_name_size - 1] = '\0';
 	} else {
 		snprintf(out_name, out_name_size, "%" PRIX32, type);
 	}
-	
+
 	return out_name;
 }
 
@@ -316,10 +317,10 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 
 			if (dir->MajorVersion || dir->MinorVersion)
 				printf(" Vers:%u.%02u", dir->MajorVersion, dir->MinorVersion);
-			
+
 			if (dir->Characteristics)
 				printf(" Char:%08u[%08X]", dir->Characteristics, dir->Characteristics);
-			
+
 			printf("\n");
 			break;
 		}
@@ -382,7 +383,7 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 static void pe_resource_debug_nodes(pe_ctx_t *ctx, const pe_resource_node_t *node) {
 	if (node == NULL)
 		return;
-	
+
 	pe_resource_debug_node(ctx, node);
 
 	pe_resource_debug_nodes(ctx, node->childNode);
@@ -398,7 +399,7 @@ static pe_resource_node_t *pe_resource_create_node(uint8_t depth, pe_resource_no
 	memset(node, 0, sizeof(*node));
 	node->depth = depth;
 	node->type = type;
-	
+
 	// Determine directory level.
 	if (parent_node != NULL) {
 		// node->dirLevel = parent_node->type == LIBPE_RDT_RESOURCE_DIRECTORY && node->type == LIBPE_RDT_DIRECTORY_ENTRY
@@ -470,7 +471,7 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 			const IMAGE_RESOURCE_DIRECTORY * const resdir_ptr = node->raw.resourceDirectory;
 			IMAGE_RESOURCE_DIRECTORY_ENTRY *first_entry_ptr = LIBPE_PTR_ADD(resdir_ptr, sizeof(IMAGE_RESOURCE_DIRECTORY));
 			const size_t total_entries = resdir_ptr->NumberOfIdEntries + resdir_ptr->NumberOfNamedEntries;
-			
+
 			for (size_t i = 0; i < total_entries; i++) {
 				IMAGE_RESOURCE_DIRECTORY_ENTRY *entry = &first_entry_ptr[i];
 				if (!pe_can_read(ctx, entry, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY))) {
@@ -521,9 +522,9 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 				}
 				new_node = pe_resource_create_node(node->depth + 1, LIBPE_RDT_DATA_ENTRY, data_entry_ptr, node);
 			}
-			
+
 			pe_resource_parse_nodes(ctx, new_node);
-			
+
 			break;
 		}
 		case LIBPE_RDT_DATA_STRING:
@@ -560,14 +561,14 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 			break;
 		}
 	}
-		
+
 	return true;
 }
 
 static pe_resource_node_t *pe_resource_parse(pe_ctx_t *ctx, void *resource_base_ptr) {
 	pe_resource_node_t *root_node = pe_resource_create_node(0, LIBPE_RDT_RESOURCE_DIRECTORY, resource_base_ptr, NULL);
 	pe_resource_parse_nodes(ctx, root_node);
-	pe_resource_debug_nodes(ctx, root_node);
+	//pe_resource_debug_nodes(ctx, root_node);
 	return root_node;
 }
 
@@ -606,14 +607,14 @@ pe_resources_t *pe_resources(pe_ctx_t *ctx) {
 		abort();
 	}
 	memset(res_ptr, 0, sizeof(*res_ptr));
-	
+
 	ctx->cached_data.resources = res_ptr;
 	ctx->cached_data.resources->err = LIBPE_E_OK;
 	ctx->cached_data.resources->resource_base_ptr = pe_resource_base_ptr(ctx); // Various parts of the parsing rely on `resource_base_ptr`.
 	if (ctx->cached_data.resources->resource_base_ptr != NULL) {
 		ctx->cached_data.resources->root_node = pe_resource_parse(ctx, ctx->cached_data.resources->resource_base_ptr);
 	}
-	
+
 	return ctx->cached_data.resources;
 }
 

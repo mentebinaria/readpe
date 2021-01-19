@@ -132,7 +132,7 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
 
 void pe_utils_str_widechar2ascii(char *output, const char *widechar, size_t length) {
 	// quick & dirty UFT16 to ASCII conversion
-	for (size_t p = 0; p <= length; p++) {
+	for (size_t p = 0; p < length; p++) {
 		memcpy(output + p, (uint16_t *)(widechar) + p, 1);
 	}
 }

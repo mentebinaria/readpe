@@ -488,7 +488,7 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 		{
 			const IMAGE_RESOURCE_DIRECTORY_ENTRY *entry_ptr = node->raw.directoryEntry;
 
-			fprintf(stdout, "DEBUG: id=%#x, dataOffset=%#x\n", entry_ptr->u0.Id, entry_ptr->u1.OffsetToData);
+			//fprintf(stdout, "DEBUG: id=%#x, dataOffset=%#x\n", entry_ptr->u0.Id, entry_ptr->u1.OffsetToData);
 
 			pe_resource_node_t *new_node = NULL;
 
@@ -538,7 +538,7 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 			// TODO(jweyrich): We should store the result in the node to be useful,
 			// but we still don't store specific data in the node, except for its name.
 			char *buffer = pe_resource_parse_string_u(ctx, NULL, 0, data_string_ptr);
-			fprintf(stdout, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
+			//fprintf(stdout, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
 			free(buffer);
 			break;
 		}
@@ -546,14 +546,14 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 		{
 			const IMAGE_RESOURCE_DATA_ENTRY *data_entry_ptr = node->raw.dataEntry;
 
-			fprintf(stdout, "DEBUG: CodePage=%u, OffsetToData=%u[%#x], Reserved=%u[%#x], Size=%u[%#x]\n",
-				data_entry_ptr->CodePage,
-				data_entry_ptr->OffsetToData,
-				data_entry_ptr->OffsetToData,
-				data_entry_ptr->Reserved,
-				data_entry_ptr->Reserved,
-				data_entry_ptr->Size,
-				data_entry_ptr->Size);
+			// fprintf(stdout, "DEBUG: CodePage=%u, OffsetToData=%u[%#x], Reserved=%u[%#x], Size=%u[%#x]\n",
+			// 	data_entry_ptr->CodePage,
+			// 	data_entry_ptr->OffsetToData,
+			// 	data_entry_ptr->OffsetToData,
+			// 	data_entry_ptr->Reserved,
+			// 	data_entry_ptr->Reserved,
+			// 	data_entry_ptr->Size,
+			// 	data_entry_ptr->Size);
 
 			////////////////////////////////////////////////////////////////////////////////////
 			// TODO(jweyrich): To be written.

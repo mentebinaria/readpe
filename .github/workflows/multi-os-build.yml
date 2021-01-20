@@ -1,0 +1,75 @@
+name: multi-os-build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-linux:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Install packages
+      uses: mstksg/get-package@v1
+      with:
+        # Space-separated list of packages to install using apt-get.  Will only run if on ubuntu.
+        apt-get: libssl-dev
+    
+    - name: Checkout with submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Compile
+      run: make
+      
+      
+  build-osx:
+
+    runs-on: macos-latest
+
+    steps:
+
+    - name: Install packages
+      uses: mstksg/get-package@v1
+      with:
+        # Space-separated list of packages to install using brew install.  Will only run if on OSX.
+        brew: openssl
+    
+    - name: Checkout with submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Compile
+      run: CFLAGS="-I/usr/local/opt/openssl/include/" LDFLAGS="-L/usr/local/opt/openssl/lib/" make
+      
+  build-win64:
+
+    runs-on: windows-latest
+
+    steps:
+
+    - name: Install Cygwin
+      # You may pin to the exact commit or the version.
+      # uses: egor-tensin/setup-cygwin@4f96f9fecb8c952fa32ff791b0a77d93d5191bb4
+      uses: egor-tensin/setup-cygwin@v3
+      with:
+        platform: x64 # optional, default is x64
+        install-dir: c:\tools\cygwin # optional, default is C:\tools\cygwin
+        packages: gcc-core binutils make zip libssl-devel # optional
+    
+    - name: Checkout with submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Compile
+      run: make
+      
+    - name: Compile Windows-only tools and create a ZIP package
+      run: make zip

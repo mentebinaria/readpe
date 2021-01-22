@@ -37,9 +37,20 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include <dirent.h>
+
 #include "plugins.h"
+#include "yarascan.h"
 
 #define PROGRAM "pescan"
+
+#ifdef __linux__
+#define YARA_RULES_DIR "yara_rules/"
+#elif __windows__
+#define YARA_RULES_DIR "A DEFINIR"
+#elif __APPLE__
+#define YARA_RULES_DIR ".config/pev/yara_rules"
+#endif
 
 typedef struct {
 	bool verbose;
@@ -450,6 +461,24 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 	return 0;
 }
 
+// Run yara scan 
+void run_yara(pe_ctx_t* ctx)
+{
+	int err = start_yara(YARA_RULES_DIR);
+	
+	switch (err) {
+		case ERROR_COMPILER:
+			LIBPE_WARNING("Error on set Yara compiler!");
+			return;
+		case ERROR_DIR_NOT_FOUND:
+			LIBPE_WARNING("Unable to find the "YARA_RULES_DIR" folder!");
+			return;
+	}
+
+	scan_pe(ctx);
+	destroy_yara();
+}
+
 int main(int argc, char *argv[])
 {
 	pev_config_t config;
@@ -582,7 +611,10 @@ int main(int argc, char *argv[])
 
 	// section analysis
 	print_strange_sections(&ctx);
+	// Yara scan
+	run_yara(&ctx);
 
+	
 	output_close_document();
 
 	// free memory

@@ -70,11 +70,11 @@ endif
 
 ifeq ($(PLATFORM_OS), CYGWIN)
 	override CPPFLAGS += -D_XOPEN_SOURCE=600
-endif
+	endif
 
 SRC_DIRS = $(srcdir) $(srcdir)/compat
 
-PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd
+PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd 
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
 export LIBPE = $(realpath $(srcdir)/../lib/libpe)
@@ -94,7 +94,10 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
 	$(pev_BUILDDIR)/output.o \
-	$(pev_BUILDDIR)/pev_api.o
+	$(pev_BUILDDIR)/pev_api.o \
+
+pescan_DEPS = \
+	$(pev_BUILDDIR)/yarascan.o -lyara
 
 ####### Build rules
 
@@ -124,7 +127,7 @@ peres: $(pev_BUILDDIR)/peres.o $(pev_OBJS)
 
 pescan: LDFLAGS += -lm
 pescan: $(pev_BUILDDIR)/pescan.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(pescan_DEPS) $(CFLAGS) $(CPPFLAGS)
 
 pesec: LDFLAGS += -lcrypto
 pesec: $(pev_BUILDDIR)/pesec.o $(pev_OBJS)
@@ -141,6 +144,7 @@ rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
 	
 peldd: $(pev_BUILDDIR)/peldd.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
+
 
 # Generic rule matching sources
 

@@ -53,12 +53,11 @@ static pe_err_e get_hashes(pe_hash_t *output, const char *name, const unsigned c
 	pe_err_e ret = LIBPE_E_OK;
 
 	const size_t hash_maxsize = pe_hash_recommended_size();
-	char *hash_value = malloc(hash_maxsize);
+	char *hash_value = calloc(1, hash_maxsize);
 	if (hash_value == NULL) {
 		ret = LIBPE_E_ALLOCATION_FAILURE;
 		goto error;
 	}
-	memset(hash_value, 0, hash_maxsize);
 
 	output->name = strdup(name);
 	if (output->name == NULL) {
@@ -226,12 +225,11 @@ pe_hash_headers_t *pe_get_headers_hashes(pe_ctx_t *ctx) {
 	if (ctx->cached_data.hash_headers != NULL)
 		return ctx->cached_data.hash_headers;
 
-	pe_hash_headers_t *result = ctx->cached_data.hash_headers = malloc(sizeof(pe_hash_headers_t));
+	pe_hash_headers_t *result = ctx->cached_data.hash_headers = calloc(1, sizeof(pe_hash_headers_t));
 	if (result == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;
 	}
-	memset(result, 0, sizeof(pe_hash_headers_t));
 
 	result->err = LIBPE_E_OK;
 
@@ -278,12 +276,11 @@ pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx) {
 	if (ctx->cached_data.hash_sections != NULL)
 		return ctx->cached_data.hash_sections;
 
-	pe_hash_sections_t *result = ctx->cached_data.hash_sections = malloc(sizeof(pe_hash_sections_t));
+	pe_hash_sections_t *result = ctx->cached_data.hash_sections = calloc(1, sizeof(pe_hash_sections_t));
 	if (result == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;
 	}
-	memset(result, 0, sizeof(pe_hash_sections_t));
 	
 	result->err = LIBPE_E_OK;
 
@@ -291,13 +288,11 @@ pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx) {
 	
 	// Allocate an array of pointers once so we can store each pe_hash_t pointer in the
 	// respective result->sections[i].
-	const size_t sections_size = num_sections * sizeof(pe_hash_t *);
-	result->sections = malloc(sections_size);
+	result->sections = calloc(num_sections, sizeof(pe_hash_t *));
 	if (result->sections == NULL) {
 		result->err = LIBPE_E_ALLOCATION_FAILURE;
 		return result;
 	}
-	memset(result->sections, 0, sections_size);
 
 	IMAGE_SECTION_HEADER ** const sections = pe_sections(ctx);
 
@@ -313,12 +308,11 @@ pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx) {
 		if (data_size) {
 			char *name = (char *)sections[i]->Name;
 
-			pe_hash_t *section_hash = malloc(sizeof(pe_hash_t));
+			pe_hash_t *section_hash = calloc(1, sizeof(pe_hash_t));
 			if (section_hash == NULL) {
 				result->err = LIBPE_E_ALLOCATION_FAILURE;
 				break;
 			}
-			memset(section_hash, 0, sizeof(pe_hash_t));
 
 			pe_err_e status = get_hashes(section_hash, name, data, data_size);
 			if (status != LIBPE_E_OK) {
@@ -339,12 +333,11 @@ pe_hash_t *pe_get_file_hash(pe_ctx_t *ctx) {
 	if (ctx->cached_data.hash_file != NULL)
 		return ctx->cached_data.hash_file;
 
-	pe_hash_t *hash = ctx->cached_data.hash_file = malloc(sizeof(pe_hash_t));
+	pe_hash_t *hash = ctx->cached_data.hash_file = calloc(1, sizeof(pe_hash_t));
 	if (hash == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;
 	}
-	memset(hash, 0, sizeof(pe_hash_t));
 
 	const uint64_t data_size = pe_filesize(ctx);
 	pe_err_e status = get_hashes(hash, "PEfile hash", ctx->map_addr, data_size);
@@ -366,12 +359,9 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 	uint64_t ofs = offset;
 
-	char hint_str[32];
-	char fname[MAX_FUNCTION_NAME];
+	char hint_str[32] = { 0 };
+	char fname[MAX_FUNCTION_NAME] = { 0 };
 	bool is_ordinal = false;
-
-	memset(hint_str, 0, sizeof(hint_str));
-	memset(fname, 0, sizeof(fname));
 
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
@@ -488,12 +478,11 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		for (size_t i=0; i < fname_len; i++)
 			fname[i] = tolower(fname[i]);
 
-		element_t *el = malloc(sizeof(element_t));
+		element_t *el = calloc(1, sizeof(element_t));
 		if (el == NULL) {
 			// TODO: Handle allocation failure.
 			abort();
 		}
-		memset(el, 0, sizeof(element_t));
 
 		el->dll_name = strdup(dll_name);
 
@@ -517,8 +506,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 						if (hint == ws2_32_arr[i].number)
 							el->function_name = strdup(ws2_32_arr[i].fname);
 				} else {
-					char ord[MAX_FUNCTION_NAME];
-					memset(ord, 0, MAX_FUNCTION_NAME);
+					char ord[MAX_FUNCTION_NAME] = { 0 };
 
 					if (is_ordinal) {
 						snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
@@ -613,12 +601,11 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 	// Allocate enough memory to store N times "dll_name.func_name,", plus 1 byte for the NUL terminator.
 	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME + 2) + 1;
-	char *imphash_string = malloc(imphash_string_size);
+	char *imphash_string = calloc(1, imphash_string_size);
 	if (imphash_string == NULL) {
 		// TODO: Handle allocation failure.
 		abort();
 	}
-	memset(imphash_string, 0, imphash_string_size);
 
 	LL_FOREACH_SAFE(head, elt, tmp) {
 		sprintf(imphash_string + strlen(imphash_string), "%s.%s,", elt->dll_name, elt->function_name);
@@ -643,13 +630,12 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	const size_t data_size = imphash_string_len;
 
 	const size_t hash_maxsize = pe_hash_recommended_size();
-	char *hash_value = malloc(hash_maxsize);
+	char *hash_value = calloc(1, hash_maxsize);
 	if (hash_value == NULL) {
 		free(imphash_string);
 		//ret = LIBPE_E_ALLOCATION_FAILURE;
 		return NULL;
 	}
-	memset(hash_value, 0, hash_maxsize);
 
 	const bool hash_ok = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
 

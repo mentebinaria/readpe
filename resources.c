@@ -90,12 +90,11 @@ void pe_resource_search_nodes(pe_resource_node_search_result_t *result, const pe
 
 	if (predicate(node)) {
 		// Found the matching node. Return it.
-		pe_resource_node_search_result_item_t *item = malloc(sizeof(*item));
+		pe_resource_node_search_result_item_t *item = calloc(1, sizeof(*item));
 		if (item == NULL) {
 			// TODO: Handle allocation failure.
 			abort();
 		}
-		memset(item, 0, sizeof(*item));
 		item->node = node;
 		LL_APPEND(result->items, item);
 		result->count++;
@@ -270,9 +269,8 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 			break;
 		case LIBPE_RDT_RESOURCE_DIRECTORY:
 		{
-			char resource_name[256];
+			char resource_name[256] = { 0 };
 			const size_t resource_name_size = sizeof(resource_name);
-			memset(resource_name, 0, resource_name_size);
 
 			if (node->dirLevel == LIBPE_RDT_LEVEL1) { // dirLevel == 1 is where Resource Types are defined.
 				if (node->parentNode != NULL && node->parentNode->type == LIBPE_RDT_DIRECTORY_ENTRY) {
@@ -388,12 +386,11 @@ static void pe_resource_debug_nodes(pe_ctx_t *ctx, const pe_resource_node_t *nod
 }
 
 static pe_resource_node_t *pe_resource_create_node(uint8_t depth, pe_resource_node_type_e type, void *raw_ptr, pe_resource_node_t *parent_node) {
-	pe_resource_node_t *node = malloc(sizeof(pe_resource_node_t));
+	pe_resource_node_t *node = calloc(1, sizeof(pe_resource_node_t));
 	if (node == NULL) {
 		// TODO: Handle allocation failure.
 		abort();
 	}
-	memset(node, 0, sizeof(*node));
 	node->depth = depth;
 	node->type = type;
 
@@ -598,12 +595,11 @@ pe_resources_t *pe_resources(pe_ctx_t *ctx) {
 	if (ctx->cached_data.resources != NULL)
 		return ctx->cached_data.resources;
 
-	pe_resources_t *res_ptr = malloc(sizeof(pe_resources_t));
+	pe_resources_t *res_ptr = calloc(1, sizeof(pe_resources_t));
 	if (res_ptr == NULL) {
 		// TODO: Handle allocation failure.
 		abort();
 	}
-	memset(res_ptr, 0, sizeof(*res_ptr));
 
 	ctx->cached_data.resources = res_ptr;
 	ctx->cached_data.resources->err = LIBPE_E_OK;

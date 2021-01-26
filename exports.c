@@ -29,12 +29,11 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	if (ctx->cached_data.exports != NULL)
 		return ctx->cached_data.exports;
 
-	pe_exports_t *exports = ctx->cached_data.exports = malloc(sizeof(pe_exports_t));
+	pe_exports_t *exports = ctx->cached_data.exports = calloc(1, sizeof(pe_exports_t));
 	if (exports == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;
 	}
-	memset(exports, 0, sizeof(pe_exports_t));
 
 	exports->err = LIBPE_E_OK;
 
@@ -91,20 +90,18 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	// functions/symbols exported by name only.
 
 	exports->functions_count = exp->NumberOfFunctions;
-	const size_t functions_size = exp->NumberOfFunctions * sizeof(pe_exported_function_t);
-	exports->functions = malloc(functions_size);
+	exports->functions = calloc(exp->NumberOfFunctions, sizeof(pe_exported_function_t));
 	if (exports->functions == NULL) {
 		exports->err = LIBPE_E_ALLOCATION_FAILURE;
 		return exports;
 	}
-	memset(exports->functions, 0, functions_size);
 
 	const uint64_t offset_to_AddressOfFunctions = pe_rva2ofs(ctx, exp->AddressOfFunctions);
 	const uint64_t offset_to_AddressOfNames = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint64_t offset_to_AddressOfNameOrdinals = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
 
 	uint64_t offsets_to_Names[exp->NumberOfFunctions];
-	memset(offsets_to_Names, 0, sizeof(offsets_to_Names));
+	memset(offsets_to_Names, 0, sizeof(offsets_to_Names));  // This is needed for VLAs.
 
 	//
 	// Names

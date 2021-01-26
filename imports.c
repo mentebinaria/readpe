@@ -136,13 +136,11 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 	imported_dll->err = LIBPE_E_OK;
 	imported_dll->functions_count = get_functions_count(ctx, offset);
 
-	const size_t size_functions = imported_dll->functions_count * sizeof(pe_imported_function_t);
-	imported_dll->functions = malloc(size_functions);
+	imported_dll->functions = calloc(imported_dll->functions_count, sizeof(pe_imported_function_t));
 	if (imported_dll->functions == NULL) {
 		imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
 		return imported_dll->err;
 	}
-	memset(imported_dll->functions, 0, size_functions);
 
 	char fname[MAX_FUNCTION_NAME] = {0};
 	const size_t size_fname = sizeof(fname);
@@ -255,12 +253,11 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx) {
 	if (ctx->cached_data.imports != NULL)
 		return ctx->cached_data.imports;
 
-	pe_imports_t *imports = ctx->cached_data.imports = malloc(sizeof(pe_imports_t));
+	pe_imports_t *imports = ctx->cached_data.imports = calloc(1, sizeof(pe_imports_t));
 	if (imports == NULL) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;
 	}
-	memset(imports, 0, sizeof(pe_imports_t));
 
 	imports->err = LIBPE_E_OK;
 	
@@ -269,13 +266,11 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx) {
 		return imports;
 
 	// Allocate array to store DLLs
-	const size_t dll_array_size = imports->dll_count * sizeof(pe_imported_dll_t);
-	imports->dlls = malloc(dll_array_size);
+	imports->dlls = calloc(imports->dll_count, sizeof(pe_imported_dll_t));
 	if (imports->dlls == NULL) {
 		imports->err = LIBPE_E_ALLOCATION_FAILURE;
 		return imports;
 	}
-	memset(imports->dlls, 0, dll_array_size);
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
 	if (dir == NULL) {
@@ -316,12 +311,11 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx) {
 
 		// Allocate string to store DLL name
 		const size_t dll_name_size = MAX_DLL_NAME;
-		dll->name = malloc(dll_name_size);
+		dll->name = calloc(1, dll_name_size);
 		if (dll->name == NULL) {
 			imports->err = LIBPE_E_ALLOCATION_FAILURE;
 			return imports;
 		}
-		memset(dll->name, 0, dll_name_size);
 
 		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
 		// It might be '\0', for example.

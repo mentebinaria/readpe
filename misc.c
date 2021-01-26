@@ -38,8 +38,7 @@ double calculate_entropy(const unsigned int counted_bytes[256], const size_t tot
 }
 
 double pe_calculate_entropy_file(pe_ctx_t *ctx) {
-	unsigned int counted_bytes[256];
-	memset(counted_bytes, 0, sizeof(counted_bytes));
+	unsigned int counted_bytes[256] = { 0 };
 
 	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
 	const uint64_t filesize = pe_filesize(ctx);

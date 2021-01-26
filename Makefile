@@ -49,11 +49,12 @@ endif
 ####### Compiler options
 
 override CFLAGS += \
-	-I"." \
+	-O2 -ffast-math \
+	-flto \
 	-I"./include" \
 	-W -Wall -Wextra -pedantic -std=c99 -c
 override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
-override LDFLAGS += -lssl -lcrypto
+override LDFLAGS += -flto -lssl -lcrypto
 
 ifneq ($(PLATFORM_OS), CYGWIN)
 	override CFLAGS += -fPIC

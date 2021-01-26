@@ -47,7 +47,7 @@ bool pe_utils_str_ends_with(const char *str, const char *suffix) {
 char *pe_utils_str_inplace_ltrim(char *str) {
 	char *ptr = str;
 
-	while (*ptr != '\0' && isspace(*ptr))
+	while (isspace(*ptr))
 		ptr++;
 
 	return ptr;
@@ -61,10 +61,8 @@ char *pe_utils_str_inplace_rtrim(char *str) {
 		ptr--;
 
 	// Move back to space.
-	ptr++;
-
 	// Replace it with '\0'.
-	*ptr = '\0';
+	*++ptr = 0;
 
 	return str;
 }
@@ -73,7 +71,7 @@ char *pe_utils_str_inplace_trim(char *str) {
 	char *begin = str;
 
 	// leading spaces
-	while (*begin != '\0' && isspace(*begin))
+	while (isspace(*begin))
 		begin++;
 
 	if (*begin == '\0') // nothing left?
@@ -85,10 +83,9 @@ char *pe_utils_str_inplace_trim(char *str) {
 	while (end != begin && isspace(*end))
 		end--;
 
-	end++; // Move to space
-
+	// Move to space
 	// Overwrite space with null terminator
-	*end = '\0';
+	*++end = '\0';
 
 	return begin;
 }
@@ -146,6 +143,7 @@ int pe_utils_round_up(int num_to_round, int multiple) {
 	return (num_to_round + multiple - 1) / multiple * multiple;
 }
 
+// FIXME: Don't need to open the file!
 int pe_utils_is_file_readable(const char *path) {
 	// Open the file.
 	const int fd = open(path, O_RDWR);
@@ -182,6 +180,8 @@ const char *pe_utils_get_homedir(void) {
 	if (homedir != NULL)
 		return homedir;
 
+	// FIXME: Instead of using getpwuid() we could use
+	//				getpwuid_r() to make this function 'thread-safe'.
 	errno = 0;
 	struct passwd *pwd = getpwuid(getuid());
 

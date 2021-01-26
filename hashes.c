@@ -498,13 +498,27 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 				int hint = strtoul(hint_str, NULL, 10);
 
 				if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
-					for (size_t i=0; i < sizeof(oleaut32_arr) / sizeof(ord_t); i++)
-						if (hint == oleaut32_arr[i].number)
-							el->function_name = strdup(oleaut32_arr[i].fname);
+          ord_t *p = oleaut32_arr;
+
+          while ( p->number ) {
+            if ( hint == p->number )
+            {
+              el->function_name = strdup( p->fname );
+              break;
+            }
+            p++;
+          }
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
-					for (size_t i=0; i < sizeof(ws2_32_arr) / sizeof(ord_t); i++)
-						if (hint == ws2_32_arr[i].number)
-							el->function_name = strdup(ws2_32_arr[i].fname);
+          ord_t *p = ws2_32_arr;
+
+          while ( p->number ) {
+            if ( hint == p->number )
+            {
+              el->function_name = strdup( p->fname );
+              break;
+            }
+            p++;
+          }
 				} else {
 					char ord[MAX_FUNCTION_NAME] = { 0 };
 
@@ -520,9 +534,11 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			}
 		}
 
-		const size_t function_name_len = strlen(el->function_name);
-		for (size_t i=0; i < function_name_len; i++)
-			el->function_name[i] = tolower(el->function_name[i]);
+    { 
+      char *p;
+      p = el->function_name;
+      while ( *p ) { *p = tolower( *p ); p++; }
+    }
 
 		LL_APPEND(*head, el);
 	}

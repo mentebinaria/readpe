@@ -26,7 +26,7 @@
 
 typedef struct {
     int number;
-    char fname[255];
+    char *fname;
 } ord_t;
 
 ord_t oleaut32_arr[] = {
@@ -427,7 +427,8 @@ ord_t oleaut32_arr[] = {
     { 440, "VarUI8FromUI4" },
     { 441, "VarUI8FromDec" },
     { 442, "RegisterTypeLibForUser" },
-    { 443, "UnRegisterTypeLibForUser" }
+    { 443, "UnRegisterTypeLibForUser" },
+    { 0 }
 };
 
 ord_t ws2_32_arr[] = {
@@ -547,5 +548,6 @@ ord_t ws2_32_arr[] = {
     { 115, "WSAStartup" },
     { 116, "WSACleanup" },
     { 151, "__WSAFDIsSet" },
-    { 500, "WEP" }
+    { 500, "WEP" },
+    { 0 }
 };

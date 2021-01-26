@@ -59,14 +59,21 @@ static const pe_resource_entry_info_t g_resource_dataentry_info_table[] = {
 	{ "RT_HTML",			RT_HTML,			".html",	"htmls"			},
 	{ "RT_MANIFEST",		RT_MANIFEST,		".xml",		"manifests"		},
 	{ "RT_DLGINIT",			RT_DLGINIT,			".rc",		"dlginits"		},
-	{ "RT_TOOLBAR",			RT_TOOLBAR,			".rc",		"toolbars"		}
+	{ "RT_TOOLBAR",			RT_TOOLBAR,			".rc",		"toolbars"		},
+	{ NULL }
 };
 
 const pe_resource_entry_info_t *pe_resource_entry_info_lookup(uint32_t name_offset) {
-	for (size_t i = 0; i < LIBPE_SIZEOF_ARRAY(g_resource_dataentry_info_table); i++) {
-		if (g_resource_dataentry_info_table[i].type == name_offset)
-			return &g_resource_dataentry_info_table[i];
+	const pe_resource_entry_info_t *p;
+
+	p = g_resource_dataentry_info_table;
+	while ( p->name )
+	{
+		if ( p->type == name_offset )
+			return p;
+		p++;
 	}
+
 	return NULL;
 }
 

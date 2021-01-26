@@ -1,6 +1,5 @@
-CFLAGS = -W -Wall -Wextra -std=c99 -pedantic
+CFLAGS = -O2 -W -Wall -Wextra -std=c99 -pedantic
 pev_BUILDDIR = ../build/
-
 
 all:
 	cc $(CFLAGS) -o $(pev_BUILDDIR)/cpload.exe cpload.c

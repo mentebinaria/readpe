@@ -24,6 +24,10 @@
 #include <errno.h>
 #include <string.h>
 
+// FIXME: Since all errors, except the first,
+//		  are negative values, we could change the
+//		  order of the strings in the static array
+//		  to simplify this function.
 const char *pe_error_msg(pe_err_e error) {
 	static const char * const errors[] = {
 		"no error", // LIBPE_E_OK,
@@ -67,8 +71,7 @@ void pe_error_print(FILE *stream, pe_err_e error) {
 	if (errno == 0) {
 		fprintf(stream, "ERROR [%d]: %s\n", error, pe_error_msg(error));
 	} else {
-		char errmsg[255];
-		memset(errmsg, 0, sizeof(errmsg));
+		char errmsg[255] = { 0 };
 
 		/*
 		 * Quotes from https://linux.die.net/man/3/strerror_r

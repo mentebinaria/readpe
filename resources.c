@@ -358,7 +358,7 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 				printf("  ");
 			printf("LIBPE_RDT_DATA_STRING [dirLevel=%d]: ", node->dirLevel);
 
-			printf("String: %s  Length: %02d\n", ascii_string, dataString->Length);
+			printf("String: %s  Length: %02hu\n", ascii_string, dataString->Length);
 			break;
 		}
 		case LIBPE_RDT_DATA_ENTRY:
@@ -539,7 +539,7 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 			// TODO(jweyrich): We should store the result in the node to be useful,
 			// but we still don't store specific data in the node, except for its name.
 			char *buffer = pe_resource_parse_string_u(ctx, NULL, 0, data_string_ptr);
-			fprintf(stderr, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
+			fprintf(stderr, "DEBUG: Length=%hu, String=%s\n", data_string_ptr->Length, buffer);
 			free(buffer);
 			break;
 		}

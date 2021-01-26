@@ -90,12 +90,12 @@ typedef struct {
 
 typedef struct {
 	uint16_t Length;
-	char String[1];
+	char String[0];   // FIX: C99 style.
 } IMAGE_RESOURCE_DATA_STRING;
 
 typedef struct {
 	uint16_t Length; // Number of Unicode characters
-	uint16_t String[1];
+	uint16_t String[0];   // FIX: C99 style.
 } IMAGE_RESOURCE_DATA_STRING_U;
 
 typedef struct {

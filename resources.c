@@ -185,17 +185,17 @@ pe_resource_node_t *pe_resource_find_parent_node_by_type_and_level(const pe_reso
 	return NULL;
 }
 
-static char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size, const IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr) {
+char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size, const IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr) {
 	if (data_string_ptr == NULL)
 		return NULL;
 
-	const size_t buffer_size = pe_utils_min(output_size <= 0 ? 256 : output_size, (size_t)data_string_ptr->Length + 1);
-	if (!pe_can_read(ctx, data_string_ptr->String, buffer_size)) {
+	if (!pe_can_read(ctx, data_string_ptr->String, data_string_ptr->Length)) {
 		LIBPE_WARNING("Cannot read string from IMAGE_RESOURCE_DATA_STRING_U");
 		return NULL;
 	}
 
 	// If the caller provided a NULL pointer, we do the allocation and return it.
+	const size_t buffer_size = output_size == 0 ? (size_t)data_string_ptr->Length + 1 : output_size;
 	if (output == NULL) {
 		output = malloc(buffer_size);
 		if (output == NULL) {
@@ -204,10 +204,7 @@ static char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t outp
 		}
 	}
 
-	//strncpy(buffer, data_string_ptr->String, buffer_size);
-	pe_utils_str_widechar2ascii(output, (const char *)data_string_ptr->String, buffer_size);
-
-	output[buffer_size - 1] = '\0';
+	pe_utils_str_widechar2ascii(output, buffer_size, (const char *)data_string_ptr->String, (size_t)data_string_ptr->Length);
 
 	return output;
 }
@@ -488,7 +485,7 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 		{
 			const IMAGE_RESOURCE_DIRECTORY_ENTRY *entry_ptr = node->raw.directoryEntry;
 
-			//fprintf(stdout, "DEBUG: id=%#x, dataOffset=%#x\n", entry_ptr->u0.Id, entry_ptr->u1.OffsetToData);
+			//fprintf(stderr, "DEBUG: id=%#x, dataOffset=%#x\n", entry_ptr->u0.Id, entry_ptr->u1.OffsetToData);
 
 			pe_resource_node_t *new_node = NULL;
 
@@ -538,15 +535,15 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node) {
 			// TODO(jweyrich): We should store the result in the node to be useful,
 			// but we still don't store specific data in the node, except for its name.
 			char *buffer = pe_resource_parse_string_u(ctx, NULL, 0, data_string_ptr);
-			//fprintf(stdout, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
+			fprintf(stderr, "DEBUG: Length=%d, String=%s\n", data_string_ptr->Length, buffer);
 			free(buffer);
 			break;
 		}
 		case LIBPE_RDT_DATA_ENTRY:
 		{
-			const IMAGE_RESOURCE_DATA_ENTRY *data_entry_ptr = node->raw.dataEntry;
+			// const IMAGE_RESOURCE_DATA_ENTRY *data_entry_ptr = node->raw.dataEntry;
 
-			// fprintf(stdout, "DEBUG: CodePage=%u, OffsetToData=%u[%#x], Reserved=%u[%#x], Size=%u[%#x]\n",
+			// fprintf(stderr, "DEBUG: CodePage=%u, OffsetToData=%u[%#x], Reserved=%u[%#x], Size=%u[%#x]\n",
 			// 	data_entry_ptr->CodePage,
 			// 	data_entry_ptr->OffsetToData,
 			// 	data_entry_ptr->OffsetToData,

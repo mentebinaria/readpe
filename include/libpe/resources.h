@@ -31,6 +31,10 @@
 extern "C" {
 #endif
 
+// Forward declare `pe_ctx_t` because we cannot include `pe.h` here due to circular dependency.
+struct pe_ctx;
+typedef struct pe_ctx pe_ctx_t;
+
 typedef enum {
 	LIBPE_RDT_LEVEL1 = 1,
 	LIBPE_RDT_LEVEL2 = 2,
@@ -107,6 +111,7 @@ pe_resource_node_t *pe_resource_root_node(const pe_resource_node_t *node);
 pe_resource_node_t *pe_resource_last_child_node(const pe_resource_node_t *parent_node);
 pe_resource_node_t *pe_resource_find_node_by_type_and_level(const pe_resource_node_t *node, pe_resource_node_type_e type, uint32_t dirLevel);
 pe_resource_node_t *pe_resource_find_parent_node_by_type_and_level(const pe_resource_node_t *node, pe_resource_node_type_e type, uint32_t dirLevel);
+char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size, const IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr);
 void pe_resources_dealloc(pe_resources_t *obj);
 
 #ifdef __cplusplus

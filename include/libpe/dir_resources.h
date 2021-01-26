@@ -95,7 +95,7 @@ typedef struct {
 
 typedef struct {
 	uint16_t Length; // Number of Unicode characters
-	wchar_t String[1];
+	uint16_t String[1];
 } IMAGE_RESOURCE_DATA_STRING_U;
 
 typedef struct {

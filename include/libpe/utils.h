@@ -44,7 +44,7 @@ char *pe_utils_str_inplace_ltrim(char *str);
 char *pe_utils_str_inplace_rtrim(char *str);
 char *pe_utils_str_inplace_trim(char *str);
 char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter);
-void pe_utils_str_widechar2ascii(char *output, const char *widechar, size_t size);
+void pe_utils_str_widechar2ascii(char *output, size_t output_size, const char *widechar, size_t widechar_count);
 
 int pe_utils_round_up(int num_to_round, int multiple);
 int pe_utils_is_file_readable(const char *path);

@@ -130,11 +130,14 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
 	return result;
 }
 
-void pe_utils_str_widechar2ascii(char *output, const char *widechar, size_t length) {
+void pe_utils_str_widechar2ascii(char *output, size_t output_size, const char *widechar, size_t widechar_count) {
 	// quick & dirty UFT16 to ASCII conversion
-	for (size_t p = 0; p < length; p++) {
-		memcpy(output + p, (uint16_t *)(widechar) + p, 1);
+	size_t length = pe_utils_min(output_size - 1, widechar_count);
+	uint16_t *p = (uint16_t *)widechar;
+	while (length--) {
+		*output++ = *p++;
 	}
+	*output = '\0';
 }
 
 int pe_utils_round_up(int num_to_round, int multiple) {

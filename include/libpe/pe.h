@@ -101,7 +101,7 @@ typedef struct {
 	pe_resources_t *resources;
 } pe_cached_data_t;
 
-typedef struct {
+typedef struct pe_ctx {
 	FILE *stream;
 	char *path;
 	void *map_addr;

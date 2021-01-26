@@ -439,9 +439,10 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
 
-		const size_t dll_name_len = strlen(dll_name);
-		for (unsigned i=0; i < dll_name_len; i++)
-			dll_name[i] = tolower(dll_name[i]);
+		{
+			char *p = dll_name;
+			while ( *p ) { *p = tolower( *p ); p++; }
+		}
 
 		char *aux = NULL;
 
@@ -474,9 +475,10 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		if (aux)
 			*aux = '\0';
 
-		const size_t fname_len = strlen(fname);
-		for (size_t i=0; i < fname_len; i++)
-			fname[i] = tolower(fname[i]);
+		{
+			char *p = fname;
+			while ( *p ) { *p = tolower( *p ); p++; }
+		}
 
 		element_t *el = calloc(1, sizeof(element_t));
 		if (el == NULL) {
@@ -498,27 +500,27 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 				int hint = strtoul(hint_str, NULL, 10);
 
 				if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
-          ord_t *p = oleaut32_arr;
+					ord_t *p = oleaut32_arr;
 
-          while ( p->number ) {
-            if ( hint == p->number )
-            {
-              el->function_name = strdup( p->fname );
-              break;
-            }
-            p++;
-          }
+					while ( p->number ) {
+					  if ( hint == p->number )
+					  {
+						el->function_name = strdup( p->fname );
+						break;
+					  }
+					  p++;
+					}
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
-          ord_t *p = ws2_32_arr;
+					ord_t *p = ws2_32_arr;
 
-          while ( p->number ) {
-            if ( hint == p->number )
-            {
-              el->function_name = strdup( p->fname );
-              break;
-            }
-            p++;
-          }
+					while ( p->number ) {
+					  if ( hint == p->number )
+					  {
+						el->function_name = strdup( p->fname );
+						break;
+					  }
+					  p++;
+					}
 				} else {
 					char ord[MAX_FUNCTION_NAME] = { 0 };
 
@@ -534,11 +536,11 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			}
 		}
 
-    { 
-      char *p;
-      p = el->function_name;
-      while ( *p ) { *p = tolower( *p ); p++; }
-    }
+		{ 
+		  char *p;
+		  p = el->function_name;
+		  while ( *p ) { *p = tolower( *p ); p++; }
+		}
 
 		LL_APPEND(*head, el);
 	}

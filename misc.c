@@ -26,13 +26,12 @@
 #include <string.h>
 
 double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length) {
-	static const double log_2 = 1.44269504088896340736;
 	double entropy = 0.;
 
 	for (size_t i = 0; i < 256; i++) {
 		double temp = (double)counted_bytes[i] / total_length;
 		if (temp > 0.)
-			entropy += fabs(temp * (log(temp) * log_2));
+			entropy += temp * fabs( log2(temp) );
 	}
 
 	return entropy;

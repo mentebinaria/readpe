@@ -157,7 +157,7 @@ static options_t *parse_options(int argc, char *argv[])
 	return options;
 }
 
-static void peres_show_node(const pe_resource_node_t *node)
+static void peres_show_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
 	char value[MAX_MSG];
 
@@ -223,10 +223,7 @@ static void peres_show_node(const pe_resource_node_t *node)
 			output("String len", value);
 
 			char ascii_string[MAX_MSG];
-			size_t min_size = pe_utils_min(sizeof(ascii_string), dataString->Length + 1);
-			pe_utils_str_widechar2ascii(ascii_string, (const char *)dataString->String, min_size);
-			ascii_string[min_size - 1] = '\0'; // Null terminate it.
-
+			pe_resource_parse_string_u(ctx, ascii_string, sizeof(ascii_string), dataString);
 			snprintf(value, MAX_MSG, "%s", ascii_string);
 			output("String", value);
 			break;
@@ -259,8 +256,8 @@ static void peres_show_nodes(pe_ctx_t *ctx, const pe_resource_node_t *node)
 	if (node == NULL)
 		return;
 
-	peres_show_node(node);
-		
+	peres_show_node(ctx, node);
+
 	peres_show_nodes(ctx, node->childNode);
 	peres_show_nodes(ctx, node->nextNode);
 }
@@ -532,9 +529,7 @@ bool peres_contains_version_node(const pe_resource_node_t *node) {
 		return false;
 	if (node->dirLevel != LIBPE_RDT_LEVEL1) // dirLevel == 1 belongs to the resource type directory.
 		return false;
-	if (node->raw.directoryEntry->u0.data.NameOffset != RT_VERSION)
-		return false;
-	return true;
+	return node->raw.directoryEntry->u0.data.NameOffset == RT_VERSION;
 }
 
 static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)

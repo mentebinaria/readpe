@@ -50,15 +50,16 @@ endif
 
 override CFLAGS += \
 	-O2 -ffast-math \
-	-flto \
 	-I"./include" \
+	-fPIC \
 	-W -Wall -Wextra -pedantic -std=c99 -c
 override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
-override LDFLAGS += -flto -lssl -lcrypto
+override LDFLAGS += -lssl -lcrypto
 
-ifneq ($(PLATFORM_OS), CYGWIN)
-	override CFLAGS += -fPIC
-endif
+# --- FIX: -fPIC is necessary to ALL shared objects! Changed above.
+#ifneq ($(PLATFORM_OS), CYGWIN)
+#	override CFLAGS += -fPIC
+#endif
 
 VERSION = 1.0
 LIBNAME = libpe

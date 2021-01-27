@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 
+// FIXME: Must be careful with this enum and pe_error_msg() function.
 typedef enum {
 	LIBPE_E_OK = 0,
 	// Declaring negative values this way is EVIL because it
@@ -57,7 +58,7 @@ typedef enum {
 	LIBPE_E_HASHING_FAILED,
 	// Misc
 	LIBPE_E_NO_CALLBACKS_FOUND,
-	LIBPE_E_NO_FUNCTIONS_FOUND
+	LIBPE_E_NO_FUNCTIONS_FOUND    // this will be -1.
 } pe_err_e;
 
 const char *pe_error_msg(pe_err_e error);

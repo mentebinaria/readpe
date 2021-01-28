@@ -152,21 +152,22 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output) {
 	}
 }
 
-static const size_t g_openssl_hash_maxsize = EVP_MAX_MD_SIZE * 2 + 1;
-static const size_t g_ssdeep_hash_maxsize = FUZZY_MAX_RESULT;
+// FIX: Don't need to allocate space for these constants!
+#define G_OPENSSL_HASH_MAXSIZE (EVP_MAX_MD_SIZE * 2 + 1)
+#define G_SSDEEP_HASH_MAXSIZE (FUZZY_MAX_RESULT)
 
 size_t pe_hash_recommended_size(void) {
 	// Since standard C lacks max(), we do it manually.
-	const size_t result = g_openssl_hash_maxsize > g_ssdeep_hash_maxsize
-		? g_openssl_hash_maxsize
-		: g_ssdeep_hash_maxsize;
+	const size_t result = G_OPENSSL_HASH_MAXSIZE > G_SSDEEP_HASH_MAXSIZE
+		? G_OPENSSL_HASH_MAXSIZE
+		: G_SSDEEP_HASH_MAXSIZE;
 
 	return result;
 }
 
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size) {
 	if (strcmp("ssdeep", alg_name) == 0) {
-		if (output_size < g_ssdeep_hash_maxsize) {
+		if (output_size < G_SSDEEP_HASH_MAXSIZE) {
 			// Not enough space.
 			return false;
 		}
@@ -175,7 +176,7 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 		return true;
 	}
 
-	if (output_size < g_openssl_hash_maxsize) {
+	if (output_size < G_OPENSSL_HASH_MAXSIZE) {
 		// Not enough space.
 		return false;
 	}

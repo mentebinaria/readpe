@@ -41,16 +41,19 @@ bool pe_utils_str_ends_with(const char *str, const char *suffix) {
 	if (len_suffix > len_str)
 		return 0;
 
+  // FIXME: memcmp() could be faster and smaller...
 	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
 char *pe_utils_str_inplace_ltrim(char *str) {
-	char *ptr = str;
-
-	while (isspace(*ptr))
-		ptr++;
-
-	return ptr;
+	// FIX: strspn() is faster than using a loop.
+//	char *ptr = str;
+//
+//	while (isspace(*ptr))
+//		ptr++;
+//
+//	return ptr;
+	return str + strspn( str, " \f\n\r\t\v" );
 }
 
 char *pe_utils_str_inplace_rtrim(char *str) {
@@ -68,26 +71,33 @@ char *pe_utils_str_inplace_rtrim(char *str) {
 }
 
 char *pe_utils_str_inplace_trim(char *str) {
-	char *begin = str;
+	// FIX: Let the compiler decide how to compile
+	//      this. No need to duplicate work.
+//	char *begin = str;
+//
+//	// leading spaces
+//	while (isspace(*begin))
+//		begin++;
+//	begin = str + strspn( str, " \f\n\r\t\v" );
+//
+//	if (*begin == '\0') // nothing left?
+//		return begin;
+//
+//	// Trailing spaces
+//	const size_t length = strlen(begin);
+//	char *end = begin + length - 1;
+//	while (end != begin && isspace(*end))
+//		end--;
+//
+//	// Move to space
+//	// Overwrite space with null terminator
+//	*++end = '\0';
+//
+//	return begin;
+	char *ptr;
 
-	// leading spaces
-	while (isspace(*begin))
-		begin++;
-
-	if (*begin == '\0') // nothing left?
-		return begin;
-
-	// Trailing spaces
-	const size_t length = strlen(begin);
-	char *end = begin + length - 1;
-	while (end != begin && isspace(*end))
-		end--;
-
-	// Move to space
-	// Overwrite space with null terminator
-	*++end = '\0';
-
-	return begin;
+    ptr = pe_utils_str_inplace_ltrim( str );
+	return pe_utils_str_inplace_rtrim( ptr );
 }
 
 char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
@@ -144,6 +154,7 @@ int pe_utils_round_up(int num_to_round, int multiple) {
 }
 
 // FIXME: Don't need to open the file!
+// FIXME: I believe I saw the same routine inside another function in pe.c.
 int pe_utils_is_file_readable(const char *path) {
 	// Open the file.
 	const int fd = open(path, O_RDWR);

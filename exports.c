@@ -63,6 +63,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 		exports->err = LIBPE_E_EXPORTS_CANT_READ_RVA;
 		return exports;
 	}
+
 	exports->name = strdup(name_ptr);
 	
 	const uint32_t ordinal_base = exp->Base;
@@ -146,7 +147,11 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 		//const uint16_t entry_ordinal = exp->Base + *entry_ordinal_list;
 		const uint32_t entry_va = *entry_va_list;
 		const uint64_t entry_name_ofs = offsets_to_Names[i];
-		char fname[300] = { 0 };
+
+		// FIX: Don't need to zero all elements!
+		// FIXME: 300 bytes is enough or too much?
+		char fname[300];
+		fname[0] = 0;
 
 		if (entry_name_ofs != 0) {
 			const char *entry_name = LIBPE_PTR_ADD(ctx->map_addr, entry_name_ofs);
@@ -203,9 +208,8 @@ void pe_exports_dealloc(pe_exports_t *obj) {
 	if (obj == NULL)
 		return;
 
-	for (uint32_t i=0; i < obj->functions_count; i++) {
+	for (uint32_t i=0; i < obj->functions_count; i++)
 		free(obj->functions[i].name);
-	}
 
 	free(obj->functions);
 	free(obj->name);

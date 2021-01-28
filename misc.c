@@ -107,7 +107,7 @@ int cpl_analysis(pe_ctx_t *ctx) {
 			&& (hdr_coff_ptr->Characteristics == characteristics1 || // equals 0xa18e
 				hdr_coff_ptr->Characteristics == characteristics2 || // equals 0xa38e
 				hdr_coff_ptr->Characteristics == characteristics3) // equals 0x2306
-			&& hdr_dos_ptr->e_sp == 0xb8
+			&& hdr_dos_ptr->e_sp == 0xb8    // ???
 		 )
 		return 1;
 

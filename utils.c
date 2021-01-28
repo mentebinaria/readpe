@@ -137,13 +137,56 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
 	return result;
 }
 
+static char windows1252_char( uint16_t chr )
+{
+	// windows-1252 Unicode codepoints from 0x80 to 0x9f.
+	// These 32 unicode codepoints was taken from Wikipedia:
+	// 	  https://en.wikipedia.org/wiki/Windows-1252
+	static const uint16_t w1252chrs[] = {
+		0x20ac,
+		0,			// invalid
+		0x201a,	0x0192,	0x201e,	0x2026,	0x2020,	0x2021,	0x02c6,	0x2030,
+		0x0160,	0x2039,	0x0152,
+		0,			// invalid
+		0x017d,
+		0,			// invalid
+		0,			// invalid
+		0x2018, 0x2019,	0x201c,	0x201d,	0x2022,	0x2013,	0x2014,	0x02dc,
+		0x2122,	0x0161,	0x203a,	0x0153,
+		0,			// invalid
+		0x017e,	0x0178
+	};
+
+	// Return any char in range of ASCII or ISO-8859-1.
+	// FIXME: 0xa0 is a 'non breaking space'. It could be converted to ' ',
+	//		  but I didn't. Feel free to do it if you need.
+	if ( chr <= 0x7f || ( chr >= 0xa0 && chr <= 0xff ) )
+		// if ( chr == 0xa0 ) return ' '; else
+		return chr;
+
+	// Return any char inside WINDOWS-1252 codepage range of 0x80 to 0x9f.
+	for ( unsigned int i = 0; i < sizeof w1252chrs / sizeof w1252chrs[0]; i++ )
+		if ( chr == w1252chrs[i] )
+			return 0x80 + i;
+
+	// Any other char returns 0 (to ignore).
+    return 0;
+}
+
 void pe_utils_str_widechar2ascii(char *output, size_t output_size, const char *widechar, size_t widechar_count) {
-	// quick & dirty UFT16 to ASCII conversion
+	// FIX: Quick & dirty UFT16 to WINDOWS-1252 conversion
 	size_t length = pe_utils_min(output_size - 1, widechar_count);
 	uint16_t *p = (uint16_t *)widechar;
 	while (length--) {
-		*output++ = *p++;
+		char c = windows1252_char( *p );
+
+		// ignores "invalid" char.
+		if ( c )
+			*output++ = c;
+
+		*p++;
 	}
+
 	*output = '\0';
 }
 

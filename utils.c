@@ -188,7 +188,7 @@ void pe_utils_str_widechar2ascii(char *output, size_t output_size, const char *w
 		if ( c )
 			*output++ = c;
 
-		*p++;
+		p++;
 	}
 
 	*output = '\0';

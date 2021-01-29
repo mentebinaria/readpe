@@ -33,15 +33,17 @@
 #include <inttypes.h>
 
 bool pe_utils_str_ends_with(const char *str, const char *suffix) {
+  // FIXME: We should assume the pointers points to something valid.
+  //        I believe the correct test would be ( ! *str || ! *suffix ).
 	if (str == NULL || suffix == NULL)
-		return 0;
+		return false;
 
 	size_t len_str = strlen(str);
 	size_t len_suffix = strlen(suffix);
 	if (len_suffix > len_str)
-		return 0;
+		return false;
 
-  // FIXME: memcmp() could be faster and smaller...
+  // FIX: memcmp() could be faster and smaller...
 	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
@@ -60,7 +62,9 @@ char *pe_utils_str_inplace_rtrim(char *str) {
 	const size_t length = strlen(str);
 	char *ptr = str + length - 1;
 
-	while (ptr != str && isspace(*ptr))
+  // FIX: If str points to a empty string, ptr will point
+  //      to a place before str...
+	while (ptr > str && isspace(*ptr))
 		ptr--;
 
 	// Move back to space.
@@ -96,7 +100,7 @@ char *pe_utils_str_inplace_trim(char *str) {
 //	return begin;
 	char *ptr;
 
-    ptr = pe_utils_str_inplace_ltrim( str );
+  ptr = pe_utils_str_inplace_ltrim( str );
 	return pe_utils_str_inplace_rtrim( ptr );
 }
 

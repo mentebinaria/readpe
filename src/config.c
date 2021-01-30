@@ -65,61 +65,61 @@ static bool _load_config_cb(pev_config_t * const config, const char *name, const
 	return false;
 }
 
+// FIX: Now the lines of config can have any size!
 static int _load_config_and_parse(pev_config_t * const config, const char *path, pev_config_parse_callback_t pev_cb) {
 	FILE *fp = fopen(path, "r");
 	if (fp == NULL)
-		return -1;
+		return 0;
 
-	char line[1024];
+  char *p, *line = NULL;
+  size_t size = 0;
 
-	while (fgets(line, sizeof(line), fp) != NULL) {
-		// comments
-		if (*line == '#')
-			continue;
-
+  while ( getline( &line, &size, fp ) != -1 )
+  {
 		// remove newline
-		for (size_t i=0; i < sizeof(line); i++) {
-			if (line[i] == '\n' || i == sizeof(line) - 1) {
-				line[i] = '\0';
-				break;
-			}
-		}
+    if ( p = strrchr( line, '\n' ) ) *p = 0;
 
-		char *param = strtok(line, "=");
-		char *value = strtok(NULL, "=");
-		const char *trimmed_param = pe_utils_str_inplace_trim(param);
-		const char *trimmed_value = pe_utils_str_inplace_trim(value);
+    p = pe_utils_str_inplace_trim(line);
 
-		//fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
-		const bool processed = pev_cb(config, trimmed_param, trimmed_value);
+    // if not a comment line...
+		if (*p != '#')
+    {
+      char *param = strtok(p, "=");
+      char *value = strtok(NULL, "=");
+      const char *trimmed_param = pe_utils_str_inplace_trim(param);
+      const char *trimmed_value = pe_utils_str_inplace_trim(value);
 
-		if (!processed && config->user_defined.parse_callback != NULL)
-			config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
+      //fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
+      const bool processed = pev_cb(config, trimmed_param, trimmed_value);
+
+      if (!processed && config->user_defined.parse_callback != NULL)
+        config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
+    }
+
+    free( line );
+    line = NULL;
+    size = 0;
 	}
 
 	fclose(fp);
 
-	return 0;
+	return 1;
 }
 
 int pev_load_config(pev_config_t * const config) {
 	char buff[PATH_MAX];
 
 	int ret = pe_utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
-	if (ret == LIBPE_E_OK) {
-		ret = _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME, _load_config_cb);
-		if (ret < 0)
-			return ret;
-	}
+	if (ret == LIBPE_E_OK)
+		if ( ! _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME, _load_config_cb) )
+      return -1;
 
 	snprintf(buff, sizeof(buff), "%s/%s", pe_utils_get_homedir(), DEFAULT_CONFIG_PATH);
 	ret = pe_utils_is_file_readable(buff);
 
-	if (ret == LIBPE_E_OK) {
-		ret = _load_config_and_parse(config, buff, _load_config_cb);
-		if (ret < 0)
-			return ret;
-	}
+	if (ret == LIBPE_E_OK)
+		if ( ! _load_config_and_parse(config, buff, _load_config_cb) )
+			return -1;
 
 	//
 	// Default values

@@ -99,8 +99,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = malloc_s(sizeof(options_t));
-	memset(options, 0, sizeof(options_t));
+	options_t *options = calloc_s(1, sizeof(options_t));
 
 	// parameters for getopt_long() function
 	static const char short_options[] = "f:a:c:h:s:V";

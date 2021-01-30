@@ -223,9 +223,7 @@ static void peres_show_node(const pe_resource_node_t *node)
 			output("String len", value);
 
 			char ascii_string[MAX_MSG];
-			size_t min_size = pe_utils_min(sizeof(ascii_string), dataString->Length + 1);
-			pe_utils_str_widechar2ascii(ascii_string, (const char *)dataString->String, min_size);
-			ascii_string[min_size - 1] = '\0'; // Null terminate it.
+			pe_utils_str_widechar2ascii(ascii_string, sizeof ascii_string, (const char *)dataString->String, dataString->Length + 1);
 
 			snprintf(value, MAX_MSG, "%s", ascii_string);
 			output("String", value);

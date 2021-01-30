@@ -87,8 +87,9 @@ static void parse_headers(options_t *options, const char *optarg)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
+	// FIX: Don't need to test for NULL pointer.
+	//if (options == NULL)
+	//	return;
 
 	free(options);
 }

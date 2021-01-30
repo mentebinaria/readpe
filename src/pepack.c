@@ -60,10 +60,7 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
-
-	if (options->dbfile != NULL)
+	if (options)
 		free(options->dbfile);
 
 	free(options);

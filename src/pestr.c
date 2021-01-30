@@ -64,8 +64,9 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
+  // FIX: Don't need to test for NULL pointer.
+	//if (options == NULL)
+	//	return;
 
 	free(options);
 }
@@ -147,8 +148,8 @@ static void printb(
 	const uint8_t *bytes,
 	size_t pos,
 	size_t length,
-	unsigned long offset
-) {
+	unsigned long offset) {
+
 	if (options->offset)
 		printf("%#lx\t", (unsigned long) offset);
 

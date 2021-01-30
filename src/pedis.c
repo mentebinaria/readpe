@@ -82,10 +82,7 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
-
-	if (options->section != NULL)
+	if (options)
 		free(options->section);
 
 	free(options);

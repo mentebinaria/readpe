@@ -97,13 +97,11 @@ static void _unregister_all_formats(void) {
 //
 
 int output_plugin_register_format(const format_t *format) {
-	format_entry_t *entry = malloc(sizeof *entry);
+	format_entry_t *entry = calloc(1, sizeof *entry);
 	if (entry == NULL) {
 		//fprintf(stderr, "output: allocation failed for format entry\n");
 		return -1;
 	}
-
-	memset(entry, 0, sizeof *entry);
 
 	entry->format = format;
 	SLIST_INSERT_HEAD(&g_registered_formats, entry, entries);
@@ -157,8 +155,7 @@ void output_set_cmdline(int argc, char *argv[]) {
 	g_argc = argc;
 	g_argv = argv;
 
-	if (g_cmdline != NULL)
-		free(g_cmdline);
+	free(g_cmdline);
 
 	g_cmdline = pe_utils_str_array_join(g_argv, g_argc, ' ');
 	if (g_cmdline == NULL) {

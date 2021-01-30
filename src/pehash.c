@@ -88,10 +88,7 @@ static void parse_header_name(options_t *options, const char *optarg)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
-
-	if (options->sections.name != NULL)
+	if (options)
 		free(options->sections.name);
 
 	free(options);

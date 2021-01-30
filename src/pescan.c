@@ -62,8 +62,9 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
+	// FIX: Don't need to test for NULL pointer.
+	//if (options == NULL)
+	//	return;
 
 	free(options);
 }
@@ -357,26 +358,27 @@ static void print_strange_sections(pe_ctx_t *ctx)
 static bool normal_imagebase(pe_ctx_t *ctx)
 {
 	return  (ctx->pe.imagebase == 0x100000000 ||
-				ctx->pe.imagebase == 0x1000000 ||
-				ctx->pe.imagebase == 0x400000);
+			 ctx->pe.imagebase == 0x1000000 ||
+			 ctx->pe.imagebase == 0x400000);
 }
 
+// FIX: Already in libpe!
 // new anti-disassembly technique with undocumented Intel FPU instructions
-static bool fpu_trick(pe_ctx_t *ctx)
-{
-   const char *opcode_ptr = ctx->map_addr;
-
-	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
-		if (*opcode_ptr++ == '\xdf') {
-			if (++times == 4)
-				return true;
-		}
-		else
-			times = 0;
-	}
-
-	return false;
-}
+//static bool fpu_trick(pe_ctx_t *ctx)
+//{
+//   const char *opcode_ptr = ctx->map_addr;
+//
+//	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
+//		if (*opcode_ptr++ == '\xdf') {
+//			if (++times == 4)
+//				return true;
+//		}
+//		else
+//			times = 0;
+//	}
+//
+//	return false;
+//}
 
 static void print_timestamp(const options_t *options, const IMAGE_COFF_HEADER *hdr_coff_ptr)
 {
@@ -394,8 +396,9 @@ static void print_timestamp(const options_t *options, const IMAGE_COFF_HEADER *h
 
 	if (options->verbose)
 	{
-		char timestr[33];
-		strftime(timestr, sizeof(timestr),
+		// FIX: Bigger string because week-day abbreviation is locale dependant.
+		char timestr[64];
+		strftime(timestr, sizeof timestr,
 			" - %a, %d %b %Y %H:%M:%S UTC",
 			gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
 
@@ -506,7 +509,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	output("fpu anti-disassembly", fpu_trick(&ctx) ? "yes" : "no");
+	output("fpu anti-disassembly", pe_fpu_trick(&ctx) ? "yes" : "no");
 
 	// imagebase analysis
 	if (!normal_imagebase(&ctx)) {

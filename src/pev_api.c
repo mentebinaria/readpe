@@ -44,7 +44,8 @@ pev_api_t *pev_api_ptr(void) {
 
 	if (!initialized) {
 		initialized = true;
-		memset(&api, 0, sizeof(api));
+		api = ( pev_api_t ){0}; // FIX: Compound literal can be faster!
+		//memset(&api, 0, sizeof(api));
 		api.output = output_plugin_api_ptr();
 	}
 

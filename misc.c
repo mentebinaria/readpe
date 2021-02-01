@@ -19,6 +19,9 @@
     along with libpe.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// for memmem() to work.
+#define _GNU_SOURCE
+
 #include "libpe/pe.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,21 +29,19 @@
 #include <string.h>
 
 double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length) {
-	static const double log_2 = 1.44269504088896340736;
 	double entropy = 0.;
 
 	for (size_t i = 0; i < 256; i++) {
 		double temp = (double)counted_bytes[i] / total_length;
 		if (temp > 0.)
-			entropy += fabs(temp * (log(temp) * log_2));
+			entropy += temp * fabs( log2(temp) );
 	}
 
 	return entropy;
 }
 
 double pe_calculate_entropy_file(pe_ctx_t *ctx) {
-	unsigned int counted_bytes[256];
-	memset(counted_bytes, 0, sizeof(counted_bytes));
+	unsigned int counted_bytes[256] = { 0 };
 
 	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
 	const uint64_t filesize = pe_filesize(ctx);
@@ -53,18 +54,20 @@ double pe_calculate_entropy_file(pe_ctx_t *ctx) {
 }
 
 bool pe_fpu_trick(pe_ctx_t *ctx) {
-	const char *opcode_ptr = ctx->map_addr;
+	return !! memmem( ctx->map_addr, ctx->map_size, "\xdf\xdf\xdf\xdf", 4 );
 
-	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
-		if (*opcode_ptr++ == '\xdf') {
-			if (++times == 4)
-				return true;
-		} else {
-			times = 0;
-		}
-	}
-
-	return false;
+//	const char *opcode_ptr = ctx->map_addr;
+//
+//	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
+//		if (*opcode_ptr++ == '\xdf') {
+//			if (++times == 4)
+//				return true;
+//		} else {
+//			times = 0;
+//		}
+//	}
+//
+//	return false;
 }
 
 int cpl_analysis(pe_ctx_t *ctx) {
@@ -98,12 +101,13 @@ int cpl_analysis(pe_ctx_t *ctx) {
 			| IMAGE_FILE_DEBUG_STRIPPED
 			| IMAGE_FILE_DLL);
 
+	// Which timestamps are those?
 	if ((hdr_coff_ptr->TimeDateStamp == 708992537 ||
 				hdr_coff_ptr->TimeDateStamp > 1354555867)
 			&& (hdr_coff_ptr->Characteristics == characteristics1 || // equals 0xa18e
 				hdr_coff_ptr->Characteristics == characteristics2 || // equals 0xa38e
 				hdr_coff_ptr->Characteristics == characteristics3) // equals 0x2306
-			&& hdr_dos_ptr->e_sp == 0xb8
+			&& hdr_dos_ptr->e_sp == 0xb8    // ???
 		 )
 		return 1;
 
@@ -253,7 +257,7 @@ int pe_get_tls_callback(pe_ctx_t *ctx) {
 
 	if (callbacks == 0)
 		ret = LIBPE_E_NO_CALLBACKS_FOUND; // not found
-	else if (callbacks == -1)
+	else if (callbacks == -1)			  // FIXME: Is this correct?
 		ret = LIBPE_E_NO_FUNCTIONS_FOUND; // found no functions
 	else if (callbacks > 0)
 		ret = callbacks;

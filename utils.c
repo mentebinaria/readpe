@@ -33,64 +33,75 @@
 #include <inttypes.h>
 
 bool pe_utils_str_ends_with(const char *str, const char *suffix) {
+  // FIXME: We should assume the pointers points to something valid.
+  //        I believe the correct test would be ( ! *str || ! *suffix ).
 	if (str == NULL || suffix == NULL)
-		return 0;
+		return false;
 
 	size_t len_str = strlen(str);
 	size_t len_suffix = strlen(suffix);
 	if (len_suffix > len_str)
-		return 0;
+		return false;
 
+  // FIX: memcmp() could be faster and smaller...
 	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
 char *pe_utils_str_inplace_ltrim(char *str) {
-	char *ptr = str;
-
-	while (*ptr != '\0' && isspace(*ptr))
-		ptr++;
-
-	return ptr;
+	// FIX: strspn() is faster than using a loop.
+//	char *ptr = str;
+//
+//	while (isspace(*ptr))
+//		ptr++;
+//
+//	return ptr;
+	return str + strspn( str, " \f\n\r\t\v" );
 }
 
 char *pe_utils_str_inplace_rtrim(char *str) {
 	const size_t length = strlen(str);
 	char *ptr = str + length - 1;
 
-	while (ptr != str && isspace(*ptr))
+  // FIX: If str points to a empty string, ptr will point
+  //      to a place before str...
+	while (ptr > str && isspace(*ptr))
 		ptr--;
 
 	// Move back to space.
-	ptr++;
-
 	// Replace it with '\0'.
-	*ptr = '\0';
+	*++ptr = 0;
 
 	return str;
 }
 
 char *pe_utils_str_inplace_trim(char *str) {
-	char *begin = str;
+	// FIX: Let the compiler decide how to compile
+	//      this. No need to duplicate work.
+//	char *begin = str;
+//
+//	// leading spaces
+//	while (isspace(*begin))
+//		begin++;
+//	begin = str + strspn( str, " \f\n\r\t\v" );
+//
+//	if (*begin == '\0') // nothing left?
+//		return begin;
+//
+//	// Trailing spaces
+//	const size_t length = strlen(begin);
+//	char *end = begin + length - 1;
+//	while (end != begin && isspace(*end))
+//		end--;
+//
+//	// Move to space
+//	// Overwrite space with null terminator
+//	*++end = '\0';
+//
+//	return begin;
+	char *ptr;
 
-	// leading spaces
-	while (*begin != '\0' && isspace(*begin))
-		begin++;
-
-	if (*begin == '\0') // nothing left?
-		return begin;
-
-	// Trailing spaces
-	const size_t length = strlen(begin);
-	char *end = begin + length - 1;
-	while (end != begin && isspace(*end))
-		end--;
-
-	end++; // Move to space
-
-	// Overwrite space with null terminator
-	*end = '\0';
-
-	return begin;
+  ptr = pe_utils_str_inplace_ltrim( str );
+	return pe_utils_str_inplace_rtrim( ptr );
 }
 
 char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
@@ -130,13 +141,56 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
 	return result;
 }
 
+static char windows1252_char( uint16_t chr )
+{
+	// windows-1252 Unicode codepoints from 0x80 to 0x9f.
+	// These 32 unicode codepoints was taken from Wikipedia:
+	// 	  https://en.wikipedia.org/wiki/Windows-1252
+	static const uint16_t w1252chrs[] = {
+		0x20ac,
+		0,			// invalid
+		0x201a,	0x0192,	0x201e,	0x2026,	0x2020,	0x2021,	0x02c6,	0x2030,
+		0x0160,	0x2039,	0x0152,
+		0,			// invalid
+		0x017d,
+		0,			// invalid
+		0,			// invalid
+		0x2018, 0x2019,	0x201c,	0x201d,	0x2022,	0x2013,	0x2014,	0x02dc,
+		0x2122,	0x0161,	0x203a,	0x0153,
+		0,			// invalid
+		0x017e,	0x0178
+	};
+
+	// Return any char in range of ASCII or ISO-8859-1.
+	// FIXME: 0xa0 is a 'non breaking space'. It could be converted to ' ',
+	//		  but I didn't. Feel free to do it if you need.
+	if ( chr <= 0x7f || ( chr >= 0xa0 && chr <= 0xff ) )
+		// if ( chr == 0xa0 ) return ' '; else
+		return chr;
+
+	// Return any char inside WINDOWS-1252 codepage range of 0x80 to 0x9f.
+	for ( unsigned int i = 0; i < sizeof w1252chrs / sizeof w1252chrs[0]; i++ )
+		if ( chr == w1252chrs[i] )
+			return 0x80 + i;
+
+	// Any other char returns 0 (to ignore).
+    return 0;
+}
+
 void pe_utils_str_widechar2ascii(char *output, size_t output_size, const char *widechar, size_t widechar_count) {
-	// quick & dirty UFT16 to ASCII conversion
+	// FIX: Quick & dirty UFT16 to WINDOWS-1252 conversion
 	size_t length = pe_utils_min(output_size - 1, widechar_count);
 	uint16_t *p = (uint16_t *)widechar;
 	while (length--) {
-		*output++ = *p++;
+		char c = windows1252_char( *p );
+
+		// ignores "invalid" char.
+		if ( c )
+			*output++ = c;
+
+		p++;
 	}
+
 	*output = '\0';
 }
 
@@ -146,6 +200,8 @@ int pe_utils_round_up(int num_to_round, int multiple) {
 	return (num_to_round + multiple - 1) / multiple * multiple;
 }
 
+// FIXME: Don't need to open the file!
+// FIXME: I believe I saw the same routine inside another function in pe.c.
 int pe_utils_is_file_readable(const char *path) {
 	// Open the file.
 	const int fd = open(path, O_RDWR);
@@ -182,6 +238,8 @@ const char *pe_utils_get_homedir(void) {
 	if (homedir != NULL)
 		return homedir;
 
+	// FIXME: Instead of using getpwuid() we could use
+	//				getpwuid_r() to make this function 'thread-safe'.
 	errno = 0;
 	struct passwd *pwd = getpwuid(getuid());
 

@@ -76,10 +76,10 @@ typedef struct {
 //
 
 typedef struct {
-	char name[20];
+	char *name;
 	ResourceType type;
-	char extension[20];
-	char dir_name[20];
+	char *extension;
+	char *dir_name;
 } pe_resource_entry_info_t;
 
 const pe_resource_entry_info_t *pe_resource_entry_info_lookup(uint32_t name_offset);

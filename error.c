@@ -21,46 +21,69 @@
 
 #include "libpe/error.h"
 #include "libpe/macros.h"
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 
+// FIX: Since all errors, except the first,
+//      are negative values, we could change the
+//      order of the strings in the static array
+//      to simplify this function.
+//
+//      If you change pe_err_e in libpe/error.h, this
+//      this must be changed too.
 const char *pe_error_msg(pe_err_e error) {
 	static const char * const errors[] = {
+		// This is 0
 		"no error", // LIBPE_E_OK,
-		"allocation failure", // LIBPE_E_ALLOCATION_FAILURE,
-		"open() failed", // LIBPE_E_OPEN_FAILED,
-		"fdopen() failed", // LIBPE_E_FDOPEN_FAILED,
-		"fstat() failed", // LIBPE_E_FSTAT_FAILED,
-		"not a regular file", // LIBPE_E_NOT_A_FILE,
-		"not a PE file", // LIBPE_E_NOT_A_PE_FILE,
-		"invalid e_lfanew", // LIBPE_E_INVALID_LFANEW,
-		"missing COFF header", // LIBPE_E_MISSING_COFF_HEADER,
-		"missing OPTIONAL header", // LIBPE_E_MISSING_OPTIONAL_HEADER,
-		"invalid signature", // LIBPE_E_INVALID_SIGNATURE,
-		"unsupported image format", // LIBPE_E_UNSUPPORTED_IMAGE,
-		"mmap() failed", // LIBPE_E_MMAP_FAILED,
-		"munmap() failed", // LIBPE_E_MUNMAP_FAILED,
-		"close() failed", // LIBPE_E_CLOSE_FAILED,
-		"too many directories", // LIBPE_E_TOO_MANY_DIRECTORIES,
-		"too many sections", // LIBPE_E_TOO_MANY_SECTIONS,
-		"type punning failed", // LIBPE_E_TYPE_PUNNING_FAILED
-		// Exports errors
-		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA
-		"cannot read exports directory", // LIBPE_E_EXPORTS_CANT_READ_DIR
-		"number of functions not equal to number of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+
+		// FIX: Strings in reverse...
+		// ALL those errors are 'negative' (as in libpe/error.h).
+
+		// Misc
+		"no functions found", //LIBPE_E_NO_FUNCIONS_FOUND
+		"no callbacks found", //LIBPE_E_NO_CALLBACKS_FOUND
+
 		// Hashes Errors
 		"error calculating hash", // LIBPE_E_HASHING_FAILED
-		// Misc
-		"no callbacks found", //LIBPE_E_NO_CALLBACKS_FOUND
-		"no functions found", //LIBPE_E_NO_FUNCIONS_FOUND
+
+		// Exports errors
+		"number of functions not equal to number of names", //LIBPE_E_EXPORTS_FUNC_NEQ_NAMES
+		"cannot read exports directory", // LIBPE_E_EXPORTS_CANT_READ_DIR
+		"cannot read relative virtual address", //LIBPE_E_EXPORTS_CANT_READ_RVA
+
+		"type punning failed", 	// LIBPE_E_TYPE_PUNNING_FAILED
+		"too many sections", 	// LIBPE_E_TOO_MANY_SECTIONS,
+		"too many directories", // LIBPE_E_TOO_MANY_DIRECTORIES,
+		"close() failed", 		// LIBPE_E_CLOSE_FAILED,
+		"munmap() failed", 		// LIBPE_E_MUNMAP_FAILED,
+		"mmap() failed", 		// LIBPE_E_MMAP_FAILED,
+		"unsupported image format", // LIBPE_E_UNSUPPORTED_IMAGE,
+		"invalid signature", 	// LIBPE_E_INVALID_SIGNATURE,
+		"missing OPTIONAL header", // LIBPE_E_MISSING_OPTIONAL_HEADER,
+		"missing COFF header", 	// LIBPE_E_MISSING_COFF_HEADER,
+		"invalid e_lfanew", 	// LIBPE_E_INVALID_LFANEW,
+		"not a PE file", 		// LIBPE_E_NOT_A_PE_FILE,
+		"not a regular file", 	// LIBPE_E_NOT_A_FILE,
+		"fstat() failed", 		// LIBPE_E_FSTAT_FAILED,
+		"fdopen() failed", 		// LIBPE_E_FDOPEN_FAILED,
+		"open() failed", 		// LIBPE_E_OPEN_FAILED,
+		"allocation failure"  	// LIBPE_E_ALLOCATION_FAILURE,
 	};
-	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
-	size_t index = index_max + error;
-	return (index < index_max)
-		? errors[index]
-		: (index == index_max)
-			? errors[0] // LIBPE_E_OK
-			: "invalid error code";
+
+  // FIX: Convoluted way to use negative errors! The code below is easier and faster.
+//	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
+//	size_t index = index_max + error;
+//	return (index < index_max)
+//		? errors[index]
+//		: (index == index_max)
+//			? errors[0] // LIBPE_E_OK
+//			: "invalid error code";
+
+	unsigned int index = abs(error);
+	if ( index >= LIBPE_SIZEOF_ARRAY(errors) )
+		return "invalid error code";
+	return errors[index];
 }
 
 void pe_error_print(FILE *stream, pe_err_e error) {
@@ -68,7 +91,6 @@ void pe_error_print(FILE *stream, pe_err_e error) {
 		fprintf(stream, "ERROR [%d]: %s\n", error, pe_error_msg(error));
 	} else {
 		char errmsg[255];
-		memset(errmsg, 0, sizeof(errmsg));
 
 		/*
 		 * Quotes from https://linux.die.net/man/3/strerror_r
@@ -97,12 +119,12 @@ void pe_error_print(FILE *stream, pe_err_e error) {
 		// However, looks like if you're on macOS, strerror_r is XSI-compliant.
 
 #if defined(__DARWIN_C_LEVEL) // XSI-compliant
-		/* int ret = */ strerror_r(errno, errmsg, sizeof(errmsg));
+		/* int ret = */ strerror_r(errno, errmsg, sizeof errmsg);
 		const char *errmsg_ptr = errmsg;
 #elif defined(_GNU_SOURCE) // GNU-specific
-		const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof(errmsg));
+		const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof errmsg);
 #else // Fallback to XSI-compliant
-		/* int ret = */ strerror_r(errno, errmsg, sizeof(errmsg));
+		/* int ret = */ strerror_r(errno, errmsg, sizeof errmsg);
 		const char *errmsg_ptr = errmsg;
 #endif
 

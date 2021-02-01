@@ -37,7 +37,7 @@
 bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size) {
 	const uintptr_t start = (uintptr_t)ptr;
 	const uintptr_t end = start + size;
-	return start <= end && start >= (uintptr_t)ctx->map_addr && end <= (uintptr_t)ctx->map_end;
+	return start >= (uintptr_t)ctx->map_addr && end <= (uintptr_t)ctx->map_end;
 }
 
 pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path) {

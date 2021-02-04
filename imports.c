@@ -142,7 +142,8 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 		return imported_dll->err;
 	}
 
-	char fname[MAX_FUNCTION_NAME] = {0};
+	// FIX: Unecessary to fill the buffer with zeroes.
+	char fname[MAX_FUNCTION_NAME];
 	const size_t size_fname = sizeof(fname);
 
 	bool is_ordinal = false;

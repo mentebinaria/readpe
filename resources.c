@@ -276,8 +276,10 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 			break;
 		case LIBPE_RDT_RESOURCE_DIRECTORY:
 		{
-			char resource_name[256] = { 0 };
+			char resource_name[256];
 			const size_t resource_name_size = sizeof(resource_name);
+
+      resource_name[0] = '\0';
 
 			if (node->dirLevel == LIBPE_RDT_LEVEL1) { // dirLevel == 1 is where Resource Types are defined.
 				if (node->parentNode != NULL && node->parentNode->type == LIBPE_RDT_DIRECTORY_ENTRY) {

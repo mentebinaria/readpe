@@ -220,7 +220,7 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 
 	// FIX: Bettern than using sprintf().
 	char *p = output;
-	char *q = md_value;
+	unsigned char *q = md_value;
 	while ( md_len-- )
 	{
 		byte2hex( *q++, p );
@@ -563,6 +563,7 @@ static void freeNodes(element_t *currentNode) {
 		return;
 
 	element_t *temp;
+
 	while(currentNode != NULL) {
 		temp = currentNode;
 		currentNode = currentNode->next;

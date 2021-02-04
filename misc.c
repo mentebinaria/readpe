@@ -28,7 +28,7 @@
 #include <math.h>
 #include <string.h>
 
-double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length) {
+static double calculate_entropy(const unsigned int counted_bytes[256], const size_t total_length) {
 	double entropy = 0.;
 
 	for (size_t i = 0; i < 256; i++) {
@@ -54,6 +54,7 @@ double pe_calculate_entropy_file(pe_ctx_t *ctx) {
 }
 
 bool pe_fpu_trick(pe_ctx_t *ctx) {
+  // NOTE: What 0xdf has to do with fpu?
 	return !! memmem( ctx->map_addr, ctx->map_size, "\xdf\xdf\xdf\xdf", 4 );
 
 //	const char *opcode_ptr = ctx->map_addr;
@@ -101,7 +102,10 @@ int cpl_analysis(pe_ctx_t *ctx) {
 			| IMAGE_FILE_DEBUG_STRIPPED
 			| IMAGE_FILE_DLL);
 
-	// Which timestamps are those?
+	// FIXME: Which timestamps are those?
+  // UNIX timestams: 
+  //    708992537 = 19/jun/1992 @ 19:22:17
+  //   1354555867 = 3/dez/2012 @ 15:31:07
 	if ((hdr_coff_ptr->TimeDateStamp == 708992537 ||
 				hdr_coff_ptr->TimeDateStamp > 1354555867)
 			&& (hdr_coff_ptr->Characteristics == characteristics1 || // equals 0xa18e
@@ -169,7 +173,7 @@ uint32_t pe_get_tls_directory(pe_ctx_t *ctx) {
 	return directory->VirtualAddress;
 }
 
-int count_tls_callbacks(pe_ctx_t *ctx) {
+static int count_tls_callbacks(pe_ctx_t *ctx) {
 	int ret = 0;
 
 	const IMAGE_OPTIONAL_HEADER *optional_hdr = pe_optional(ctx);
@@ -192,14 +196,15 @@ int count_tls_callbacks(pe_ctx_t *ctx) {
 	for (uint16_t i=0, j=0; i < num_sections; i++) {
 		const bool can_process = tls_addr >= sections[i]->VirtualAddress
 			&& tls_addr < (sections[i]->VirtualAddress + sections[i]->SizeOfRawData);
+
 		if (!can_process)
 			continue;
-
 		
 		ofs = tls_addr - sections[i]->VirtualAddress + sections[i]->PointerToRawData;
 
 		switch (optional_hdr->type) {
-			default: return 0;
+			default: 
+				return 0;
 			case MAGIC_PE32:
 			{
 				const IMAGE_TLS_DIRECTORY32 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);
@@ -234,6 +239,7 @@ int count_tls_callbacks(pe_ctx_t *ctx) {
 
 		uint32_t funcaddr = 0;
 
+		// FIXME: Why this loop if 'funcaddr' isn't updated?
 		do {
 			const uint32_t *funcaddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 			if (!pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
@@ -241,6 +247,7 @@ int count_tls_callbacks(pe_ctx_t *ctx) {
 				return 0;
 			}
 
+			// FIXME: This funcaddr is declared in block scope!
 			uint32_t funcaddr = *funcaddr_ptr;
 			if (funcaddr) {
 				ret = ++j; // function found

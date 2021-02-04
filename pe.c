@@ -435,13 +435,14 @@ const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *sec
 	return out_name;
 }
 
+#define LIBPE_ENTRY(v)	{ v, # v }
+
 const char *pe_machine_type_name(MachineType type) {
 	typedef struct {
 		MachineType type;
 		const char * const name;
 	} MachineEntry;
 
-#define LIBPE_ENTRY(v)	{ v, # v }
 	static const MachineEntry names[] = {
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_UNKNOWN),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_AM33),
@@ -466,7 +467,6 @@ const char *pe_machine_type_name(MachineType type) {
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_THUMB),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_WCEMIPSV2)
 	};
-#undef LIBPE_ENTRY
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (type == names[i].type)
@@ -481,7 +481,6 @@ const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
 		const char * const name;
 	} ImageCharacteristicsName;
 
-#define LIBPE_ENTRY(v)	{ v, # v }
 	static const ImageCharacteristicsName names[] = {
 		LIBPE_ENTRY(IMAGE_FILE_RELOCS_STRIPPED),
 		LIBPE_ENTRY(IMAGE_FILE_EXECUTABLE_IMAGE),
@@ -500,7 +499,6 @@ const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
 		LIBPE_ENTRY(IMAGE_FILE_UP_SYSTEM_ONLY),
 		LIBPE_ENTRY(IMAGE_FILE_BYTES_REVERSED_HI)
 	};
-#undef LIBPE_ENTRY
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)
@@ -515,7 +513,6 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 		const char * const name;
 	} ImageDllCharacteristicsName;
 
-#define LIBPE_ENTRY(v)	{ v, # v }
 	static const ImageDllCharacteristicsName names[] = {
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY),
@@ -526,7 +523,6 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_WDM_DRIVER),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE)
 	};
-#undef LIBPE_ENTRY
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)
@@ -541,7 +537,6 @@ const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
 		const char * const name;
 	} WindowsSubsystemName;
 
-#define LIBPE_ENTRY(v)	{ v, # v }
 	static const WindowsSubsystemName names[] = {
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_UNKNOWN),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_NATIVE),
@@ -557,7 +552,6 @@ const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_XBOX),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION)
 	};
-#undef LIBPE_ENTRY
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (subsystem == names[i].subsystem)
@@ -572,7 +566,6 @@ const char *pe_directory_name(ImageDirectoryEntry entry) {
 		const char * const name;
 	} ImageDirectoryEntryName;
 
-#define LIBPE_ENTRY(v)	{ v, # v }
 	static const ImageDirectoryEntryName names[] = {
 		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_EXPORT),
 		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_IMPORT),
@@ -591,7 +584,6 @@ const char *pe_directory_name(ImageDirectoryEntry entry) {
 		LIBPE_ENTRY(IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR),
 		LIBPE_ENTRY(IMAGE_DIRECTORY_RESERVED)
 	};
-#undef LIBPE_ENTRY
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (entry == names[i].entry)
@@ -606,7 +598,6 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 		const char * const name;
 	} SectionCharacteristicsName;
 
-#define LIBPE_ENTRY(v)	{ v, # v }
 	static const SectionCharacteristicsName names[] = {
 		LIBPE_ENTRY(IMAGE_SCN_TYPE_NO_PAD),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_CODE),
@@ -644,7 +635,6 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 		LIBPE_ENTRY(IMAGE_SCN_MEM_READ),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_WRITE)
 	};
-#undef LIBPE_ENTRY
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)

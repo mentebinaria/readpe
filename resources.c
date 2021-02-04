@@ -215,6 +215,8 @@ char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size
 	return output;
 }
 
+// FIX: Retired code just to avoid unecessary warnings.
+#if 0
 static char *pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_name_size, uint32_t id) {
 	const bool is_string = id & IMAGE_RESOURCE_NAME_IS_STRING; // entry->u0.data.NameIsString
 
@@ -393,6 +395,7 @@ static void pe_resource_debug_nodes(pe_ctx_t *ctx, const pe_resource_node_t *nod
 	pe_resource_debug_nodes(ctx, node->childNode);
 	pe_resource_debug_nodes(ctx, node->nextNode);
 }
+#endif
 
 static pe_resource_node_t *pe_resource_create_node(uint8_t depth, pe_resource_node_type_e type, void *raw_ptr, pe_resource_node_t *parent_node) {
 	pe_resource_node_t *node = calloc(1, sizeof(pe_resource_node_t));

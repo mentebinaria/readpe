@@ -468,8 +468,7 @@ const char *pe_machine_type_name(MachineType type) {
 	};
 #undef LIBPE_ENTRY
 
-	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
-	for (size_t i=0; i < max_index; i++) {
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (type == names[i].type)
 			return names[i].name;
 	}
@@ -503,8 +502,7 @@ const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
 	};
 #undef LIBPE_ENTRY
 
-	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
-	for (size_t i=0; i < max_index; i++) {
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)
 			return names[i].name;
 	}
@@ -530,8 +528,7 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 	};
 #undef LIBPE_ENTRY
 
-	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
-	for (size_t i=0; i < max_index; i++) {
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)
 			return names[i].name;
 	}
@@ -562,8 +559,7 @@ const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
 	};
 #undef LIBPE_ENTRY
 
-	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
-	for (size_t i=0; i < max_index; i++) {
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (subsystem == names[i].subsystem)
 			return names[i].name;
 	}
@@ -597,8 +593,7 @@ const char *pe_directory_name(ImageDirectoryEntry entry) {
 	};
 #undef LIBPE_ENTRY
 
-	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
-	for (size_t i=0; i < max_index; i++) {
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (entry == names[i].entry)
 			return names[i].name;
 	}
@@ -651,8 +646,7 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 	};
 #undef LIBPE_ENTRY
 
-	static const size_t max_index = LIBPE_SIZEOF_ARRAY(names);
-	for (size_t i=0; i < max_index; i++) {
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)
 			return names[i].name;
 	}

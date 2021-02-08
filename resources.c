@@ -215,6 +215,8 @@ char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size
 	return output;
 }
 
+// FIX: Retired code just to avoid unecessary warnings.
+#if 0
 static char *pe_resource_name_from_id(pe_ctx_t *ctx, char *out_name, size_t out_name_size, uint32_t id) {
 	const bool is_string = id & IMAGE_RESOURCE_NAME_IS_STRING; // entry->u0.data.NameIsString
 
@@ -276,8 +278,10 @@ static void pe_resource_debug_node(pe_ctx_t *ctx, const pe_resource_node_t *node
 			break;
 		case LIBPE_RDT_RESOURCE_DIRECTORY:
 		{
-			char resource_name[256] = { 0 };
+			char resource_name[256];
 			const size_t resource_name_size = sizeof(resource_name);
+
+      resource_name[0] = '\0';
 
 			if (node->dirLevel == LIBPE_RDT_LEVEL1) { // dirLevel == 1 is where Resource Types are defined.
 				if (node->parentNode != NULL && node->parentNode->type == LIBPE_RDT_DIRECTORY_ENTRY) {
@@ -391,6 +395,7 @@ static void pe_resource_debug_nodes(pe_ctx_t *ctx, const pe_resource_node_t *nod
 	pe_resource_debug_nodes(ctx, node->childNode);
 	pe_resource_debug_nodes(ctx, node->nextNode);
 }
+#endif
 
 static pe_resource_node_t *pe_resource_create_node(uint8_t depth, pe_resource_node_type_e type, void *raw_ptr, pe_resource_node_t *parent_node) {
 	pe_resource_node_t *node = calloc(1, sizeof(pe_resource_node_t));

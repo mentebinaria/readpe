@@ -1,3 +1,4 @@
+/* vim:set ts=4 sw=4 noet: */
 /*
     libpe - the PE library
 
@@ -43,18 +44,10 @@ bool pe_utils_str_ends_with(const char *str, const char *suffix) {
 	if (len_suffix > len_str)
 		return false;
 
-  // FIX: memcmp() could be faster and smaller...
 	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
 char *pe_utils_str_inplace_ltrim(char *str) {
-	// FIX: strspn() is faster than using a loop.
-//	char *ptr = str;
-//
-//	while (isspace(*ptr))
-//		ptr++;
-//
-//	return ptr;
 	return str + strspn( str, " \f\n\r\t\v" );
 }
 
@@ -62,8 +55,8 @@ char *pe_utils_str_inplace_rtrim(char *str) {
 	const size_t length = strlen(str);
 	char *ptr = str + length - 1;
 
-  // FIX: If str points to a empty string, ptr will point
-  //      to a place before str...
+	// If str points to a empty string, ptr will point
+	// to a place before str...
 	while (ptr > str && isspace(*ptr))
 		ptr--;
 
@@ -75,44 +68,23 @@ char *pe_utils_str_inplace_rtrim(char *str) {
 }
 
 char *pe_utils_str_inplace_trim(char *str) {
-	// FIX: Let the compiler decide how to compile
-	//      this. No need to duplicate work.
-//	char *begin = str;
-//
-//	// leading spaces
-//	while (isspace(*begin))
-//		begin++;
-//	begin = str + strspn( str, " \f\n\r\t\v" );
-//
-//	if (*begin == '\0') // nothing left?
-//		return begin;
-//
-//	// Trailing spaces
-//	const size_t length = strlen(begin);
-//	char *end = begin + length - 1;
-//	while (end != begin && isspace(*end))
-//		end--;
-//
-//	// Move to space
-//	// Overwrite space with null terminator
-//	*++end = '\0';
-//
-//	return begin;
 	char *ptr;
 
-  ptr = pe_utils_str_inplace_ltrim( str );
+	ptr = pe_utils_str_inplace_ltrim( str );
 	return pe_utils_str_inplace_rtrim( ptr );
 }
 
 char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
+	size_t i;
+
 	if (strings == NULL || strings[0] == NULL)
 		return strdup("");
 
 	// Count how much memory the resulting string is going to need,
 	// considering delimiters for each string. The last delimiter will
-	// be a NULL terminator;
+	// be a NUL terminator;
 	size_t result_length = 0;
-	for (size_t i = 0; i < count; i++) {
+	for (i = 0; i < count; i++) {
 		result_length += strlen(strings[i]) + 1;
 	}
 
@@ -121,22 +93,36 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
 	if (result == NULL)
 		return NULL; // Return NULL because it failed miserably!
 
-	// Null terminate it.
-	result[--result_length] = '\0';
+	// FIX: Instead of copying char by char, uses sprintf/strcpy to do it.
+	char *p;
 
-	// Join all strings.
-	char ** current_string = strings;
-	char * current_char = current_string[0];
-	for (size_t i = 0; i < result_length; i++) {
-		if (*current_char != '\0') {
-			result[i] = *current_char++;
-		} else {
-			// Reached the end of a string. Add a delimiter and move to the next one.
-			result[i] = delimiter;
-			current_string++;
-			current_char = current_string[0];
-		}
+	p = result;
+	for ( i = 0; i < count - 1; i++ )
+	{
+		int size;
+
+		size = sprintf( p, "%s%c", strings[i], delimiter );
+		p += size;
 	}
+	strcpy( p, strings[i] );
+
+//	
+//	// Null terminate it.
+//	result[--result_length] = '\0';
+//
+//	// Join all strings.
+//	char **current_string = strings;
+//	char *current_char = current_string[0];
+//	for (size_t i = 0; i < result_length; i++) {
+//		if (*current_char != '\0') {
+//			result[i] = *current_char++;
+//		} else {
+//			// Reached the end of a string. Add a delimiter and move to the next one.
+//			result[i] = delimiter;
+//			current_string++;
+//			current_char = current_string[0];
+//		}
+//	}
 
 	return result;
 }
@@ -194,11 +180,15 @@ void pe_utils_str_widechar2ascii(char *output, size_t output_size, const char *w
 	*output = '\0';
 }
 
+// FIX: Don't need this here. Only used in pesec.c!
+#if 0
 int pe_utils_round_up(int num_to_round, int multiple) {
 	if (multiple == 0)
 		return 0;
+
 	return (num_to_round + multiple - 1) / multiple * multiple;
 }
+#endif
 
 // FIXME: Don't need to open the file!
 // FIXME: I believe I saw the same routine inside another function in pe.c.

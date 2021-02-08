@@ -165,6 +165,14 @@ size_t pe_hash_recommended_size(void) {
 	return result;
 }
 
+static void byte2hex( unsigned char b, char *p )
+{
+	static const char hex[16] = "0123456789abcdef";
+
+	*p++ = hex[b >> 4];
+	*p = hex[b & 0xf];
+}
+
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size) {
 	if (strcmp("ssdeep", alg_name) == 0) {
 		if (output_size < G_SSDEEP_HASH_MAXSIZE) {
@@ -210,16 +218,16 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 	EVP_MD_CTX_free(md_ctx);
 #endif
 
-	int result = true;
-	for (unsigned int i=0; i < md_len; i++) {
-		int err = sprintf(&output[i * 2], "%02x", md_value[i]);
-		if (err < 0) {
-			result = false;
-			break;
-		}
+	// FIX: Bettern than using sprintf().
+	char *p = output;
+	unsigned char *q = md_value;
+	while ( md_len-- )
+	{
+		byte2hex( *q++, p );
+		p += 2;
 	}
 
-	return result;
+	return true;
 }
 
 pe_hash_headers_t *pe_get_headers_hashes(pe_ctx_t *ctx) {
@@ -360,9 +368,12 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 	uint64_t ofs = offset;
 
-	char hint_str[32] = { 0 };
-	char fname[MAX_FUNCTION_NAME] = { 0 };
+	char hint_str[32];
+	char fname[MAX_FUNCTION_NAME];
 	bool is_ordinal = false;
+
+	hint_str[0] = '\0';
+	fname[0] = '\0';
 
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
@@ -504,28 +515,28 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					ord_t *p = oleaut32_arr;
 
 					while ( p->number ) {
-					  if ( hint == p->number )
-					  {
-						el->function_name = strdup( p->fname );
-						break;
-					  }
-					  p++;
+						if ( hint == p->number )
+					  	{
+								el->function_name = strdup( p->fname );
+								break;
+						}
+						p++;
 					}
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
 					ord_t *p = ws2_32_arr;
 
 					while ( p->number ) {
-					  if ( hint == p->number )
-					  {
-						el->function_name = strdup( p->fname );
-						break;
-					  }
-					  p++;
+						if ( hint == p->number )
+						{
+							el->function_name = strdup( p->fname );
+							break;
+						}
+						p++;
 					}
 				} else {
-					char ord[MAX_FUNCTION_NAME] = { 0 };
-
 					if (is_ordinal) {
+						char ord[MAX_FUNCTION_NAME];
+
 						snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
 						el->function_name = strdup(ord);
 					} else {
@@ -538,9 +549,9 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		}
 
 		{ 
-		  char *p;
-		  p = el->function_name;
-		  while ( *p ) { *p = tolower( *p ); p++; }
+			char *p;
+			p = el->function_name;
+			while ( *p ) { *p = tolower( *p ); p++; }
 		}
 
 		LL_APPEND(*head, el);
@@ -552,6 +563,7 @@ static void freeNodes(element_t *currentNode) {
 		return;
 
 	element_t *temp;
+
 	while(currentNode != NULL) {
 		temp = currentNode;
 		currentNode = currentNode->next;

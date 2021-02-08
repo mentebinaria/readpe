@@ -66,6 +66,7 @@
 "There is NO WARRANTY, to the extent permitted by law."
 
 void *malloc_s(size_t size);
+void *calloc_s(size_t nmemb, size_t size);
 
 #define PEV_INITIALIZE(config) \
 	do { \

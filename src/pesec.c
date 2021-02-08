@@ -108,10 +108,7 @@ static BIO *parse_certout(const char *optarg)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
-
-	if (options->certout != NULL)
+	if (options && options->certout)
 		BIO_free(options->certout);
 
 	free(options);
@@ -119,8 +116,7 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = malloc_s(sizeof(options_t));
-	memset(options, 0, sizeof(options_t));
+	options_t *options = calloc_s(1, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "f:c:o:V";
@@ -189,6 +185,10 @@ static bool stack_cookies(pe_ctx_t *ctx)
 	size_t found = 0;
 	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
 	const uint64_t filesize = pe_filesize(ctx);
+
+  // FIXME: Is this right?! Seems like partial matches will be
+  //        Accumulated. Example: If all these bytes are found,
+  //        separatelly in the file, this function will return true.
 	for (uint64_t ofs=0; ofs < filesize; ofs++) {
 		for (size_t i=0; i < sizeof(mvs2010); i++) {
 			if (file_bytes[ofs] == mvs2010[i] && found == i)

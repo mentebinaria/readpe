@@ -55,7 +55,6 @@ static void usage(void)
 
 static void parse_options(int argc, char *argv[])
 {
-
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "Vf:";
 
@@ -90,7 +89,6 @@ static void parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
-
 }
 
 static void print_dependencies(pe_ctx_t *ctx)

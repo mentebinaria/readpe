@@ -64,16 +64,16 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
+  // FIX: Don't need to test for NULL pointer.
+	//if (options == NULL)
+	//	return;
 
 	free(options);
 }
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = malloc_s(sizeof(options_t));
-	memset(options, 0, sizeof(options_t));
+	options_t *options = calloc_s(1, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "osn:V";
@@ -148,8 +148,8 @@ static void printb(
 	const uint8_t *bytes,
 	size_t pos,
 	size_t length,
-	unsigned long offset
-) {
+	unsigned long offset) {
+
 	if (options->offset)
 		printf("%#lx\t", (unsigned long) offset);
 

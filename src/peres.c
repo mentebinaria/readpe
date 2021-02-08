@@ -79,16 +79,16 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
+  // FIX: Don't need to test for NULL pointer.
+	//if (options == NULL)
+	//	return;
 
 	free(options);
 }
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = malloc_s(sizeof(options_t));
-	memset(options, 0, sizeof(options_t));
+	options_t *options = calloc_s(1, sizeof *options);
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "a:f:ilsxXvV";
@@ -223,7 +223,11 @@ static void peres_show_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 			output("String len", value);
 
 			char ascii_string[MAX_MSG];
-			pe_resource_parse_string_u(ctx, ascii_string, sizeof(ascii_string), dataString);
+
+      // FIXME: dataString->Length + 1 is right?!
+			pe_utils_str_widechar2ascii(ascii_string, sizeof ascii_string, 
+                                  (const char *)dataString->String, dataString->Length + 1);
+
 			snprintf(value, MAX_MSG, "%s", ascii_string);
 			output("String", value);
 			break;

@@ -42,10 +42,12 @@
 #include <stdio.h>
 #include <string.h>
 
-inline const char *dylib_error(dylib_t *lib) {
-    UNUSED(lib);
-    return dlerror();
-}
+// FIX: Don't need to export.
+//inline const char *dylib_error(dylib_t *lib) {
+//    UNUSED(lib);
+//    return dlerror();
+//}
+#define dylib_error(...) dlerror()
 
 int dylib_load(dylib_t *lib, const char *path) {
     if (lib->loaded) {

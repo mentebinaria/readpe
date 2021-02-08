@@ -87,16 +87,16 @@ static void parse_headers(options_t *options, const char *optarg)
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
+	// FIX: Don't need to test for NULL pointer.
+	//if (options == NULL)
+	//	return;
 
 	free(options);
 }
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = malloc_s(sizeof(options_t));
-	memset(options, 0, sizeof(options_t));
+	options_t *options = calloc_s(1, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "AHSh:dief:V";

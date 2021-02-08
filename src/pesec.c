@@ -217,6 +217,13 @@ static void print_certificate(BIO *out, cert_format_e format, X509 *cert)
 	}
 }
 
+static unsigned int roundBy8( unsigned int n )
+{
+  unsigned int t = n & ~7U;
+  if ( n & 7U ) t += 8;
+  return t;
+}
+
 static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blob)
 {
 	int result = 0;
@@ -370,7 +377,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 		}
 		output("Type", value);
 
-		fileOffset += pe_utils_round_up(cert->dwLength, 8); // Offset to the next certificate.
+		fileOffset += roundBy8(cert->dwLength); // Offset to the next certificate.
 
 		if (fileOffset - directory->VirtualAddress > directory->Size) {
 			LIBPE_WARNING("either the attribute certificate table or the Size field is corrupted");

@@ -64,7 +64,7 @@ static void usage(void)
 
 static void free_options(options_t *options)
 {
-  // FIX: Don't need to test for NULL pointer.
+	// FIX: Don't need to test for NULL pointer.
 	//if (options == NULL)
 	//	return;
 
@@ -106,6 +106,8 @@ static options_t *parse_options(int argc, char *argv[])
 				break;
 			case 'n':
 			{
+				// FIX: errno isn't automatically zeroed if already set.
+				errno = 0;
 				unsigned long value = strtoul(optarg, NULL, 0);
 				if (value == ULONG_MAX && errno == ERANGE) {
 					fprintf(stderr, "The original (nonnegated) value would overflow");
@@ -201,8 +203,7 @@ int main(int argc, char *argv[])
 	const uint8_t *pe_raw_data = ctx.map_addr;
 	uint64_t pe_raw_offset = 0;
 
-	unsigned char buff[LINE_BUFFER];
-	memset(buff, 0, LINE_BUFFER);
+	static unsigned char buff[LINE_BUFFER]; // Garanteed to be zeroed and not on Stack!
 	uint64_t buff_index = 0;
 
 	uint32_t ascii = 0;

@@ -139,6 +139,8 @@ static void plugin_unload(plugins_entry_t *entry) {
 #endif
 
 int plugins_load_all_from_directory(const char *path) {
+	// FIX: errno isn't automatically zeroed if already set.
+	errno = 0;
 	DIR *dir = opendir(path);
 	if (dir == NULL) {
 		fprintf(stderr, "plugins: could not open directory '%s' -- %s\n",

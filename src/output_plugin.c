@@ -52,18 +52,25 @@ static char *strdup_quoted(const char *str) {
 	if (str == NULL)
 		return NULL;
 
-	const size_t old_length = strlen(str);
-	const size_t new_length = old_length + 2;
+	//	const size_t old_length = strlen(str);
+	//	const size_t new_length = old_length + 2;
+	//
+	//	char *new_str = malloc(new_length + 1); // Extra byte for NULL terminator
+	//	if (new_str == NULL)
+	//		return NULL;
+	//
+	//	new_str[0] = '"';
+	//	new_str[new_length - 1] = '"';
+	//	new_str[new_length] = '\0';
+	//
+	//	memcpy(new_str + 1, str, old_length);
+	//
+	//	return new_str;
 
-	char *new_str = malloc(new_length + 1); // Extra byte for NULL terminator
-	if (new_str == NULL)
-		return NULL;
+    char *new_str;
 
-	new_str[0] = '"';
-	new_str[new_length - 1] = '"';
-	new_str[new_length] = '\0';
-
-	memcpy(new_str + 1, str, old_length);
+	if ( asprintf( &new_str, "\"%s\"", str ) < 0 )
+      return NULL;
 
 	return new_str;
 }

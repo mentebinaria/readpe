@@ -144,7 +144,8 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 	return flags_count < 3;
 }
 
-static bool loaddb(FILE **fp, const options_t *options)
+// FIX: Changed function name 'cause this don't 'load' anything.
+static bool opendb(FILE **fp, const options_t *options)
 {
 	const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
 
@@ -198,7 +199,8 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 	if (!dbfile || !data)
 		return false;
 
-	char *buff = malloc_s(MAX_SIG_SIZE);
+	// FIX: 2 KiB buffer isn't a big deal and this function is single threaded.
+	static char buff[MAX_SIG_SIZE];
 
 	//memset(buff, 0, MAX_SIG_SIZE);
 	while (fgets(buff, MAX_SIG_SIZE, dbfile))
@@ -232,15 +234,9 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 
 		// check if signature match
 		if (!strncasecmp(buff, "signature", 9))
-		{
 			if (match_peid_signature(data + ep_offset, buff+9))
-			{
-				free(buff);
 				return true;
-			}
-		}
 	}
-	free(buff);
 	return false;
 }
 
@@ -280,11 +276,11 @@ int main(int argc, char *argv[])
 	if (ep_offset == 0)
 		EXIT_ERROR("unable to get entrypoint offset");
 
-	FILE *dbfile = NULL;
-	if (!loaddb(&dbfile, options))
+	FILE *dbfile;
+	if (!opendb(&dbfile, options))
 		fprintf(stderr, "WARNING: without valid database file, %s will search in generic mode only\n", PROGRAM);
 
-	char value[MAX_MSG];
+	static char value[MAX_MSG];
 
 	// TODO(jweyrich): Create a new API to retrieve map_addr.
 	// TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)` instead?
@@ -305,8 +301,8 @@ int main(int argc, char *argv[])
 
 	output_close_document();
 
-	if (dbfile != NULL)
-		fclose(dbfile);
+	// FIX: Already tested of openess.
+	fclose(dbfile);
 
 	// libera a memoria
 	free_options(options);

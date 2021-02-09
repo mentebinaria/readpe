@@ -33,6 +33,8 @@
     files in the program, then also delete it here.
 */
 
+// FIX: Needed if strtoull() is used and to test overflow.
+#include <errno.h>
 #include "common.h"
 
 #define PROGRAM "ofs2rva"
@@ -100,9 +102,16 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	uint64_t ofs = (uint64_t)strtoll(argv[1], NULL, 0);
+	uint64_t ofs;
 
-	if (!ofs)
+  // FIX: This should use strtoull()!
+
+  //ofs = (uint64_t)strtoll(argv[1], NULL, 0);
+  //if (!ofs)
+  //  EXIT_ERROR("invalid offset");
+	errno = 0;
+	ofs = strtoull(argv[1], NULL, 0);
+	if ( !ofs || errno == ERANGE )
 		EXIT_ERROR("invalid offset");
 
 	err = pe_parse(&ctx);

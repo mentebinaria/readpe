@@ -54,3 +54,7 @@ const char *pev_plugins_path(void);
 
 int pev_load_config(pev_config_t * const config);
 void pev_cleanup_config(pev_config_t * const config);
+
+#ifdef USE_MY_ASPRINTF
+int asprintf( char **, char *, ... );
+#endif

@@ -171,6 +171,7 @@ static options_t *parse_options(int argc, char *argv[])
 find stack cookies, a.k.a canary, buffer security check
 option in MVS 2010
 */
+// FIXME: What about other versions?
 static bool stack_cookies(pe_ctx_t *ctx)
 {
 	static const unsigned char mvs2010[] = {
@@ -186,9 +187,9 @@ static bool stack_cookies(pe_ctx_t *ctx)
 	const uint8_t *file_bytes = LIBPE_PTR_ADD(ctx->map_addr, 0);
 	const uint64_t filesize = pe_filesize(ctx);
 
-  // FIXME: Is this right?! Seems like partial matches will be
-  //        Accumulated. Example: If all these bytes are found,
-  //        separatelly in the file, this function will return true.
+	// FIXME: Is this right?! Seems like partial matches will be
+	//        Accumulated. Example: If all these bytes are found,
+	//        separatelly in the file, this function will return true.
 	for (uint64_t ofs=0; ofs < filesize; ofs++) {
 		for (size_t i=0; i < sizeof(mvs2010); i++) {
 			if (file_bytes[ofs] == mvs2010[i] && found == i)
@@ -228,8 +229,8 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 {
 	int result = 0;
 	const cert_format_e input_fmt = CERT_FORMAT_DER;
-	PKCS7 *p7 = NULL;
-	BIO *in = NULL;
+	PKCS7 *p7 = NULL;	/* Need to be initialized! */
+	BIO *in;
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	CRYPTO_malloc_init();
@@ -243,6 +244,7 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 		goto error;
 	}
 
+	// FIXME: Why? input_fmt never changed!
 	switch (input_fmt) {
 		default:
 			LIBPE_WARNING("unhandled input format for certificate");
@@ -254,6 +256,7 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 			p7 = PEM_read_bio_PKCS7(in, NULL, NULL, NULL);
 			break;
 	}
+
 	if (p7 == NULL) {
 		ERR_print_errors_fp(stderr);
 		result = -3;

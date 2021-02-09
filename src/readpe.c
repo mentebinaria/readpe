@@ -205,6 +205,7 @@ static void print_sections(pe_ctx_t *ctx)
 		IMAGE_SCN_MEM_READ,
 		IMAGE_SCN_MEM_WRITE
 	};
+
 	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
 
 	output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
@@ -217,8 +218,8 @@ static void print_sections(pe_ctx_t *ctx)
 	if (sections == NULL)
 		return;
 
-	char s[MAX_MSG];
-	char section_name_buffer[SECTION_NAME_SIZE+1];
+	static char s[MAX_MSG];
+	static char section_name_buffer[SECTION_NAME_SIZE+1];
 
 	for (uint32_t i=0; i < num_sections; i++)
 	{
@@ -311,7 +312,7 @@ static void print_directories(pe_ctx_t *ctx)
 	if (directories == NULL)
 		return;
 
-	char s[MAX_MSG];
+	static char s[MAX_MSG];
 
 	for (uint32_t i=0; i < num_directories; i++) {
 		if (directories[i]->Size) {
@@ -361,7 +362,7 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 	if (!header)
 		return;
 
-	char s[MAX_MSG];
+	static char s[MAX_MSG];
 
 	output_open_scope("Optional/Image header", OUTPUT_SCOPE_TYPE_OBJECT);
 
@@ -668,7 +669,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 		machine = "Unknown machine type";
 #endif
 
-	char s[MAX_MSG];
+	static char s[MAX_MSG];
 
 	snprintf(s, MAX_MSG, "%#x %s", header->Machine, machine);
 	output("Machine", s);

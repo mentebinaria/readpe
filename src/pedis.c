@@ -139,22 +139,30 @@ static options_t *parse_options(int argc, char *argv[])
 				}
 				break;
 			case 'i':
+				// FIX: errno is not zeroed automatically if already set.
+				errno = 0;
 				options->ninstructions = strtol(optarg, NULL, 0);
 				if (errno == ERANGE)
 					EXIT_ERROR("number of instructions value would underflow or overflow");
 				break;
 			case 'n':
+				// FIX: errno is not zeroed automatically if already set.
+				errno = 0;
 				options->nbytes = strtol(optarg, NULL, 0);
 				if (errno == ERANGE)
 					EXIT_ERROR("number of bytes value would underflow or overflow");
 				break;
 			case 'o':
+				// FIX: errno is not zeroed automatically if already set.
+				errno = 0;
 				options->offset = strtol(optarg, NULL, 0);
 				if (errno == ERANGE)
 					EXIT_ERROR("offset value would underflow or overflow");
 				options->offset_is_rva = false;
 				break;
 			case 'r':
+				// FIX: errno is not zeroed automatically if already set.
+				errno = 0;
 				options->offset = strtol(optarg, NULL, 0);
 				if (errno == ERANGE)
 					EXIT_ERROR("rva value would underflow or overflow");
@@ -181,7 +189,7 @@ static options_t *parse_options(int argc, char *argv[])
 
 static char *insert_spaces(const char *s)
 {
-	size_t size;
+	size_t size /*, wsize */;
 	char *new;
 
 	size = strlen(s);
@@ -189,7 +197,21 @@ static char *insert_spaces(const char *s)
 	if (!size)
 		return NULL;
 
+	// wsize = size / 2;
 	size = size + (size/2);
+
+	// FIXME: Maybe a better approach to the loop below is:
+	//	new = malloc( size + 1 );
+	//
+	//  short *p = (short *)str;
+	//  short *q = (short *)new;
+	//  while ( wsize-- )
+	//	{
+	//      *q++ = *p++;
+	//      *(char *)q++ = ' ';
+	//  }
+	//  *(char *)q = 0;
+	//  return new;
 
 	new = calloc_s(1, size+1);
 
@@ -206,6 +228,7 @@ static char *insert_spaces(const char *s)
 			pos++;
 		}
 	}
+
 	return new;
 }
 
@@ -213,11 +236,11 @@ static bool is_ret_instruction(unsigned char opcode)
 {
 	switch (opcode)
 	{
-		case 0xc9: // leave
-		//case 0xc2: // ret
-		case 0xc3: // ret
-		case 0xca: // retf
-		//case 0xcb: // retf
+		case 0xc9:		// leave (this isn't a ret instruction!).
+		//case 0xc2:	// ret imm16 (why not?)
+		case 0xc3:		// ret
+		case 0xca:		// retf imm16
+		//case 0xcb:	// retf (why not?)
 			return true;
 
 		default:

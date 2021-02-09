@@ -455,15 +455,17 @@ static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, b
 	if (stat(g_resourceDir, &statDir) == -1)
 		mkdir(g_resourceDir, 0700);
 
-	char dirName[100];
-	memset(dirName, 0, sizeof(dirName));
+	char *dirName;
 
 	const pe_resource_node_t *folder_node = pe_resource_find_parent_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL1); // dirLevel == 1 is where Resource Types are defined.
 	const pe_resource_entry_info_t *entry_info = pe_resource_entry_info_lookup(folder_node->raw.directoryEntry->u0.Name);
 	if (entry_info != NULL) {
-		snprintf(dirName, sizeof(dirName), "%s/%s", g_resourceDir, entry_info->dir_name);
+		if ( asprintf( &dirName, "%s/%s", g_resourceDir, entry_info->dir_name ) < 0 )
+			abort();
+		//snprintf(dirName, sizeof(dirName), "%s/%s", g_resourceDir, entry_info->dir_name);
 	} else {
-		snprintf(dirName, sizeof(dirName), "%s", g_resourceDir);
+		dirName = strdup( g_resourceDir );
+		//snprintf(dirName, sizeof(dirName), "%s", g_resourceDir);
 	}
 
 	if (stat(dirName, &statDir) == -1)
@@ -472,40 +474,47 @@ static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, b
 	const pe_resource_node_t *name_node = pe_resource_find_parent_node_by_type_and_level(node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL2); // dirLevel == 2
 	if (name_node == NULL) {
 		// TODO: Should we report something?
+		free( dirName );
 		fprintf(stderr, "pe_resource_find_parent_node_by_type_and_level returned NULL\n");
 		return;
 	}
 	//fprintf(stderr, "DEBUG: Name=%d\n", name_node->raw.directoryEntry->u0.Name);
 
-	char relativeFileName[MAX_PATH]; // Wait, WHAT?!
-	memset(relativeFileName, 0, sizeof(relativeFileName));
+	char *relativeFileName;
 
 	if (namedExtract) {
-		char fileName[MAX_PATH];
-		memset(fileName, 0, sizeof(fileName));
+		char fileName[MAX_PATH];	// ok?
 
-		peres_build_node_filename(ctx, fileName, sizeof(fileName), node),
-		snprintf(relativeFileName, sizeof(relativeFileName), "%s/%s%s",
-			dirName,
-			fileName,
-			entry_info != NULL ? entry_info->extension : ".bin");
+		peres_build_node_filename(ctx, fileName, sizeof(fileName), node);
+		if ( asprintf(&relativeFileName, "%s/%s%s",
+				dirName,
+				fileName,
+				entry_info != NULL ? entry_info->extension : ".bin") < 0 )
+			abort();
 	} else {
-		snprintf(relativeFileName, sizeof(relativeFileName), "%s/" "%" PRIu32 "%s",
-			dirName,
-			name_node->raw.directoryEntry->u0.data.NameOffset,
-			entry_info != NULL ? entry_info->extension : ".bin");
+		if ( asprintf(&relativeFileName, "%s/" "%" PRIu32 "%s",
+				dirName,
+				name_node->raw.directoryEntry->u0.data.NameOffset,
+				entry_info != NULL ? entry_info->extension : ".bin") < 0 )
+			abort();
 	}
+
+	free( dirName );
 	//printf("DEBUG: raw_data_offset=%#llx, raw_data_size=%ld, relativeFileName=%s\n", raw_data_offset, raw_data_size, relativeFileName);
 
 	peres_resource_restore_t restore = {0};
 	peres_restore_resource(&restore, entry_info, raw_data_ptr, raw_data_size);
 
 	FILE *fp = fopen(relativeFileName, "wb+");
+
 	if (fp == NULL) {
+		free( relativeFileName );
 		// TODO: Should we report something?
 		return;
 	}
+
 	fwrite(restore.restore_buffer, restore.restore_size, 1, fp);
+
 	fclose(fp);
 
 	if (restore.is_modified) {
@@ -513,6 +522,8 @@ static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, b
 	}
 
 	output("Save On", relativeFileName);
+
+	free( relativeFileName );
 }
 
 static void peres_save_all_resources(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
@@ -558,7 +569,8 @@ static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 
 			const VS_FIXEDFILEINFO *info_ptr = data_ptr;
 			
-			char value[MAX_MSG];
+			static char value[MAX_MSG];
+
 			snprintf(value, MAX_MSG, "%u.%u.%u.%u",
 				(uint32_t)(info_ptr->dwFileVersionMS & 0xffff0000) >> 16,
 				(uint32_t)info_ptr->dwFileVersionMS & 0x0000ffff,
@@ -620,7 +632,7 @@ static void peres_show_stats(const pe_resource_node_t *node)
 	peres_stats_t stats = {0};
 	peres_generate_stats(&stats, node);
 
-	char value[MAX_MSG];
+	static char value[MAX_MSG];
 
 	snprintf(value, MAX_MSG, "%d", stats.totalCount);
 	output("Total Structs", value);

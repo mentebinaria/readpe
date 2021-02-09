@@ -40,11 +40,11 @@
 
 pev_api_t *pev_api_ptr(void) {
 	static bool initialized = false;
-	static pev_api_t api;
+	static pev_api_t api;		// Garanteed to be zeroed.
 
 	if (!initialized) {
 		initialized = true;
-		api = ( pev_api_t ){0}; // FIX: Compound literal can be faster!
+		//api = ( pev_api_t ){0}; // FIX: Don't need to zero.
 		//memset(&api, 0, sizeof(api));
 		api.output = output_plugin_api_ptr();
 	}

@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -51,10 +52,10 @@ static void usage(void)
 		"Search for packers in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -d, --database <file>                  Use database file (default: ./userdb.txt).\n"
+		" -d, --database <file>					 Use database file (default: ./userdb.txt).\n"
 		" -f, --format <%s>  Change output format (default: text).\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
@@ -74,11 +75,11 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "d:f:V";
 
 	static const struct option long_options[] = {
-		{ "database",         required_argument, NULL, 'd' },
-		{ "format",           required_argument, NULL, 'f' },
-		{ "help",             no_argument,       NULL,  1  },
-		{ "version",          no_argument,       NULL, 'V' },
-		{ NULL,               0,                 NULL,  0  }
+		{ "database",		  required_argument, NULL, 'd' },
+		{ "format",			  required_argument, NULL, 'f' },
+		{ "help",			  no_argument,		 NULL,	1  },
+		{ "version",		  no_argument,		 NULL, 'V' },
+		{ NULL,				  0,				 NULL,	0  }
 	};
 
 	int c, ind;
@@ -124,7 +125,7 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 
 	// we count the flags for the section and if there is more than
 	// 2 it means we don't have the mew_packer
-	const SectionCharacteristics invalid_flags[] = {
+	static const SectionCharacteristics invalid_flags[] = {
 		IMAGE_SCN_MEM_EXECUTE,
 		IMAGE_SCN_MEM_READ,
 		IMAGE_SCN_MEM_WRITE

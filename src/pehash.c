@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -64,13 +65,13 @@ static void usage(void)
 		"\nExample: %s -s '.text' winzip.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s> Change output format (default: text).\n"
-		" -a, --all                             Hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash.\n"
-		" -c, --content                         Hash only the file content (default).\n"
-		" -h, --header <dos|coff|optional>      Hash only the header with the specified name.\n"
-		" -s, --section <section_name>          Hash only the section with the specified name.\n"
-		" --section-index <section_index>       Hash only the section at the specified index (1..n).\n"
-		" -V, --version                         Show version.\n"
-		" --help                                Show this help.\n",
+		" -a, --all								Hash file, sections and headers with md5, sha1, sha256, ssdeep and imphash.\n"
+		" -c, --content							Hash only the file content (default).\n"
+		" -h, --header <dos|coff|optional>		Hash only the header with the specified name.\n"
+		" -s, --section <section_name>			Hash only the section with the specified name.\n"
+		" --section-index <section_index>		Hash only the section at the specified index (1..n).\n"
+		" -V, --version							Show version.\n"
+		" --help								Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
@@ -102,15 +103,15 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "f:a:c:h:s:V";
 
 	static const struct option long_options[] = {
-		{ "help",          no_argument,         NULL,  1  },
-		{ "format",        required_argument,   NULL, 'f' },
-		{ "all",           no_argument,         NULL, 'a' },
-		{ "content",       no_argument,         NULL, 'c' },
-		{ "header",        required_argument,   NULL, 'h' },
-		{ "section-name",  required_argument,   NULL, 's' },
-		{ "section-index", required_argument,   NULL,  2  },
-		{ "version",       no_argument,         NULL, 'V' },
-		{  NULL,           0,                   NULL,  0  }
+		{ "help",		   no_argument,			NULL,  1  },
+		{ "format",		   required_argument,	NULL, 'f' },
+		{ "all",		   no_argument,			NULL, 'a' },
+		{ "content",	   no_argument,			NULL, 'c' },
+		{ "header",		   required_argument,	NULL, 'h' },
+		{ "section-name",  required_argument,	NULL, 's' },
+		{ "section-index", required_argument,	NULL,  2  },
+		{ "version",	   no_argument,			NULL, 'V' },
+		{  NULL,		   0,					NULL,  0  }
 	};
 
 	// Setting the default option
@@ -124,7 +125,7 @@ static options_t *parse_options(int argc, char *argv[])
 
 		switch (c)
 		{
-			case 1:     // --help option
+			case 1:		// --help option
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'f':
@@ -297,28 +298,28 @@ int main(int argc, char *argv[])
 	}
 
 	if (options->headers.all || options->headers.optional) {
-      const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
-      switch (opt_hdr->type) {
-         case MAGIC_ROM:
-            // Oh boy! We do not support ROM. Abort!
-            LIBPE_WARNING("ROM image is not supported");
-            break;
-         case MAGIC_PE32:
-            if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
-               // TODO: Should we report something?
-               break;
-            }
-            data = (const unsigned char *)opt_hdr->_32;
-            data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
-            break;
-         case MAGIC_PE64:
-            if (!pe_can_read(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
-               // TODO: Should we report something?
-               break;
-            }
-            data = (const unsigned char *)opt_hdr->_64;
-            data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
-            break;
+	  const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
+	  switch (opt_hdr->type) {
+		 case MAGIC_ROM:
+			// Oh boy! We do not support ROM. Abort!
+			LIBPE_WARNING("ROM image is not supported");
+			break;
+		 case MAGIC_PE32:
+			if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
+			   // TODO: Should we report something?
+			   break;
+			}
+			data = (const unsigned char *)opt_hdr->_32;
+			data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
+			break;
+		 case MAGIC_PE64:
+			if (!pe_can_read(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
+			   // TODO: Should we report something?
+			   break;
+			}
+			data = (const unsigned char *)opt_hdr->_64;
+			data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
+			break;
 		}
 
 		output_open_scope("header", OUTPUT_SCOPE_TYPE_OBJECT);

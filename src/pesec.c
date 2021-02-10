@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -63,16 +64,17 @@ static void usage(void)
 		"\nExample: %s wordpad.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s>  Change output format (default: text)\n"
-		" -c, --certoutform <text|pem>           Specifies the certificate output format (default: text).\n"
-		" -o, --certout <filename>               Specifies the output filename to write certificates to (default: stdout).\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -c, --certoutform <text|pem>			 Specifies the certificate output format (default: text).\n"
+		" -o, --certout <filename>				 Specifies the output filename to write certificates to (default: stdout).\n"
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
 static cert_format_e parse_certoutform(const char *optarg)
 {
 	cert_format_e result;
+
 	if (strcmp(optarg, "text") == 0)
 		result = CERT_FORMAT_TEXT;
 	else if (strcmp(optarg, "pem") == 0)
@@ -81,6 +83,7 @@ static cert_format_e parse_certoutform(const char *optarg)
 		result = CERT_FORMAT_DER;
 	else
 		EXIT_ERROR("invalid cert_format option");
+
 	return result;
 }
 
@@ -125,9 +128,9 @@ static options_t *parse_options(int argc, char *argv[])
 		{ "format",			required_argument,	NULL,	'f' },
 		{ "certoutform",	required_argument,	NULL,	'c' },
 		{ "certout",		required_argument,	NULL,	'o' },
-		{ "help",			no_argument,		NULL,	 1  },
+		{ "help",			no_argument,		NULL,	 1	},
 		{ "version",		no_argument,		NULL,	'V' },
-		{ NULL,				0,					NULL, 	 0  }
+		{ NULL,				0,					NULL,	 0	}
 	};
 
 	int c, ind;
@@ -188,8 +191,8 @@ static bool stack_cookies(pe_ctx_t *ctx)
 	const uint64_t filesize = pe_filesize(ctx);
 
 	// FIXME: Is this right?! Seems like partial matches will be
-	//        Accumulated. Example: If all these bytes are found,
-	//        separatelly in the file, this function will return true.
+	//		  Accumulated. Example: If all these bytes are found,
+	//		  separatelly in the file, this function will return true.
 	for (uint64_t ofs=0; ofs < filesize; ofs++) {
 		for (size_t i=0; i < sizeof(mvs2010); i++) {
 			if (file_bytes[ofs] == mvs2010[i] && found == i)
@@ -244,7 +247,7 @@ static int parse_pkcs7_data(const options_t *options, const CRYPT_DATA_BLOB *blo
 		goto error;
 	}
 
-	// FIXME: Why? input_fmt never changed!
+	// FIXME: input_fmt never changed!
 	switch (input_fmt) {
 		default:
 			LIBPE_WARNING("unhandled input format for certificate");
@@ -338,7 +341,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 	uint32_t fileOffset = directory->VirtualAddress; // This a file pointer rather than a common RVA.
 
 	// TODO(jweyrich): We should count how many certificates the file has, and based on this
-	//                 decide whether to proceed and open the certificates scope.
+	//				   decide whether to proceed and open the certificates scope.
 	output_open_scope("certificates", OUTPUT_SCOPE_TYPE_ARRAY);
 	while (fileOffset - directory->VirtualAddress < directory->Size)
 	{
@@ -479,7 +482,7 @@ int main(int argc, char *argv[])
 
 	output_open_document();
 
-	char field[MAX_MSG];
+	static char field[MAX_MSG];
 
 	// aslr
 	snprintf(field, MAX_MSG, "ASLR");

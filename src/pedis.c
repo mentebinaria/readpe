@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -51,8 +52,8 @@ typedef struct {
 	char *section;
 	bool syntax;
 	uint64_t offset;
-	uint64_t nbytes;           // limit the number of bytes instructions. 0 means no limit.
-	uint64_t ninstructions;     // limit the number of disassembled instructions. 0 means no limit.
+	uint64_t nbytes;		   // limit the number of bytes instructions. 0 means no limit.
+	uint64_t ninstructions;		// limit the number of disassembled instructions. 0 means no limit.
 	bool entrypoint;
 	bool offset_is_rva;
 	uint16_t mode;
@@ -66,17 +67,17 @@ static void usage(void)
 		"Disassemble PE sections and functions (by default, until found a RET or LEAVE instruction)\n"
 		"\nExample: %s -r 0x4c4df putty.exe\n"
 		"\nOptions:\n"
-		" --att                                  Set AT&T assembly syntax (default: Intel).\n"
-		" -e, --entrypoint                       Disassemble the entire entrypoint function.\n"
+		" --att									 Set AT&T assembly syntax (default: Intel).\n"
+		" -e, --entrypoint						 Disassemble the entire entrypoint function.\n"
 		" -f, --format <%s>  Change output format (default: text).\n"
-		" -m, --mode <16|32|64>                  Disassembly mode (default: auto).\n"
-		" -i <number>                            Number of instructions to disassemble.\n"
-		" -n <number>                            Number of bytes to disassemble\n"
-		" -o, --offset <offset>                  Disassemble at specified offset, either in decimal or hexadecimal format (prefixed with 0x).\n"
-		" -r, --rva <rva>                        Disassemble at specified RVA, either in decimal or hexadecimal format (prefixed with 0x).\n"
-		" -s, --section <section_name>           Disassemble en entire section given.\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -m, --mode <16|32|64>					 Disassembly mode (default: auto).\n"
+		" -i <number>							 Number of instructions to disassemble.\n"
+		" -n <number>							 Number of bytes to disassemble\n"
+		" -o, --offset <offset>					 Disassemble at specified offset, either in decimal or hexadecimal format (prefixed with 0x).\n"
+		" -r, --rva <rva>						 Disassemble at specified RVA, either in decimal or hexadecimal format (prefixed with 0x).\n"
+		" -s, --section <section_name>			 Disassemble en entire section given.\n"
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
@@ -96,17 +97,17 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "em:i:n:o:r:s:f:V";
 
 	static const struct option long_options[] = {
-		{ "help",             no_argument,       NULL,  1  },
-		{ "att",              no_argument,       NULL,  2  },
-		{ "",                 required_argument, NULL, 'n' },
-		{ "entrypoint",       no_argument,       NULL, 'e' },
-		{ "mode",             required_argument, NULL, 'm' },
-		{ "offset",           required_argument, NULL, 'o' },
-		{ "rva",              required_argument, NULL, 'r' },
-		{ "section",          required_argument, NULL, 's' },
-		{ "format",           required_argument, NULL, 'f' },
-		{ "version",          no_argument,       NULL, 'V' },
-		{ NULL,               0,                 NULL,  0  }
+		{ "help",			  no_argument,		 NULL,	1  },
+		{ "att",			  no_argument,		 NULL,	2  },
+		{ "",				  required_argument, NULL, 'n' },
+		{ "entrypoint",		  no_argument,		 NULL, 'e' },
+		{ "mode",			  required_argument, NULL, 'm' },
+		{ "offset",			  required_argument, NULL, 'o' },
+		{ "rva",			  required_argument, NULL, 'r' },
+		{ "section",		  required_argument, NULL, 's' },
+		{ "format",			  required_argument, NULL, 'f' },
+		{ "version",		  no_argument,		 NULL, 'V' },
+		{ NULL,				  0,				 NULL,	0  }
 	};
 
 	options->syntax = SYN_INTEL;
@@ -203,15 +204,15 @@ static char *insert_spaces(const char *s)
 	// FIXME: Maybe a better approach to the loop below is:
 	//	new = malloc( size + 1 );
 	//
-	//  short *p = (short *)str;
-	//  short *q = (short *)new;
-	//  while ( wsize-- )
+	//	short *p = (short *)str;
+	//	short *q = (short *)new;
+	//	while ( wsize-- )
 	//	{
-	//      *q++ = *p++;
-	//      *(char *)q++ = ' ';
-	//  }
-	//  *(char *)q = 0;
-	//  return new;
+	//		*q++ = *p++;
+	//		*(char *)q++ = ' ';
+	//	}
+	//	*(char *)q = 0;
+	//	return new;
 
 	new = calloc_s(1, size+1);
 
@@ -366,7 +367,7 @@ int main(int argc, char *argv[])
 	// set disassembly mode according with PE architecture
 	ud_set_mode(&ud_obj, options->mode ? options->mode : mode_bits);
 
-	uint64_t offset = 0;         // offset to start disassembly
+	uint64_t offset = 0;		 // offset to start disassembly
 
 	if (options->entrypoint)
 		offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);

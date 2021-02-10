@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 // FIX: Needed if strtoull() is used and to test overflow.
@@ -45,8 +46,8 @@ static void usage(void)
 		"Convert raw file offset to RVA\n"
 		"\nExample: %s 0x1b9b8 calc.exe\n"
 		"\nOptions:\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM);
 }
 
@@ -92,7 +93,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	parse_options(argc, argv); // opcoes
+	parse_options(argc, argv);
 
 	pe_ctx_t ctx;
 
@@ -104,11 +105,7 @@ int main(int argc, char *argv[])
 
 	uint64_t ofs;
 
-  // FIX: This should use strtoull()!
-
-  //ofs = (uint64_t)strtoll(argv[1], NULL, 0);
-  //if (!ofs)
-  //  EXIT_ERROR("invalid offset");
+	// FIX: changed to strtoull().
 	errno = 0;
 	ofs = strtoull(argv[1], NULL, 0);
 	if ( !ofs || errno == ERANGE )

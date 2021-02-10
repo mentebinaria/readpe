@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -54,9 +55,9 @@ static void usage(void)
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s>  Change output format (default: text).\n"
-		" -v, --verbose                          Show more information about found items.\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -v, --verbose							 Show more information about found items.\n"
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
@@ -78,10 +79,10 @@ static options_t *parse_options(int argc, char *argv[])
 
 	static const struct option long_options[] = {
 		{ "format",		required_argument,	NULL,	'f' },
-		{ "help",		no_argument,		NULL,	 1  },
+		{ "help",		no_argument,		NULL,	 1	},
 		{ "verbose",	no_argument,		NULL,	'v' },
 		{ "version",	no_argument,		NULL,	'V' },
-		{ NULL,			0,					NULL, 	 0  }
+		{ NULL,			0,					NULL,	 0	}
 	};
 
 	int c, ind;
@@ -118,14 +119,14 @@ static options_t *parse_options(int argc, char *argv[])
 // check for abnormal dos stub (common in packed files)
 static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
 {
-	const uint8_t dos_stub[] =
-		"\x0e"               // push cs
-		"\x1f"               // pop ds
-		"\xba\x0e\x00"       // mov dx, 0x0e
-		"\xb4\x09"           // mov ah, 0x09
-		"\xcd\x21"           // int 0x21
-		"\xb8\x01\x4c"       // mov ax, 0x4c01
-		"\xcd\x21"           // int 0x21
+	static const uint8_t dos_stub[] =
+		"\x0e"				 // push cs
+		"\x1f"				 // pop ds
+		"\xba\x0e\x00"		 // mov dx, 0x0e
+		"\xb4\x09"			 // mov ah, 0x09
+		"\xcd\x21"			 // int 0x21
+		"\xb8\x01\x4c"		 // mov ax, 0x4c01
+		"\xcd\x21"			 // int 0x21
 		"This program cannot be run in DOS mode.\r\r\n$";
 
 	const size_t dos_stub_size = sizeof(dos_stub) - 1; // -1 to ignore ending null
@@ -181,7 +182,7 @@ static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
 
 /*
  * -1 - fake tls callbacks detected
- *  0 - no tls directory
+ *	0 - no tls directory
  * >0 - number of callbacks functions found
 */
 static int pe_get_tls_callbacks(pe_ctx_t *ctx, const options_t *options)
@@ -357,7 +358,7 @@ static void print_strange_sections(pe_ctx_t *ctx)
 
 static bool normal_imagebase(pe_ctx_t *ctx)
 {
-	return  (ctx->pe.imagebase == 0x100000000 ||
+	return	(ctx->pe.imagebase == 0x100000000 ||
 			 ctx->pe.imagebase == 0x1000000 ||
 			 ctx->pe.imagebase == 0x400000);
 }
@@ -366,7 +367,7 @@ static bool normal_imagebase(pe_ctx_t *ctx)
 // new anti-disassembly technique with undocumented Intel FPU instructions
 //static bool fpu_trick(pe_ctx_t *ctx)
 //{
-//   const char *opcode_ptr = ctx->map_addr;
+//	 const char *opcode_ptr = ctx->map_addr;
 //
 //	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
 //		if (*opcode_ptr++ == '\xdf') {
@@ -383,7 +384,7 @@ static bool normal_imagebase(pe_ctx_t *ctx)
 static void print_timestamp(const options_t *options, const IMAGE_COFF_HEADER *hdr_coff_ptr)
 {
 	const time_t now = time(NULL);
-	char value[MAX_MSG];
+	static char value[MAX_MSG];
 
 	if (hdr_coff_ptr->TimeDateStamp == 0)
 		snprintf(value, MAX_MSG, "zero/invalid");
@@ -397,7 +398,7 @@ static void print_timestamp(const options_t *options, const IMAGE_COFF_HEADER *h
 	if (options->verbose)
 	{
 		// FIX: Bigger string because week-day abbreviation is locale dependant.
-		char timestr[64];
+		static char timestr[64];
 		strftime(timestr, sizeof timestr,
 			" - %a, %d %b %Y %H:%M:%S UTC",
 			gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
@@ -489,7 +490,7 @@ int main(int argc, char *argv[])
 	// File entropy
 	const double entropy = pe_calculate_entropy_file(&ctx);
 
-	char value[MAX_MSG];
+	static char value[MAX_MSG];
 
 	if (entropy < 7.0)
 		snprintf(value, MAX_MSG, "%f (normal)", entropy);

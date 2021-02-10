@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -64,16 +65,16 @@ static void usage(void)
 		"Show information about resource section and extract it\n"
 		"\nExample: %s -a putty.exe\n"
 		"\nOptions:\n"
-		" -a, --all                              Show all information, statistics and extract resources\n"
+		" -a, --all								 Show all information, statistics and extract resources\n"
 		" -f, --format <%s>  change output format (default: text)\n"
-		" -i, --info                             Show resources information\n"
-		" -l, --list                             Show list view\n"
-		" -s, --statistics                       Show resources statistics\n"
-		" -x, --extract                          Extract resources\n"
-		" -X, --named-extract                    Extract resources with path names\n"
-		" -v, --file-version                     Show File Version from PE resource directory\n"
-		" -V, --version                          Show version and exit\n"
-		" --help                                 Show this help and exit\n",
+		" -i, --info							 Show resources information\n"
+		" -l, --list							 Show list view\n"
+		" -s, --statistics						 Show resources statistics\n"
+		" -x, --extract							 Extract resources\n"
+		" -X, --named-extract					 Extract resources with path names\n"
+		" -v, --file-version					 Show File Version from PE resource directory\n"
+		" -V, --version							 Show version and exit\n"
+		" --help								 Show this help and exit\n",
 		PROGRAM, PROGRAM, formats);
 }
 
@@ -94,17 +95,17 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "a:f:ilsxXvV";
 
 	static const struct option long_options[] = {
-		{ "all",            required_argument,  NULL, 'a' },
-		{ "format",         required_argument,  NULL, 'f' },
-		{ "info",           no_argument,        NULL, 'i' },
-		{ "list",           no_argument,        NULL, 'l' },
-		{ "statistics",	    no_argument,        NULL, 's' },
-		{ "extract",	    no_argument,        NULL, 'x' },
-		{ "named-extract",  no_argument,        NULL, 'X' },
-		{ "file-version",   no_argument,        NULL, 'v' },
-		{ "version",	    no_argument,        NULL, 'V' },
-		{ "help",           no_argument,        NULL,  1  },
-		{ NULL,             0,                  NULL,  0  }
+		{ "all",			required_argument,	NULL, 'a' },
+		{ "format",			required_argument,	NULL, 'f' },
+		{ "info",			no_argument,		NULL, 'i' },
+		{ "list",			no_argument,		NULL, 'l' },
+		{ "statistics",		no_argument,		NULL, 's' },
+		{ "extract",		no_argument,		NULL, 'x' },
+		{ "named-extract",	no_argument,		NULL, 'X' },
+		{ "file-version",	no_argument,		NULL, 'v' },
+		{ "version",		no_argument,		NULL, 'V' },
+		{ "help",			no_argument,		NULL,  1  },
+		{ NULL,				0,					NULL,  0  }
 		};
 
 	int c, ind;
@@ -224,9 +225,9 @@ static void peres_show_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 
 			char ascii_string[MAX_MSG];
 
-      // FIXME: dataString->Length + 1 is right?!
+	  // FIXME: dataString->Length + 1 is right?!
 			pe_utils_str_widechar2ascii(ascii_string, sizeof ascii_string, 
-                                  (const char *)dataString->String, dataString->Length + 1);
+								  (const char *)dataString->String, dataString->Length + 1);
 
 			snprintf(value, MAX_MSG, "%s", ascii_string);
 			output("String", value);
@@ -332,25 +333,25 @@ typedef struct {
 #pragma pack(push, 2)
 typedef struct {
 	uint16_t icReserved;   // Always zero
-	uint16_t icType;       // 1 for .ico, 2 for .cur, other values are invalid
+	uint16_t icType;	   // 1 for .ico, 2 for .cur, other values are invalid
 	uint16_t icImageCount; // number of images in the file
 } ICOFILEHEADER;
 
 typedef struct {
-	uint8_t biWidth;        // Width of image
-	uint8_t biHeight;       // Height of image
-	uint8_t biClrUsed;      // Number of colors used
-	uint8_t biReserved;     // Reserved
+	uint8_t biWidth;		// Width of image
+	uint8_t biHeight;		// Height of image
+	uint8_t biClrUsed;		// Number of colors used
+	uint8_t biReserved;		// Reserved
 	union {
-		uint16_t biPlanes;   // ICO - Number of color planes. Should be 0 or 1
+		uint16_t biPlanes;	 // ICO - Number of color planes. Should be 0 or 1
 		uint16_t biXHotspot; // CUR - Horizontal coord of the hotspot in number of pixels from the left
 	} u0;
 	union {
 		uint16_t biBitCount; // ICO - Number of bits per pixel
 		uint16_t biYHotspot; // CUR - Vertical coord of the hotspot in number of pixels from the top
 	} u1;
-	uint32_t biSizeImage;   // Size of image data in bytes
-	uint32_t biOffBits;     // Offset of BMP or PNG data from the beggining of the ICO/CUR file
+	uint32_t biSizeImage;	// Size of image data in bytes
+	uint32_t biOffBits;		// Offset of BMP or PNG data from the beggining of the ICO/CUR file
 } ICODIRENTRY;
 #pragma pack(pop)
 

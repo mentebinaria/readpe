@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -40,7 +41,7 @@
 #include <string.h>
 #include <stdarg.h>
 #if defined(__linux__)
-#include <linux/limits.h>
+#include <linux/limits.h>	// FIXME: Why?
 #elif defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
 #include <limits.h>
 #endif
@@ -76,16 +77,16 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 	char *p, *line = NULL;
 	size_t size = 0;
 
-  	while ( getline( &line, &size, fp ) != -1 )
+	while ( getline( &line, &size, fp ) != -1 )
 	{
 		// remove newline
 		if ( p = strrchr( line, '\n' ) ) *p = 0;
 
-    	p = pe_utils_str_inplace_trim(line);
+		p = pe_utils_str_inplace_trim(line);
 
 		// if not a comment line...
 		if (*p != '#')
-    	{
+		{
 			char *param = strtok(p, "=");
 			char *value = strtok(NULL, "=");
 			const char *trimmed_param = pe_utils_str_inplace_trim(param);
@@ -95,12 +96,12 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 			const bool processed = pev_cb(config, trimmed_param, trimmed_value);
 
 			if (!processed && config->user_defined.parse_callback != NULL)
-        		config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
-    	}
+				config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
+		}
 
 		free( line );
- 		line = NULL;
-	    size = 0;
+		line = NULL;
+		size = 0;
 	}
 
 	fclose(fp);
@@ -111,12 +112,14 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 #ifdef USE_MY_ASPRINTF
 int asprintf( char **pp, char *fmt, ... )
 {
-	char c, *p;
+	char *p;
 	int size;
 	va_list args;
 
 	va_start( args, fmt );
-	if ( ( size = vsnprintf( &c, sizeof c, fmt, args ) ) < 0 )
+
+	// Just get the string size.
+	if ( ( size = vsnprintf( NULL, 0, fmt, args ) ) < 0 )
 	{
 		va_end( args );
 		return -1;
@@ -146,7 +149,7 @@ int pev_load_config(pev_config_t * const config) {
 			return -1;
 
 	// OBS: If asprintf isn't available to your system, use the definition above
-	//      using -DUSE_MY_ASPRINTF at compile time.
+	//		using -DUSE_MY_ASPRINTF at compile time.
 	if ( asprintf(&buff, "%s/" DEFAULT_CONFIG_PATH, pe_utils_get_homedir()) < 0 )
 		return -1;
 
@@ -173,13 +176,10 @@ void pev_cleanup_config(pev_config_t * const config) {
 	if (config == NULL)
 		return;
 
-	if (config->user_defined.data != NULL) {
-		if (config->user_defined.cleanup_callback != NULL)
-			config->user_defined.cleanup_callback(config->user_defined.data);
-	}
+	if ( config->user_defined.cleanup_callback &&
+		 config->user_defined.data )
+		config->user_defined.cleanup_callback(config->user_defined.data);
 
-	if (config->plugins_path != NULL) {
-		free(config->plugins_path);
-		config->plugins_path = NULL;
-	}
+	free(config->plugins_path);
+	config->plugins_path = NULL;
 }

@@ -40,9 +40,11 @@ extern "C" {
 #endif
 
 struct _output_plugin_api; // from output_plugin.h
+struct _general_plugin_api; // from general_plugin.h
 
 typedef struct _pev_api_t {
 	struct _output_plugin_api *output;
+	struct _general_plugin_api *plugin;
 } pev_api_t;
 
 pev_api_t *pev_api_ptr(void);

@@ -44,13 +44,7 @@
 
 #define PROGRAM "pescan"
 
-#ifdef __linux__
-#define YARA_RULES_DIR "yara_rules/"
-#elif __windows__
-#define YARA_RULES_DIR "A DEFINIR"
-#elif __APPLE__
-#define YARA_RULES_DIR ".config/pev/yara_rules"
-#endif
+#define YARA_PLUGIN "Yara"
 
 typedef struct {
 	bool verbose;
@@ -461,26 +455,8 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 	return 0;
 }
 
-// Run yara scan 
-void run_yara(pe_ctx_t* ctx)
-{
-	int err = start_yara(YARA_RULES_DIR);
-	
-	switch (err) {
-		case ERROR_COMPILER:
-			LIBPE_WARNING("Error on set Yara compiler!");
-			return;
-		case ERROR_DIR_NOT_FOUND:
-			LIBPE_WARNING("Unable to find the "YARA_RULES_DIR" folder!");
-			return;
-	}
-
-	scan_pe(ctx);
-	destroy_yara();
-}
-
 int main(int argc, char *argv[])
-{
+{	
 	pev_config_t config;
 	PEV_INITIALIZE(&config);
 
@@ -510,6 +486,7 @@ int main(int argc, char *argv[])
 
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
+
 
 	output_open_document();
 
@@ -611,12 +588,17 @@ int main(int argc, char *argv[])
 
 	// section analysis
 	print_strange_sections(&ctx);
-	// Yara scan
-	run_yara(&ctx);
-
 	
-	output_close_document();
+	// Yara scan
+	plugin_handle* yara_plugin = get_plugin_handle(YARA_PLUGIN);
 
+
+	if (yara_plugin != NULL) {
+		yara_plugin->execute("say_hello", NULL, yara_plugin);
+		yara_plugin->execute("say_world", NULL, yara_plugin);
+	}
+
+	output_close_document();
 	// free memory
 	free_options(options);
 	err = pe_unload(&ctx);

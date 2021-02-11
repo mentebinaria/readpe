@@ -14,6 +14,8 @@ Debug
 *.o
 *.dSYM
 *.log
+*.bkp*
+
 .settings
 src/ofs2rva
 src/output
@@ -36,3 +38,4 @@ tests/running_report
 .DS_Store
 ._*
 .vscode/*
+

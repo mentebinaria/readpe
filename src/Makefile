@@ -93,11 +93,9 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/malloc_s.o \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
+	$(pev_BUILDDIR)/general_plugin.o \
 	$(pev_BUILDDIR)/output.o \
 	$(pev_BUILDDIR)/pev_api.o \
-
-pescan_DEPS = \
-	$(pev_BUILDDIR)/yarascan.o -lyara
 
 ####### Build rules
 
@@ -127,7 +125,7 @@ peres: $(pev_BUILDDIR)/peres.o $(pev_OBJS)
 
 pescan: LDFLAGS += -lm
 pescan: $(pev_BUILDDIR)/pescan.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(pescan_DEPS) $(CFLAGS) $(CPPFLAGS)
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
 pesec: LDFLAGS += -lcrypto
 pesec: $(pev_BUILDDIR)/pesec.o $(pev_OBJS)

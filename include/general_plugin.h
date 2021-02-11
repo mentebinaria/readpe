@@ -1,7 +1,7 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	pev_api.c - Symbols and APIs to be used by all plugins.
+	output_plugin.h - Symbols and APIs to be used by output plugins.
 
 	Copyright (C) 2014 pev authors
 
@@ -33,22 +33,46 @@
     files in the program, then also delete it here.
 */
 
-#include "pev_api.h"
-#include "output_plugin.h"
-#include "general_plugin.h"
-#include <stdbool.h>
-#include <string.h>
+#pragma once
 
-pev_api_t *pev_api_ptr(void) {
-	static bool initialized = false;
-	static pev_api_t api;
+#include "plugin.h"
 
-	if (!initialized) {
-		initialized = true;
-		memset(&api, 0, sizeof(api));
-		api.output = output_plugin_api_ptr();
-		api.plugin = general_plugin_api_ptr();
-	}
+#include <stdlib.h>
+#include <search.h>
 
-	return &api;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Maximum general plugins that can be loaded
+#define MAX_PLUGINS_NAMESPACE 100
+#define MAX_PLUGINS_FUNCTIONS 100
+
+struct hsearch_data plugins_functions;
+struct hsearch_data plugins_namespace;
+
+typedef struct _plugin_handle {
+	struct hsearch_data* plugins_functions;
+	int ( * execute ) (char *func_name, void* data, void* p_handle );
+} plugin_handle;
+
+plugin_handle* get_plugin_handle(char *namespace_name);
+int execute_function( char* func_name, void* data, void* p_handle );
+//
+// Public API specific for general plugins
+//
+typedef struct _general_plugin_api {
+	char * plugin_name;
+// Namespace holding plugins names as key and plugins_functions(hsearch_data) as key 
+// Hashtable holding <function_name, function>
+	void ( * general_plugin_register_function ) ( char* namespace, char* func_name, void* func  );
+} general_plugin_api;
+
+
+general_plugin_api *general_plugin_api_ptr(void);
+
+#ifdef __cplusplus
 }
+#endif
+
+

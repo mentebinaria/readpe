@@ -39,8 +39,13 @@
 extern "C" {
 #endif
 #include "common.h"
+#include "pev_api.h"
+#include "general_plugin.h"
 #include <yara.h>
 #include <dirent.h>
+
+#include <unistd.h>
+#include <fcntl.h>
 
 #define MAX_MSG 256
 
@@ -49,7 +54,8 @@ typedef enum yara_erros {
 	ERROR_COMPILER_LOAD_RULE = -2,
 	ERROR_DIR_NOT_FOUND = -3,
 	ERROR_COMPILER_LOAD_FILE = -4,
-	ERROR_NO_ERROR = -5
+	ERROR_NO_ERROR = -5,
+	ERROR_FILE_ACCESS = -6
 } yr_error;
 
 
@@ -72,16 +78,9 @@ void compiler_callback( int error_level,
 			const char* message,
 			void* user_data);
 
-
-void scan_callback( YR_SCAN_CONTEXT* context,
-		    int message,
-		    void* message_data,
-		    void* user_data);
-
 			
-
-void scan_pe(pe_ctx_t* ctx);
-int start_yara(const char* rules_folder);
+void scan_pe(pe_ctx_t* ctx, void* scan_callback);
+int start_yara(const char* rule_path, void* compiler_callback);
 void destroy_yara();
 
 #ifdef __cplusplus

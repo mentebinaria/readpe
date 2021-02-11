@@ -165,12 +165,15 @@ size_t pe_hash_recommended_size(void) {
 	return result;
 }
 
-static void byte2hex( unsigned char b, char *p )
+// add function to tranforms set of bytes in hex equivalente into output string
+static void to_hex_str(const uint8_t* input, char* output, size_t n)
 {
-	static const char hex[16] = "0123456789abcdef";
-
-	*p++ = hex[b >> 4];
-	*p = hex[b & 0xf];
+	for (const uint8_t* input_ptr = input; n; --n, ++input_ptr)
+	{
+		unsigned b = (*input_ptr);
+		*output++ = "0123456789abcdef"[b >> 4];
+		*output++ = "0123456789abcdef"[b & 0xf];
+	}
 }
 
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size) {
@@ -218,15 +221,8 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 	EVP_MD_CTX_free(md_ctx);
 #endif
 
-	// FIX: Bettern than using sprintf().
-	char *p = output;
-	unsigned char *q = md_value;
-	while ( md_len-- )
-	{
-		byte2hex( *q++, p );
-		p += 2;
-	}
-
+	// FIX: Better than going through all the input calculating the byte2hex of each byte.
+	to_hex_str(output, md_value, md_len);
 	return true;
 }
 

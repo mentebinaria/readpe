@@ -362,13 +362,13 @@ typedef struct element {
 	struct element *next; // needed for singly- or doubly-linked lists
 } element_t;
 
-static void pev_tolower_str(char* str)
+static void pe_tolower_str(char* str)
 {
 	for (char* p = str; *p; ++p)
 		*p = tolower((unsigned char)*p);
 }
 
-static void pev_get_elem_func_name(element_t* elem_ptr, ord_t* ord_ptr, int hint)
+static void pe_get_elem_func_name(element_t* elem_ptr, ord_t* ord_ptr, int hint)
 {
 	for (ord_t* p = ord_ptr; p->number; ++p)
 	{
@@ -381,7 +381,6 @@ static void pev_get_elem_func_name(element_t* elem_ptr, ord_t* ord_ptr, int hint
 		}
 	}
 }
-
 
 static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, element_t **head, pe_imphash_flavor_e flavor) {
 	if (dll_name == NULL || dll_name[0] == '\0')
@@ -486,7 +485,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		}
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
-		pev_tolower_str(dll_name);
+		pe_tolower_str(dll_name);
 		char *aux = NULL;
 
 		//TODO use a reverse search function instead
@@ -518,7 +517,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		if (aux)
 			*aux = '\0';
 
-		pev_tolower_str(fname);
+		pe_tolower_str(fname);
 
 		element_t *el = calloc(1, sizeof(element_t));
 		if (el == NULL) {
@@ -551,10 +550,10 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 				if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
 					ord_t *p = oleaut32_arr;
-					pev_get_elem_func_name(el, p, hint);
+					pe_get_elem_func_name(el, p, hint);
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
 					ord_t *p = ws2_32_arr;
-					pev_get_elem_func_name(el, p, hint);
+					pe_get_elem_func_name(el, p, hint);
 				} 
 				else 
 				{
@@ -575,7 +574,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			}
 		}
 
-		pev_tolower_str(el->function_name);
+		pe_tolower_str(el->function_name);
 		LL_APPEND(*head, el);
 	}
 }

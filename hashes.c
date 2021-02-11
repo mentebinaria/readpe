@@ -634,12 +634,15 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 			break;
 		}
 
-		char dll_name[MAX_DLL_NAME];
-		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
-		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
-		// It might be '\0', for example.
-		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		dll_name[sizeof(dll_name) - 1] = '\0';
+		char* dll_name = NULL;
+		errno = 0;
+
+		// if the character '\0' comes before MAX_DLL_NAME - 1
+		// we duplicate the string and put it in fname
+		// if you can't find '\ 0' copy up to the maximum
+		// MAX_DLL_NAME - 1 characters
+		dll_name = strndup(dll_name_ptr, MAX_DLL_NAME - 1);
+		PEV_ABORT_IF(!dll_name || errno == ENOMEM);
 
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0) {
@@ -647,7 +650,12 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		}
 
 		imphash_load_imported_functions(ctx, ofs, dll_name, &head, flavor);
-		ofs = aux; // Restore previous ofs
+
+		// release dll_name from memory
+		free(dll_name);
+
+		// Restore previous ofs
+		ofs = aux; 
 	}
 
 	LL_COUNT(head, elt, count);
@@ -655,6 +663,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	// Allocate enough memory to store N times "dll_name.func_name,", plus 1 byte for the NUL terminator.
 	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME + 2) + 1;
 	char *imphash_string = calloc(1, imphash_string_size);
+
 	if (imphash_string == NULL) {
 		// TODO: Handle allocation failure.
 		abort();

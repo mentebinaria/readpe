@@ -376,7 +376,7 @@ static void pe_get_elem_func_name(element_t* elem_ptr, ord_t* ord_ptr, int hint)
 		{
 			errno = 0;
 			elem_ptr->function_name = strdup(p->fname);
-			PEV_ABORT_IF(!elem_ptr->function_name || errno = ENOMEM);
+			PEV_ABORT_IF(!elem_ptr->function_name || errno == ENOMEM);
 			break;
 		}
 	}
@@ -559,7 +559,6 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 				{
 					if (is_ordinal) {
 						char* ord_str = NULL;
-						errno = 0;
 
 						errcode = asprintf(&ord_str, "ord%s", hint_str);
 						PEV_ABORT_IF(errcode == -1);

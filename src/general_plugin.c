@@ -37,26 +37,34 @@
 
 
 
-// Register each function name of a given namespace in a hashtable
-void general_plugin_register_function(char* namespace, char* func_name, void *func ) 
+// Register each function name of a given namespace in a hashtable 
+// for each namespace entry it will point to a plugin functions table
+void general_plugin_register_function(char* namespace, char* func_name, int *func ) 
 {
 	ENTRY namespace_name = { namespace, NULL };
 	ENTRY* namespace_found;
+	ENTRY* plugin_found;
 	ENTRY* dummy_entry;
 	ENTRY function_entry = { func_name, func };
 
 	hsearch_r(namespace_name, FIND, &namespace_found, &plugins_namespace);
 
-
 	if (namespace_found) {
 		struct hsearch_data* plugins_func = (struct hsearch_data*) namespace_found->data;
-		hsearch_r(function_entry, ENTER, &dummy_entry, plugins_func);
+		
+		// Check if func_name already in our table
+		hsearch_r(function_entry, FIND, &plugin_found, plugins_func);
+		if (!plugin_found) {
+			hsearch_r(function_entry, ENTER, &dummy_entry, plugins_func);
+		}
 
 	} else {
-
-		ENTRY namespace_entry = { namespace, (void*) &plugins_functions };
-
-		hsearch_r(function_entry, ENTER, &dummy_entry, &plugins_functions);
+		static struct hsearch_data p_functions;
+		hcreate_r(MAX_PLUGINS_NAMESPACE, &p_functions);
+		
+		ENTRY namespace_entry = { namespace, (void*) &p_functions };
+		
+		hsearch_r(function_entry, ENTER, &dummy_entry, &p_functions);
 		dummy_entry = NULL;
 	
 		hsearch_r(namespace_entry, ENTER, &dummy_entry, &plugins_namespace);
@@ -64,6 +72,26 @@ void general_plugin_register_function(char* namespace, char* func_name, void *fu
 }
 
 
+void general_plugin_unregister_namespace(char* namespace) 
+{
+	ENTRY namespace_name = { namespace, NULL };
+	ENTRY* namespace_found;
+	
+	hsearch_r(namespace_name, FIND, &namespace_found, &plugins_namespace);
+
+	if (namespace_found) {
+		hdestroy_r((struct hsearch_data*) namespace_found->data);
+	}
+}
+
+
+void general_plugin_destroy_namespace()
+{
+	hdestroy_r(&plugins_namespace);
+}
+
+// Get plugin handle from a given namespace
+// the plugin_handle struct will have all the plugin functions table and the execute function
 plugin_handle* get_plugin_handle(char* plugin_namespace) 
 {
 	ENTRY namespace_name = { plugin_namespace, NULL };
@@ -72,7 +100,8 @@ plugin_handle* get_plugin_handle(char* plugin_namespace)
 	hsearch_r(namespace_name, FIND, &namespace_found, &plugins_namespace);
 
 	if (namespace_found) {
-		plugin_handle* plugin = malloc(sizeof(plugin_handle*));
+		plugin_handle* plugin = malloc_s(sizeof(plugin_handle*));
+		
 		plugin->plugins_functions = namespace_found->data;
 		plugin->execute = execute_function;
 
@@ -91,19 +120,20 @@ int execute_function( char* func_name, void* data, void* p_handle )
 
 	hsearch_r(search, FIND, &func_found, handle->plugins_functions);
 	if (func_found) {
-		( ( void(*) (void *) ) func_found->data) (data);
+		return ( ( int(*) (void *) ) func_found->data) (data);
 	}
+
+	return 0;
 }
 
 // Build the general_plugin_api struct functions
 general_plugin_api *general_plugin_api_ptr(void) {
 	static general_plugin_api general_plugin_spec = {
-		.general_plugin_register_function = general_plugin_register_function
+		.general_plugin_register_function = general_plugin_register_function,
+		.general_plugin_unregister_namespace = general_plugin_unregister_namespace
 	};
 
 	hcreate_r(MAX_PLUGINS_NAMESPACE, &plugins_namespace);
-	hcreate_r(MAX_PLUGINS_FUNCTIONS, &plugins_functions);
-
 	return &general_plugin_spec;
 }
 

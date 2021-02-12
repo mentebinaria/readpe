@@ -81,6 +81,6 @@ void *malloc_s(size_t size);
 	do { \
 		output_term(); \
 		plugins_unload_all(); \
-		pev_cleanup_config(config); \ 
-		
+		pev_cleanup_config(config); \
+		general_plugin_destroy_namespace(); \
 	} while (0)

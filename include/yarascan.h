@@ -59,16 +59,16 @@ typedef enum yara_erros {
 } yr_error;
 
 
-struct yara_context {
+typedef struct _yara_context {
 	YR_COMPILER* yr_compiler;
 	YR_RULES* yr_rules;
 	void* user_data;
 	yr_error error;
 	int print_fmt;
+	char* rule_path;
+} yara_context;
 
-};
-
-struct yara_context yara_ctx;
+yara_context yara_ctx;
 
 
 void compiler_callback( int error_level,
@@ -78,7 +78,12 @@ void compiler_callback( int error_level,
 			const char* message,
 			void* user_data);
 
-			
+int scan_callback(
+    YR_SCAN_CONTEXT* context,
+    int message,
+    void* message_data,
+    void* user_data);
+
 void scan_pe(pe_ctx_t* ctx, void* scan_callback);
 int start_yara(const char* rule_path, void* compiler_callback);
 void destroy_yara();

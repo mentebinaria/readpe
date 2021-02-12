@@ -40,10 +40,11 @@
 #include <dirent.h>
 
 #include "plugins.h"
-#include "yarascan.h"
+#include "general_plugin.h"
 
 #define PROGRAM "pescan"
 
+#define YARA_RULE_PATH "pescan.yr"
 #define YARA_PLUGIN "Yara"
 
 typedef struct {
@@ -592,11 +593,16 @@ int main(int argc, char *argv[])
 	// Yara scan
 	plugin_handle* yara_plugin = get_plugin_handle(YARA_PLUGIN);
 
-
 	if (yara_plugin != NULL) {
-		yara_plugin->execute("say_hello", NULL, yara_plugin);
-		yara_plugin->execute("say_world", NULL, yara_plugin);
+		if (yara_plugin->execute("load_rule", YARA_RULE_PATH, yara_plugin) < 0) {
+			LIBPE_WARNING("Error on load Yara rule"YARA_RULE_PATH);
+		} else {
+			yara_plugin->execute("yara_scan_mem", &ctx, yara_plugin);
+		}
+		
 	}
+
+	free(yara_plugin);
 
 	output_close_document();
 	// free memory

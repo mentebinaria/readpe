@@ -39,7 +39,7 @@ extern "C" {
 #  define pe_utils_max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
-bool pe_utils_str_ends_with(const char *str, const char *suffix);
+bool pe_utils_str_ends_with(const char* text, const char* pattern);
 char *pe_utils_str_inplace_ltrim(char *str);
 char *pe_utils_str_inplace_rtrim(char *str);
 char *pe_utils_str_inplace_trim(char *str);

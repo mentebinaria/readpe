@@ -31,6 +31,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
+#include <errno.h>
 
 // add utility
 #define PEV_ABORT_IF(cond) \
@@ -226,7 +227,7 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 #endif
 
 	// FIX: Better than going through all the input calculating the byte2hex of each byte.
-	to_hex_str(output, md_value, md_len);
+	to_hex_str(md_value, output, md_len);
 	return true;
 }
 

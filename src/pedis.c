@@ -352,9 +352,6 @@ int main(int argc, char *argv[])
 	if (optional == NULL)
 		return EXIT_FAILURE;
 
-	ud_t ud_obj; // libudis86 object
-	ud_init(&ud_obj);
-
 	uint8_t mode_bits = 0;
 	switch (optional->type) {
 		default:
@@ -363,6 +360,21 @@ int main(int argc, char *argv[])
 		case MAGIC_PE32: mode_bits = 32; break;
 		case MAGIC_PE64: mode_bits = 64; break;
 	}
+
+	// FIX: Only those are supported here.
+	IMAGE_COFF_HEADER *coff = pe_coff(&ctx);
+	switch ( coff->Machine )
+	{
+		case IMAGE_FILE_MACHINE_AMD64:
+		case IMAGE_FILE_MACHINE_I386:
+			break;
+		default:
+			EXIT_ERROR("Unsuported machine (AMD64 or I386)." );
+			return EXIT_FAILURE;
+	}
+
+	ud_t ud_obj; // libudis86 object
+	ud_init(&ud_obj);
 
 	// set disassembly mode according with PE architecture
 	ud_set_mode(&ud_obj, options->mode ? options->mode : mode_bits);

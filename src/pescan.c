@@ -597,12 +597,21 @@ int main(int argc, char *argv[])
 		if (yara_plugin->execute("load_rule", YARA_RULE_PATH, yara_plugin) < 0) {
 			LIBPE_WARNING("Error on load Yara rule"YARA_RULE_PATH);
 		} else {
+			char** matchs;
+			int num_matchs;
 			yara_plugin->execute("yara_scan_mem", &ctx, yara_plugin);
-		}
+			yara_plugin->execute("get_matchs", &matchs, yara_plugin);
+			yara_plugin->execute("get_num_matchs", &num_matchs, yara_plugin);
 		
-	}
+			output_open_scope("yara", OUTPUT_SCOPE_TYPE_ARRAY);
 
-	free(yara_plugin);
+			for (ssize_t i = 0; i < num_matchs; ++i) {
+				output(NULL, matchs[i]);
+			}
+			output_close_scope();
+		}
+		free(yara_plugin);
+	}
 
 	output_close_document();
 	// free memory

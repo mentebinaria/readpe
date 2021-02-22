@@ -49,6 +49,11 @@ extern "C" {
 
 #define MAX_MSG 256
 
+#define PANIC_MEMORY() \
+	fprintf(stderr, "fatal: memory exhausted (Yara)\n"); \
+	yr_finalize();\
+	exit(-1);\
+
 typedef enum yara_erros {
 	ERROR_COMPILER = -1,
 	ERROR_COMPILER_LOAD_RULE = -2,
@@ -69,7 +74,9 @@ typedef struct _yara_context {
 } yara_context;
 
 yara_context yara_ctx;
-
+char** identifiers = NULL;
+char* sentinel = NULL;
+int curr_match_index = 0;
 
 void compiler_callback( int error_level,
 			const char* file_name,
@@ -83,6 +90,10 @@ int scan_callback(
     int message,
     void* message_data,
     void* user_data);
+
+
+void get_matchs(void*** dst);
+void get_num_matchs(void* n);
 
 void scan_pe(pe_ctx_t* ctx, void* scan_callback);
 int start_yara(const char* rule_path, void* compiler_callback);

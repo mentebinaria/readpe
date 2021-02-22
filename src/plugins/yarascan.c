@@ -33,9 +33,28 @@ int scan_callback(
 {
 	if (message == CALLBACK_MSG_RULE_MATCHING) {
 		YR_RULE* rule_match = (YR_RULE*) message_data;
-
-		printf("Rule_match %s\n", rule_match->identifier);
+		int id_size = strlen(rule_match->identifier) + 1; // Get the rule name
+		if (identifiers == NULL) {
+			identifiers = (char**) malloc(sizeof(char*));
+		} else {
+			identifiers = (char**) realloc(identifiers, sizeof(identifiers) * (curr_match_index+1));
+		}
+		identifiers[curr_match_index] = (char*) malloc(id_size);
+		strcpy(identifiers[curr_match_index], rule_match->identifier);
+		curr_match_index++;
 	}
+}
+
+void get_matchs(void*** dst)
+{
+	*dst = identifiers;
+}
+
+
+void get_num_matchs(void* n)
+{
+	int* num_matchs = (int*) n;
+	*num_matchs = curr_match_index;
 }
 
 // pe_ctx_t*
@@ -45,10 +64,8 @@ int scan_mem(void* _pe_ctx)
 
 	if (yara_ctx.error != ERROR_NO_ERROR) return;
 	int flags = SCAN_FLAGS_FAST_MODE;
-
-	output_open_scope("Yara", OUTPUT_SCOPE_TYPE_ARRAY);
+	
 	int err = yr_rules_scan_mem(yara_ctx.yr_rules, pe_ctx->map_addr, pe_ctx->map_size, flags, scan_callback, yara_ctx.user_data, 0);
-	//output_close_scope();
 }
 
 
@@ -77,8 +94,8 @@ int load_rules(void* rule)
 	} else {
 		yara_ctx.error = ERROR_NO_ERROR;
 		if (yr_compiler_get_rules(yara_ctx.yr_compiler, &yara_ctx.yr_rules) != ERROR_SUCCESS) {
-			fprintf(stderr, "fatal: memory exhausted (Yara scan rule)\n");
-			exit(-1);
+			close(rule_fd);
+			PANIC_MEMORY();
 		}
 	}
 	
@@ -92,20 +109,12 @@ void destroy_yara()
 {
 	if (yara_ctx.yr_compiler)
 		yr_compiler_destroy(yara_ctx.yr_compiler);
+
+	if (identifiers != NULL) 
+		free(identifiers);
 	
+
 	yr_finalize();
-}
-
-
-
-void say_hello(void)
-{
-	puts("Hello");
-}
-
-void say_world(void) 
-{
-	puts("world");
 }
 
 // Plugin functions
@@ -116,20 +125,22 @@ int plugin_initialize(const struct _pev_api_t *api)
 	pev_api = api;
 	pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "load_rule", load_rules);
 	pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "yara_scan_mem", scan_mem);
-//	pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "say_world", say_world);
+	pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "get_matchs", get_matchs);
+	pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "get_num_matchs", get_num_matchs);
 	return 0;
 }
 
 void plugin_shutdown()
 {
-	yr_initialize();
+
 }
 
 
 void plugin_unloaded()
 {
+	destroy_yara();
 	pev_api->plugin->general_plugin_unregister_namespace(PLUGIN_NAMESPACE);
-	yr_initialize();
+	
 }
 
 int plugin_loaded()

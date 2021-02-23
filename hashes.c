@@ -31,6 +31,11 @@
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
+#include <errno.h>
+
+// add utility
+#define PEV_ABORT_IF(cond) \
+	do { (cond) ? abort() : (void)0; } while (0)
 
 /* By liw. */
 static char *last_strstr(char *haystack, const char *needle) {
@@ -165,12 +170,15 @@ size_t pe_hash_recommended_size(void) {
 	return result;
 }
 
-static void byte2hex( unsigned char b, char *p )
+// add function to tranforms set of bytes in hex equivalente into output string
+static void to_hex_str(const uint8_t* input, char* output, size_t n)
 {
-	static const char hex[16] = "0123456789abcdef";
-
-	*p++ = hex[b >> 4];
-	*p = hex[b & 0xf];
+	for (const uint8_t* input_ptr = input; n; --n, ++input_ptr)
+	{
+		unsigned b = (*input_ptr);
+		*output++ = "0123456789abcdef"[b >> 4];
+		*output++ = "0123456789abcdef"[b & 0xf];
+	}
 }
 
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size) {
@@ -218,15 +226,8 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, co
 	EVP_MD_CTX_free(md_ctx);
 #endif
 
-	// FIX: Bettern than using sprintf().
-	char *p = output;
-	unsigned char *q = md_value;
-	while ( md_len-- )
-	{
-		byte2hex( *q++, p );
-		p += 2;
-	}
-
+	// FIX: Better than going through all the input calculating the byte2hex of each byte.
+	to_hex_str(md_value, output, md_len);
 	return true;
 }
 
@@ -362,18 +363,38 @@ typedef struct element {
 	struct element *next; // needed for singly- or doubly-linked lists
 } element_t;
 
+// strlwr - string lowercase
+static void pe_transform_to_lowercase_str(char* str)
+{
+	for (char* p = str; *p; ++p)
+		*p = tolower((unsigned char)*p);
+}
+
+static void pe_get_all_ord_lkp_func_name_with_hint(element_t* elem_ptr, ord_t* ord_ptr, int hint)
+{
+	for (ord_t* p = ord_ptr; p->number; ++p)
+	{
+		if (hint == p->number)
+		{
+			errno = 0;
+			elem_ptr->function_name = strdup(p->fname);
+			PEV_ABORT_IF(!elem_ptr->function_name || errno == ENOMEM);
+			break;
+		}
+	}
+}
+
 static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char *dll_name, element_t **head, pe_imphash_flavor_e flavor) {
 	if (dll_name == NULL || dll_name[0] == '\0')
 		return;
 
 	uint64_t ofs = offset;
 
-	char hint_str[32];
-	char fname[MAX_FUNCTION_NAME];
-	bool is_ordinal = false;
+	char* hint_str = NULL;
+	char* fname = NULL;
 
-	hint_str[0] = '\0';
-	fname[0] = '\0';
+	bool is_ordinal = false;
+	int errcode = 0; // for asprintf return code
 
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
@@ -393,8 +414,12 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
 
 					if (is_ordinal) {
-						snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu32,
-								thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+						errcode = asprintf(&hint_str, "%"PRIu32, 
+										   thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
+						
+						// FIX-ME: devemos abortar a execucao?
+						PEV_ABORT_IF(errcode == -1);
+						
 					} else {
 						const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -403,12 +428,19 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 							return;
 						}
 
-						snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
-						strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
-						// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-						fname[sizeof(fname) - 1] = '\0';
-						//size_t fname_len = strlen(fname);
+						errcode = asprintf(&hint_str, "%"PRIu16, imp_name->Hint);
+						PEV_ABORT_IF(errcode == -1);
+
+						errno = 0;
+
+						// if the character '\0' comes before MAX_FUNCTION_NAME - 1
+						// we duplicate the string and put it in fname
+						// if you can't find '\ 0' copy up to the maximum
+						// MAX_FUNCTION_NAME - 1 characters
+						fname = strndup((char*)imp_name->Name, MAX_FUNCTION_NAME - 1);
+						PEV_ABORT_IF(!fname || errno == ENOMEM);
 					}
+
 					ofs += sizeof(IMAGE_THUNK_DATA32);
 					break;
 				}
@@ -428,8 +460,11 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
 
 					if (is_ordinal) {
-						snprintf(hint_str, sizeof(hint_str)-1, "%llu",
-								thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+						errcode = asprintf(&hint_str, "%"PRIu64,
+										   thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+						
+						PEV_ABORT_IF(errcode == -1);
+
 					} else {
 						uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -438,11 +473,13 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 							return;
 						}
 
-						snprintf(hint_str, sizeof(hint_str)-1, "%d", imp_name->Hint);
-						strncpy(fname, (char *)imp_name->Name, sizeof(fname)-1);
-						// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-						fname[sizeof(fname) - 1] = '\0';
-						//size_t fname_len = strlen(fname);
+						errcode = asprintf(&hint_str, "%"PRIu16, imp_name->Hint);
+						PEV_ABORT_IF(errcode == -1);
+
+
+						errno = 0;
+						fname = strndup((char*)imp_name->Name, MAX_FUNCTION_NAME - 1);
+						PEV_ABORT_IF(!fname || errno == ENOMEM);
 					}
 					ofs += sizeof(IMAGE_THUNK_DATA64);
 					break;
@@ -450,12 +487,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		}
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
-
-		{
-			char *p = dll_name;
-			while ( *p ) { *p = tolower( *p ); p++; }
-		}
-
+		pe_transform_to_lowercase_str(dll_name);
 		char *aux = NULL;
 
 		//TODO use a reverse search function instead
@@ -487,10 +519,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		if (aux)
 			*aux = '\0';
 
-		{
-			char *p = fname;
-			while ( *p ) { *p = tolower( *p ); p++; }
-		}
+		pe_transform_to_lowercase_str(fname);
 
 		element_t *el = calloc(1, sizeof(element_t));
 		if (el == NULL) {
@@ -498,49 +527,45 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			abort();
 		}
 
+		errno = 0;
 		el->dll_name = strdup(dll_name);
+
+		// add verification of allocation error
+		PEV_ABORT_IF(!el->dll_name || errno == ENOMEM);
 
 		switch (flavor) {
 			default: abort();
 			case LIBPE_IMPHASH_FLAVOR_MANDIANT:
 			{
-				el->function_name = strdup(is_ordinal ? hint_str : fname);
+				el->function_name = is_ordinal ? hint_str : fname;
 				break;
 			}
 			case LIBPE_IMPHASH_FLAVOR_PEFILE:
 			{
-				int hint = strtoul(hint_str, NULL, 10);
+				errno = 0;
+
+				char* rest = NULL;
+				int hint = (int) strtol(hint_str, &rest, 10);
+
+				// should we treat the error or abort?
+				PEV_ABORT_IF(hint_str == rest || errno == ERANGE);
 
 				if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
-					ord_t *p = oleaut32_arr;
-
-					while ( p->number ) {
-						if ( hint == p->number )
-					  	{
-								el->function_name = strdup( p->fname );
-								break;
-						}
-						p++;
-					}
+					pe_get_all_ord_lkp_func_name_with_hint(el, oleaut32_arr, hint);
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
-					ord_t *p = ws2_32_arr;
-
-					while ( p->number ) {
-						if ( hint == p->number )
-						{
-							el->function_name = strdup( p->fname );
-							break;
-						}
-						p++;
-					}
-				} else {
+					pe_get_all_ord_lkp_func_name_with_hint(el, ws2_32_arr, hint);
+				} 
+				else 
+				{
 					if (is_ordinal) {
-						char ord[MAX_FUNCTION_NAME];
+						char* ord_str = NULL;
 
-						snprintf(ord, MAX_FUNCTION_NAME, "ord%s", hint_str);
-						el->function_name = strdup(ord);
+						errcode = asprintf(&ord_str, "ord%s", hint_str);
+						PEV_ABORT_IF(errcode == -1);
+
+						el->function_name = ord_str;
 					} else {
-						el->function_name = strdup(fname);
+						el->function_name = fname;
 					}
 				}
 
@@ -548,12 +573,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			}
 		}
 
-		{ 
-			char *p;
-			p = el->function_name;
-			while ( *p ) { *p = tolower( *p ); p++; }
-		}
-
+		pe_transform_to_lowercase_str(el->function_name);
 		LL_APPEND(*head, el);
 	}
 }
@@ -612,12 +632,15 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 			break;
 		}
 
-		char dll_name[MAX_DLL_NAME];
-		strncpy(dll_name, dll_name_ptr, sizeof(dll_name)-1);
-		// Validate whether it's ok to access at least 1 byte after dll_name_ptr.
-		// It might be '\0', for example.
-		// Because `strncpy` does not guarantee to NUL terminate the string itself, this must be done explicitly.
-		dll_name[sizeof(dll_name) - 1] = '\0';
+		char* dll_name = NULL;
+		errno = 0;
+
+		// if the character '\0' comes before MAX_DLL_NAME - 1
+		// we duplicate the string and put it in fname
+		// if you can't find '\ 0' copy up to the maximum
+		// MAX_DLL_NAME - 1 characters
+		dll_name = strndup(dll_name_ptr, MAX_DLL_NAME - 1);
+		PEV_ABORT_IF(!dll_name || errno == ENOMEM);
 
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0) {
@@ -625,7 +648,12 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		}
 
 		imphash_load_imported_functions(ctx, ofs, dll_name, &head, flavor);
-		ofs = aux; // Restore previous ofs
+
+		// release dll_name from memory
+		free(dll_name);
+
+		// Restore previous ofs
+		ofs = aux; 
 	}
 
 	LL_COUNT(head, elt, count);
@@ -633,6 +661,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	// Allocate enough memory to store N times "dll_name.func_name,", plus 1 byte for the NUL terminator.
 	const size_t imphash_string_size = count * (MAX_DLL_NAME + MAX_FUNCTION_NAME + 2) + 1;
 	char *imphash_string = calloc(1, imphash_string_size);
+
 	if (imphash_string == NULL) {
 		// TODO: Handle allocation failure.
 		abort();

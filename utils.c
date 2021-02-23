@@ -33,18 +33,16 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-bool pe_utils_str_ends_with(const char *str, const char *suffix) {
-  // FIXME: We should assume the pointers points to something valid.
-  //        I believe the correct test would be ( ! *str || ! *suffix ).
-	if (str == NULL || suffix == NULL)
+bool pe_utils_str_ends_with(const char* text, const char* pattern)
+{
+	if (!text || !pattern)
 		return false;
 
-	size_t len_str = strlen(str);
-	size_t len_suffix = strlen(suffix);
-	if (len_suffix > len_str)
+	const size_t n = strspn(pattern, text);
+	if (*(pattern + n) != '\0')
 		return false;
 
-	return strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+	return !memcmp(text + strlen(text) - n, pattern, n);
 }
 
 char *pe_utils_str_inplace_ltrim(char *str) {

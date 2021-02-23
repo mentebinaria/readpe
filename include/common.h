@@ -57,7 +57,7 @@
 	exit(EXIT_FAILURE); \
 }
 
-#define MAX_MSG 80
+#define MAX_MSG 81
 #define MAX_PATH 256
 #define VERSION "0.81"
 #define TOOLKIT "from pev " VERSION " <https://github.com/merces/pev/> toolkit"

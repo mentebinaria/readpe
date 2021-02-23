@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "plugins.h"
@@ -74,12 +75,12 @@ int plugins_load(const char *path) {
 		return -2;
 	}
 
-  // FIXME: Ugly way to do it!
+	// FIX: Ugly way to do it!
 	//*(void **)(&entry->plugin_loaded_fn) = dylib_get_symbol(library, "plugin_loaded");
 	//*(void **)(&entry->plugin_initialize_fn) = dylib_get_symbol(library, "plugin_initialize");
 	//*(void **)(&entry->plugin_shutdown_fn) = dylib_get_symbol(library, "plugin_shutdown");
 	//*(void **)(&entry->plugin_unloaded_fn) = dylib_get_symbol(library, "plugin_unloaded");
-  entry->plugin_loaded_fn = dylib_get_symbol( library, "plugin_loaded" );
+	entry->plugin_loaded_fn = dylib_get_symbol( library, "plugin_loaded" );
 	entry->plugin_initialize_fn = dylib_get_symbol(library, "plugin_initialize");
 	entry->plugin_shutdown_fn = dylib_get_symbol(library, "plugin_shutdown");
 	entry->plugin_unloaded_fn = dylib_get_symbol(library, "plugin_unloaded");
@@ -139,6 +140,8 @@ static void plugin_unload(plugins_entry_t *entry) {
 #endif
 
 int plugins_load_all_from_directory(const char *path) {
+	// FIX: errno isn't automatically zeroed if already set.
+	errno = 0;
 	DIR *dir = opendir(path);
 	if (dir == NULL) {
 		fprintf(stderr, "plugins: could not open directory '%s' -- %s\n",
@@ -146,13 +149,15 @@ int plugins_load_all_from_directory(const char *path) {
 		return -1;
 	}
 
-	long path_max = pathconf(path, _PC_PATH_MAX);
-	char *relative_path = malloc(path_max);
-	if (relative_path == NULL) {
-		fprintf(stderr, "plugins: allocation failed for relative path\n");
-		closedir(dir);
-		return -2;
-	}
+	// FIX: Don't need this.
+	//long path_max = pathconf(path, _PC_PATH_MAX);
+	//char *relative_path = malloc(path_max);
+	//if (relative_path == NULL) {
+	//	fprintf(stderr, "plugins: allocation failed for relative path\n");
+	//	closedir(dir);
+	//	return -2;
+	//}
+	char *relative_path;
 
 	size_t load_count = 0;
 	struct dirent *dir_entry;
@@ -188,8 +193,12 @@ int plugins_load_all_from_directory(const char *path) {
 				if (!possible_plugin)
 					break;
 
-				snprintf(relative_path, path_max, "%s/%s", path, filename);
-				//printf("relative_path = %s\n", relative_path);
+				if ( asprintf(&relative_path, "%s/%s", path, filename) < 0 )
+				{
+					fprintf(stderr, "plugins: allocation failed for relative path\n");
+					closedir(dir);
+					return -2;
+				}
 
 				int ret = plugins_load(relative_path);
 				if (ret < 0) {

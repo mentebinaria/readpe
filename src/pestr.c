@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -54,17 +55,17 @@ static void usage(void)
 		"Search for strings in PE files\n"
 		"\nExample: %s acrobat.exe\n"
 		"\nOptions:\n"
-		" -n, --min-length                       Set minimum string length (default: 4).\n"
-		" -o, --offset                           Show string offset in file.\n"
-		" -s, --section                          Show string section, if exists.\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -n, --min-length						 Set minimum string length (default: 4).\n"
+		" -o, --offset							 Show string offset in file.\n"
+		" -s, --section							 Show string section, if exists.\n"
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM);
 }
 
 static void free_options(options_t *options)
 {
-  // FIX: Don't need to test for NULL pointer.
+	// FIX: Don't need to test for NULL pointer.
 	//if (options == NULL)
 	//	return;
 
@@ -79,12 +80,12 @@ static options_t *parse_options(int argc, char *argv[])
 	static const char short_options[] = "osn:V";
 
 	static const struct option long_options[] = {
-		{ "offset",          no_argument,        NULL, 'o' },
-		{ "section",         no_argument,        NULL, 's' },
-		{ "min-length",      required_argument,  NULL, 'n' },
-		{ "help",            no_argument,        NULL,  1  },
-		{ "version",         no_argument,        NULL, 'V' },
-		{ NULL,              0,                  NULL,  0  }
+		{ "offset",			 no_argument,		 NULL, 'o' },
+		{ "section",		 no_argument,		 NULL, 's' },
+		{ "min-length",		 required_argument,  NULL, 'n' },
+		{ "help",			 no_argument,		 NULL,	1  },
+		{ "version",		 no_argument,		 NULL, 'V' },
+		{ NULL,				 0,					 NULL,	0  }
 	};
 
 	int c, ind;
@@ -106,6 +107,8 @@ static options_t *parse_options(int argc, char *argv[])
 				break;
 			case 'n':
 			{
+				// FIX: errno isn't automatically zeroed if already set.
+				errno = 0;
 				unsigned long value = strtoul(optarg, NULL, 0);
 				if (value == ULONG_MAX && errno == ERANGE) {
 					fprintf(stderr, "The original (nonnegated) value would overflow");
@@ -142,14 +145,12 @@ static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
 	return NULL;
 }
 
-static void printb(
-	pe_ctx_t *ctx,
-	const options_t *options,
-	const uint8_t *bytes,
-	size_t pos,
-	size_t length,
-	unsigned long offset) {
-
+static void printb(	pe_ctx_t *ctx,
+					const options_t *options,
+					const uint8_t *bytes,
+					size_t pos,
+					size_t length,
+					unsigned long offset) {
 	if (options->offset)
 		printf("%#lx\t", (unsigned long) offset);
 
@@ -158,13 +159,20 @@ static void printb(
 		printf("%s\t", s ? s : "[none]");
 	}
 
+
 	// print the string
-	while (pos < length) {
-		if (bytes[pos] == '\0') { // utf-8 printing
-			pos++;
-			continue;
-		}
-		putchar(bytes[pos++]);
+	//while (pos < length) {
+	//	if (bytes[pos] == '\0') { // utf-8 printing
+	//		pos++;
+	//		continue;
+	//	}
+	//	putchar(bytes[pos++]);
+	//}
+	while ( pos < length )
+	{
+		char c = bytes[pos++];
+		if ( c ) 
+			putchar( c );
 	}
 
 	putchar('\n');
@@ -201,8 +209,7 @@ int main(int argc, char *argv[])
 	const uint8_t *pe_raw_data = ctx.map_addr;
 	uint64_t pe_raw_offset = 0;
 
-	unsigned char buff[LINE_BUFFER];
-	memset(buff, 0, LINE_BUFFER);
+	static unsigned char buff[LINE_BUFFER]; // Garanteed to be zeroed and not on Stack!
 	uint64_t buff_index = 0;
 
 	uint32_t ascii = 0;

@@ -54,8 +54,11 @@ endif
 
 override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm
 override CFLAGS += -O2 -ffast-math -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+
 # Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
 # undefine it first to avoid redefinition warnings.
+#
+# To compile for production define the symbol NDEBUG before invoking this makefile.
 override CPPFLAGS += \
 	-D_GNU_SOURCE \
 	-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 \

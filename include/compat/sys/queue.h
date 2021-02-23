@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*-
  * Copyright (c) 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -6,18 +7,18 @@
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *	  notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
+ *	  notice, this list of conditions and the following disclaimer in the
+ *	  documentation and/or other materials provided with the distribution.
  * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
+ *	  may be used to endorse or promote products derived from this software
+ *	  without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.	IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -45,7 +46,7 @@
  * added to the list after an existing element or at the head of the list.
  * Elements being removed from the head of the list should use the explicit
  * macro for this purpose for optimum efficiency. A singly-linked list may
- * only be traversed in the forward direction.  Singly-linked lists are ideal
+ * only be traversed in the forward direction.	Singly-linked lists are ideal
  * for applications with large datasets and few or no removals or for
  * implementing a LIFO queue.
  *
@@ -168,28 +169,28 @@ struct {								\
 
 #define	SLIST_FOREACH(var, head, field)					\
 	for ((var) = SLIST_FIRST((head));				\
-	    (var);							\
-	    (var) = SLIST_NEXT((var), field))
+		(var);							\
+		(var) = SLIST_NEXT((var), field))
 
 #define	SLIST_FOREACH_FROM(var, head, field)				\
 	for ((var) = ((var) ? (var) : SLIST_FIRST((head)));		\
-	    (var);							\
-	    (var) = SLIST_NEXT((var), field))
+		(var);							\
+		(var) = SLIST_NEXT((var), field))
 
 #define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
 	for ((var) = SLIST_FIRST((head));				\
-	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	SLIST_FOREACH_FROM_SAFE(var, head, field, tvar)			\
 	for ((var) = ((var) ? (var) : SLIST_FIRST((head)));		\
-	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	SLIST_FOREACH_PREVPTR(var, varp, head, field)			\
 	for ((varp) = &SLIST_FIRST((head));				\
-	    ((var) = *(varp)) != NULL;					\
-	    (varp) = &SLIST_NEXT((var), field))
+		((var) = *(varp)) != NULL;					\
+		(varp) = &SLIST_NEXT((var), field))
 
 #define	SLIST_INIT(head) do {						\
 	SLIST_FIRST((head)) = NULL;					\
@@ -223,7 +224,7 @@ struct {								\
 
 #define SLIST_REMOVE_AFTER(elm, field) do {				\
 	SLIST_NEXT(elm, field) =					\
-	    SLIST_NEXT(SLIST_NEXT(elm, field), field);			\
+		SLIST_NEXT(SLIST_NEXT(elm, field), field);			\
 } while (0)
 
 #define	SLIST_REMOVE_HEAD(head, field) do {				\
@@ -280,13 +281,13 @@ struct {								\
 
 #define	STAILQ_FOREACH_SAFE(var, head, field, tvar)			\
 	for ((var) = STAILQ_FIRST((head));				\
-	    (var) && ((tvar) = STAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = STAILQ_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	STAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)		\
 	for ((var) = ((var) ? (var) : STAILQ_FIRST((head)));		\
-	    (var) && ((tvar) = STAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = STAILQ_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	STAILQ_INIT(head) do {						\
 	STAILQ_FIRST((head)) = NULL;					\
@@ -313,7 +314,7 @@ struct {								\
 
 #define	STAILQ_LAST(head, type, field)					\
 	(STAILQ_EMPTY((head)) ? NULL :					\
-	    __containerof((head)->stqh_last, struct type, field.stqe_next))
+		__containerof((head)->stqh_last, struct type, field.stqe_next))
 
 #define	STAILQ_NEXT(elm, field)	((elm)->field.stqe_next)
 
@@ -333,13 +334,13 @@ struct {								\
 
 #define STAILQ_REMOVE_AFTER(head, elm, field) do {			\
 	if ((STAILQ_NEXT(elm, field) =					\
-	     STAILQ_NEXT(STAILQ_NEXT(elm, field), field)) == NULL)	\
+		 STAILQ_NEXT(STAILQ_NEXT(elm, field), field)) == NULL)	\
 		(head)->stqh_last = &STAILQ_NEXT((elm), field);		\
 } while (0)
 
 #define	STAILQ_REMOVE_HEAD(head, field) do {				\
 	if ((STAILQ_FIRST((head)) =					\
-	     STAILQ_NEXT(STAILQ_FIRST((head)), field)) == NULL)		\
+		 STAILQ_NEXT(STAILQ_FIRST((head)), field)) == NULL)		\
 		(head)->stqh_last = &STAILQ_FIRST((head));		\
 } while (0)
 
@@ -381,16 +382,16 @@ struct {								\
 #if (defined(_KERNEL) && defined(INVARIANTS))
 #define	QMD_LIST_CHECK_HEAD(head, field) do {				\
 	if (LIST_FIRST((head)) != NULL &&				\
-	    LIST_FIRST((head))->field.le_prev !=			\
-	     &LIST_FIRST((head)))					\
+		LIST_FIRST((head))->field.le_prev !=			\
+		 &LIST_FIRST((head)))					\
 		panic("Bad list head %p first->prev != head", (head));	\
 } while (0)
 
 #define	QMD_LIST_CHECK_NEXT(elm, field) do {				\
 	if (LIST_NEXT((elm), field) != NULL &&				\
-	    LIST_NEXT((elm), field)->field.le_prev !=			\
-	     &((elm)->field.le_next))					\
-	     	panic("Bad link elm %p next->prev != elm", (elm));	\
+		LIST_NEXT((elm), field)->field.le_prev !=			\
+		 &((elm)->field.le_next))					\
+			panic("Bad link elm %p next->prev != elm", (elm));	\
 } while (0)
 
 #define	QMD_LIST_CHECK_PREV(elm, field) do {				\
@@ -409,23 +410,23 @@ struct {								\
 
 #define	LIST_FOREACH(var, head, field)					\
 	for ((var) = LIST_FIRST((head));				\
-	    (var);							\
-	    (var) = LIST_NEXT((var), field))
+		(var);							\
+		(var) = LIST_NEXT((var), field))
 
 #define	LIST_FOREACH_FROM(var, head, field)				\
 	for ((var) = ((var) ? (var) : LIST_FIRST((head)));		\
-	    (var);							\
-	    (var) = LIST_NEXT((var), field))
+		(var);							\
+		(var) = LIST_NEXT((var), field))
 
 #define	LIST_FOREACH_SAFE(var, head, field, tvar)			\
 	for ((var) = LIST_FIRST((head));				\
-	    (var) && ((tvar) = LIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = LIST_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	LIST_FOREACH_FROM_SAFE(var, head, field, tvar)			\
 	for ((var) = ((var) ? (var) : LIST_FIRST((head)));		\
-	    (var) && ((tvar) = LIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = LIST_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	LIST_INIT(head) do {						\
 	LIST_FIRST((head)) = NULL;					\
@@ -435,7 +436,7 @@ struct {								\
 	QMD_LIST_CHECK_NEXT(listelm, field);				\
 	if ((LIST_NEXT((elm), field) = LIST_NEXT((listelm), field)) != NULL)\
 		LIST_NEXT((listelm), field)->field.le_prev =		\
-		    &LIST_NEXT((elm), field);				\
+			&LIST_NEXT((elm), field);				\
 	LIST_NEXT((listelm), field) = (elm);				\
 	(elm)->field.le_prev = &LIST_NEXT((listelm), field);		\
 } while (0)
@@ -460,7 +461,7 @@ struct {								\
 
 #define	LIST_PREV(elm, head, type, field)				\
 	((elm)->field.le_prev == &LIST_FIRST((head)) ? NULL :		\
-	    __containerof((elm)->field.le_prev, struct type, field.le_next))
+		__containerof((elm)->field.le_prev, struct type, field.le_next))
 
 #define	LIST_REMOVE(elm, field) do {					\
 	QMD_SAVELINK(oldnext, (elm)->field.le_next);			\
@@ -468,8 +469,8 @@ struct {								\
 	QMD_LIST_CHECK_NEXT(elm, field);				\
 	QMD_LIST_CHECK_PREV(elm, field);				\
 	if (LIST_NEXT((elm), field) != NULL)				\
-		LIST_NEXT((elm), field)->field.le_prev = 		\
-		    (elm)->field.le_prev;				\
+		LIST_NEXT((elm), field)->field.le_prev =		\
+			(elm)->field.le_prev;				\
 	*(elm)->field.le_prev = LIST_NEXT((elm), field);		\
 	TRASHIT(*oldnext);						\
 	TRASHIT(*oldprev);						\
@@ -511,20 +512,20 @@ struct {								\
 #if (defined(_KERNEL) && defined(INVARIANTS))
 #define	QMD_TAILQ_CHECK_HEAD(head, field) do {				\
 	if (!TAILQ_EMPTY(head) &&					\
-	    TAILQ_FIRST((head))->field.tqe_prev !=			\
-	     &TAILQ_FIRST((head)))					\
+		TAILQ_FIRST((head))->field.tqe_prev !=			\
+		 &TAILQ_FIRST((head)))					\
 		panic("Bad tailq head %p first->prev != head", (head));	\
 } while (0)
 
 #define	QMD_TAILQ_CHECK_TAIL(head, field) do {				\
 	if (*(head)->tqh_last != NULL)					\
-	    	panic("Bad tailq NEXT(%p->tqh_last) != NULL", (head)); 	\
+			panic("Bad tailq NEXT(%p->tqh_last) != NULL", (head));	\
 } while (0)
 
 #define	QMD_TAILQ_CHECK_NEXT(elm, field) do {				\
 	if (TAILQ_NEXT((elm), field) != NULL &&				\
-	    TAILQ_NEXT((elm), field)->field.tqe_prev !=			\
-	     &((elm)->field.tqe_next))					\
+		TAILQ_NEXT((elm), field)->field.tqe_prev !=			\
+		 &((elm)->field.tqe_next))					\
 		panic("Bad link elm %p next->prev != elm", (elm));	\
 } while (0)
 
@@ -556,43 +557,43 @@ struct {								\
 
 #define	TAILQ_FOREACH(var, head, field)					\
 	for ((var) = TAILQ_FIRST((head));				\
-	    (var);							\
-	    (var) = TAILQ_NEXT((var), field))
+		(var);							\
+		(var) = TAILQ_NEXT((var), field))
 
 #define	TAILQ_FOREACH_FROM(var, head, field)				\
 	for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));		\
-	    (var);							\
-	    (var) = TAILQ_NEXT((var), field))
+		(var);							\
+		(var) = TAILQ_NEXT((var), field))
 
 #define	TAILQ_FOREACH_SAFE(var, head, field, tvar)			\
 	for ((var) = TAILQ_FIRST((head));				\
-	    (var) && ((tvar) = TAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = TAILQ_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	TAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)			\
 	for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));		\
-	    (var) && ((tvar) = TAILQ_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+		(var) && ((tvar) = TAILQ_NEXT((var), field), 1);		\
+		(var) = (tvar))
 
 #define	TAILQ_FOREACH_REVERSE(var, head, headname, field)		\
 	for ((var) = TAILQ_LAST((head), headname);			\
-	    (var);							\
-	    (var) = TAILQ_PREV((var), headname, field))
+		(var);							\
+		(var) = TAILQ_PREV((var), headname, field))
 
 #define	TAILQ_FOREACH_REVERSE_FROM(var, head, headname, field)		\
 	for ((var) = ((var) ? (var) : TAILQ_LAST((head), headname));	\
-	    (var);							\
-	    (var) = TAILQ_PREV((var), headname, field))
+		(var);							\
+		(var) = TAILQ_PREV((var), headname, field))
 
 #define	TAILQ_FOREACH_REVERSE_SAFE(var, head, headname, field, tvar)	\
 	for ((var) = TAILQ_LAST((head), headname);			\
-	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
-	    (var) = (tvar))
+		(var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
+		(var) = (tvar))
 
 #define	TAILQ_FOREACH_REVERSE_FROM_SAFE(var, head, headname, field, tvar) \
 	for ((var) = ((var) ? (var) : TAILQ_LAST((head), headname));	\
-	    (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
-	    (var) = (tvar))
+		(var) && ((tvar) = TAILQ_PREV((var), headname, field), 1);	\
+		(var) = (tvar))
 
 #define	TAILQ_INIT(head) do {						\
 	TAILQ_FIRST((head)) = NULL;					\
@@ -603,8 +604,8 @@ struct {								\
 #define	TAILQ_INSERT_AFTER(head, listelm, elm, field) do {		\
 	QMD_TAILQ_CHECK_NEXT(listelm, field);				\
 	if ((TAILQ_NEXT((elm), field) = TAILQ_NEXT((listelm), field)) != NULL)\
-		TAILQ_NEXT((elm), field)->field.tqe_prev = 		\
-		    &TAILQ_NEXT((elm), field);				\
+		TAILQ_NEXT((elm), field)->field.tqe_prev =		\
+			&TAILQ_NEXT((elm), field);				\
 	else {								\
 		(head)->tqh_last = &TAILQ_NEXT((elm), field);		\
 		QMD_TRACE_HEAD(head);					\
@@ -629,7 +630,7 @@ struct {								\
 	QMD_TAILQ_CHECK_HEAD(head, field);				\
 	if ((TAILQ_NEXT((elm), field) = TAILQ_FIRST((head))) != NULL)	\
 		TAILQ_FIRST((head))->field.tqe_prev =			\
-		    &TAILQ_NEXT((elm), field);				\
+			&TAILQ_NEXT((elm), field);				\
 	else								\
 		(head)->tqh_last = &TAILQ_NEXT((elm), field);		\
 	TAILQ_FIRST((head)) = (elm);					\
@@ -662,8 +663,8 @@ struct {								\
 	QMD_TAILQ_CHECK_NEXT(elm, field);				\
 	QMD_TAILQ_CHECK_PREV(elm, field);				\
 	if ((TAILQ_NEXT((elm), field)) != NULL)				\
-		TAILQ_NEXT((elm), field)->field.tqe_prev = 		\
-		    (elm)->field.tqe_prev;				\
+		TAILQ_NEXT((elm), field)->field.tqe_prev =		\
+			(elm)->field.tqe_prev;				\
 	else {								\
 		(head)->tqh_last = (elm)->field.tqe_prev;		\
 		QMD_TRACE_HEAD(head);					\

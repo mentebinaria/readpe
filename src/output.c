@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "output.h"
@@ -130,10 +131,8 @@ void output_init(void) {
 }
 
 void output_term(void) {
-	if (g_cmdline != NULL) {
-		free(g_cmdline);
-		g_cmdline = NULL;
-	}
+	free(g_cmdline);
+	g_cmdline = NULL;
 
 	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
 	if (scope_depth > 0) {
@@ -203,6 +202,8 @@ size_t output_available_formats(char *buffer, size_t size, char separator) {
 	size_t consumed = 0;
 	bool truncated = false;
 
+	// FIXME: Theoretically unecessary, since a NUL char is
+	//        appended at the end of the buffer.
 	memset(buffer, 0, size);
 
 	format_entry_t *entry;
@@ -226,6 +227,8 @@ size_t output_available_formats(char *buffer, size_t size, char separator) {
 		total_available++;
 	}
 
+	// FIXME: What if the list is empty?
+	//        In that case 'consumed-1' will evaluate to -1.
 	buffer[consumed - 1] = '\0';
 
 	return total_available;

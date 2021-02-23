@@ -35,7 +35,7 @@
 
 // add utility
 #define PEV_ABORT_IF(cond) \
-	do { cond ? abort() : (void)0; } while (0)
+	do { (cond) ? abort() : (void)0; } while (0)
 
 /* By liw. */
 static char *last_strstr(char *haystack, const char *needle) {
@@ -369,7 +369,7 @@ static void pe_tolower_str(char* str)
 		*p = tolower((unsigned char)*p);
 }
 
-static void pe_get_elem_func_name(element_t* elem_ptr, ord_t* ord_ptr, int hint)
+static void pe_get_all_ord_lkp_func_name_with_hint(element_t* elem_ptr, ord_t* ord_ptr, int hint)
 {
 	for (ord_t* p = ord_ptr; p->number; ++p)
 	{
@@ -550,11 +550,9 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 				PEV_ABORT_IF(hint_str == rest || errno == ERANGE);
 
 				if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
-					ord_t *p = oleaut32_arr;
-					pe_get_elem_func_name(el, p, hint);
+					pe_get_all_ord_lkp_func_name_with_hint(el, oleaut32_arr, hint);
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
-					ord_t *p = ws2_32_arr;
-					pe_get_elem_func_name(el, p, hint);
+					pe_get_all_ord_lkp_func_name_with_hint(el, ws2_32_arr, hint);
 				} 
 				else 
 				{

@@ -37,7 +37,11 @@ bool pe_utils_str_ends_with(const char* text, const char* pattern)
 {
 	if (!text || !pattern)
 		return false;
+
 	const size_t n = strspn(pattern, text);
+	if (*(pattern + n) != '\0')
+		return false;
+
 	return !memcmp(text + strlen(text) - n, pattern, n);
 }
 

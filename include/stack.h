@@ -28,6 +28,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "error_handling.h"
 
 #define STACK_PASTE_2_(_1,_2)		_1 ## _2
 #define STACK_PASTE_2(_1,_2)		STACK_PASTE_2_(_1, _2)
@@ -74,7 +75,7 @@ static int STACK_API(stack_peek)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element)
 STACK_TYPE * STACK_API(stack_alloc)(uint16_t capacity) {
 	STACK_TYPE *stack = calloc(1, sizeof(STACK_TYPE));
 	if (stack == NULL) {
-		fprintf(stderr, "stack: failed to allocate\n");
+		PEV_WARN("failed to allocate %zu bytes", sizeof(STACK_TYPE));
 		return NULL;
 	}
 
@@ -90,10 +91,8 @@ STACK_TYPE * STACK_API(stack_alloc)(uint16_t capacity) {
 }
 
 void STACK_API(stack_dealloc)(STACK_TYPE *stack) {
-	assert(stack != NULL);
-
 	if (stack == NULL) {
-		fprintf(stderr, "stack: attempt to deallocate NULL stack\n");
+		PEV_WARN("attempt to deallocate NULL stack");
 		return;
 	}
 
@@ -105,16 +104,18 @@ void STACK_API(stack_dealloc)(STACK_TYPE *stack) {
 }
 
 uint16_t STACK_API(stack_count)(STACK_TYPE *stack) {
-	assert(stack != NULL);
+	PEV_ASSERT(stack != NULL);
 	return stack->used;
 }
 
 int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity) {
-	assert(stack != NULL);
-	assert(capacity > stack->capacity);
+	PEV_ASSERT(stack != NULL);
+
+	// wtf??
+	//PEV_ASSERT(capacity > stack->capacity);
 
 	if (capacity <= stack->capacity) {
-		fprintf(stderr, "stack: capacity cannot be decreased\n");
+		PEV_WARN("capacity cannot be decreased");
 		return -1;
 	}
 
@@ -123,7 +124,7 @@ int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity) {
 
 	STACK_ELEMENT_TYPE *temp = realloc(stack->elements, new_size);
 	if (temp == NULL) {
-		fprintf(stderr, "stack: failed to allocate requested capacity\n");
+		PEV_WARN("failed to allocate requested capacity");
 		return -2;
 	}
 
@@ -134,26 +135,30 @@ int STACK_API(stack_grow)(STACK_TYPE *stack, uint16_t capacity) {
 }
 
 int STACK_API(stack_push)(STACK_TYPE *stack, STACK_ELEMENT_TYPE element) {
-	assert(stack != NULL);
+	PEV_ASSERT(stack != NULL);
 
 	// Stack is full?
 	if (stack->used >= stack->capacity) {
 		// TODO(jweyrich): We could call `stack_grow` instead of failing miserably. Make this behavior adjustable?
-		fprintf(stderr, "stack: stack is full - failed to push\n");
-		return -1;
+		// TODO(garcia): run tests
+		int retcode = STACK_GROW(stack, stack->capacity << 1);
+		if (retcode != 0)
+		{
+			PEV_WARN("failed to push");
+			return -1;
+		}
 	}
 
 	stack->elements[stack->used++] = element;
-
 	return 0;
 }
 
 int STACK_API(stack_pop)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element) {
-	assert(stack != NULL);
+	PEV_ASSERT(stack != NULL);
 
 	// Stack is empty?
 	if (stack->used == 0) {
-		fprintf(stderr, "stack: stack is empty - failed to pop\n");
+		PEV_WARN("stack is empty - failed to pop");
 		return -1;
 	}
 
@@ -169,7 +174,7 @@ int STACK_API(stack_peek)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element) {
 
 	// Stack is empty?
 	if (stack->used == 0) {
-		fprintf(stderr, "stack: stack is empty - failed to peek\n");
+		PEV_WARN("stack is empty - failed to peek");
 		return -1;
 	}
 

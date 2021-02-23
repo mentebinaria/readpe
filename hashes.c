@@ -363,7 +363,8 @@ typedef struct element {
 	struct element *next; // needed for singly- or doubly-linked lists
 } element_t;
 
-static void pe_tolower_str(char* str)
+// strlwr - string lowercase
+static void pe_transform_to_lowercase_str(char* str)
 {
 	for (char* p = str; *p; ++p)
 		*p = tolower((unsigned char)*p);
@@ -486,7 +487,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		}
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
-		pe_tolower_str(dll_name);
+		pe_transform_to_lowercase_str(dll_name);
 		char *aux = NULL;
 
 		//TODO use a reverse search function instead
@@ -518,7 +519,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 		if (aux)
 			*aux = '\0';
 
-		pe_tolower_str(fname);
+		pe_transform_to_lowercase_str(fname);
 
 		element_t *el = calloc(1, sizeof(element_t));
 		if (el == NULL) {
@@ -572,7 +573,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 			}
 		}
 
-		pe_tolower_str(el->function_name);
+		pe_transform_to_lowercase_str(el->function_name);
 		LL_APPEND(*head, el);
 	}
 }

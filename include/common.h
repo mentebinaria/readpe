@@ -48,6 +48,7 @@
 #include "config.h"
 #include "output.h"
 #include "plugins.h"
+#include "error_handling.h"
 
 #define UNUSED(x)	   (void)(sizeof((x)))
 
@@ -85,3 +86,28 @@ void *calloc_s(size_t nmemb, size_t size);
 		plugins_unload_all(); \
 		pev_cleanup_config(config); \
 	} while (0)
+
+static inline char* pev_strdup(const char* str)
+{
+	const size_t len = strlen(str);
+	char* dest = malloc(len + 1);
+
+	if (!dest)
+	{
+		PEV_FATAL("it was not possible to allocate %zu bytes in the heap, "
+			      "reason: memory exhausted", len + 1);
+	}
+
+	return memcpy(dest, str, len + 1);
+}
+
+static inline void pev_fclose(FILE * restrict fptr, bool on_exit)
+{
+	if (fclose(fptr) == EOF)
+	{
+		if (on_exit)
+			PEV_FATAL("Cannot close file handle: %p", (void*)fptr);
+		else
+			PEV_WARN("Cannot close file handle: %p", (void*)fptr);
+	}
+}

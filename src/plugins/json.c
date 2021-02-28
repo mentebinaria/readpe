@@ -74,7 +74,7 @@ static const entity_t g_entities[255] = {
 };
 
 static char *escape_json(const format_t *format, const char *str) {
-	return g_pev_api->output->escape(format, str);
+	return g_pev_api->output_plugin->escape(format, str);
 }
 
 static void to_format(
@@ -199,12 +199,12 @@ void plugin_unloaded(void) {
 
 int plugin_initialize(const pev_api_t *api) {
 	g_pev_api = api;
-	int ret = g_pev_api->output->output_plugin_register_format(&g_format);
+	int ret = g_pev_api->output_plugin->output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
 void plugin_shutdown(void) {
-	g_pev_api->output->output_plugin_unregister_format(&g_format);
+	g_pev_api->output_plugin->output_plugin_unregister_format(&g_format);
 }

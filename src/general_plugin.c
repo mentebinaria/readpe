@@ -39,7 +39,7 @@
 
 // Register each function name of a given namespace in a hashtable 
 // for each namespace entry it will point to a plugin functions table
-void general_plugin_register_function(char* namespace, char* func_name, int *func ) 
+void general_plugin_register_function(char* namespace, char* plugin_type, char* func_name, int *func ) 
 {
 	ENTRY namespace_name = { namespace, NULL };
 	ENTRY* namespace_found;
@@ -126,14 +126,40 @@ int execute_function( char* func_name, void* data, void* p_handle )
 	return 0;
 }
 
+
+
+// Run all plugins that exports a scan function
+void scan_plugins_run_scan(pe_ctx_t* pe_ctx)
+{
+	plugins_entry_t* entry = get_plugins_entry();
+	// Overwrite current stdder value, dylib by default use stderr to warning if a symbol is not exported
+	// In our case, we only want a plugin that exports "scan_pe" function
+	FILE* _stderr; 
+	_stderr = stderr;
+	while (entry != NULL) {
+		stderr = stdin;
+		void ( * scan_pe ) = dylib_get_symbol(&entry->library, PLUGIN_SCAN_FUNCTION);
+		fflush(stdin); // clean possible garbage
+		stderr = _stderr;
+
+		if (scan_pe) {
+			( (void(*) () ) scan_pe)(pe_ctx);
+		}
+
+		entry = SLIST_NEXT(entry, entries);
+	}
+
+}
+
 // Build the general_plugin_api struct functions
 general_plugin_api *general_plugin_api_ptr(void) {
 	static general_plugin_api general_plugin_spec = {
 		.general_plugin_register_function = general_plugin_register_function,
-		.general_plugin_unregister_namespace = general_plugin_unregister_namespace
+		.general_plugin_unregister_namespace = general_plugin_unregister_namespace,
 	};
 
 	hcreate_r(MAX_PLUGINS_NAMESPACE, &plugins_namespace);
+
 	return &general_plugin_spec;
 }
 

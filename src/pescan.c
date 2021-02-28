@@ -44,8 +44,7 @@
 
 #define PROGRAM "pescan"
 
-#define YARA_RULE_PATH "pescan.yr"
-#define YARA_PLUGIN "Yara"
+
 
 typedef struct {
 	bool verbose;
@@ -590,28 +589,8 @@ int main(int argc, char *argv[])
 	// section analysis
 	print_strange_sections(&ctx);
 	
-	// Yara scan
-	plugin_handle* yara_plugin = get_plugin_handle(YARA_PLUGIN);
-
-	if (yara_plugin != NULL) {
-		if (yara_plugin->execute("load_rule", YARA_RULE_PATH, yara_plugin) < 0) {
-			LIBPE_WARNING("Error on load Yara rule"YARA_RULE_PATH);
-		} else {
-			char** matchs;
-			int num_matchs;
-			yara_plugin->execute("yara_scan_mem", &ctx, yara_plugin);
-			yara_plugin->execute("get_matchs", &matchs, yara_plugin);
-			yara_plugin->execute("get_num_matchs", &num_matchs, yara_plugin);
-		
-			output_open_scope("yara", OUTPUT_SCOPE_TYPE_ARRAY);
-
-			for (ssize_t i = 0; i < num_matchs; ++i) {
-				output(NULL, matchs[i]);
-			}
-			output_close_scope();
-		}
-		free(yara_plugin);
-	}
+	// Run scan plugins
+	scan_plugins_run_scan(&ctx);
 
 	output_close_document();
 	// free memory

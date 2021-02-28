@@ -46,8 +46,16 @@ pev_api_t *pev_api_ptr(void) {
 	if (!initialized) {
 		initialized = true;
 		memset(&api, 0, sizeof(api));
-		api.output = output_plugin_api_ptr();
+		api.output_plugin = output_plugin_api_ptr();
 		api.plugin = general_plugin_api_ptr();
+
+		api.output_open_document = output_open_document;
+		api.output_close_document = output_close_document;
+		api.output_open_scope = output_open_scope;
+		api.output_close_scope = output_close_scope;
+		api.output = output;
+		api.output_keyval = output_keyval;
+
 	}
 
 	return &api;

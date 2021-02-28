@@ -197,3 +197,10 @@ void plugins_unload_all(void) {
 		free(entry);
 	}
 }
+
+
+plugins_entry_t* get_plugins_entry()
+{
+	return SLIST_FIRST(&g_loaded_plugins);
+}
+

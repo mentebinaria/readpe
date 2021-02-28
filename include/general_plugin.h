@@ -47,7 +47,7 @@ extern "C" {
 // Maximum general plugins that can be loaded
 #define MAX_PLUGINS_NAMESPACE 100
 #define MAX_PLUGINS_FUNCTIONS 100
-
+#define PLUGIN_SCAN_FUNCTION "plugin_scan"
 
 // Namespace holding plugins names as key and plugins_functions(hsearch_data) as key 
 // Hashtable holding <function_name, function>
@@ -68,6 +68,7 @@ typedef struct _general_plugin_api {
 	char * plugin_name;
 	void ( * general_plugin_register_function ) ( char* namespace, char* func_name, int* func  );
 	void ( * general_plugin_unregister_namespace ) ( char* namespace );
+
 } general_plugin_api;
 
 

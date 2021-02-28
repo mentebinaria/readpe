@@ -134,8 +134,8 @@ void scan_plugins_run_scan(pe_ctx_t* pe_ctx)
 	plugins_entry_t* entry = get_plugins_entry();
 	// Overwrite current stdder value, dylib by default use stderr to warning if a symbol is not exported
 	// In our case, we only want a plugin that exports "scan_pe" function
-	FILE* _stderr; 
-	_stderr = stderr;
+	FILE* _stderr = stderr;
+	
 	while (entry != NULL) {
 		stderr = stdin;
 		void ( * scan_pe ) = dylib_get_symbol(&entry->library, PLUGIN_SCAN_FUNCTION);

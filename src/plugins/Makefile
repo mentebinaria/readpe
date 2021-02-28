@@ -37,6 +37,7 @@ yarascan_srcdir = $(CURDIR)
 yarascan_SRCS = yarascan.c
 yarascan_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${yarascan_SRCS})))
 yarascan_LIBNAME = yarascan
+yarascan_plugin_dir=$(PLUGIN_CONFIG_DIR)/yara_rules/
 
 ####### Build rules
 
@@ -61,6 +62,7 @@ json: $(json_OBJS)
 
 yarascan: LIBNAME = $(yarascan_LIBNAME)
 yarascan: DEPS=-lyara
+yarascan: CPLUGIN_FLAGS=-DYARA_RULES_DIR="\"$(yarascan_plugin_dir)\""
 yarascan: $(yarascan_OBJS)
 
 $(PLUGINS):
@@ -84,7 +86,7 @@ endif
 
 $(plugins_BUILDDIR)/%.o: %.c
 	@$(CHK_DIR_EXISTS) $(dir $@) || $(MKDIR) $(dir $@)
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -o $@ $^
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(CPLUGIN_FLAGS) -o $@ $^
 
 clean:
 	$(RM_DIR) ${plugins_BUILDDIR}
@@ -104,6 +106,8 @@ install-strip: install
 
 installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(pluginsdir) || $(MKDIR) $(DESTDIR)$(pluginsdir)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(yarascan_plugin_dir) || $(MKDIR) $(DESTDIR)$(yarascan_plugin_dir)
+
 
 uninstall:
 	$(RM_DIR) $(DESTDIR)$(pluginsdir)

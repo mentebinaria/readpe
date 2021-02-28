@@ -77,6 +77,7 @@ SRC_DIRS = $(srcdir) $(srcdir)/compat
 PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd 
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
+export PLUGIN_CONFIG_DIR=$(SHAREDIR)/plugins
 export LIBPE = $(realpath $(srcdir)/../lib/libpe)
 LIBUDIS86 = $(srcdir)/../lib/libudis86
 MANDIR = $(srcdir)/../doc/manpages
@@ -169,6 +170,7 @@ installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(bindir) || $(MKDIR) $(DESTDIR)$(bindir)
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(man1dir) || $(MKDIR) $(DESTDIR)$(man1dir)
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(SHAREDIR) || $(MKDIR) $(DESTDIR)$(SHAREDIR)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(PLUGIN_CONFIG_DIR) || $(MKDIR) $(DESTDIR)$(PLUGIN_CONFIG_DIR)
 
 uninstall:
 	for prog in $(PROGS); do \

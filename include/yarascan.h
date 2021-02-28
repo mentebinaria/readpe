@@ -74,9 +74,6 @@ typedef struct _yara_context {
 } yara_context;
 
 yara_context yara_ctx;
-char** identifiers = NULL;
-char* sentinel = NULL;
-int curr_match_index = 0;
 
 void compiler_callback( int error_level,
 			const char* file_name,
@@ -91,9 +88,6 @@ int scan_callback(
     void* message_data,
     void* user_data);
 
-
-void get_matchs(void*** dst);
-void get_num_matchs(void* n);
 
 void scan_pe(pe_ctx_t* ctx, void* scan_callback);
 int start_yara(const char* rule_path, void* compiler_callback);

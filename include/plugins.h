@@ -67,6 +67,7 @@ int plugins_load(const char *path);
 int plugins_load_all(pev_config_t *config);
 int plugins_load_all_from_directory(const char *path);
 void plugins_unload_all(void);
+plugins_entry_t* get_plugins_entry();
 
 #ifdef __cplusplus
 }

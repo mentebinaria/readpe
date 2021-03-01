@@ -41,6 +41,8 @@ extern "C" {
 #include "common.h"
 #include "pev_api.h"
 #include "general_plugin.h"
+
+#include <stdio.h>
 #include <yara.h>
 #include <dirent.h>
 
@@ -49,8 +51,8 @@ extern "C" {
 
 #define MAX_MSG 256
 
-#define PANIC_MEMORY() \
-	fprintf(stderr, "fatal: memory exhausted (Yara)\n"); \
+#define PANIC_MEMORY(blame) \
+	fprintf(stderr, "fatal: memory exhausted ("blame")\n"); \
 	yr_finalize();\
 	exit(-1);\
 

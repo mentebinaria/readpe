@@ -71,8 +71,10 @@ typedef struct _general_plugin_api {
 
 } general_plugin_api;
 
-
 general_plugin_api *general_plugin_api_ptr(void);
+
+void scan_plugins_run_scan();
+void general_plugin_destroy_namespace();
 
 #ifdef __cplusplus
 }

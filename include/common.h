@@ -48,6 +48,7 @@
 #include "config.h"
 #include "output.h"
 #include "plugins.h"
+#include "general_plugin.h"
 
 #define UNUSED(x)	   (void)(sizeof((x)))
 

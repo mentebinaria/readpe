@@ -33,12 +33,6 @@ json_SRCS = json.c
 json_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${json_SRCS})))
 json_LIBNAME = json_plugin
 
-yarascan_srcdir = $(CURDIR)
-yarascan_SRCS = yarascan.c
-yarascan_OBJS = $(addprefix ${plugins_BUILDDIR}/, $(addsuffix .o, $(basename ${yarascan_SRCS})))
-yarascan_LIBNAME = yarascan
-yarascan_plugin_dir=$(PLUGIN_CONFIG_DIR)/yara_rules/
-
 ####### Build rules
 
 .PHONY: plugins
@@ -59,11 +53,6 @@ xml: $(xml_OBJS)
 
 json: LIBNAME = $(json_LIBNAME)
 json: $(json_OBJS)
-
-yarascan: LIBNAME = $(yarascan_LIBNAME)
-yarascan: DEPS=-lyara
-yarascan: CPLUGIN_FLAGS=-DYARA_RULES_DIR="\"$(yarascan_plugin_dir)\""
-yarascan: $(yarascan_OBJS)
 
 $(PLUGINS):
 ifeq ($(PLATFORM_OS), Linux)
@@ -99,15 +88,12 @@ install: installdirs
 	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(text_LIBNAME).* $(DESTDIR)$(pluginsdir)
 	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(xml_LIBNAME).* $(DESTDIR)$(pluginsdir)
 	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(json_LIBNAME).* $(DESTDIR)$(pluginsdir)
-	$(INSTALL_PROGRAM) $(INSTALL_FLAGS) -m 755 $(plugins_BUILDDIR)/$(yarascan_LIBNAME).* $(DESTDIR)$(pluginsdir)
 
 install-strip: INSTALL_FLAGS += -s
 install-strip: install
 
 installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(pluginsdir) || $(MKDIR) $(DESTDIR)$(pluginsdir)
-	@$(CHK_DIR_EXISTS) $(DESTDIR)$(yarascan_plugin_dir) || $(MKDIR) $(DESTDIR)$(yarascan_plugin_dir)
-
 
 uninstall:
 	$(RM_DIR) $(DESTDIR)$(pluginsdir)

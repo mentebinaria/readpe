@@ -83,6 +83,8 @@ static size_t escape_count_chars(const format_t *format, const char *str, size_t
 }
 #endif
 
+char* escape_ex(const char* str, const entity_table_t entities);
+
 char *escape_ex_quoted(const char *str, const entity_table_t entities) {
 	if (str == NULL)
 		return NULL;

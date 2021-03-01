@@ -39,7 +39,7 @@
 #define GLUE(cond) #cond
 
 #ifndef NDEBUG
-	#define PEV_ASSERT(cond) PEV_FATAL("Assertion \"%s\" failed", GLUE((cond)))
+	#define PEV_ASSERT(cond) if (!(cond)) PEV_FATAL("Assertion \"%s\" failed", GLUE((cond)))
 #else
 	#define PEV_ASSERT(cond)
 #endif

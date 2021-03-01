@@ -52,14 +52,8 @@ endif
 
 ####### Compiler options
 
-<<<<<<< HEAD
 override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm 
 override CFLAGS += -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
-=======
-override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm
-override CFLAGS += -O2 -ffast-math -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
-
->>>>>>> 45dfe03aa57db686bd992dc5add45bd76fc03543
 # Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
 # undefine it first to avoid redefinition warnings.
 #

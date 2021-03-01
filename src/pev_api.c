@@ -46,7 +46,6 @@ pev_api_t *pev_api_ptr(void) {
 
 	if (!initialized) {
 		initialized = true;
-<<<<<<< HEAD
 		memset(&api, 0, sizeof(api));
 		api.output_plugin = output_plugin_api_ptr();
 		api.plugin = general_plugin_api_ptr();
@@ -58,11 +57,6 @@ pev_api_t *pev_api_ptr(void) {
 		api.output = output;
 		api.output_keyval = output_keyval;
 
-=======
-		//api = ( pev_api_t ){0}; // FIX: Don't need to zero.
-		//memset(&api, 0, sizeof(api));
-		api.output = output_plugin_api_ptr();
->>>>>>> 45dfe03aa57db686bd992dc5add45bd76fc03543
 	}
 
 	return &api;

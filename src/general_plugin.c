@@ -139,7 +139,6 @@ void scan_plugins_run_scan(pe_ctx_t* pe_ctx)
 	while (entry != NULL) {
 		stderr = stdin;
 		void ( * scan_pe ) = dylib_get_symbol(&entry->library, PLUGIN_SCAN_FUNCTION);
-		fflush(stdin); // clean possible garbage
 		stderr = _stderr;
 
 		if (scan_pe) {

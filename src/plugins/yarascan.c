@@ -94,8 +94,9 @@ int load_rules()
 
 		full_path = calloc(sizeof(char), strlen(dir_entry->d_name) + strlen(YARA_PLUGIN_RULES));
 		
-		memcpy(full_path, YARA_PLUGIN_RULES, strlen(YARA_PLUGIN_RULES));
-		strcat(full_path, dir_entry->d_name);
+		if (asprintf(&full_path, "%s%s", YARA_PLUGIN_RULES, dir_entry->d_name) < 0) {
+			PANIC_MEMORY("Allocating directory");
+		}
 
 		fd = open(full_path, O_RDONLY);
 		if (!fd) {

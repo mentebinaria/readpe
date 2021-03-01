@@ -34,6 +34,7 @@
 	files in the program, then also delete it here.
 */
 
+#include <errno.h>
 #include "common.h"
 #include "plugins.h"
 

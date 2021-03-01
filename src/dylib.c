@@ -51,45 +51,56 @@
 #define dylib_error(...) dlerror()
 
 int dylib_load(dylib_t *lib, const char *path) {
+
+	// debug check sanitizer
+	PEV_ASSERT(lib && path && *path);
+
 	if (lib->handle) {
-		fprintf(stderr, "Can't load library because it's already loaded: %s\n", lib->path);
+		PEV_WARN("Can't load library because it's already loaded: %s", lib->path);
 		return -1;
 	}
+
 	lib->handle = dlopen(path, RTLD_LAZY | RTLD_GLOBAL);
-	if ( ! lib->handle ) {
-		fprintf(stderr, "Failed to load library %s: %s\n", path, dylib_error(lib));
+	if (!lib->handle) {
+		PEV_WARN("Failed to load library %s: %s", path, dylib_error(lib));
 		return -1;
 	}
-	lib->path = strdup(path);
+
+	lib->path = pev_strdup(path);
 	return 0;
 }
 
 int dylib_unload(dylib_t *lib) {
-	int ret;
-	if ( !lib->handle ) {
-		fprintf(stderr, "Can't unload library '%s' because it's not loaded\n", lib->path);
+	PEV_ASSERT(lib);
+
+	if (!lib->handle) {
+		PEV_WARN("Can't unload library '%s' because it's not loaded", lib->path);
 		return -1;
 	}
-	ret = dlclose(lib->handle);
+
+	int ret = dlclose(lib->handle);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to unload library %s: %s\n", lib->path, dylib_error(lib));
+		PEV_WARN("Failed to unload library %s: %s", lib->path, dylib_error(lib));
 		return -1;
 	}
+
 	lib->handle = NULL;
 	free(lib->path);
 	lib->path = NULL;
+
 	return 0;
 }
 
-void *dylib_get_symbol(dylib_t *lib, const char *symbol) {
-	void *addr = dlsym(lib->handle, symbol);
-	if (addr == NULL) {
-		fprintf(stderr, "Symbol '%s' not found in '%s': %s\n", symbol, lib->path, dylib_error(lib));
-	}
+void* dylib_get_symbol(dylib_t* lib, const char* symbol) {
+	PEV_ASSERT(lib && symbol && *symbol);
+
+	void* addr = dlsym(lib->handle, symbol);
+	if (!addr)
+		PEV_WARN("Symbol \"%s\" not found in \"%s\": %s", symbol, lib->path, dylib_error(lib));
+
 	return addr;
 }
 
 int dylib_has_symbol(dylib_t *lib, const char *symbol) {
-	void *addr = dlsym(lib->handle, symbol);
-	return addr != NULL;
+	return !!dylib_get_symbol(lib, symbol);
 }

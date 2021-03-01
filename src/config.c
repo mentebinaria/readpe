@@ -120,13 +120,14 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 		size = 0;
 	}
 
-	fclose(fp);
-
+	// do we need to exit the program if it is not possible to close the file handle?
+	// by default, is set to true (print error message and exit)
+	pev_fclose(fp, true);
 	return 1;
 }
 
 #ifdef USE_MY_ASPRINTF
-int asprintf(char** ppstr, const char* fmt, ...)
+static int asprintf(char** ppstr, const char* fmt, ...)
 {
 	PEV_ASSERT(ppstr && fmt);
 
@@ -201,19 +202,21 @@ int pev_load_config(pev_config_t * const config) {
 
 	ret = pe_utils_is_file_readable(buff);
 	if (ret == LIBPE_E_OK)
-		if ( ! _load_config_and_parse(config, buff, _load_config_cb) )
+	{
+		if (!_load_config_and_parse(config, buff, _load_config_cb))
 		{
-			free( buff );
+			free(buff);
 			return -1;
 		}
+	}
 
-	free( buff );
+	free(buff);
 
 	//
 	// Default values
 	//
 	if (config->plugins_path == NULL)
-		config->plugins_path = strdup(DEFAULT_PLUGINS_PATH);
+		config->plugins_path = pev_strdup(DEFAULT_PLUGINS_PATH);
 
 	return 0;
 }

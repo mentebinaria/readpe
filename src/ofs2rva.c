@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 	err = pe_unload(&ctx);
 	if (err != LIBPE_E_OK)
 	{
-		pe_error_print(stderr, errc);
+		pe_error_print(stderr, err);
 		return EXIT_FAILURE;
 	}
 

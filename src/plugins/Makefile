@@ -3,7 +3,7 @@
 override CFLAGS += -O2 -I$(LIBPE) -I"../../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
 override CPPFLAGS += -D_GNU_SOURCE
 
-PLUGINS = csv html text xml json yarascan
+PLUGINS = csv html text xml json
 VERSION = 1.0
 
 plugins_BUILDDIR = ../$(pev_BUILDDIR)/plugins

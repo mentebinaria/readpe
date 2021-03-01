@@ -42,13 +42,13 @@
 unsigned pefile_warn = 0;
 
 typedef struct {
-	bool all;
-	bool content;
+	unsigned all : 1;
+	unsigned content : 1;
 	struct {
-		bool all;
-		bool dos;
-		bool coff;
-		bool optional;
+		unsigned all  : 1;
+		unsigned dos  : 1;
+		unsigned coff : 1;
+		unsigned optional : 1;
 	} headers;
 	struct {
 		char *name;
@@ -143,15 +143,19 @@ static options_t *parse_options(int argc, char *argv[])
 				options->all = false;
 				options->headers.all = false;
 				// TODO: How do we need to handle non-ascii names?
-				options->sections.name = strdup(optarg);
+				options->sections.name = pev_strdup(optarg);
 				break;
 			case 2:
 				options->all = false;
 				options->headers.all = false;
-				options->sections.index = strtol(optarg, NULL, 10);
-				if (options->sections.index < 1 || options->sections.index > MAX_SECTIONS) {
-					EXIT_ERROR("Bad argument for section-index,");
-				}
+
+				errno = 0;
+				long number = strtol(optarg, NULL, 10);
+
+				if (number < 1 || number > MAX_SECTIONS || errno == ERANGE)
+					PEV_FATAL("Bad argument for section-index,");
+				
+				options->sections.index = number;
 				break;
 			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
@@ -182,7 +186,11 @@ static void print_basic_hash(const unsigned char *data, size_t data_size)
 	char *hash_value = malloc_s(hash_value_size);
 
 	for (size_t i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
-		pe_hash_raw_data(hash_value, hash_value_size, basic_hashes[i], data, data_size);
+
+		bool state = pe_hash_raw_data(hash_value, hash_value_size, basic_hashes[i], 
+									  data, data_size);
+
+		PEV_ASSERT(state);
 		output(basic_hashes[i], hash_value);
 	}
 
@@ -218,7 +226,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (!pe_is_pe(&ctx))
-		EXIT_ERROR("not a valid PE file");
+		PEV_FATAL("not a valid PE file");
 
 	const IMAGE_SECTION_HEADER *section_ptr = NULL;
 	const unsigned char *data = NULL;
@@ -306,6 +314,7 @@ int main(int argc, char *argv[])
 			break;
 		 case MAGIC_PE32:
 			if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
+				PEV_WARN("Could not read file: \"%s\"", ctx.path);
 			   // TODO: Should we report something?
 			   break;
 			}
@@ -314,6 +323,7 @@ int main(int argc, char *argv[])
 			break;
 		 case MAGIC_PE64:
 			if (!pe_can_read(&ctx, opt_hdr->_64, sizeof(IMAGE_OPTIONAL_HEADER_64))) {
+				PEV_WARN("Could not read file: \"%s\"", ctx.path);
 			   // TODO: Should we report something?
 			   break;
 			}
@@ -354,13 +364,13 @@ int main(int argc, char *argv[])
 	} else if (options->sections.name != NULL) {
 		const IMAGE_SECTION_HEADER *section = pe_section_by_name(&ctx, options->sections.name);
 		if (section == NULL) {
-			EXIT_ERROR("The requested section could not be found on this binary");
+			PEV_FATAL("The requested section could not be found on this binary");
 		}
 		section_ptr = section;
 	} else if (options->sections.index > 0) {
 		const uint16_t num_sections = pe_sections_count(&ctx);
 		if (num_sections == 0 || options->sections.index > num_sections) {
-			EXIT_ERROR("The requested section could not be found on this binary");
+			PEV_FATAL("The requested section could not be found on this binary");
 		}
 		IMAGE_SECTION_HEADER ** const sections = pe_sections(&ctx);
 		const IMAGE_SECTION_HEADER *section = sections[options->sections.index - 1];
@@ -374,7 +384,7 @@ int main(int argc, char *argv[])
 			// fprintf(stderr, "section_data_ptr = %p\n", section_data_ptr);
 			// fprintf(stderr, "SizeOfRawData = %u\n", section_ptr->SizeOfRawData);
 			if (!pe_can_read(&ctx, section_data_ptr, section_ptr->SizeOfRawData)) {
-				EXIT_ERROR("The requested section has an invalid size");
+				PEV_FATAL("The requested section has an invalid size");
 			}
 			data = (const unsigned char *)section_data_ptr;
 			data_size = section_ptr->SizeOfRawData;

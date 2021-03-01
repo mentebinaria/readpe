@@ -51,7 +51,7 @@ extern "C" {
 
 // Namespace holding plugins names as key and plugins_functions(hsearch_data) as key 
 // Hashtable holding <function_name, function>
-struct hsearch_data plugins_namespace;
+static struct hsearch_data plugins_namespace;
 
 typedef struct _plugin_handle {
 	struct hsearch_data* plugins_functions;

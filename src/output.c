@@ -293,7 +293,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 		g_format->output_fn(g_format, type, scope, key, value);
 
 	int ret = STACK_PUSH(g_scope_stack, (void *)scope);
-	PEV_FATAL_IF(ret < 0, "Cannot push new element in stack")
+	PEV_FATAL_IF(ret < 0, "Cannot push new element in stack");
 }
 
 void output_close_scope(void) {

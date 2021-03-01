@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -38,8 +39,9 @@
 #include <libpe/error.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #if defined(__linux__)
-#include <linux/limits.h>
+#include <linux/limits.h>	// FIXME: Why?
 #elif defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
 #include <limits.h>
 #endif
@@ -51,7 +53,8 @@
 #define DEFAULT_PLUGINS_PATH "plugins"
 #else
 #define DEFAULT_CONFIG_PATH ".config/pev/" DEFAULT_CONFIG_FILENAME
-#define DEFAULT_PLUGINS_PATH PLUGINSDIR // PLUGINSDIR is defined via CPPFLAGS in the Makefile
+// PLUGINSDIR is defined via CPPFLAGS in the Makefile
+#define DEFAULT_PLUGINS_PATH PLUGINSDIR
 #endif
 
 static bool _load_config_cb(pev_config_t * const config, const char *name, const char *value) {
@@ -65,61 +68,100 @@ static bool _load_config_cb(pev_config_t * const config, const char *name, const
 	return false;
 }
 
+// FIX: Now the lines of config can have any size!
 static int _load_config_and_parse(pev_config_t * const config, const char *path, pev_config_parse_callback_t pev_cb) {
 	FILE *fp = fopen(path, "r");
 	if (fp == NULL)
-		return -1;
+		return 0;
 
-	char line[1024];
+	char *p, *line = NULL;
+	size_t size = 0;
 
-	while (fgets(line, sizeof(line), fp) != NULL) {
-		// comments
-		if (*line == '#')
-			continue;
-
+	while ( getline( &line, &size, fp ) != -1 )
+	{
 		// remove newline
-		for (size_t i=0; i < sizeof(line); i++) {
-			if (line[i] == '\n' || i == sizeof(line) - 1) {
-				line[i] = '\0';
-				break;
-			}
+		if ( p = strrchr( line, '\n' ) ) *p = 0;
+
+		p = pe_utils_str_inplace_trim(line);
+
+		// if not a comment line...
+		if (*p != '#')
+		{
+			char *param = strtok(p, "=");
+			char *value = strtok(NULL, "=");
+			const char *trimmed_param = pe_utils_str_inplace_trim(param);
+			const char *trimmed_value = pe_utils_str_inplace_trim(value);
+
+			//fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
+			const bool processed = pev_cb(config, trimmed_param, trimmed_value);
+
+			if (!processed && config->user_defined.parse_callback != NULL)
+				config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
 		}
 
-		char *param = strtok(line, "=");
-		char *value = strtok(NULL, "=");
-		const char *trimmed_param = pe_utils_str_inplace_trim(param);
-		const char *trimmed_value = pe_utils_str_inplace_trim(value);
-
-		//fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param, trimmed_value);
-		const bool processed = pev_cb(config, trimmed_param, trimmed_value);
-
-		if (!processed && config->user_defined.parse_callback != NULL)
-			config->user_defined.parse_callback(config->user_defined.data, trimmed_param, trimmed_value);
+		free( line );
+		line = NULL;
+		size = 0;
 	}
 
 	fclose(fp);
 
-	return 0;
+	return 1;
 }
 
+#ifdef USE_MY_ASPRINTF
+int asprintf( char **pp, char *fmt, ... )
+{
+	char *p;
+	int size;
+	va_list args;
+
+	va_start( args, fmt );
+
+	// Just get the string size.
+	if ( ( size = vsnprintf( NULL, 0, fmt, args ) ) < 0 )
+	{
+		va_end( args );
+		return -1;
+	}
+
+	if ( ! ( p = malloc( size + 1 ) ) )
+	{
+		va_end( args );
+		return -1;
+	}		
+
+	vsprintf( *pp = p, fmt, args );
+
+	va_end( args );
+
+	return size;
+}
+#endif
+
+// FIX: To avoid using fixed size PATH names we can use asprintf().
 int pev_load_config(pev_config_t * const config) {
-	char buff[PATH_MAX];
+	char *buff;
 
 	int ret = pe_utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
-	if (ret == LIBPE_E_OK) {
-		ret = _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME, _load_config_cb);
-		if (ret < 0)
-			return ret;
-	}
+	if (ret == LIBPE_E_OK)
+		if ( ! _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME, _load_config_cb) )
+			return -1;
 
-	snprintf(buff, sizeof(buff), "%s/%s", pe_utils_get_homedir(), DEFAULT_CONFIG_PATH);
+	// OBS: If asprintf isn't available to your system, use the definition above
+	//		using -DUSE_MY_ASPRINTF at compile time.
+	if ( asprintf(&buff, "%s/" DEFAULT_CONFIG_PATH, pe_utils_get_homedir()) < 0 )
+		return -1;
+
 	ret = pe_utils_is_file_readable(buff);
+	if (ret == LIBPE_E_OK)
+		if ( ! _load_config_and_parse(config, buff, _load_config_cb) )
+		{
+			free( buff );
+			return -1;
+		}
 
-	if (ret == LIBPE_E_OK) {
-		ret = _load_config_and_parse(config, buff, _load_config_cb);
-		if (ret < 0)
-			return ret;
-	}
+	free( buff );
 
 	//
 	// Default values
@@ -134,13 +176,10 @@ void pev_cleanup_config(pev_config_t * const config) {
 	if (config == NULL)
 		return;
 
-	if (config->user_defined.data != NULL) {
-		if (config->user_defined.cleanup_callback != NULL)
-			config->user_defined.cleanup_callback(config->user_defined.data);
-	}
+	if ( config->user_defined.cleanup_callback &&
+		 config->user_defined.data )
+		config->user_defined.cleanup_callback(config->user_defined.data);
 
-	if (config->plugins_path != NULL) {
-		free(config->plugins_path);
-		config->plugins_path = NULL;
-	}
+	free(config->plugins_path);
+	config->plugins_path = NULL;
 }

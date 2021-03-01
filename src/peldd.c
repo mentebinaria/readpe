@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -48,22 +49,21 @@ static void usage(void)
 		"\nExample: %s winzip.exe\n"
 		"\nOptions:\n"
 		" -f, --format <%s>  Change output format (default: text).\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show help.\n",
+		" -V, --version							 Show version.\n"
+		" --help								 Show help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
 static void parse_options(int argc, char *argv[])
 {
-
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "Vf:";
 
 	static const struct option long_options[] = {
-		{ "help",             no_argument,       NULL,  1  },
-		{ "format",           required_argument, NULL, 'f' },
-		{ "version",          no_argument,       NULL, 'V' },
-		{  NULL,              0,                 NULL,  0  }
+		{ "help",			  no_argument,		 NULL,	1  },
+		{ "format",			  required_argument, NULL, 'f' },
+		{ "version",		  no_argument,		 NULL, 'V' },
+		{  NULL,			  0,				 NULL,	0  }
 	};
 
 	int c, ind;
@@ -90,7 +90,6 @@ static void parse_options(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
-
 }
 
 static void print_dependencies(pe_ctx_t *ctx)

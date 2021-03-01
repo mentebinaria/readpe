@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	stack.h - A simple stack implementation compatible with C99.
 
@@ -37,7 +38,7 @@
 #if !defined(STACK_ELEMENT_TYPE)
 #	define STACK_ELEMENT_TYPE		void *
 #endif
-#define STACK_TYPE 					STACK_PASTE_2(STACK_PREFIX, stack_t)
+#define STACK_TYPE					STACK_PASTE_2(STACK_PREFIX, stack_t)
 #define STACK_API(fnname)			STACK_PASTE_2(STACK_PREFIX, fnname)
 
 // Use these macros! Don't call functions directly.
@@ -71,13 +72,11 @@ static int STACK_API(stack_peek)(STACK_TYPE *stack, STACK_ELEMENT_TYPE *element)
 #include <string.h>
 
 STACK_TYPE * STACK_API(stack_alloc)(uint16_t capacity) {
-	STACK_TYPE *stack = malloc(sizeof(STACK_TYPE));
+	STACK_TYPE *stack = calloc(1, sizeof(STACK_TYPE));
 	if (stack == NULL) {
 		fprintf(stderr, "stack: failed to allocate\n");
 		return NULL;
 	}
-
-	memset(stack, 0, sizeof(*stack));
 
 	if (capacity > 0) {
 		int ret = STACK_API(stack_grow)(stack, capacity);

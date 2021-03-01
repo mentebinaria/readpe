@@ -1,3 +1,4 @@
+/* vim: set ts=4 sw=4 noet: */
 /*
 	pev - the PE file analyzer toolkit
 
@@ -18,19 +19,19 @@
 	You should have received a copy of the GNU General Public License
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-    In addition, as a special exception, the copyright holders give
-    permission to link the code of portions of this program with the
-    OpenSSL library under certain conditions as described in each
-    individual source file, and distribute linked combinations
-    including the two.
-    
-    You must obey the GNU General Public License in all respects
-    for all of the code used other than OpenSSL.  If you modify
-    file(s) with this exception, you may extend this exception to your
-    version of the file(s), but you are not obligated to do so.  If you
-    do not wish to do so, delete this exception statement from your
-    version.  If you delete this exception statement from all source
-    files in the program, then also delete it here.
+	In addition, as a special exception, the copyright holders give
+	permission to link the code of portions of this program with the
+	OpenSSL library under certain conditions as described in each
+	individual source file, and distribute linked combinations
+	including the two.
+	
+	You must obey the GNU General Public License in all respects
+	for all of the code used other than OpenSSL.  If you modify
+	file(s) with this exception, you may extend this exception to your
+	version of the file(s), but you are not obligated to do so.  If you
+	do not wish to do so, delete this exception statement from your
+	version.  If you delete this exception statement from all source
+	files in the program, then also delete it here.
 */
 
 #include "common.h"
@@ -51,19 +52,16 @@ static void usage(void)
 		"Search for packers in PE files\n"
 		"\nExample: %s putty.exe\n"
 		"\nOptions:\n"
-		" -d, --database <file>                  Use database file (default: ./userdb.txt).\n"
+		" -d, --database <file>					 Use database file (default: ./userdb.txt).\n"
 		" -f, --format <%s>  Change output format (default: text).\n"
-		" -V, --version                          Show version.\n"
-		" --help                                 Show this help.\n",
+		" -V, --version							 Show version.\n"
+		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
 }
 
 static void free_options(options_t *options)
 {
-	if (options == NULL)
-		return;
-
-	if (options->dbfile != NULL)
+	if (options)
 		free(options->dbfile);
 
 	free(options);
@@ -71,18 +69,17 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-	options_t *options = malloc_s(sizeof(options_t));
-	memset(options, 0, sizeof(options_t));
+	options_t *options = calloc_s(1, sizeof(options_t));
 
 	/* Parameters for getopt_long() function */
 	static const char short_options[] = "d:f:V";
 
 	static const struct option long_options[] = {
-		{ "database",         required_argument, NULL, 'd' },
-		{ "format",           required_argument, NULL, 'f' },
-		{ "help",             no_argument,       NULL,  1  },
-		{ "version",          no_argument,       NULL, 'V' },
-		{ NULL,               0,                 NULL,  0  }
+		{ "database",		  required_argument, NULL, 'd' },
+		{ "format",			  required_argument, NULL, 'f' },
+		{ "help",			  no_argument,		 NULL,	1  },
+		{ "version",		  no_argument,		 NULL, 'V' },
+		{ NULL,				  0,				 NULL,	0  }
 	};
 
 	int c, ind;
@@ -128,7 +125,7 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 
 	// we count the flags for the section and if there is more than
 	// 2 it means we don't have the mew_packer
-	const SectionCharacteristics invalid_flags[] = {
+	static const SectionCharacteristics invalid_flags[] = {
 		IMAGE_SCN_MEM_EXECUTE,
 		IMAGE_SCN_MEM_READ,
 		IMAGE_SCN_MEM_WRITE
@@ -148,7 +145,8 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 	return flags_count < 3;
 }
 
-static bool loaddb(FILE **fp, const options_t *options)
+// FIX: Changed function name 'cause this don't 'load' anything.
+static bool opendb(FILE **fp, const options_t *options)
 {
 	const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
 
@@ -202,7 +200,8 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 	if (!dbfile || !data)
 		return false;
 
-	char *buff = malloc_s(MAX_SIG_SIZE);
+	// FIX: 2 KiB buffer isn't a big deal and this function is single threaded.
+	static char buff[MAX_SIG_SIZE];
 
 	//memset(buff, 0, MAX_SIG_SIZE);
 	while (fgets(buff, MAX_SIG_SIZE, dbfile))
@@ -236,15 +235,9 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 
 		// check if signature match
 		if (!strncasecmp(buff, "signature", 9))
-		{
 			if (match_peid_signature(data + ep_offset, buff+9))
-			{
-				free(buff);
 				return true;
-			}
-		}
 	}
-	free(buff);
 	return false;
 }
 
@@ -284,18 +277,18 @@ int main(int argc, char *argv[])
 	if (ep_offset == 0)
 		EXIT_ERROR("unable to get entrypoint offset");
 
-	FILE *dbfile = NULL;
-	if (!loaddb(&dbfile, options))
+	FILE *dbfile;
+	if (!opendb(&dbfile, options))
 		fprintf(stderr, "WARNING: without valid database file, %s will search in generic mode only\n", PROGRAM);
 
-	char value[MAX_MSG];
+	static char value[MAX_MSG + 1];
 
 	// TODO(jweyrich): Create a new API to retrieve map_addr.
 	// TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)` instead?
 	const unsigned char *pe_data = ctx.map_addr;
 
 	// packer by signature
-	if (compare_signature(pe_data, ep_offset, dbfile, value, sizeof(value)))
+	if (compare_signature(pe_data, ep_offset, dbfile, value, MAX_MSG))
 		;
 	// generic detection
 	else if (generic_packer(&ctx, ep_offset))
@@ -309,8 +302,8 @@ int main(int argc, char *argv[])
 
 	output_close_document();
 
-	if (dbfile != NULL)
-		fclose(dbfile);
+	// FIX: Already tested of openess.
+	fclose(dbfile);
 
 	// libera a memoria
 	free_options(options);

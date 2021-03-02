@@ -2,7 +2,7 @@ name: multi-os-build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, libyara-poc ]
   pull_request:
     branches: [ master ]
 

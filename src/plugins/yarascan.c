@@ -134,10 +134,6 @@ int plugin_initialize(const struct _pev_api_t *api)
 {
 	yr_initialize();
 	pev_api = api;
-	// pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "load_rule", load_rules);
-	// pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "yara_scan_mem", scan_mem);
-	// pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "get_matchs", get_matchs);
-	// pev_api->plugin->general_plugin_register_function(PLUGIN_NAMESPACE, "get_num_matchs", get_num_matchs);
 	return 0;
 }
 
@@ -150,8 +146,6 @@ void plugin_shutdown()
 void plugin_unloaded()
 {
 	destroy_yara();
-	pev_api->plugin->general_plugin_unregister_namespace(PLUGIN_NAMESPACE);
-	
 }
 
 int plugin_loaded()

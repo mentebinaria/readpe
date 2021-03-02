@@ -85,5 +85,4 @@ void *calloc_s(size_t nmemb, size_t size);
 		output_term(); \
 		plugins_unload_all(); \
 		pev_cleanup_config(config); \
-		general_plugin_destroy_namespace(); \
 	} while (0)

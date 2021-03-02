@@ -38,7 +38,6 @@
 #include "plugin.h"
 #include "common.h"
 #include <stdlib.h>
-#include <search.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,32 +48,22 @@ extern "C" {
 #define MAX_PLUGINS_FUNCTIONS 100
 #define PLUGIN_SCAN_FUNCTION "plugin_scan"
 
-// Namespace holding plugins names as key and plugins_functions(hsearch_data) as key 
-// Hashtable holding <function_name, function>
-struct hsearch_data plugins_namespace;
-
 typedef struct _plugin_handle {
-	struct hsearch_data* plugins_functions;
 	int ( * execute ) (char *func_name, void* data, void* p_handle );
 } plugin_handle;
 
 plugin_handle* get_plugin_handle(char *namespace_name);
-int execute_function( char* func_name, void* data, void* p_handle );
 
 //
 // Public API specific for general plugins
 //
 typedef struct _general_plugin_api {
-	char * plugin_name;
-	void ( * general_plugin_register_function ) ( char* namespace, char* func_name, int* func  );
-	void ( * general_plugin_unregister_namespace ) ( char* namespace );
 
 } general_plugin_api;
 
 general_plugin_api *general_plugin_api_ptr(void);
 
-void scan_plugins_run_scan();
-void general_plugin_destroy_namespace();
+void scan_plugins_run_scan(pe_ctx_t* pe);
 
 #ifdef __cplusplus
 }

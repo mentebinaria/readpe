@@ -17,7 +17,7 @@ jobs:
       uses: mstksg/get-package@v1
       with:
         # Space-separated list of packages to install using apt-get.  Will only run if on ubuntu.
-        apt-get: libssl-dev
+        apt-get: libssl-dev libyara-dev
     
     - name: Checkout with submodules
       uses: actions/checkout@v2
@@ -38,7 +38,7 @@ jobs:
       uses: mstksg/get-package@v1
       with:
         # Space-separated list of packages to install using brew install.  Will only run if on OSX.
-        brew: openssl
+        brew: openssl yara
     
     - name: Checkout with submodules
       uses: actions/checkout@v2

@@ -61,13 +61,18 @@ jobs:
       with:
         platform: x64 # optional, default is x64
         install-dir: c:\tools\cygwin # optional, default is C:\tools\cygwin
-        packages: gcc-core binutils make zip libssl-devel # optional
+        packages: gcc-core binutils make zip libssl-devel git sh # optional
     
     - name: Checkout with submodules
       uses: actions/checkout@v2
       with:
         submodules: 'true'
-
+  
+    - name: Clone libyara
+    - run: git clone https://github.com/VirusTotal/yara.git
+    
+    - name: Build libyara
+    - run: cd yara && sh.exe build.sh
     - name: Compile
       run: make
       

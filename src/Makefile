@@ -52,9 +52,8 @@ endif
 
 ####### Compiler options
 
-override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm
-override CFLAGS += -O2 -ffast-math -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
-
+override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm 
+override CFLAGS += -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic -fPIC
 # Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
 # undefine it first to avoid redefinition warnings.
 #
@@ -73,13 +72,14 @@ endif
 
 ifeq ($(PLATFORM_OS), CYGWIN)
 	override CPPFLAGS += -D_XOPEN_SOURCE=600
-endif
+	endif
 
 SRC_DIRS = $(srcdir) $(srcdir)/compat
 
-PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd
+PROGS = readpe rva2ofs ofs2rva pehash pesec pescan pepack pestr pedis peres peldd 
 PLUGINS_DIR = $(srcdir)/plugins
 SHAREDIR = $(datadir)/pev
+export PLUGIN_CONFIG_DIR=$(SHAREDIR)/plugins
 export LIBPE = $(realpath $(srcdir)/../lib/libpe)
 LIBUDIS86 = $(srcdir)/../lib/libudis86
 MANDIR = $(srcdir)/../doc/manpages
@@ -96,8 +96,9 @@ pev_COMMON_DEPS = \
 	$(pev_BUILDDIR)/malloc_s.o \
 	$(pev_BUILDDIR)/plugins.o \
 	$(pev_BUILDDIR)/output_plugin.o \
+	$(pev_BUILDDIR)/general_plugin.o \
 	$(pev_BUILDDIR)/output.o \
-	$(pev_BUILDDIR)/pev_api.o
+	$(pev_BUILDDIR)/pev_api.o \
 
 ####### Build rules
 
@@ -145,6 +146,7 @@ rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
 peldd: $(pev_BUILDDIR)/peldd.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 
+
 # Generic rule matching sources
 
 $(pev_BUILDDIR)/%.o: %.c
@@ -170,6 +172,7 @@ installdirs:
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(bindir) || $(MKDIR) $(DESTDIR)$(bindir)
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(man1dir) || $(MKDIR) $(DESTDIR)$(man1dir)
 	@$(CHK_DIR_EXISTS) $(DESTDIR)$(SHAREDIR) || $(MKDIR) $(DESTDIR)$(SHAREDIR)
+	@$(CHK_DIR_EXISTS) $(DESTDIR)$(PLUGIN_CONFIG_DIR) || $(MKDIR) $(DESTDIR)$(PLUGIN_CONFIG_DIR)
 
 uninstall:
 	for prog in $(PROGS); do \

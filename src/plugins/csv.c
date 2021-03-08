@@ -78,8 +78,8 @@ static char *escape_csv(const format_t *format, const char *str) {
 	// If `str` contains a line-break, or a double-quote, or a comma,
 	// escape and enclose the entire `str` with double quotes.
 	return strpbrk(str, "\n\",") != NULL
-		? g_pev_api->output->escape_ex_quoted(str, format->entities_table)
-		: g_pev_api->output->escape_ex(str, format->entities_table);
+		? g_pev_api->output_plugin->escape_ex_quoted(str, format->entities_table)
+		: g_pev_api->output_plugin->escape_ex(str, format->entities_table);
 }
 
 //
@@ -181,12 +181,12 @@ void plugin_unloaded(void) {
 
 int plugin_initialize(const pev_api_t *api) {
 	g_pev_api = api;
-	int ret = g_pev_api->output->output_plugin_register_format(&g_format);
+	int ret = g_pev_api->output_plugin->output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
 void plugin_shutdown(void) {
-	g_pev_api->output->output_plugin_unregister_format(&g_format);
+	g_pev_api->output_plugin->output_plugin_unregister_format(&g_format);
 }

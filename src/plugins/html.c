@@ -73,7 +73,7 @@ static const entity_t g_entities[255] = {
 };
 
 static char *escape_html(const format_t *format, const char *str) {
-	return g_pev_api->output->escape(format, str);
+	return g_pev_api->output_plugin->escape(format, str);
 }
 
 #define TEMPLATE_DOCUMENT_OPEN \
@@ -114,7 +114,7 @@ static void to_format(
 				default:
 					break;
 				case OUTPUT_SCOPE_TYPE_DOCUMENT:
-					printf(TEMPLATE_DOCUMENT_OPEN, g_pev_api->output->output_cmdline());
+					printf(TEMPLATE_DOCUMENT_OPEN, g_pev_api->output_plugin->output_cmdline());
 					indent++;
 					break;
 				case OUTPUT_SCOPE_TYPE_OBJECT:
@@ -202,12 +202,12 @@ void plugin_unloaded(void) {
 
 int plugin_initialize(const pev_api_t *api) {
 	g_pev_api = api;
-	int ret = g_pev_api->output->output_plugin_register_format(&g_format);
+	int ret = g_pev_api->output_plugin->output_plugin_register_format(&g_format);
 	if (ret < 0)
 		return -1;
 	return 0;
 }
 
 void plugin_shutdown(void) {
-	g_pev_api->output->output_plugin_unregister_format(&g_format);
+	g_pev_api->output_plugin->output_plugin_unregister_format(&g_format);
 }

@@ -38,9 +38,14 @@
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
+#include <dirent.h>
+
 #include "plugins.h"
+#include "general_plugin.h"
 
 #define PROGRAM "pescan"
+
+
 
 typedef struct {
 	bool verbose;
@@ -454,7 +459,7 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 }
 
 int main(int argc, char *argv[])
-{
+{	
 	pev_config_t config;
 	PEV_INITIALIZE(&config);
 
@@ -484,6 +489,7 @@ int main(int argc, char *argv[])
 
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
+
 
 	output_open_document();
 
@@ -585,9 +591,11 @@ int main(int argc, char *argv[])
 
 	// section analysis
 	print_strange_sections(&ctx);
+	
+	// Run scan plugins
+	scan_plugins_run_scan(&ctx);
 
 	output_close_document();
-
 	// free memory
 	free_options(options);
 	err = pe_unload(&ctx);

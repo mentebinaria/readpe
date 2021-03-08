@@ -40,10 +40,23 @@
 extern "C" {
 #endif
 
+#include "output.h"
+
 struct _output_plugin_api; // from output_plugin.h
+struct _general_plugin_api; // from general_plugin.h
 
 typedef struct _pev_api_t {
-	struct _output_plugin_api *output;
+	struct _output_plugin_api *output_plugin;
+	struct _general_plugin_api *plugin;
+
+	// Output
+	void * (*output_open_document) (void);
+	void * (*output_open_document_with_name) (const char* document_name);
+	void * (*output_close_document) (void);
+	void * (*output_open_scope) (const char* scope_name, output_scope_type_e type);
+	void * (*output_close_scope) (void);
+	void * (*output) (const char* key, const char* value);
+	void * (*output_keyval) (const char* key, const char* value);
 } pev_api_t;
 
 pev_api_t *pev_api_ptr(void);

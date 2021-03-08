@@ -35,28 +35,6 @@
 */
 
 #include "plugins.h"
-#include "plugin.h"
-#include "dylib.h"
-#include "common.h"
-#include "compat/sys/queue.h"
-#include <libpe/utils.h>
-#include <stdlib.h>
-#include <dirent.h>
-#include <errno.h>
-#include <sys/types.h>
-#include "config.h"
-#include "pev_api.h"
-
-typedef struct _plugins_entry {
-	dylib_t library;
-	plugin_loaded_fn_t plugin_loaded_fn;
-	plugin_initialize_fn_t plugin_initialize_fn;
-	plugin_shutdown_fn_t plugin_shutdown_fn;
-	plugin_unloaded_fn_t plugin_unloaded_fn;
-	SLIST_ENTRY(_plugins_entry) entries;
-} plugins_entry_t;
-
-static SLIST_HEAD(_plugins_t_list, _plugins_entry) g_loaded_plugins = SLIST_HEAD_INITIALIZER(g_loaded_plugins);
 
 int plugins_load(const char *path) {
 	plugins_entry_t *entry = calloc(1, sizeof *entry);
@@ -232,3 +210,10 @@ void plugins_unload_all(void) {
 		free(entry);
 	}
 }
+
+
+plugins_entry_t* get_plugins_entry()
+{
+	return SLIST_FIRST(&g_loaded_plugins);
+}
+

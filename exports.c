@@ -128,7 +128,10 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 
 		const uint32_t entry_name_rva = *entry_name_list;
 		const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
-		offsets_to_Names[ordinal] = entry_name_ofs;
+
+        if (ordinal < exp->NumberOfFuntions) {
+            offsets_to_Names[ordinal] = entry_name_ofs;
+        }
 	}
 
 	//

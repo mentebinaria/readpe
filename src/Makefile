@@ -87,7 +87,7 @@ LIBUDIS86 = $(srcdir)/../lib/libudis86
 MANDIR = $(srcdir)/../doc/manpages
 
 export pev_BUILDDIR = ./build
-pev_SRCS_FILTER = $(wildcard ${dir}/*.c)
+pev_SRCS_FILTER = $(sort $(wildcard ${dir}/*.c))
 pev_SRCS = $(foreach dir, ${SRC_DIRS}, ${pev_SRCS_FILTER})
 pev_OBJS = $(addprefix ${pev_BUILDDIR}/, $(addsuffix .o, $(basename ${pev_SRCS})))
 
@@ -116,7 +116,7 @@ ofs2rva: $(pev_BUILDDIR)/ofs2rva.o $(pev_OBJS)
 pedis: CPPFLAGS += -DHAVE_STRING_H
 pedis: CFLAGS += -I$(LIBUDIS86)
 pedis: $(pev_BUILDDIR)/pedis.o $(pev_OBJS)
-	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(LIBUDIS86)/libudis86/*.c
+	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS) $(sort $(LIBUDIS86)/libudis86/*.c)
 
 pehash: $(pev_BUILDDIR)/pehash.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)

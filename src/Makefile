@@ -55,16 +55,18 @@ endif
 override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm
 override CFLAGS += -O2 -ffast-math -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
 
-# Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
-# undefine it first to avoid redefinition warnings.
-#
 # To compile for production define the symbol NDEBUG before invoking this makefile.
 override CPPFLAGS += \
 	-D_GNU_SOURCE \
-	-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 \
 	-DSHAREDIR="\"$(SHAREDIR)"\" \
 	-DPLUGINSDIR="\"$(pluginsdir)"\"
 
+# Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
+# only define it if it has not been already. This avoids redefinition warnings and weakening
+# those distros' hardening settings.
+ifneq ($(findstring _FORTIFY_SOURCE, $(CPPFLAGS)), _FORTIFY_SOURCE)
+        override CPPFLAGS += -D_FORTIFY_SOURCE=1
+endif
 
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7

@@ -23,12 +23,12 @@ Open source, full-featured, multiplatform command line toolkit to work with PE (
     cd pev
     CFLAGS="-I/usr/local/opt/openssl/include/" LDFLAGS="-L/usr/local/opt/openssl/lib/" make
 
-**NOTE**: You may need to install OpenSSL and PCRE via [Homebrew](http://brew.sh/):
+**NOTE**: You may need to install OpenSSL and PCRE via [Homebrew](https://brew.sh):
 
     brew update
     brew install openssl
 
-## How to build on Windows (via [Cygwin](http://cygwin.com/))
+## How to build on Windows (via [Cygwin](https://cygwin.com))
 
     cd pev
     make
@@ -71,4 +71,4 @@ Anyway, download libpe source code, put it in the right directoy and try again:
     cd ..
     make
 
-Please check the [online documentation](http://pev.sourceforge.net/doc/manual/en_us) for more details.
+Please check the [online documentation](https://pev.sourceforge.io/doc/manual/en_us/) for more details.

@@ -10,7 +10,7 @@ void *malloc_s(size_t size) {
 
 	if (!new_mem) {
 		fprintf(stderr, "fatal: memory exhausted (malloc of %zu bytes)\n", size);
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 
 	return new_mem;

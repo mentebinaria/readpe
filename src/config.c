@@ -34,16 +34,18 @@
 	files in the program, then also delete it here.
 */
 
-#include "config.h"
 #include <libpe/utils.h>
 #include <libpe/error.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "config.h"
+#include "../include/common.h"
+
 #if defined(__linux__)
-#include <linux/limits.h>	// FIXME: Why?
+	#include <linux/limits.h>	// FIXME: Why?
 #elif defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__CYGWIN__)
-#include <limits.h>
+	#include <limits.h>
 #endif
 
 #define DEFAULT_CONFIG_FILENAME "pev.conf"
@@ -57,11 +59,19 @@
 #define DEFAULT_PLUGINS_PATH PLUGINSDIR
 #endif
 
+#ifndef PEV_VA_COPY
+	#if (__STDC_VERSION__ >= 199901L) || defined(_MSC_VER)
+		#define PEV_VA_COPY(dest, src) va_copy(dest, src)
+	#else
+		#define PEV_VA_COPY(dest, src) (dest) = (src)
+	#endif
+#endif
+
 static bool _load_config_cb(pev_config_t * const config, const char *name, const char *value) {
 	//fprintf(stderr, "DEBUG: %s=%s\n", name, value);
 
 	if (!strcmp("plugins_dir", name)) {
-		config->plugins_path = strdup(value);
+		config->plugins_path = pev_strdup(value);
 		return true;
 	}
 
@@ -73,6 +83,12 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 	FILE *fp = fopen(path, "r");
 	if (fp == NULL)
 		return 0;
+
+	if (ferror(fp))
+	{
+		pev_fclose(fp, false); // (on_exit = false) -> print only the warning
+		return 0;
+	}
 
 	char *p, *line = NULL;
 	size_t size = 0;
@@ -104,36 +120,67 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 		size = 0;
 	}
 
-	fclose(fp);
-
+	// do we need to exit the program if it is not possible to close the file handle?
+	// by default, is set to true (print error message and exit)
+	pev_fclose(fp, true);
 	return 1;
 }
 
 #ifdef USE_MY_ASPRINTF
-int asprintf( char **pp, char *fmt, ... )
+static int asprintf(char** ppstr, const char* fmt, ...)
 {
-	char *p;
-	int size;
+	PEV_ASSERT(ppstr && fmt);
+
 	va_list args;
+	va_list args2;
+	bool failed = false;
 
-	va_start( args, fmt );
+	va_start(args, fmt);
 
-	// Just get the string size.
-	if ( ( size = vsnprintf( NULL, 0, fmt, args ) ) < 0 )
+	PEV_VA_COPY(args2, args);
+	int size = vsnprintf(NULL, 0, fmt, args2);
+	va_end(args2);
+
+	if (size < 0)
 	{
-		va_end( args );
+		va_end(args);
 		return -1;
 	}
 
-	if ( ! ( p = malloc( size + 1 ) ) )
+	if (*ppstr)
 	{
-		va_end( args );
+		size_t len = strlen(*ppstr);
+		if (len < (size_t)size)
+		{
+			char* temp = (char*) realloc(*ppstr, size + 1);
+
+			if (!temp)
+			{
+				failed = true;
+				free(*ppstr);
+			}
+			else
+				*ppstr = temp;
+		}
+	}
+	else
+	{
+		if (!(*ppstr = (char*) malloc(size + 1)))
+			failed = true;
+	}
+
+	if (failed)
+	{
+		errno = ENOMEM;
+		va_end(args);
 		return -1;
-	}		
+	}
 
-	vsprintf( *pp = p, fmt, args );
+	int writted = vsprintf(*ppstr, fmt, args);
+	PEV_ASSERT(writted == size);
 
-	va_end( args );
+	*(ppstr + size) = 0;
+	va_end(args);
 
 	return size;
 }
@@ -155,19 +202,21 @@ int pev_load_config(pev_config_t * const config) {
 
 	ret = pe_utils_is_file_readable(buff);
 	if (ret == LIBPE_E_OK)
-		if ( ! _load_config_and_parse(config, buff, _load_config_cb) )
+	{
+		if (!_load_config_and_parse(config, buff, _load_config_cb))
 		{
-			free( buff );
+			free(buff);
 			return -1;
 		}
+	}
 
-	free( buff );
+	free(buff);
 
 	//
 	// Default values
 	//
 	if (config->plugins_path == NULL)
-		config->plugins_path = strdup(DEFAULT_PLUGINS_PATH);
+		config->plugins_path = pev_strdup(DEFAULT_PLUGINS_PATH);
 
 	return 0;
 }

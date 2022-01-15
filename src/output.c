@@ -135,9 +135,8 @@ void output_term(void) {
 	g_cmdline = NULL;
 
 	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
-	if (scope_depth > 0) {
-		fprintf(stderr, "output: terminating the output while there are open scopes will cause memory leaks");
-	}
+	if (scope_depth > 0)
+		PEV_WARN("output: terminating the output while there are open scopes will cause memory leaks");
 
 	// TODO(jweyrich): Should we loop to pop + close + output every scope?
 	if (g_scope_stack != NULL)
@@ -157,10 +156,8 @@ void output_set_cmdline(int argc, char *argv[]) {
 	free(g_cmdline);
 
 	g_cmdline = pe_utils_str_array_join(g_argv, g_argc, ' ');
-	if (g_cmdline == NULL) {
-		fprintf(stderr, "output: allocation failed for pe_utils_str_array_join\n");
-		abort();
-	}
+	PEV_FATAL_IF(g_cmdline == NULL, "output: allocation failed for pe_utils_str_array_join");
+
 	//fprintf(stderr, "DEBUG: cmdline = %s\n", g_cmdline);
 }
 
@@ -239,9 +236,10 @@ void output_open_document(void) {
 }
 
 void output_open_document_with_name(const char *document_name) {
-	assert(g_format != NULL);
+	PEV_ASSERT(g_format != NULL);
+
 	// Cannot open a new document while there's one already open.
-	assert(!g_is_document_open);
+	PEV_ASSERT(!g_is_document_open);
 
 	const char *key = document_name;
 	const output_scope_type_e scope_type = OUTPUT_SCOPE_TYPE_DOCUMENT;
@@ -251,28 +249,25 @@ void output_open_document_with_name(const char *document_name) {
 }
 
 void output_close_document(void) {
-	assert(g_format != NULL);
+	PEV_ASSERT(g_format != NULL);
 	// Closing a document without first opening it is an error.
-	assert(g_is_document_open);
+	PEV_ASSERT(g_is_document_open);
 
 	const output_scope_t *scope = NULL;
 	int ret = STACK_PEEK(g_scope_stack, (void *)&scope);
-	if (ret < 0) {
-		fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
-		abort();
-	}
 
-	if (scope->type != OUTPUT_SCOPE_TYPE_DOCUMENT) {
-		fprintf(stderr, "output: trying to close a document, but the current scope is of a different type.\n");
-		abort();
-	}
+	PEV_FATAL_IF(ret < 0, "output: cannot close a scope that has not been opened.");
+
+	PEV_FATAL_IF(scope->type != OUTPUT_SCOPE_TYPE_DOCUMENT, 
+				 "output: trying to close a document, but the current scope is " 
+				 "of a different type.");
 
 	output_close_scope();
 	g_is_document_open = false;
 }
 
 void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
-	assert(g_format != NULL);
+	PEV_ASSERT(g_format != NULL);
 
 	const char *key = scope_name;
 	const char *value = NULL;
@@ -298,19 +293,16 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 		g_format->output_fn(g_format, type, scope, key, value);
 
 	int ret = STACK_PUSH(g_scope_stack, (void *)scope);
-	if (ret < 0)
-		abort(); // Abort because it failed miserably!
+	PEV_FATAL_IF(ret < 0, "Cannot push new element in stack");
 }
 
 void output_close_scope(void) {
-	assert(g_format != NULL);
+	PEV_ASSERT(g_format != NULL);
 
 	output_scope_t *scope = NULL;
 	int ret = STACK_POP(g_scope_stack, (void *)&scope);
-	if (ret < 0) {
-		fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
-		abort();
-	}
+
+	PEV_FATAL_IF(ret < 0, "output: cannot close a scope that has not been opened.");
 
 	const char *key = NULL;
 	const char *value = NULL;
@@ -325,7 +317,7 @@ void output_close_scope(void) {
 }
 
 void output_keyval(const char *key, const char *value) {
-	assert(g_format != NULL);
+	PEV_ASSERT(g_format != NULL);
 
 	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
 	const output_scope_t *scope = NULL;

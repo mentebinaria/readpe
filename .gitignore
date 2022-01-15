@@ -36,3 +36,4 @@ tests/running_report
 .DS_Store
 ._*
 .vscode/*
+.vs/*

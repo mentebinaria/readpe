@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 	errno = 0;
 	ofs = strtoull(argv[1], NULL, 0);
 	if ( !ofs || errno == ERANGE )
-		EXIT_ERROR("invalid offset");
+		PEV_FATAL("invalid offset");
 
 	err = pe_parse(&ctx);
 	if (err != LIBPE_E_OK) {
@@ -118,12 +118,18 @@ int main(int argc, char *argv[])
 	}
 
 	if (!pe_is_pe(&ctx))
-		EXIT_ERROR("not a valid PE file");
+		PEV_FATAL("not a valid PE file");
 
 	printf("%#"PRIx64"\n", pe_ofs2rva(&ctx, ofs));
 
 	// libera a memoria
-	pe_unload(&ctx);
+
+	err = pe_unload(&ctx);
+	if (err != LIBPE_E_OK)
+	{
+		pe_error_print(stderr, err);
+		return EXIT_FAILURE;
+	}
 
 	//PEV_FINALIZE();
 

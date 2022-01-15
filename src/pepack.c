@@ -34,6 +34,7 @@
 	files in the program, then also delete it here.
 */
 
+#include <errno.h>
 #include "common.h"
 #include "plugins.h"
 
@@ -94,11 +95,11 @@ static options_t *parse_options(int argc, char *argv[])
 				usage();
 				exit(EXIT_SUCCESS);
 			case 'd':
-				options->dbfile = strdup(optarg);
+				options->dbfile = pev_strdup(optarg);
 				break;
 			case 'f':
 				if (output_set_format_by_name(optarg) < 0)
-					EXIT_ERROR("invalid format option");
+					PEV_FATAL("invalid format option");
 				break;
 			case 'V':
 				printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
@@ -132,7 +133,7 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 	};
 
 	// MEW never leave EP in .text section
-	if (memcmp(section->Name, ".text", 5) == 0)
+	if (!memcmp(section->Name, (const uint8_t *)".text", 5))
 		return false;
 
 	unsigned short flags_count = 0;
@@ -148,6 +149,8 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 // FIX: Changed function name 'cause this don't 'load' anything.
 static bool opendb(FILE **fp, const options_t *options)
 {
+	PEV_ASSERT(fp && options);
+
 	const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
 
 	*fp = fopen(dbfile, "r");
@@ -185,7 +188,16 @@ static bool match_peid_signature(const unsigned char *data, char *sig)
 		}
 
 		memcpy(byte_str, sig, 2);
+
+		errno = 0;
 		byte = strtoul((char *) byte_str, NULL, 16);
+		if (errno == ERANGE)
+		{
+			PEV_WARN("cannot get number into \"bytestr\"");
+
+			// should we really return?
+			return false;
+		}
 
 		if (*data++ != byte)
 			return false;
@@ -200,44 +212,47 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 	if (!dbfile || !data)
 		return false;
 
-	// FIX: 2 KiB buffer isn't a big deal and this function is single threaded.
-	static char buff[MAX_SIG_SIZE];
+	char* line = NULL;
+	size_t len = 0;
+	ssize_t nread = 0;
 
-	//memset(buff, 0, MAX_SIG_SIZE);
-	while (fgets(buff, MAX_SIG_SIZE, dbfile))
+	while ((nread = getline(&line, &len, dbfile)) != -1)
 	{
-		// line length
-		size_t len = strlen(buff);
-
 		// ignore comments and blank lines
-		if (*buff == ';' || *buff == '\n' || *buff == '\r')
+		if (*line == ';' || *line == '\n' || *line == '\r')
 			continue;
 
-		// remove newline from buffer
-		if (*(buff+len-1) == '\n')
-			*(buff+len-1) = '\0';
+		// remove newline from line
+		char* p = strrchr(line, '\n');
+		if (p) *p = '\0';
 
-		// removing carriage return, if present
-		if (*(buff+len-2) == '\r')
+		p = strrchr(line, '\r');
+		if (p)
 		{
-			*(buff+len-2) = '\0';
-			//*(buff+len-1) = '\0';
-			len--; // update line length
+			*p = 0;
+			nread--;
 		}
 
 		// line have [packer name]? Fill packer_name pointer
-		if (*buff == '[' && *(buff+len-2) == ']')
+		if (*line == '[' && *(line + nread - 2) == ']')
 		{
-			*(buff+len-2) = '\0'; // remove square brackets
-			strncpy(packer_name, buff+1, packer_name_len);
-			packer_name[packer_name_len-1] = '\0'; // Guarantee it's Null-terminated.
+			*(line + nread - 2) = '\0'; // remove square brackets
+			strncpy(packer_name, line + 1, packer_name_len);
+			packer_name[packer_name_len - 1] = '\0'; // Guarantee it's Null-terminated.
 		}
 
 		// check if signature match
-		if (!strncasecmp(buff, "signature", 9))
-			if (match_peid_signature(data + ep_offset, buff+9))
+		if (!strncasecmp(line, "signature", 9))
+		{
+			if (match_peid_signature(data + ep_offset, line + 9))
+			{
+				free(line);
 				return true;
+			}
+		}
 	}
+
+	free(line);
 	return false;
 }
 
@@ -271,15 +286,15 @@ int main(int argc, char *argv[])
 	}
 
 	if (!pe_is_pe(&ctx))
-		EXIT_ERROR("not a valid PE file");
+		PEV_FATAL("not a valid PE file");
 
 	const uint64_t ep_offset = pe_rva2ofs(&ctx, ctx.pe.entrypoint);
 	if (ep_offset == 0)
-		EXIT_ERROR("unable to get entrypoint offset");
+		PEV_FATAL("unable to get entrypoint offset");
 
-	FILE *dbfile;
+	FILE* dbfile = NULL;
 	if (!opendb(&dbfile, options))
-		fprintf(stderr, "WARNING: without valid database file, %s will search in generic mode only\n", PROGRAM);
+		PEV_WARN("without valid database file, %s will search in generic mode only", PROGRAM);
 
 	static char value[MAX_MSG + 1];
 
@@ -303,7 +318,7 @@ int main(int argc, char *argv[])
 	output_close_document();
 
 	// FIX: Already tested of openess.
-	fclose(dbfile);
+	pev_fclose(dbfile, true);
 
 	// libera a memoria
 	free_options(options);

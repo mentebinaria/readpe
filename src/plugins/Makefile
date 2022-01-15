@@ -66,7 +66,7 @@ else ifeq ($(PLATFORM_OS), OpenBSD)
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-undefined dynamic_lookup -fno-common \
-		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
+		-install_name $(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		$(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dylib $^
 else ifeq ($(PLATFORM_OS), CYGWIN)

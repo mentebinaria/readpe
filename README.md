@@ -1,3 +1,5 @@
+# WE ARE LOOKING FOR SOMEONE TO MAINTAIN THIS PROJECT. IF YOU ARE INTERESTED, PLEASE CONTACT US AT `nandu88 (noSPAM) gmail . com`
+
 # pev
 
 Open source, full-featured, multiplatform command line toolkit to work with PE (Portable Executables) binaries.

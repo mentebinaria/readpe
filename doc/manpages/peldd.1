@@ -1,14 +1,14 @@
 .TH PELDD 1
 .SH NAME
-pescan - shows library dependencies for a given PE file
+peldd - shows library dependencies for a given PE file
 
 .SH SYNOPSIS
-.B pescan
+.B peldd
 [OPTIONS]...
 .IR pefile
 
 .SH DESCRIPTION
-pescan shows library dependencies for a given PE file. It's part of pev, the PE file analysis toolkit.
+peldd shows library dependencies for a given PE file. It's part of pev, the PE file analysis toolkit.
 .PP
 \&\fIpefile\fR is a PE32/PE32+ executable or dynamic linked library file.
 
@@ -30,9 +30,9 @@ Show version.
 Show help.
 
 .SH EXAMPLES
-Search suspicious things in \fBputty.exe\fP:
+Show library dependencies for \fBputty.exe\fP:
 .IP
-$ pescan putty.exe
+$ peldd putty.exe
 
 .SH REPORTING BUGS
 Please, check the latest development code and report at https://github.com/merces/pev/issues

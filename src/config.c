@@ -104,6 +104,7 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 		size = 0;
 	}
 
+	free( line );
 	fclose(fp);
 
 	return 1;

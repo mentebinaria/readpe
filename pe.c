@@ -328,8 +328,11 @@ IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva) {
 
 // Converts a RVA (Relative Virtual Address) to a raw file offset
 uint64_t pe_rva2ofs(const pe_ctx_t *ctx, uint64_t rva) {
-	if (rva == 0 || ctx->pe.sections == NULL)
+	if (rva == 0)
 		return 0;
+
+	if (ctx->pe.sections == NULL)
+		return rva;
 
 	// Find out which section the given RVA belongs
 	for (uint32_t i=0; i < ctx->pe.num_sections; i++) {

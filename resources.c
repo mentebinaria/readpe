@@ -584,13 +584,14 @@ static void *pe_resource_base_ptr(pe_ctx_t *ctx) {
 		LIBPE_WARNING("Resource directory does not exist")
 		return NULL;
 	}
-	if (directory->VirtualAddress == 0 || directory->Size == 0) {
+	if (directory->VirtualAddress == 0) {
 		LIBPE_WARNING("Resource directory VA is zero")
 		return NULL;
 	}
 	if (directory->Size == 0) {
+		// Windows does not seem to care about the size
+		// so we just continue with a warning
 		LIBPE_WARNING("Resource directory size is 0")
-		return NULL;
 	}
 
 	const uintptr_t offset = pe_rva2ofs(ctx, directory->VirtualAddress);

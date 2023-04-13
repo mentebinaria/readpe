@@ -53,7 +53,7 @@ endif
 ####### Compiler options
 
 override LDFLAGS += -L$(LIBPE) -lpe -lcrypto -lssl -ldl -lm
-override CFLAGS += -O2 -ffast-math -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -std=c99 -pedantic
+override CFLAGS += -O2 -ffast-math -I$(LIBPE)/include -I"../include" -W -Wall -Wextra -Wno-implicit-fallthrough -std=c99 -pedantic
 
 # To compile for production define the symbol NDEBUG before invoking this makefile.
 override CPPFLAGS += \

@@ -20,7 +20,9 @@
 */
 
 // for memmem() to work.
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include "libpe/pe.h"
 #include <stdlib.h>
@@ -103,9 +105,13 @@ int cpl_analysis(pe_ctx_t *ctx) {
 			| IMAGE_FILE_DLL);
 
 	// FIXME: Which timestamps are those?
-  // UNIX timestams: 
-  //    708992537 = 19/jun/1992 @ 19:22:17
-  //   1354555867 = 3/dez/2012 @ 15:31:07
+	// UNIX timestams:
+	//    708992537 = 19/jun/1992 @ 19:22:17
+	//   1354555867 =  3/dez/2012 @ 15:31:07
+	//
+	// Findings:
+	// *  708992537 is the timestamp from an old delphi compiler bug
+	// * 1354555867 was probably just the current time
 	if ((hdr_coff_ptr->TimeDateStamp == 708992537 ||
 				hdr_coff_ptr->TimeDateStamp > 1354555867)
 			&& (hdr_coff_ptr->Characteristics == characteristics1 || // equals 0xa18e

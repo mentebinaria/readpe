@@ -33,6 +33,7 @@ extern "C" {
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "context.h"
 #include "error.h"
 #include "hdr_dos.h"
 #include "hdr_coff.h"
@@ -54,8 +55,8 @@ extern "C" {
 #define MAX_DLL_NAME 256
 #define MAX_FUNCTION_NAME 512
 
-#define IMAGE_ORDINAL_FLAG32 0x80000000
-#define IMAGE_ORDINAL_FLAG64 0x8000000000000000ULL
+static const uint32_t IMAGE_ORDINAL_FLAG32 = 0x80000000;
+static const uint64_t IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
 
 #define SIGNATURE_NE 0x454E // NE\0\0 in little-endian
 #define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
@@ -66,50 +67,6 @@ typedef enum {
 } pe_option_e;
 
 typedef uint16_t pe_options_e; // bitmasked pe_option_e values
-
-typedef struct {
-	// DOS header
-	IMAGE_DOS_HEADER *dos_hdr;
-	// Signature
-	uint32_t signature;
-	// COFF header
-	IMAGE_COFF_HEADER *coff_hdr;
-	// Optional header
-	void *optional_hdr_ptr;
-	IMAGE_OPTIONAL_HEADER optional_hdr;
-	// Directories
-	uint32_t num_directories;
-	void *directories_ptr;
-	IMAGE_DATA_DIRECTORY **directories; // array up to MAX_DIRECTORIES
-	// Sections
-	uint16_t num_sections;
-	void *sections_ptr;
-	IMAGE_SECTION_HEADER **sections; // array up to MAX_SECTIONS
-	uint64_t entrypoint;
-	uint64_t imagebase;
-} pe_file_t;
-
-typedef struct {
-	// Parsed directories
-	pe_imports_t *imports;
-	pe_exports_t *exports;
-	// Hashes
-	pe_hash_headers_t *hash_headers;
-	pe_hash_sections_t *hash_sections;
-	pe_hash_t *hash_file;
-	// Resources
-	pe_resources_t *resources;
-} pe_cached_data_t;
-
-typedef struct pe_ctx {
-	FILE *stream;
-	char *path;
-	void *map_addr;
-	off_t map_size;
-	uintptr_t map_end;
-	pe_file_t pe;
-	pe_cached_data_t cached_data;
-} pe_ctx_t;
 
 // General functions
 bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size);

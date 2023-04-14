@@ -270,6 +270,7 @@ pe_hash_headers_t *pe_get_headers_hashes(pe_ctx_t *ctx) {
 	result->coff = malloc(sizeof(pe_hash_t));
 	if (result->coff == NULL) {
 		status = LIBPE_E_ALLOCATION_FAILURE;
+		result->err = status;
 		goto error;
 	}
 	status = get_headers_coff_hash(ctx, result->coff);
@@ -328,6 +329,7 @@ pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx) {
 			if (status != LIBPE_E_OK) {
 				// TODO: Should we skip this section and continue the loop?
 				result->err = status;
+				free(section_hash);
 				break;
 			}
 
@@ -366,6 +368,10 @@ typedef struct element {
 // strlwr - string lowercase
 static void pe_transform_to_lowercase_str(char* str)
 {
+	if (str == NULL)
+		// TODO: Should we warn here?
+		return;
+
 	for (char* p = str; *p; ++p)
 		*p = tolower((unsigned char)*p);
 }
@@ -461,7 +467,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 					if (is_ordinal) {
 						errcode = asprintf(&hint_str, "%"PRIu64,
-										   thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64);
+										   (uint64_t)(thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64));
 						
 						PEV_ABORT_IF(errcode == -1);
 
@@ -484,6 +490,8 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					ofs += sizeof(IMAGE_THUNK_DATA64);
 					break;
 				}
+			default:
+				return;
 		}
 
 		// Beginning of imphash logic - that's the weirdest thing I've even seen...
@@ -582,10 +590,8 @@ static void freeNodes(element_t *currentNode) {
 	if (currentNode == NULL)
 		return;
 
-	element_t *temp;
-
 	while(currentNode != NULL) {
-		temp = currentNode;
+		element_t *temp = currentNode;
 		currentNode = currentNode->next;
 		free(temp->function_name);
 		free(temp->dll_name);
@@ -644,6 +650,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 
 		ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk ? id->u1.OriginalFirstThunk : id->FirstThunk);
 		if (ofs == 0) {
+			free(dll_name);
 			break;
 		}
 
@@ -702,7 +709,13 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	free(imphash_string);
 
 	//printf("### DEBUG imphash_string [%zu] = %s\n", imphash_string_len, imphash_string);
-	return hash_ok ? hash_value : NULL;
+
+	if (!hash_ok) {
+		free(hash_value);
+		return NULL;
+	}
+
+	return hash_value;
 }
 
 void pe_hash_headers_dealloc(pe_hash_headers_t *obj) {

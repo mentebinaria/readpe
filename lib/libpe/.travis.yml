@@ -1,0 +1,25 @@
+language: c
+compiler:
+  - gcc
+  - clang
+
+branches:
+  only:
+    - master
+    - mmap
+
+script:
+  - make clean all
+  - sudo make install
+
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+    recipients:
+      - jweyrich@gmail.com
+  irc:
+    on_success: always
+    on_failure: always
+    channels:
+      - "irc.freenode.org#MenteBinaria"

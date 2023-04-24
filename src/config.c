@@ -80,7 +80,7 @@ static int _load_config_and_parse(pev_config_t * const config, const char *path,
 	while ( getline( &line, &size, fp ) != -1 )
 	{
 		// remove newline
-		if ( p = strrchr( line, '\n' ) ) *p = 0;
+		if ((p = strrchr( line, '\n')) != NULL) *p = '\0';
 
 		p = pe_utils_str_inplace_trim(line);
 
@@ -115,25 +115,29 @@ int asprintf( char **pp, char *fmt, ... )
 {
 	char *p;
 	int size;
-	va_list args;
+	va_list args, args_safe;
 
 	va_start( args, fmt );
+	va_copy( args_safe, args );
 
 	// Just get the string size.
-	if ( ( size = vsnprintf( NULL, 0, fmt, args ) ) < 0 )
+	if ( ( size = vsnprintf( NULL, 0, fmt, args_safe ) ) < 0 )
 	{
+		va_end( args_safe );
 		va_end( args );
 		return -1;
 	}
 
 	if ( ! ( p = malloc( size + 1 ) ) )
 	{
+		va_end( args_safe );
 		va_end( args );
 		return -1;
 	}		
 
 	vsprintf( *pp = p, fmt, args );
 
+	va_end( args_safe );
 	va_end( args );
 
 	return size;

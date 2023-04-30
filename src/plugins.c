@@ -173,7 +173,7 @@ int plugins_load_all_from_directory(const char *path) {
 			default: // Unhandled
 				break;
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__GNU__) || (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
 			case DT_UNKNOWN:
 #endif
 			case DT_REG: // Regular file
@@ -181,7 +181,7 @@ int plugins_load_all_from_directory(const char *path) {
 				const char *filename = dir_entry->d_name;
 
 				// TODO(jweyrich): Use macro conditions for each system: .so, .dylib, .dll
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__GNU__) || (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
 				const bool possible_plugin = pe_utils_str_ends_with(filename, ".so") != 0;
 #elif defined(__APPLE__)
 				const bool possible_plugin = pe_utils_str_ends_with(filename, ".dylib") != 0;

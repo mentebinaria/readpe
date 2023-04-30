@@ -63,6 +63,10 @@ else ifeq ($(PLATFORM_OS), FreeBSD)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), OpenBSD)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), GNU)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
+else ifeq ($(PLATFORM_OS), GNU/kFreeBSD)
+	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
 		-undefined dynamic_lookup -fno-common \

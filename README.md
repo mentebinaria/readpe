@@ -1,8 +1,7 @@
-# readpe
+# readpe - PE Utils
 
-Open source, full-featured, multiplatform command line toolkit to work with PE (Portable Executables) binaries.
-
-[![Build Status](https://travis-ci.org/mentebinaria/readpe.png)](https://travis-ci.org/mentebinaria/readpe)
+Open source, full-featured, multiplatform command line toolkit to work with
+and analyze PE (Portable Executables) binaries.
 
 ## How to get the source code
 
@@ -44,6 +43,20 @@ Open source, full-featured, multiplatform command line toolkit to work with PE (
 - git (just to clone the repository and make things easier)
 
 ## FAQ
+
+### Is this pev? / What happened to pev?
+
+This repository used to be pev. We just moved the repository from a user account
+to an organization account.
+
+We also renamed the repository as the original name `pev` stood for PE Version
+and does not reflect the current state of this application. We felt that readpe
+was a good name as it is the most prominent tool.
+
+### Where did libpe go?
+
+Libpe has been absorbed into this repository since the two repositories are
+tightly coupled and version controling them together made the most logical sense.
 
 ### I get a `fatal error: 'openssl/evp.h' file not found`. How can I fix that?
 

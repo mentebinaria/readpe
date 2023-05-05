@@ -679,7 +679,8 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	output("Number of sections", s);
 
 	char timestr[40] = "invalid";
-	struct tm *t = gmtime((time_t *) &header->TimeDateStamp);
+	const time_t timestamp = header->TimeDateStamp;
+	struct tm *t = gmtime(&timestamp);
 	if (t)
 		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
 	snprintf(s, MAX_MSG, "%" PRIu32 " (%s)", header->TimeDateStamp, timestr);

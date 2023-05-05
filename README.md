@@ -1,18 +1,15 @@
-# WE ARE LOOKING FOR SOMEONE TO MAINTAIN THIS PROJECT. IF YOU ARE INTERESTED, PLEASE CONTACT US AT `nandu88 (noSPAM) gmail . com`
+# readpe - PE Utils
 
-# pev
-
-Open source, full-featured, multiplatform command line toolkit to work with PE (Portable Executables) binaries.
-
-[![Build Status](https://travis-ci.org/merces/pev.png)](https://travis-ci.org/merces/pev)
+Open source, full-featured, multiplatform command line toolkit to work with
+and analyze PE (Portable Executables) binaries.
 
 ## How to get the source code
 
-    git clone --recursive https://github.com/merces/pev.git
+    git clone https://github.com/mentebinaria/readpe.git
 
 ## How to build on Linux
 
-    cd pev
+    cd readpe
     make
 
 **NOTE**: You may need to install OpenSSL using your package manager. Examples:
@@ -22,7 +19,7 @@ Open source, full-featured, multiplatform command line toolkit to work with PE (
 
 ## How to build on macOS
 
-    cd pev
+    cd readpe
     CFLAGS="-I/usr/local/opt/openssl/include/" LDFLAGS="-L/usr/local/opt/openssl/lib/" make
 
 **NOTE**: You may need to install OpenSSL and PCRE via [Homebrew](https://brew.sh):
@@ -32,7 +29,7 @@ Open source, full-featured, multiplatform command line toolkit to work with PE (
 
 ## How to build on Windows (via [Cygwin](https://cygwin.com))
 
-    cd pev
+    cd readpe
     make
     make zip
 
@@ -47,30 +44,31 @@ Open source, full-featured, multiplatform command line toolkit to work with PE (
 
 ## FAQ
 
+### Is this pev? / What happened to pev?
+
+This repository used to be pev. We just moved the repository from a user account
+to an organization account.
+
+We also renamed the repository as the original name `pev` stood for PE Version
+and does not reflect the current state of this application. We felt that readpe
+was a good name as it is the most prominent tool.
+
+### Where did libpe go?
+
+Libpe has been absorbed into this repository since the two repositories are
+tightly coupled and version controling them together made the most logical sense.
+
 ### I get a `fatal error: 'openssl/evp.h' file not found`. How can I fix that?
 
 Please install OpenSSL for your system. Use a package manager to make things easier. If you're compiling pev in macOS,
 make sure you've set both CFLAGS and LDFLAGS environment variables according.
 
-### I get the one of the following errors when trying to compile with `make` command:
-
-    $ make
-    make[1]: *** No rule to make target 'all'.  Stop.
-    make[1]: Leaving directory '/home/user/pev/lib/libpe'
-    make: *** [Makefile:9: all] Error 2
-
-    $ make
-    cd lib/libpe && /Library/Developer/CommandLineTools/usr/bin/make all
-    make[1]: *** No rule to make target `all'.  Stop.
-    make: *** [all] Error 2
-
-It seems libpe is missing. Have you forgot the `--recursive` switch of git clone command?
-Anyway, download libpe source code, put it in the right directoy and try again:
-
-    cd pev/lib
-    rmdir libpe
-    git clone https://github.com/merces/libpe.git
-    cd ..
-    make
-
 Please check the [online documentation](https://pev.sourceforge.io/doc/manual/en_us/) for more details.
+
+## License
+
+This project is licensed under the GNU General Public License version 2
+with the exception of the contents of lib/libpe which are licensed under the
+GNU Lesser General Public License version 3.
+
+A copy of these licenses can be found respectively in the project root and lib/libpe.

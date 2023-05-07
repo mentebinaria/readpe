@@ -36,6 +36,7 @@
 
 #include "common.h"
 #include <ctype.h>
+#include <wctype.h>
 #include <errno.h>
 #include <limits.h>
 
@@ -149,30 +150,32 @@ static void printb(	pe_ctx_t *ctx,
 					const options_t *options,
 					const uint8_t *bytes,
 					size_t pos,
-					size_t length,
-					unsigned long offset) {
+					size_t end,
+					bool is_wide) {
 	if (options->offset)
-		printf("%#lx\t", (unsigned long) offset);
+		printf("%#lx\t", (unsigned long) pos);
 
 	if (options->section) {
-		char *s = (char *) ofs2section(ctx, offset);
+		char *s = (char *) ofs2section(ctx, pos);
 		printf("%s\t", s ? s : "[none]");
 	}
 
+	// printf("%s\t", is_wide ? "U16LE" : "U8" );
 
-	// print the string
-	//while (pos < length) {
-	//	if (bytes[pos] == '\0') { // utf-8 printing
-	//		pos++;
-	//		continue;
-	//	}
-	//	putchar(bytes[pos++]);
-	//}
-	while ( pos < length )
-	{
-		char c = bytes[pos++];
-		if ( c ) 
-			putchar( c );
+	if (is_wide) {
+		for (;pos < end;) {
+			// Byte swap; Internal PE uses little endian while C uses big endian
+			wchar_t wc = bytes[pos] | bytes[pos+1]<<8;
+			if ( wc ) {
+				putwchar( wc );
+			}
+			pos += 2;
+		}
+	} else {
+		for (;pos < end; ++pos ) {
+			char c = bytes[pos];
+			if ( c ) putchar( c );
+		}
 	}
 
 	putchar('\n');
@@ -207,39 +210,58 @@ int main(int argc, char *argv[])
 
 	const uint64_t pe_size = pe_filesize(&ctx);
 	const uint8_t *pe_raw_data = ctx.map_addr;
-	uint64_t pe_raw_offset = 0;
 
-	static unsigned char buff[LINE_BUFFER]; // Garanteed to be zeroed and not on Stack!
-	uint64_t buff_index = 0;
+	uint16_t chunk;
+	size_t buff_start = 0;
+	size_t odd_wbuff_start = 0;
+	size_t even_wbuff_start = 0;
 
-	uint32_t ascii = 0;
-	uint32_t utf = 0;
-
-	while (pe_raw_offset < pe_size) {
+	for (size_t pe_raw_offset = 0; pe_raw_offset < pe_size; ++pe_raw_offset) {
 		const uint8_t byte = pe_raw_data[pe_raw_offset];
 
-		if (isprint(byte) && buff_index < LINE_BUFFER) {
-			ascii++;
-			buff[buff_index++] = byte;
-			pe_raw_offset++;
-			continue;
-		} else if (ascii == 1 && byte == '\0' && buff_index < LINE_BUFFER) {
-			utf++;
-			buff[buff_index++] = byte;
-			ascii = 0;
-			pe_raw_offset++;
-			continue;
-		} else {
-			if (ascii >= (options->strsize ? options->strsize : 4)) {
-				printb(&ctx, options, buff, 0, ascii, pe_raw_offset - ascii);
-			} else if (utf >= (options->strsize ? options->strsize : 4)) {
-				printb(&ctx, options, buff, 0, utf*2, pe_raw_offset - utf*2);
+		if (pe_raw_offset+1 < pe_size)
+			// Byte swap; Internal PE uses little endian while C uses big endian
+			chunk = byte | pe_raw_data[pe_raw_offset+1]<<8;
+		else
+			chunk = 0;
+
+		if (isprint(byte)) {
+			if ( buff_start == 0 ) {
+				buff_start = pe_raw_offset;
 			}
-			ascii = utf = buff_index = 0;
-			memset(buff, 0, LINE_BUFFER);
+		} else {
+			if ( buff_start != 0 ) {
+				if ((pe_raw_offset - buff_start) >= (options->strsize ? options->strsize : 4))
+					printb(&ctx, options, pe_raw_data, buff_start, pe_raw_offset, false);
+				buff_start = 0;
+			}
 		}
 
-		pe_raw_offset++;
+		if (iswprint(chunk)) {
+			if( pe_raw_offset & 0x1 ) {
+				if ( odd_wbuff_start == 0 ) {
+					odd_wbuff_start = pe_raw_offset;
+				}
+			} else {
+				if ( even_wbuff_start == 0 ) {
+					even_wbuff_start = pe_raw_offset;
+				}
+			}
+		} else {
+			if( pe_raw_offset & 0x1 ) {
+				if ( odd_wbuff_start != 0 ) {
+					if ((pe_raw_offset - odd_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
+						printb(&ctx, options, pe_raw_data, odd_wbuff_start, pe_raw_offset, true);
+					odd_wbuff_start = 0;
+				}
+			} else {
+				if ( even_wbuff_start != 0 ) {
+					if ((pe_raw_offset - even_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
+						printb(&ctx, options, pe_raw_data, even_wbuff_start, pe_raw_offset, true);
+					even_wbuff_start = 0;
+				}
+			}
+		}
 	}
 
 	// libera a memoria

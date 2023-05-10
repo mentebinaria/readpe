@@ -65,7 +65,7 @@ LIBS = -lssl -lcrypto
 VERSION = 1.0
 LIBNAME = libpe
 
-SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy $(srcdir)/libudis86
+SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy
 
 libpe_BUILDDIR = $(CURDIR)/build
 libpe_SRCS_FILTER = $(sort $(wildcard ${dir}/*.c))

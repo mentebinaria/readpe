@@ -552,7 +552,7 @@ int main(int argc, char *argv[])
 	}
 
 	// dos stub
-	uint32_t stub_offset;
+	uint32_t stub_offset = 0;
 	if (!normal_dos_stub(&ctx, &stub_offset)) {
 		if (options->verbose)
 			snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);

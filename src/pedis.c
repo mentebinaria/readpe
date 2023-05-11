@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
 		case IMAGE_FILE_MACHINE_I386:
 			break;
 		default:
-			EXIT_ERROR("Unsuported machine (AMD64 or I386)." );
+			EXIT_ERROR("Unsupported machine (AMD64 or I386)." );
 			return EXIT_FAILURE;
 	}
 

@@ -1,11 +1,11 @@
 Name:           pev
-Version:        0.81
+Version:        0.82
 Release:        1
 License:        GPL2
 URL:            http://pev.sf.net/
 Requires:       readline
 BuildRequires:  openssl-devel
-Source0:        https://github.com/merces/pev/archive/v%{version}.tar.gz
+Source0:        https://github.com/mentebinaria/readpe/archive/v%{version}.tar.gz
 Summary:        The PE file analysis toolkit
 
 %description

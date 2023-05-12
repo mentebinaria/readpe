@@ -1,6 +1,6 @@
 LIBPE_DIR = lib/libpe
 PEV_DIR = src
-VERSION = 0.81
+VERSION = 0.82
 ZIPDIR = pev-$(VERSION)-win
 ZIPFILE = $(ZIPDIR).zip
 

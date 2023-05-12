@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+complete -F _longopt readpe
+complete -F _longopt pedis
+complete -F _longopt pehash
+complete -F _longopt peldd
+complete -F _longopt pepack
+complete -F _longopt peres
+complete -F _longopt pescan
+complete -F _longopt pesec
+complete -F _longopt pestr
+

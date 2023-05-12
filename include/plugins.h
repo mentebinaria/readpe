@@ -4,7 +4,7 @@
 
     plugins.h - Symbols and definitions for the plugins subsystem.
 
-    Copyright (C) 2012 - 2014 pev authors
+    Copyright (C) 2012 - 2025 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@
 */
 
 #pragma once
+#ifndef READPE_PLUGINS_H
+#define READPE_PLUGINS_H
 
 #include "config.h"
 
@@ -42,11 +44,14 @@
 extern "C" {
 #endif
 
-int plugins_load(const char *path);
-int plugins_load_all(pev_config_t *config);
-int plugins_load_all_from_directory(const char *path);
+int  plugins_load(const char *path);
+int  plugins_load_all(struct readpe_config *config);
+int  plugins_load_all_from_directory(const char *path);
 void plugins_unload_all(void);
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif
+

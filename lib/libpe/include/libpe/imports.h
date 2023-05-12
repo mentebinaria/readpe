@@ -22,32 +22,32 @@
 #ifndef LIBPE_IMPORTS_H
 #define LIBPE_IMPORTS_H
 
-#include <stdint.h>
 #include "error.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-	char *name;
+    char    *name;
     uint16_t hint;
-	uint16_t ordinal;
+    uint16_t ordinal;
 } pe_imported_function_t;
 
 typedef struct {
-	pe_err_e err;
-	char *name;
-	uint32_t functions_count;
-	pe_imported_function_t *functions; // array of imported functions
+    pe_err_e                err;
+    char                   *name;
+    uint32_t                functions_count;
+    pe_imported_function_t *functions; // array of imported functions
 } pe_imported_dll_t;
 
 typedef struct {
-	pe_err_e err;
-	uint32_t dll_count;
-	pe_imported_dll_t *dlls; // array of DLLs
-	uint32_t delay_dll_count;
-	pe_imported_dll_t *delay_dlls;
+    pe_err_e           err;
+    uint32_t           dll_count;
+    pe_imported_dll_t *dlls; // array of DLLs
+    uint32_t           delay_dll_count;
+    pe_imported_dll_t *delay_dlls;
 } pe_imports_t;
 
 void pe_imports_dealloc(pe_imports_t *imports);
@@ -73,3 +73,4 @@ void pe_imports_dealloc(pe_imports_t *imports);
 #endif
 
 #endif
+

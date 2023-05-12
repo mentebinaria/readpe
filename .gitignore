@@ -7,6 +7,7 @@ Debug
 .cproject
 .project
 *.swp
+*.plist
 *~
 *.so*
 *.dylib
@@ -15,6 +16,7 @@ Debug
 *.dSYM
 *.log
 .settings
+build/**
 src/ofs2rva
 src/output
 src/pedis

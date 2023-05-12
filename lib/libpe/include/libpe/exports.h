@@ -22,26 +22,26 @@
 #ifndef LIBPE_EXPORTS_H
 #define LIBPE_EXPORTS_H
 
-#include <stdint.h>
 #include "error.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-	uint32_t ordinal; // ordinal of the function
-	uint32_t hint; // hint (name index) of the function
-	char *name; // name of the function
-	char *fwd_name; // name of the forwarded function
-	uint32_t address; // address of the function
+    uint32_t ordinal; // ordinal of the function
+    uint32_t hint;    // hint (name index) of the function
+    char *name;       // name of the function
+    char *fwd_name;   // name of the forwarded function
+    uint32_t address; // address of the function
 } pe_exported_function_t;
 
 typedef struct {
-	pe_err_e err;
-	char *name; // name of the DLL
-	uint32_t functions_count;
-	pe_exported_function_t *functions; // array of exported functions
+    pe_err_e err;
+    char *name; // name of the DLL
+    uint32_t functions_count;
+    pe_exported_function_t *functions; // array of exported functions
 } pe_exports_t;
 
 void pe_exports_dealloc(pe_exports_t *exports);
@@ -51,3 +51,4 @@ void pe_exports_dealloc(pe_exports_t *exports);
 #endif
 
 #endif
+

@@ -30,35 +30,35 @@ extern "C" {
 
 // FIXME: Must be careful with this enum and pe_error_msg() function.
 typedef enum {
-	LIBPE_E_OK = 0,
-	// Declaring negative values this way is EVIL because it
-	// BREAKS compatiblity every time we add/remove an error code.
-	LIBPE_E_ALLOCATION_FAILURE = -23,
-	LIBPE_E_OPEN_FAILED,
-	LIBPE_E_FDOPEN_FAILED,
-	LIBPE_E_FSTAT_FAILED,
-	LIBPE_E_NOT_A_FILE,
-	LIBPE_E_NOT_A_PE_FILE,
-	LIBPE_E_INVALID_LFANEW,
-	LIBPE_E_MISSING_COFF_HEADER,
-	LIBPE_E_MISSING_OPTIONAL_HEADER,
-	LIBPE_E_INVALID_SIGNATURE,
-	LIBPE_E_UNSUPPORTED_IMAGE,
-	LIBPE_E_MMAP_FAILED,
-	LIBPE_E_MUNMAP_FAILED,
-	LIBPE_E_CLOSE_FAILED,
-	LIBPE_E_TOO_MANY_DIRECTORIES,
-	LIBPE_E_TOO_MANY_SECTIONS,
-	LIBPE_E_INVALID_THUNK,
-	// Exports
-	LIBPE_E_EXPORTS_CANT_READ_RVA,
-	LIBPE_E_EXPORTS_CANT_READ_DIR,
-	LIBPE_E_EXPORTS_FUNC_NEQ_NAMES,
-	// Hashes
-	LIBPE_E_HASHING_FAILED,
-	// Misc
-	LIBPE_E_NO_CALLBACKS_FOUND,
-	LIBPE_E_NO_FUNCTIONS_FOUND    // this will be -1.
+    LIBPE_E_OK = 0,
+    // Declaring negative values this way is EVIL because it
+    // BREAKS compatiblity every time we add/remove an error code.
+    LIBPE_E_ALLOCATION_FAILURE = -23,
+    LIBPE_E_OPEN_FAILED,
+    LIBPE_E_FDOPEN_FAILED,
+    LIBPE_E_FSTAT_FAILED,
+    LIBPE_E_NOT_A_FILE,
+    LIBPE_E_NOT_A_PE_FILE,
+    LIBPE_E_INVALID_LFANEW,
+    LIBPE_E_MISSING_COFF_HEADER,
+    LIBPE_E_MISSING_OPTIONAL_HEADER,
+    LIBPE_E_INVALID_SIGNATURE,
+    LIBPE_E_UNSUPPORTED_IMAGE,
+    LIBPE_E_MMAP_FAILED,
+    LIBPE_E_MUNMAP_FAILED,
+    LIBPE_E_CLOSE_FAILED,
+    LIBPE_E_TOO_MANY_DIRECTORIES,
+    LIBPE_E_TOO_MANY_SECTIONS,
+    LIBPE_E_INVALID_THUNK,
+    // Exports
+    LIBPE_E_EXPORTS_CANT_READ_RVA,
+    LIBPE_E_EXPORTS_CANT_READ_DIR,
+    LIBPE_E_EXPORTS_FUNC_NEQ_NAMES,
+    // Hashes
+    LIBPE_E_HASHING_FAILED,
+    // Misc
+    LIBPE_E_NO_CALLBACKS_FOUND,
+    LIBPE_E_NO_FUNCTIONS_FOUND // this will be -1.
 } pe_err_e;
 
 const char *pe_error_msg(pe_err_e error);
@@ -69,3 +69,4 @@ void pe_error_print(FILE *stream, pe_err_e error);
 #endif
 
 #endif
+

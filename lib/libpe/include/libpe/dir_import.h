@@ -31,56 +31,62 @@ extern "C" {
 #pragma pack(push, 1)
 
 typedef struct {
-	union {
-		uint32_t Characteristics; // 0 for terminating null import descriptor
-		uint32_t OriginalFirstThunk; // RVA to original unbound IAT
-	} u1;
-	uint32_t TimeDateStamp;
-	uint32_t ForwarderChain; // -1 if no forwarders
-	uint32_t Name;
-	// RVA to IAT (if bound this IAT has actual addresses)
-	uint32_t FirstThunk;
+    union {
+        uint32_t Characteristics;    // 0 for terminating null import descriptor
+        uint32_t OriginalFirstThunk; // RVA to original unbound IAT
+    } u1;
+    uint32_t TimeDateStamp;
+    uint32_t ForwarderChain; // -1 if no forwarders
+    uint32_t Name;
+    // RVA to IAT (if bound this IAT has actual addresses)
+    uint32_t FirstThunk;
 } IMAGE_IMPORT_DESCRIPTOR;
 
 typedef struct {
-	union {
-		uint32_t AllAttributes;
-		struct {
-			uint32_t RvaBased : 1; // Delay load version 2
-			uint32_t ReservedAttributes : 31;
-		} u1;
-	} Attributes;
-	uint32_t DllNameRVA; // RVA to the name of the target library (NULL-terminate ASCII string)
-	uint32_t ModuleHandleRVA; // RVA to the HMODULE caching location (PHMODULE)
-	uint32_t ImportAddressTableRVA; // RVA to the start of the IAT (PIMAGE_THUNK_DATA)
-	uint32_t ImportNameTableRVA; // RVA to the start of the name table (PIMAGE_THUNK_DATA::AddressOfData)
-	uint32_t BoundImportAddressTableRVA; // RVA to an optional bound IAT
-	uint32_t UnloadInformationTableRVA; // RVA to an optional unload info table
-	uint32_t TimeDateStamp; // 0 if not bound, Otherwise, date/time of the target DLL
+    union {
+        uint32_t AllAttributes;
+        struct {
+            uint32_t RvaBased : 1; // Delay load version 2
+            uint32_t ReservedAttributes : 31;
+        } u1;
+    } Attributes;
+    uint32_t DllNameRVA;      // RVA to the name of the target library
+                              // (NULL-terminate ASCII string)
+    uint32_t ModuleHandleRVA; // RVA to the HMODULE caching location (PHMODULE)
+    uint32_t ImportAddressTableRVA;      // RVA to the start of the IAT
+                                         // (PIMAGE_THUNK_DATA)
+    uint32_t ImportNameTableRVA;         // RVA to the start of the name table
+                                         // (PIMAGE_THUNK_DATA::AddressOfData)
+    uint32_t BoundImportAddressTableRVA; // RVA to an optional bound IAT
+    uint32_t UnloadInformationTableRVA;  // RVA to an optional unload info table
+    uint32_t
+        TimeDateStamp; // 0 if not bound, Otherwise, date/time of the target DLL
 } IMAGE_DELAYLOAD_DESCRIPTOR;
 
 // import name entry
 typedef struct {
-	uint16_t Hint;
-	uint8_t Name[1];
+    uint16_t Hint;
+    uint8_t Name[1];
 } IMAGE_IMPORT_BY_NAME;
 
 typedef struct {
-	union {
-		uint64_t ForwarderString; // RVA to a forwarder string
-		uint64_t Function; // Memory address of the imported function
-		uint64_t Ordinal; // Ordinal value of imported API
-		uint64_t AddressOfData; // RVA to an IMAGE_IMPORT_BY_NAME with the imported API name
-	} u1;
+    union {
+        uint64_t ForwarderString; // RVA to a forwarder string
+        uint64_t Function;        // Memory address of the imported function
+        uint64_t Ordinal;         // Ordinal value of imported API
+        uint64_t AddressOfData;   // RVA to an IMAGE_IMPORT_BY_NAME with the
+                                  // imported API name
+    } u1;
 } IMAGE_THUNK_DATA64;
 
 typedef struct {
-	union {
-		uint32_t ForwarderString; // RVA to a forwarder string
-		uint32_t Function; // Memory address of the imported function
-		uint32_t Ordinal; // Ordinal value of imported API
-		uint32_t AddressOfData; // RVA to an IMAGE_IMPORT_BY_NAME with the imported API name
-	} u1;
+    union {
+        uint32_t ForwarderString; // RVA to a forwarder string
+        uint32_t Function;        // Memory address of the imported function
+        uint32_t Ordinal;         // Ordinal value of imported API
+        uint32_t AddressOfData;   // RVA to an IMAGE_IMPORT_BY_NAME with the
+                                  // imported API name
+    } u1;
 } IMAGE_THUNK_DATA32;
 
 #pragma pack(pop)
@@ -90,3 +96,4 @@ typedef struct {
 #endif
 
 #endif
+

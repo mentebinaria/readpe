@@ -1,10 +1,10 @@
-/* vim :set ts=4 sw=4 sts=4 et : */
+/* vim: set ts=4 sw=4 noet: */
 /*
     pev - the PE file analyzer toolkit
 
-    common.h - common defitions for the pev toolkit.
+    common.h - common defitions for the readpe toolkit.
 
-    Copyright (C) 2013 - 2020 pev authors
+    Copyright (C) 2013 - 2025 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,53 +35,66 @@
 */
 
 #pragma once
+#ifndef READPE_COMMON_H
+#define READPE_COMMON_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <strings.h>
-#include <getopt.h>
-#include <ctype.h>
-
-#include <libpe/pe.h>
 #include "config.h"
 #include "output.h"
 #include "plugins.h"
 
-#define UNUSED(x)      (void)(sizeof((x)))
+#include <getopt.h>
+#include <libpe/pe.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
-#define EXIT_ERROR(msg) \
-{ \
-    fprintf(stderr, "ERROR: %s [at %s:%d]\n", msg, __FILE__, __LINE__); \
-    exit(EXIT_FAILURE); \
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define UNUSED(x) (void) (sizeof((x)))
+
+#define EXIT_ERROR(msg)                                                        \
+    {                                                                          \
+        _exit_error_(__FILE__, __LINE__, msg);                                 \
+    }
+
+#define MAX_MSG  81
+#define MAX_PATH 256
+
+#ifndef VERSION
+#define VERSION "1.0"
+#endif
+
+void              *malloc_s(size_t size);
+void              *calloc_s(size_t nmemb, size_t size);
+
+static inline void readpe_initialize(struct readpe_config *config)
+{
+    memset(config, 0, sizeof(*config));
+    readpe_load_config(config);
+    plugins_load_all(config);
+    output_init(); /* Requires plugin for text output. */
 }
 
-#define MAX_MSG 81
-#define MAX_PATH 256
-#define VERSION "0.85"
-#define TOOLKIT "from pev " VERSION " <https://github.com/mentebinaria/readpe/> toolkit"
-#define COPY \
-"License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.\n" \
-"This is free software: you are free to change and redistribute it.\n" \
-"There is NO WARRANTY, to the extent permitted by law."
+static inline void readpe_finalize(struct readpe_config *config)
+{
+    output_term();
+    plugins_unload_all();
+    readpe_cleanup_config(config);
+}
 
-void *malloc_s(size_t size);
-void *calloc_s(size_t nmemb, size_t size);
+static inline void _exit_error_(const char *file, int line, const char *message)
+{
+    fprintf(stderr, "Error: %s [at %s:%d]\n", message, file, line);
+    exit(EXIT_FAILURE);
+}
 
-#define PEV_INITIALIZE(config) \
-    do { \
-        memset(config, 0, sizeof(*config)); \
-        pev_load_config(config); \
-        int ret = plugins_load_all(config); \
-        if (ret < 0) \
-            exit(EXIT_FAILURE); \
-        output_init(); /* Requires plugin for text output. */ \
-    } while (0)
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
-#define PEV_FINALIZE(config) \
-    do { \
-        output_term(); \
-        plugins_unload_all(); \
-        pev_cleanup_config(config); \
-    } while (0)
+#endif
+

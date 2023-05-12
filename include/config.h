@@ -4,7 +4,7 @@
 
     config.h
 
-    Copyright (C) 2013 - 2014 pev authors
+    Copyright (C) 2013 - 2025 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,27 +35,37 @@
 */
 
 #pragma once
+#ifndef READPE_CONFIG_H
+#define READPE_CONFIG_H
 
 #include <stdbool.h>
 
-struct _pev_config_t; // Forward declaration.
-typedef bool (*pev_config_parse_callback_t)(struct _pev_config_t * const config, const char *name, const char *value);
-typedef void (*pev_config_cleanup_callback_t)(void *data);
-
-typedef struct _pev_config_t {
-    char *plugins_path;
-    struct {
-        pev_config_parse_callback_t parse_callback;
-        pev_config_cleanup_callback_t cleanup_callback;
-        void *data;
-    } user_defined;
-} pev_config_t;
-
-const char *pev_plugins_path(void);
-
-int pev_load_config(pev_config_t * const config);
-void pev_cleanup_config(pev_config_t * const config);
-
-#ifdef USE_MY_ASPRINTF
-int asprintf( char **, char *, ... );
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+struct readpe_config; // Forward declaration.
+typedef bool (*readpe_config_parse_callback_t)(
+    struct readpe_config *const config, const char *name, const char *value);
+typedef void (*readpe_config_cleanup_callback_t)(void *data);
+
+struct readpe_config {
+    const char *plugins_path;
+    struct {
+        readpe_config_parse_callback_t   parse_callback;
+        readpe_config_cleanup_callback_t cleanup_callback;
+        void                            *data;
+    } user_defined;
+};
+
+const char *readpe_plugins_path(void);
+
+int         readpe_load_config(struct readpe_config *const config);
+void        readpe_cleanup_config(struct readpe_config *const config);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif
+

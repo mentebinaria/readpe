@@ -52,7 +52,6 @@
 /// @link fuzzy_compare() compute the
 /// similarity between any two fuzzy signatures @endlink.
 
-
 #include <stdint.h>
 #include <stdio.h>
 
@@ -94,9 +93,8 @@ extern /*@only@*/ /*@null@*/ struct fuzzy_state *fuzzy_new(void);
  * @param buffer_size The length of the given buffer
  * @return zero on success, non-zero on error
  */
-extern int fuzzy_update(struct fuzzy_state *state,
-			const unsigned char *buffer,
-			size_t buffer_size);
+extern int  fuzzy_update(struct fuzzy_state *state, const unsigned char *buffer,
+                         size_t buffer_size);
 
 /**
  * @brief Obtain the fuzzy hash from the state.
@@ -109,9 +107,8 @@ extern int fuzzy_update(struct fuzzy_state *state,
  * represented by a zero.
  * @return zero on success, non-zero on error
  */
-extern int fuzzy_digest(const struct fuzzy_state *state,
-			/*@out@*/ char *result,
-			unsigned int flags);
+extern int  fuzzy_digest(const struct fuzzy_state *state,
+                         /*@out@*/ char *result, unsigned int flags);
 
 /**
  * @brief Dispose a fuzzy state.
@@ -130,9 +127,8 @@ extern void fuzzy_free(/*@only@*/ struct fuzzy_state *state);
  * must be allocated to hold at least FUZZY_MAX_RESULT bytes.
  * @return Returns zero on success, non-zero on error.
  */
-extern int fuzzy_hash_buf(const unsigned char *buf,
-			  uint32_t buf_len,
-			  /*@out@*/ char *result);
+extern int  fuzzy_hash_buf(const unsigned char *buf, uint32_t buf_len,
+                           /*@out@*/ char *result);
 
 /**
  * @brief Compute the fuzzy hash of a file using an open handle
@@ -148,7 +144,7 @@ extern int fuzzy_hash_buf(const unsigned char *buf,
  * variable must be allocated to hold at least FUZZY_MAX_RESULT bytes.
  * @return Returns zero on success, non-zero on error
  */
-extern int fuzzy_hash_file(FILE *handle, /*@out@*/ char *result);
+extern int  fuzzy_hash_file(FILE *handle, /*@out@*/ char *result);
 
 /**
  * @brief Compute the fuzzy hash of a stream using an open handle
@@ -164,7 +160,7 @@ extern int fuzzy_hash_file(FILE *handle, /*@out@*/ char *result);
  * variable must be allocated to hold at least FUZZY_MAX_RESULT bytes.
  * @return Returns zero on success, non-zero on error
  */
-extern int fuzzy_hash_stream(FILE *handle, /*@out@*/ char *result);
+extern int  fuzzy_hash_stream(FILE *handle, /*@out@*/ char *result);
 
 /**
  * @brief Compute the fuzzy hash of a file
@@ -178,7 +174,7 @@ extern int fuzzy_hash_stream(FILE *handle, /*@out@*/ char *result);
  * variable must be allocated to hold at least FUZZY_MAX_RESULT bytes.
  * @return Returns zero on success, non-zero on error.
  */
-extern int fuzzy_hash_filename(const char *filename, /*@out@*/ char * result);
+extern int  fuzzy_hash_filename(const char *filename, /*@out@*/ char *result);
 
 /// Computes the match score between two fuzzy hash signatures.
 /// @return Returns a value from zero to 100 indicating the
@@ -186,7 +182,7 @@ extern int fuzzy_hash_filename(const char *filename, /*@out@*/ char * result);
 /// two signatures. A match score of zero indicates the sigantures
 /// did not match. When an error occurs, such as if one of the
 /// inputs is NULL, returns -1.
-extern int fuzzy_compare(const char *sig1, const char *sig2);
+extern int  fuzzy_compare(const char *sig1, const char *sig2);
 
 /** Length of an individual fuzzy hash signature component. */
 #define SPAMSUM_LENGTH 64
@@ -200,3 +196,4 @@ extern int fuzzy_compare(const char *sig1, const char *sig2);
 #endif
 
 #endif
+

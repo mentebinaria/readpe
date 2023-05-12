@@ -1,0 +1,39 @@
+name: win-artifact-build
+
+on:
+  push:
+    branches: [ build ]
+
+jobs:
+  build-win64:
+
+    runs-on: windows-latest
+
+    steps:
+
+    - name: Install Cygwin
+      # You may pin to the exact commit or the version.
+      # uses: egor-tensin/setup-cygwin@4f96f9fecb8c952fa32ff791b0a77d93d5191bb4
+      uses: egor-tensin/setup-cygwin@v3
+      with:
+        platform: x64 # optional, default is x64
+        install-dir: c:\tools\cygwin # optional, default is C:\tools\cygwin
+        packages: gcc-core binutils make zip libssl-devel # optional
+
+    - name: Checkout with submodules
+      uses: actions/checkout@v3
+      with:
+        submodules: 'true'
+
+    - name: Compile
+      run: make
+
+    - name: Compile Windows-only tools and create a ZIP package
+      run: make zip
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: win-build
+        path: ./*.zip
+        retention-days: 1

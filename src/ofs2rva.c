@@ -34,9 +34,10 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
+#include "common.h"
 // FIX: Needed if strtoull() is used and to test overflow.
 #include <errno.h>
-#include "common.h"
 
 #define PROGRAM "ofs2rva"
 
@@ -84,7 +85,7 @@ static void parse_options(int argc, char *argv[])
 	}
 }
 
-int main(int argc, char *argv[])
+int ofs2rva(int argc, char *argv[])
 {
 	//PEV_INITIALIZE();
 

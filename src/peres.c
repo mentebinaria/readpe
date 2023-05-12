@@ -34,6 +34,8 @@
 	files in the program, then also delete it here.
 */
 
+#include "peres.h"
+#include "main.h"
 #include "common.h"
 #include <libpe/utlist.h>
 #include <assert.h>
@@ -256,7 +258,7 @@ static void peres_show_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 	}
 }
 
-static void peres_show_nodes(pe_ctx_t *ctx, const pe_resource_node_t *node)
+void peres_show_nodes(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
 	if (node == NULL)
 		return;
@@ -303,7 +305,7 @@ static void peres_show_list_node(pe_ctx_t *ctx, const pe_resource_node_t *node)
 	printf("%s (%d bytes)\n", node_info, node->raw.dataEntry->Size);
 }
 
-static void peres_show_list(pe_ctx_t *ctx, const pe_resource_node_t *node)
+void peres_show_list(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
 	if (node == NULL)
 		return;
@@ -527,7 +529,7 @@ static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, b
 	free( relativeFileName );
 }
 
-static void peres_save_all_resources(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
+void peres_save_all_resources(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
 {
 	if (node == NULL)
 		return;
@@ -548,7 +550,7 @@ bool peres_contains_version_node(const pe_resource_node_t *node) {
 	return node->raw.directoryEntry->u0.data.NameOffset == RT_VERSION;
 }
 
-static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
+void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
 {
 	if (node == NULL)
 		return;
@@ -628,7 +630,7 @@ static void peres_generate_stats(peres_stats_t *stats, const pe_resource_node_t 
 	}
 }
 
-static void peres_show_stats(const pe_resource_node_t *node)
+void peres_show_stats(const pe_resource_node_t *node)
 {
 	peres_stats_t stats = {0};
 	peres_generate_stats(&stats, node);
@@ -651,7 +653,7 @@ static void peres_show_stats(const pe_resource_node_t *node)
 	output("Total Data Entry", value);
 }
 
-int main(int argc, char **argv)
+int peres(int argc, char **argv)
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);

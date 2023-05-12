@@ -34,6 +34,7 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
 #include "common.h"
 #include "plugins.h"
 
@@ -189,7 +190,7 @@ static void print_basic_hash(const unsigned char *data, size_t data_size)
 	free(hash_value);
 }
 
-int main(int argc, char *argv[])
+int pehash(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);

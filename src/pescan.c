@@ -34,11 +34,12 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
 #include "common.h"
+#include "plugins.h"
 #include <ctype.h>
 #include <time.h>
 #include <math.h>
-#include "plugins.h"
 
 #define PROGRAM "pescan"
 
@@ -453,7 +454,7 @@ static int8_t cpl_analysis(pe_ctx_t *ctx)
 	return 0;
 }
 
-int main(int argc, char *argv[])
+int pescan(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);

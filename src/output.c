@@ -1,10 +1,10 @@
 /* vim :set ts=4 sw=4 sts=4 et : */
 /*
-    pev - the PE file analyzer toolkit
+    readpe - the PE file analyzer toolkit
 
     output.c - Symbols and APIs to be used to output data in multiple formats.
 
-    Copyright (C) 2012 - 2014 pev authors
+    Copyright (C) 2012 - 2025 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,58 +35,148 @@
 */
 
 #include "output.h"
-#include "output_plugin.h"
-#include "stack.h"
+
 #include "compat/strlcat.h"
 #include "compat/sys/queue.h"
+#include "output_plugin.h"
+#include "stack.h"
+
 #include <libpe/utils.h>
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
 
 //
 // Global variables
 //
 
-#define FORMAT_ID_FOR_TEXT 3
+const unsigned int     TEXT_SPACES        = 32;
 
-static bool g_is_document_open = false;
-static const format_t *g_format = NULL;
-static STACK_TYPE *g_scope_stack = NULL;
-static int g_argc = 0;
-static char **g_argv = NULL;
-static char *g_cmdline = NULL;
+static bool            g_is_document_open = false;
+static const format_t *g_format           = NULL;
+static STACK_TYPE     *g_scope_stack      = NULL;
+static int             g_argc             = 0;
+static char          **g_argv             = NULL;
+static char           *g_cmdline          = NULL;
 
 typedef struct _format_entry {
     const format_t *format;
     SLIST_ENTRY(_format_entry) entries;
 } format_entry_t;
 
-static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats = SLIST_HEAD_INITIALIZER(g_registered_formats);
+static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats
+    = SLIST_HEAD_INITIALIZER(g_registered_formats);
+
+//
+// Internal text output
+//
+
+static char *escape_text(const struct format *format, const char *str)
+{
+    return readpe_output_api_ptr()->escape(format, str);
+}
+
+static void to_text_format(const format_t *format, const output_type_e type,
+                           const output_scope_t *scope, const char *key,
+                           const char *value)
+{
+    static int  indent        = 0;
+
+    char *const escaped_key   = format->escape_fn(format, key);
+    char *const escaped_value = format->escape_fn(format, value);
+
+    switch (type) {
+    default:
+        break;
+    case OUTPUT_TYPE_SCOPE_OPEN:
+        switch (scope->type) {
+        default:
+            break;
+        case OUTPUT_SCOPE_TYPE_DOCUMENT:
+            break;
+        case OUTPUT_SCOPE_TYPE_OBJECT:
+            if (key) {
+                printf(INDENT(indent++, "%s\n"), escaped_key);
+            } else {
+                indent++;
+            }
+            break;
+        case OUTPUT_SCOPE_TYPE_ARRAY:
+            // putchar('\n');
+            if (key) {
+                printf(INDENT(indent++, "%s\n"), escaped_key);
+            } else {
+                indent++;
+            }
+            break;
+        }
+        break;
+    case OUTPUT_TYPE_SCOPE_CLOSE:
+        indent--;
+        break;
+    case OUTPUT_TYPE_ATTRIBUTE: {
+        const size_t key_size = key ? strlen(key) : 0;
+        if (key && value) {
+            printf(INDENT(indent, "%s:%*c%s\n"), escaped_key,
+                   (int) (TEXT_SPACES - key_size), ' ', escaped_value);
+        } else if (key) {
+            printf(INDENT(indent, "%s\n"), escaped_key);
+        } else if (value) {
+            printf(INDENT(indent, "%*c%s\n"),
+                   (int) (TEXT_SPACES - key_size + 1), ' ', escaped_value);
+        }
+        break;
+    }
+    }
+
+    if (escaped_key != NULL) {
+        free(escaped_key);
+    }
+    if (escaped_value != NULL) {
+        free(escaped_value);
+    }
+}
+
+// ----------------------------------------------------------------------------
+
+static const struct format g_text_format = {.id             = 0,
+                                            .name           = "text",
+                                            .output_fn      = &to_text_format,
+                                            .escape_fn      = &escape_text,
+                                            .entities_table = NULL};
+
+// ----------------------------------------------------------------------------
 
 //
 // Definition of internal functions
 //
 
-static format_entry_t *_lookup_format_entry_by_id(format_id_t id) {
+static format_entry_t     *_lookup_format_entry_by_id(format_id_t id)
+{
     format_entry_t *entry;
-    SLIST_FOREACH(entry, &g_registered_formats, entries) {
-        if (entry->format->id == id)
+    SLIST_FOREACH (entry, &g_registered_formats, entries) {
+        if (entry->format->id == id) {
             return entry;
+        }
     }
 
     return NULL;
 }
 
-static const format_t *_lookup_format_by_id(format_id_t id) {
-    const format_entry_t *entry = _lookup_format_entry_by_id(id);
-    if (entry == NULL)
-        return NULL;
+// FIXME: Unused
+// static const format_t *_lookup_format_by_id(format_id_t id)
+// {
+//     const format_entry_t *entry = _lookup_format_entry_by_id(id);
+//     if (entry == NULL) {
+//         return NULL;
+//     }
+//
+//     return entry->format;
+// }
 
-    return entry->format;
-}
-
-static void _unregister_all_formats(void) {
-    while (!SLIST_EMPTY(&g_registered_formats)) {
+static void _unregister_all_formats(void)
+{
+    while (! SLIST_EMPTY(&g_registered_formats)) {
         format_entry_t *entry = SLIST_FIRST(&g_registered_formats);
         SLIST_REMOVE_HEAD(&g_registered_formats, entries);
         free(entry);
@@ -97,10 +187,11 @@ static void _unregister_all_formats(void) {
 // API
 //
 
-int output_plugin_register_format(const format_t *format) {
+int output_plugin_register_format(const format_t *format)
+{
     format_entry_t *entry = calloc(1, sizeof *entry);
     if (entry == NULL) {
-        //fprintf(stderr, "output: allocation failed for format entry\n");
+        // fprintf(stderr, "output: allocation failed for format entry\n");
         return -1;
     }
 
@@ -110,70 +201,75 @@ int output_plugin_register_format(const format_t *format) {
     return 0;
 }
 
-void output_plugin_unregister_format(const format_t *format) {
+void output_plugin_unregister_format(const format_t *format)
+{
     format_entry_t *entry = _lookup_format_entry_by_id(format->id);
-    if (entry == NULL)
+    if (entry == NULL) {
         return;
+    }
 
     SLIST_REMOVE(&g_registered_formats, entry, _format_entry, entries);
     free(entry);
 }
 
-void output(const char *key, const char *value) {
-    output_keyval(key, value);
-}
+void output(const char *key, const char *value) { output_keyval(key, value); }
 
-void output_init(void) {
-    g_format = _lookup_format_by_id(FORMAT_ID_FOR_TEXT);
+void output_init(void)
+{
+    g_format      = &g_text_format;
     g_scope_stack = STACK_ALLOC(15);
-    if (g_scope_stack == NULL)
+    if (g_scope_stack == NULL) {
         abort();
+    }
 }
 
-void output_term(void) {
+void output_term(void)
+{
     free(g_cmdline);
-    g_cmdline = NULL;
+    g_cmdline                  = NULL;
 
     const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
     if (scope_depth > 0) {
-        fprintf(stderr, "output: terminating the output while there are open scopes will cause memory leaks");
+        fprintf(stderr, "output: terminating the output while there are open "
+                        "scopes will cause memory leaks");
     }
 
     // TODO(jweyrich): Should we loop to pop + close + output every scope?
-    if (g_scope_stack != NULL)
+    if (g_scope_stack != NULL) {
         STACK_DEALLOC(g_scope_stack);
+    }
 
     _unregister_all_formats();
 }
 
-const char *output_cmdline(void) {
-    return g_cmdline;
-}
+const char *output_cmdline(void) { return g_cmdline; }
 
-void output_set_cmdline(int argc, char *argv[]) {
+void        output_set_cmdline(int argc, char *argv[])
+{
     g_argc = argc;
     g_argv = argv;
 
     free(g_cmdline);
 
-    g_cmdline = pe_utils_str_array_join(g_argv, g_argc, ' ');
+    g_cmdline = pe_utils_str_array_join(g_argv, (size_t) g_argc, ' ');
     if (g_cmdline == NULL) {
-        fprintf(stderr, "output: allocation failed for pe_utils_str_array_join\n");
+        fprintf(stderr,
+                "output: allocation failed for pe_utils_str_array_join\n");
         abort();
     }
-    //fprintf(stderr, "DEBUG: cmdline = %s\n", g_cmdline);
+    // fprintf(stderr, "DEBUG: cmdline = %s\n", g_cmdline);
 }
 
-const format_t *output_format(void) {
-    return g_format;
-}
+const format_t *output_format(void) { return g_format; }
 
-const format_t *output_parse_format(const char *format_name) {
+const format_t *output_parse_format(const char *format_name)
+{
     const format_t *format = NULL;
 
     format_entry_t *entry;
-    SLIST_FOREACH(entry, &g_registered_formats, entries) {
-        // TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and POSIX.1-2001, but not to C89 nor C99.
+    SLIST_FOREACH (entry, &g_registered_formats, entries) {
+        // TODO(jweyrich): Should we use strcasecmp? Conforms to 4.4BSD and
+        // POSIX.1-2001, but not to C89 nor C99.
         if (strcmp(format_name, entry->format->name) == 0) {
             format = entry->format;
             break;
@@ -183,35 +279,36 @@ const format_t *output_parse_format(const char *format_name) {
     return format;
 }
 
-void output_set_format(const format_t *format) {
-    g_format = format;
-}
+void output_set_format(const format_t *format) { g_format = format; }
 
-int output_set_format_by_name(const char *format_name) {
+int  output_set_format_by_name(const char *format_name)
+{
     const format_t *format = output_parse_format(format_name);
-    if (format == NULL)
+    if (format == NULL) {
         return -1;
+    }
 
     output_set_format(format);
 
     return 0;
 }
 
-size_t output_available_formats(char *buffer, size_t size, char separator) {
+size_t output_available_formats(char *buffer, size_t size, char separator)
+{
     size_t total_available = 0;
-    size_t consumed = 0;
-    bool truncated = false;
+    size_t consumed        = 0;
+    bool   truncated       = false;
 
     // FIXME: Theoretically unecessary, since a NUL char is
     //        appended at the end of the buffer.
     memset(buffer, 0, size);
 
     format_entry_t *entry;
-    SLIST_FOREACH(entry, &g_registered_formats, entries) {
-        if (!truncated) {
+    SLIST_FOREACH (entry, &g_registered_formats, entries) {
+        if (! truncated) {
             const char *format_name = entry->format->name;
 
-            consumed = bsd_strlcat(buffer, format_name, size);
+            consumed                = bsd_strlcat(buffer, format_name, size);
             if (consumed > size) {
                 // TODO(jweyrich): Handle truncation.
                 total_available++;
@@ -234,36 +331,38 @@ size_t output_available_formats(char *buffer, size_t size, char separator) {
     return total_available;
 }
 
-void output_open_document(void) {
-    output_open_document_with_name(NULL);
-}
+void output_open_document(void) { output_open_document_with_name(NULL); }
 
-void output_open_document_with_name(const char *document_name) {
+void output_open_document_with_name(const char *document_name)
+{
     assert(g_format != NULL);
     // Cannot open a new document while there's one already open.
-    assert(!g_is_document_open);
+    assert(! g_is_document_open);
 
-    const char *key = document_name;
+    const char               *key        = document_name;
     const output_scope_type_e scope_type = OUTPUT_SCOPE_TYPE_DOCUMENT;
 
     output_open_scope(key, scope_type);
     g_is_document_open = true;
 }
 
-void output_close_document(void) {
+void output_close_document(void)
+{
     assert(g_format != NULL);
     // Closing a document without first opening it is an error.
     assert(g_is_document_open);
 
     const output_scope_t *scope = NULL;
-    int ret = STACK_PEEK(g_scope_stack, (void *)&scope);
+    int                   ret   = STACK_PEEK(g_scope_stack, (void *) &scope);
     if (ret < 0) {
-        fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
+        fprintf(stderr,
+                "output: cannot close a scope that has not been opened.\n");
         abort();
     }
 
     if (scope->type != OUTPUT_SCOPE_TYPE_DOCUMENT) {
-        fprintf(stderr, "output: trying to close a document, but the current scope is of a different type.\n");
+        fprintf(stderr, "output: trying to close a document, but the current "
+                        "scope is of a different type.\n");
         abort();
     }
 
@@ -271,70 +370,90 @@ void output_close_document(void) {
     g_is_document_open = false;
 }
 
-void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
+void output_open_scope(const char *scope_name, output_scope_type_e scope_type)
+{
     assert(g_format != NULL);
 
-    const char *key = scope_name;
-    const char *value = NULL;
-    const output_type_e type = OUTPUT_TYPE_SCOPE_OPEN;
-    const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
+    const char           *key         = scope_name;
+    const char           *value       = NULL;
+    const output_type_e   type        = OUTPUT_TYPE_SCOPE_OPEN;
+    const uint16_t        scope_depth = STACK_COUNT(g_scope_stack);
 
-    output_scope_t * const scope = malloc(sizeof *scope);
-    if (scope == NULL)
+    output_scope_t *const scope       = malloc(sizeof *scope);
+    if (scope == NULL) {
+        fprintf(stderr, "DEBUG: output_open_scope: vscope_depth=%d ABORT\n",
+                STACK_COUNT(g_scope_stack));
         abort(); // Abort because it failed miserably!
+    }
 
-    scope->name = scope_name == NULL ? NULL : strdup(scope_name);
-    scope->type = scope_type;
+    scope->name = NULL;
+    if (scope_name != NULL) {
+        const size_t len = strlen(scope_name);
+        scope->name      = malloc(len);
+        memcpy(scope->name, scope_name, len);
+    }
+    scope->type  = scope_type;
     scope->depth = scope_depth + 1;
 
     if (scope_depth > 0) {
-        output_scope_t * parent_scope = NULL;
-        STACK_PEEK(g_scope_stack, (void *)&parent_scope);
+        output_scope_t *parent_scope = NULL;
+        STACK_PEEK(g_scope_stack, (void *) &parent_scope);
         scope->parent_type = parent_scope->type;
     }
 
-    //fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
-    if (g_format != NULL)
+    // fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n",
+    // STACK_COUNT(g_scope_stack));
+    if (g_format != NULL) {
         g_format->output_fn(g_format, type, scope, key, value);
+    }
 
-    int ret = STACK_PUSH(g_scope_stack, (void *)scope);
-    if (ret < 0)
+    int ret = STACK_PUSH(g_scope_stack, (void *) scope);
+    if (ret < 0) {
         abort(); // Abort because it failed miserably!
+    }
 }
 
-void output_close_scope(void) {
+void output_close_scope(void)
+{
     assert(g_format != NULL);
 
     output_scope_t *scope = NULL;
-    int ret = STACK_POP(g_scope_stack, (void *)&scope);
+    int             ret   = STACK_POP(g_scope_stack, (void *) &scope);
     if (ret < 0) {
-        fprintf(stderr, "output: cannot close a scope that has not been opened.\n");
+        fprintf(stderr,
+                "output: cannot close a scope that has not been opened.\n");
         abort();
     }
 
-    const char *key = NULL;
-    const char *value = NULL;
-    const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
+    const char         *key   = NULL;
+    const char         *value = NULL;
+    const output_type_e type  = OUTPUT_TYPE_SCOPE_CLOSE;
 
-    //fprintf(stderr, "DEBUG: output_close_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
-    if (g_format != NULL)
+    // fprintf(stderr, "DEBUG: output_close_scope: scope_depth=%d\n",
+    // STACK_COUNT(g_scope_stack));
+    if (g_format != NULL) {
         g_format->output_fn(g_format, type, scope, key, value);
+    }
 
     free(scope->name);
     free(scope);
 }
 
-void output_keyval(const char *key, const char *value) {
+void output_keyval(const char *key, const char *value)
+{
     assert(g_format != NULL);
 
-    const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
-    const output_scope_t *scope = NULL;
+    const uint16_t        scope_depth = STACK_COUNT(g_scope_stack);
+    const output_scope_t *scope       = NULL;
 
-    if (scope_depth > 0)
-        STACK_PEEK(g_scope_stack, (void *)&scope);
+    if (scope_depth > 0) {
+        STACK_PEEK(g_scope_stack, (void *) &scope);
+    }
 
     const output_type_e type = OUTPUT_TYPE_ATTRIBUTE;
 
-    if (g_format != NULL)
+    if (g_format != NULL) {
         g_format->output_fn(g_format, type, scope, key, value);
+    }
 }
+

@@ -1,10 +1,10 @@
 /* vim :set ts=4 sw=4 sts=4 et : */
 /*
-    pev - the PE file analyzer toolkit
+    readpe - the PE file analyzer toolkit
 
     output_plugin.h - Symbols and APIs to be used by output plugins.
 
-    Copyright (C) 2014 pev authors
+    Copyright (C) 2014 - 2025 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,9 +35,13 @@
 */
 
 #pragma once
+#ifndef READPE_OUTPUT_PLUGIN_H
+#define READPE_OUTPUT_PLUGIN_H
 
-#include "plugin.h"
 #include "output.h"
+#include "plugin.h"
+
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,29 +57,46 @@ extern "C" {
 // Indentation macros
 //
 
-#define INDENT_TAB_SIZE         4
-#define INDENT_COLUMNS_(level)  (int)((int)(level) * (int)INDENT_TAB_SIZE)
-#define INDENT_FORMAT_          "%*s"
-#define INDENT_ARGS_(level)     INDENT_COLUMNS_(level), ""
-#define INDENT(level, format)   INDENT_FORMAT_ format, INDENT_ARGS_(level)
+#define INDENT_TAB_SIZE        4
+#define INDENT_COLUMNS_(level) (int) ((int) (level) * (int) INDENT_TAB_SIZE)
+#define INDENT_FORMAT_         "%*s"
+#define INDENT_ARGS_(level)    INDENT_COLUMNS_(level), ""
+#define INDENT(level, format)  INDENT_FORMAT_ format, INDENT_ARGS_(level)
 
 //
 // Public API specific for output plugins.
 //
 
-typedef struct _output_plugin_api {
-    const char * (* output_cmdline)(void);
-    int (* output_plugin_register_format)(const format_t *format);
-    void (* output_plugin_unregister_format)(const format_t *format);
-    size_t (* escape_count_chars_ex)(const char *str, size_t len, const entity_table_t entities);
-    char * (* escape_ex)(const char *str, const entity_table_t entities);
-    char * (* escape_ex_quoted)(const char *str, const entity_table_t entities);
-    char * (* escape)(const format_t *format, const char *str);
-    char * (* escape_quoted)(const format_t *format, const char *str);
-} output_plugin_api_t;
+typedef const char *(*output_plugin_cmdline_fn_t)(void);
+typedef int (*output_plugin_register_format_fn_t)(const format_t *format);
+typedef void (*output_plugin_unregister_format_fn_t)(const format_t *format);
+typedef size_t (*output_plugin_escape_count_chars_ex_fn_t)(
+    const char *str, size_t len, const entity_table_t entities);
+typedef char *(*output_plugin_escape_fn_t)(const format_t *format,
+                                           const char     *str);
+typedef char *(*output_plugin_escape_ex_fn_t)(const char          *str,
+                                              const entity_table_t entities);
 
-output_plugin_api_t *output_plugin_api_ptr(void);
+struct readpe_output_api {
+    output_plugin_cmdline_fn_t               cmdline;
+    output_plugin_register_format_fn_t       register_format;
+    output_plugin_unregister_format_fn_t     unregister_format;
+    output_plugin_escape_fn_t                escape;
+    output_plugin_escape_ex_fn_t             escape_ex;
+    output_plugin_escape_fn_t                escape_quoted;
+    output_plugin_escape_ex_fn_t             escape_ex_quoted;
+    output_plugin_escape_count_chars_ex_fn_t escape_count_chars_ex;
+};
+
+struct readpe_output_plugin {
+    struct readpe_plugin readpe_plugin;
+    struct format        format;
+};
+
+struct readpe_output_api *readpe_output_api_ptr(void);
 
 #ifdef __cplusplus
 }
 #endif
+#endif // READPE_OUTPUT_PLUGIN_H
+

@@ -1,10 +1,10 @@
 /* vim :set ts=4 sw=4 sts=4 et : */
 /*
-    pev - the PE file analyzer toolkit
+    readpe - the PE file analyzer toolkit
 
     plugins.c - Implementation for the plugins subsystem.
 
-    Copyright (C) 2012 - 2014 pev authors
+    Copyright (C) 2012 - 2014 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,31 +35,33 @@
 */
 
 #include "plugins.h"
-#include "plugin.h"
-#include "dylib.h"
-#include "common.h"
+
 #include "compat/sys/queue.h"
-#include <libpe/utils.h>
-#include <stdlib.h>
+#include "config.h"
+#include "dylib.h"
+#include "plugin.h"
+
 #include <dirent.h>
 #include <errno.h>
+#include <libpe/utils.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
-#include "config.h"
-#include "pev_api.h"
 
 typedef struct _plugins_entry {
-    dylib_t library;
-    plugin_loaded_fn_t plugin_loaded_fn;
-    plugin_initialize_fn_t plugin_initialize_fn;
-    plugin_shutdown_fn_t plugin_shutdown_fn;
-    plugin_unloaded_fn_t plugin_unloaded_fn;
+    dylib_t               library;
+    struct readpe_plugin *plugin;
     SLIST_ENTRY(_plugins_entry) entries;
 } plugins_entry_t;
 
-static SLIST_HEAD(_plugins_t_list, _plugins_entry) g_loaded_plugins = SLIST_HEAD_INITIALIZER(g_loaded_plugins);
+static SLIST_HEAD(_plugins_t_list, _plugins_entry) g_loaded_plugins
+    = SLIST_HEAD_INITIALIZER(g_loaded_plugins);
 
-int plugins_load(const char *path) {
+int plugins_load(const char *path)
+{
     plugins_entry_t *entry = calloc(1, sizeof *entry);
+
     if (entry == NULL) {
         fprintf(stderr, "plugin: allocation failed for entry\n");
         return -1;
@@ -67,34 +69,27 @@ int plugins_load(const char *path) {
 
     dylib_t *library = &entry->library;
 
-    //fprintf(stdout, "plugins: Loading '%s'... ", path);
-    int ret = dylib_load(library, path);
-    //fprintf(stdout, "%s.\n", ret < 0 ? "failed" : "ok");
+    // fprintf(stdout, "plugins: Loading '%s'... ", path);
+    int      ret     = dylib_load(library, path);
+    // fprintf(stdout, "%s.\n", ret < 0 ? "failed" : "ok");
     if (ret < 0) {
         free(entry);
         return -2;
     }
 
-    // FIX: Ugly way to do it!
-    //*(void **)(&entry->plugin_loaded_fn) = dylib_get_symbol(library, "plugin_loaded");
-    //*(void **)(&entry->plugin_initialize_fn) = dylib_get_symbol(library, "plugin_initialize");
-    //*(void **)(&entry->plugin_shutdown_fn) = dylib_get_symbol(library, "plugin_shutdown");
-    //*(void **)(&entry->plugin_unloaded_fn) = dylib_get_symbol(library, "plugin_unloaded");
-    entry->plugin_loaded_fn = dylib_get_symbol( library, "plugin_loaded" );
-    entry->plugin_initialize_fn = dylib_get_symbol(library, "plugin_initialize");
-    entry->plugin_shutdown_fn = dylib_get_symbol(library, "plugin_shutdown");
-    entry->plugin_unloaded_fn = dylib_get_symbol(library, "plugin_unloaded");
+    entry->plugin = dylib_get_symbol(library, "readpe_plugin");
 
     // Only plugin_initialize_fn and plugin_shutdown_fn are required.
-    if (entry->plugin_initialize_fn == NULL || entry->plugin_shutdown_fn == NULL) {
-        fprintf(stderr, "plugins: %s is incompatible with this version.\n", path);
+    if (entry->plugin->initialize == NULL || entry->plugin->shutdown == NULL) {
+        fprintf(stderr, "plugins: %s is incompatible with this version.\n",
+                path);
         dylib_unload(library);
         free(entry);
         return -3;
     }
 
-    if (entry->plugin_loaded_fn != NULL) {
-        const int loaded = entry->plugin_loaded_fn();
+    if (entry->plugin->loaded != NULL) {
+        const int loaded = entry->plugin->loaded();
         if (loaded < 0) {
             fprintf(stderr, "plugins: plugin didn't load correctly\n");
             dylib_unload(library);
@@ -103,8 +98,8 @@ int plugins_load(const char *path) {
         }
     }
 
-    const pev_api_t *pev_api = pev_api_ptr();
-    const int initialized = entry->plugin_initialize_fn(pev_api);
+    const struct readpe_api *readpe_api = readpe_api_ptr();
+    const int initialized               = entry->plugin->initialize(readpe_api);
     if (initialized < 0) {
         fprintf(stderr, "plugins: plugin didn't initialize correctly\n");
         dylib_unload(library);
@@ -116,13 +111,14 @@ int plugins_load(const char *path) {
     return 0;
 }
 
-static void plugin_unload_without_removal(plugins_entry_t *entry) {
+static void plugin_unload_without_removal(plugins_entry_t *entry)
+{
     dylib_t *library = &entry->library;
 
-    entry->plugin_shutdown_fn();
+    entry->plugin->shutdown();
 
-    if (entry->plugin_unloaded_fn != NULL) {
-        entry->plugin_unloaded_fn();
+    if (entry->plugin->unloaded != NULL) {
+        entry->plugin->unloaded();
     }
 
     int ret = dylib_unload(library);
@@ -139,27 +135,28 @@ static void plugin_unload(plugins_entry_t *entry) {
 }
 #endif
 
-int plugins_load_all_from_directory(const char *path) {
+int plugins_load_all_from_directory(const char *path)
+{
     // FIX: errno isn't automatically zeroed if already set.
-    errno = 0;
+    errno    = 0;
     DIR *dir = opendir(path);
     if (dir == NULL) {
-        fprintf(stderr, "plugins: could not open directory '%s' -- %s\n",
-            path, strerror(errno));
+        fprintf(stderr, "plugins: could not open directory '%s' -- %s\n", path,
+                strerror(errno));
         return -1;
     }
 
     // FIX: Don't need this.
-    //long path_max = pathconf(path, _PC_PATH_MAX);
-    //char *relative_path = malloc(path_max);
-    //if (relative_path == NULL) {
-    //  fprintf(stderr, "plugins: allocation failed for relative path\n");
-    //  closedir(dir);
-    //  return -2;
+    // long path_max = pathconf(path, _PC_PATH_MAX);
+    // char *relative_path = malloc(path_max);
+    // if (relative_path == NULL) {
+    //	fprintf(stderr, "plugins: allocation failed for relative path\n");
+    //	closedir(dir);
+    //	return -2;
     //}
-    char *relative_path;
+    char          *relative_path;
 
-    size_t load_count = 0;
+    int            load_count = 0;
     struct dirent *dir_entry;
     // print all the files and directories within directory
 
@@ -170,47 +167,56 @@ int plugins_load_all_from_directory(const char *path) {
     while ((dir_entry = readdir(dir)) != NULL) {
 
         switch (dir_entry->d_type) {
-            default: // Unhandled
-                break;
+        default: // Unhandled
+            break;
 
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__GNU__) || (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
-            case DT_UNKNOWN:
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__)          \
+    || defined(__OpenBSD__) || defined(__GNU__)                                \
+    || (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
+        case DT_UNKNOWN:
 #endif
-            case DT_REG: // Regular file
-            {
-                const char *filename = dir_entry->d_name;
+        case DT_REG: // Regular file
+        {
+            const char *filename = dir_entry->d_name;
 
-                // TODO(jweyrich): Use macro conditions for each system: .so, .dylib, .dll
-#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__GNU__) || (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
-                const bool possible_plugin = pe_utils_str_ends_with(filename, ".so") != 0;
+            // TODO(jweyrich): Use macro conditions for each system: .so,
+            // .dylib, .dll
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__)          \
+    || defined(__OpenBSD__) || defined(__GNU__)                                \
+    || (defined(__FreeBSD_kernel__) && defined(__GLIBC__))
+            const bool possible_plugin
+                = pe_utils_str_ends_with(filename, ".so") != 0;
 #elif defined(__APPLE__)
-                const bool possible_plugin = pe_utils_str_ends_with(filename, ".dylib") != 0;
+            const bool possible_plugin
+                = pe_utils_str_ends_with(filename, ".dylib") != 0;
 #elif defined(__CYGWIN__)
-                const bool possible_plugin = pe_utils_str_ends_with(filename, ".dll") != 0;
+            const bool possible_plugin
+                = pe_utils_str_ends_with(filename, ".dll") != 0;
 #else
 #error Not supported
 #endif
-                if (!possible_plugin)
-                    break;
-
-                if ( asprintf(&relative_path, "%s/%s", path, filename) < 0 )
-                {
-                    fprintf(stderr, "plugins: allocation failed for relative path\n");
-                    closedir(dir);
-                    return -2;
-                }
-
-                int ret = plugins_load(relative_path);
-                free(relative_path);
-                if (ret < 0) {
-                    closedir(dir);
-                    return ret;
-                }
-                load_count++;
+            if (! possible_plugin) {
                 break;
             }
-            case DT_DIR: // Directory
-                break;
+
+            if (asprintf(&relative_path, "%s/%s", path, filename) < 0) {
+                fprintf(stderr,
+                        "plugins: allocation failed for relative path\n");
+                closedir(dir);
+                return -2;
+            }
+
+            int ret = plugins_load(relative_path);
+            free(relative_path);
+            if (ret < 0) {
+                closedir(dir);
+                return ret;
+            }
+            load_count++;
+            break;
+        }
+        case DT_DIR: // Directory
+            break;
         }
     }
 
@@ -219,15 +225,18 @@ int plugins_load_all_from_directory(const char *path) {
     return load_count;
 }
 
-int plugins_load_all(pev_config_t *config) {
+int plugins_load_all(struct readpe_config *config)
+{
     return plugins_load_all_from_directory(config->plugins_path);
 }
 
-void plugins_unload_all(void) {
-    while (!SLIST_EMPTY(&g_loaded_plugins)) {
+void plugins_unload_all(void)
+{
+    while (! SLIST_EMPTY(&g_loaded_plugins)) {
         plugins_entry_t *entry = SLIST_FIRST(&g_loaded_plugins);
         plugin_unload_without_removal(entry);
         SLIST_REMOVE_HEAD(&g_loaded_plugins, entries);
         free(entry);
     }
 }
+

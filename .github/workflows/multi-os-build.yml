@@ -18,7 +18,7 @@ jobs:
       with:
         # Space-separated list of packages to install using apt-get.  Will only run if on ubuntu.
         apt-get: libssl-dev
-    
+
     - name: Checkout with submodules
       uses: actions/checkout@v3
       with:
@@ -26,8 +26,8 @@ jobs:
 
     - name: Compile
       run: make
-      
-      
+
+
   build-osx:
 
     runs-on: macos-latest
@@ -39,7 +39,7 @@ jobs:
       with:
         # Space-separated list of packages to install using brew install.  Will only run if on OSX.
         brew: openssl
-    
+
     - name: Checkout with submodules
       uses: actions/checkout@v3
       with:
@@ -47,7 +47,7 @@ jobs:
 
     - name: Compile
       run: CFLAGS="-I/usr/local/opt/openssl/include/" LDFLAGS="-L/usr/local/opt/openssl/lib/" make
-      
+
   build-win64:
 
     runs-on: windows-latest
@@ -62,7 +62,7 @@ jobs:
         platform: x64 # optional, default is x64
         install-dir: c:\tools\cygwin # optional, default is C:\tools\cygwin
         packages: gcc-core binutils make zip libssl-devel # optional
-    
+
     - name: Checkout with submodules
       uses: actions/checkout@v3
       with:
@@ -70,6 +70,6 @@ jobs:
 
     - name: Compile
       run: make
-      
+
     - name: Compile Windows-only tools and create a ZIP package
       run: make zip

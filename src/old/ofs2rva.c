@@ -2,7 +2,7 @@
 /*
 	pev - the PE file analyzer toolkit
 
-	rva2ofs.c - converts RVA to raw file offset
+	ofs2rva.c - converts raw file offset to RVA
 
 	Copyright (C) 2012 - 2020 pev authors
 
@@ -24,7 +24,7 @@
 	OpenSSL library under certain conditions as described in each
 	individual source file, and distribute linked combinations
 	including the two.
-	
+
 	You must obey the GNU General Public License in all respects
 	for all of the code used other than OpenSSL.  If you modify
 	file(s) with this exception, you may extend this exception to your
@@ -34,15 +34,18 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
 #include "common.h"
+// FIX: Needed if strtoull() is used and to test overflow.
+#include <errno.h>
 
-#define PROGRAM "rva2ofs"
+#define PROGRAM "ofs2rva"
 
 static void usage(void)
 {
-	printf("Usage: %s <rva> FILE\n"
-		"Convert RVA to raw file offset\n"
-		"\nExample: %s 0x12db cards.dll\n"
+	printf("Usage: %s <offset> FILE\n"
+		"Convert raw file offset to RVA\n"
+		"\nExample: %s 0x1b9b8 calc.exe\n"
 		"\nOptions:\n"
 		" -V, --version							 Show version.\n"
 		" --help								 Show this help.\n",
@@ -82,7 +85,7 @@ static void parse_options(int argc, char *argv[])
 	}
 }
 
-int main(int argc, char *argv[])
+int ofs2rva(int argc, char *argv[])
 {
 	//PEV_INITIALIZE();
 
@@ -91,7 +94,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	parse_options(argc, argv); // opcoes
+	parse_options(argc, argv);
 
 	pe_ctx_t ctx;
 
@@ -101,10 +104,13 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	uint64_t rva = (uint64_t)strtoll(argv[1], NULL, 0);
+	uint64_t ofs;
 
-	if (!rva)
-		EXIT_ERROR("invalid RVA");
+	// FIX: changed to strtoull().
+	errno = 0;
+	ofs = strtoull(argv[1], NULL, 0);
+	if ( !ofs || errno == ERANGE )
+		EXIT_ERROR("invalid offset");
 
 	err = pe_parse(&ctx);
 	if (err != LIBPE_E_OK) {
@@ -115,8 +121,9 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	printf("%#"PRIx64"\n", pe_rva2ofs(&ctx, rva));
+	printf("%#"PRIx64"\n", pe_ofs2rva(&ctx, ofs));
 
+	// libera a memoria
 	pe_unload(&ctx);
 
 	//PEV_FINALIZE();

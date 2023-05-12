@@ -1,8 +1,8 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2017 libpe authors
-    
+    Copyright (C) 2010 - 2025 libpe authors
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -26,27 +26,30 @@
 extern "C" {
 #endif
 
-#include "macros.h"
+#include "context.h"
+#include "dir_security.h"
+#include "directories.h"
+#include "error.h"
+#include "exports.h"
+#include "hashes.h"
+#include "hdr_coff.h"
+#include "hdr_dos.h"
+#include "hdr_optional.h"
+#include "imports.h"
+#include "sections.h"
+
+#include <sys/types.h>
+
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-#include "context.h"
-#include "error.h"
-#include "hdr_dos.h"
-#include "hdr_coff.h"
-#include "hdr_optional.h"
-#include "directories.h"
-#include "sections.h"
-#include "hashes.h"
-#include "imports.h"
-#include "exports.h"
-#include "resources.h"
-#include "utils.h"
+static const char __MAGIC_MZ[2] = {'M', 'Z'};
+static const uint16_t MAGIC_MZ = ('Z' << 8) + 'M';
 
-#define MAGIC_MZ 0x5a4d // Belongs to the DOS header
+// #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
 #define MAX_SECTIONS 96
 
@@ -61,8 +64,8 @@ static const uint64_t IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
 #define SIGNATURE_PE 0x00004550 // PE\0\0 in little-endian
 
 typedef enum {
-	LIBPE_OPT_NOCLOSE_FD = (1 << 0), // Keeps `stream` open for further usage.
-	LIBPE_OPT_OPEN_RW    = (1 << 1)  // Open file for read and writing
+    LIBPE_OPT_NOCLOSE_FD = (1 << 0), // Keeps `stream` open for further usage.
+    LIBPE_OPT_OPEN_RW = (1 << 1)     // Open file for read and writing
 } pe_option_e;
 
 typedef uint16_t pe_options_e; // bitmasked pe_option_e values
@@ -70,7 +73,8 @@ typedef uint16_t pe_options_e; // bitmasked pe_option_e values
 // General functions
 bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size);
 pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path);
-pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options);
+pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path,
+                          pe_options_e options);
 pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
 bool pe_is_loaded(const pe_ctx_t *ctx);
@@ -90,11 +94,15 @@ IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx);
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx);
 uint32_t pe_directories_count(const pe_ctx_t *ctx);
 IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx);
-IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx, ImageDirectoryEntry entry);
+IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t *ctx,
+                                            ImageDirectoryEntry entry);
 uint16_t pe_sections_count(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx);
-IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *section_name);
-const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *section_hdr, char *out_name, size_t out_name_size);
+IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx,
+                                         const char *section_name);
+const char *pe_section_name(const pe_ctx_t *ctx,
+                            const IMAGE_SECTION_HEADER *section_hdr,
+                            char *out_name, size_t out_name_size);
 
 const char *pe_machine_type_name(MachineType type);
 const char *pe_image_characteristic_name(ImageCharacteristics characteristic);
@@ -111,7 +119,8 @@ bool pe_use_rom_section_characteristic(pe_ctx_t *ctx);
 
 // Hash functions
 size_t pe_hash_recommended_size(void);
-bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size);
+bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name,
+                      const unsigned char *data, size_t data_size);
 pe_hash_headers_t *pe_get_headers_hashes(pe_ctx_t *ctx);
 pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx);
 pe_hash_t *pe_get_file_hash(pe_ctx_t *ctx);
@@ -122,6 +131,10 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx);
 
 // Exports functions
 pe_exports_t *pe_exports(pe_ctx_t *ctx);
+
+// Certificate functtions
+uint32_t pe_certificate_count(pe_ctx_t *ctx);
+uint32_t pe_certificates(pe_ctx_t *ctx, WIN_CERTIFICATE ***certs);
 
 // Resources functions
 pe_resources_t *pe_resources(pe_ctx_t *ctx);
@@ -138,3 +151,4 @@ int pe_get_tls_callback(pe_ctx_t *ctx);
 #endif
 
 #endif
+

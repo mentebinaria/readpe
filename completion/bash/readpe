@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
-complete -F _longopt readpe
+
+function _complete_readpe () {
+    echo $COMP_LINE
+    # local _comp=$COMP_LINE
+    # local _comp=$("${COMP_LINE[@]::${#COMP_LINE[@]}-1} --complete")
+    local _comp=$($COMP_LINE "--complete")
+    # printf "headers directories exports"
+    COMPREPLY=($_comp)
+}
+
+complete -F _complete_readpe readpe
 complete -F _longopt pedis
 complete -F _longopt pehash
 complete -F _longopt peldd
@@ -8,4 +18,5 @@ complete -F _longopt peres
 complete -F _longopt pescan
 complete -F _longopt pesec
 complete -F _longopt pestr
+
 

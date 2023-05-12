@@ -24,7 +24,7 @@
 	OpenSSL library under certain conditions as described in each
 	individual source file, and distribute linked combinations
 	including the two.
-	
+
 	You must obey the GNU General Public License in all respects
 	for all of the code used other than OpenSSL.  If you modify
 	file(s) with this exception, you may extend this exception to your
@@ -34,9 +34,12 @@
 	files in the program, then also delete it here.
 */
 
+#include "peldd.h"
+#include "main.h"
 #include "common.h"
-#include <ctype.h>
 #include "output.h"
+#include <libpe/macros.h>
+#include <ctype.h>
 
 #define PROGRAM "peldd"
 
@@ -92,7 +95,7 @@ static void parse_options(int argc, char *argv[])
 	}
 }
 
-static void print_dependencies(pe_ctx_t *ctx)
+void print_dependencies(pe_ctx_t *ctx)
 {
 	output_open_scope("Dependencies", OUTPUT_SCOPE_TYPE_ARRAY);
 	const pe_imports_t *imports = pe_imports(ctx);
@@ -103,7 +106,7 @@ static void print_dependencies(pe_ctx_t *ctx)
 	output_close_scope();
 }
 
-int main(int argc, char *argv[])
+int peldd(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);

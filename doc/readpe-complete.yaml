@@ -1,0 +1,111 @@
+prog: "readpe"
+help: "Read PE file headers and meta information"
+options:
+  - option_strings: ["-f", "--format"]
+    metavar: "format"
+    help: "Set output format"
+    complete: ["exec", "readpe --get-output-plugins"]
+  - option_strings: ["--file-version"]
+    help: "Show PE file version"
+    final: true
+  - option_strings: ["-h", "--help"]
+    help: "Print this message"
+    final: true
+  - option_strings: ["--get-output-plugins"]
+    help: "Print available output plugins"
+    final: true
+
+---
+prog: "readpe header"
+help: "Read PE header information"
+options:
+  - option_strings: ["--all"]
+positionals:
+  - number: 1
+    metavar: "header"
+    help: "Select a specific header"
+    complete: ["choices", ["dos", "coff", "optional"]]
+
+---
+prog: "readpe section"
+help: "Read PE section information"
+options:
+  - option_strings: ["--all"]
+
+---
+prog: "readpe directory"
+help: "Read PE dorectory information"
+options:
+  - option_strings: ["--list"]
+  - option_strings: ["--verbose"]
+
+---
+prog: "readpe imports"
+
+---
+prog: "readpe exports"
+
+---
+prog: "readpe resources"
+# aliases: ["peres"]
+options:
+  - option_strings: ["--help"]
+  - option_strings: ["--list"]
+  - option_strings: ["--verbose"]
+  - option_strings: ["--tree"]
+  - option_strings: ["--statistics"]
+  - option_strings: ["--file-version"]
+
+---
+prog: "readpe resources extract"
+options:
+  - option_strings: ["--name"]
+
+---
+prog: "readpe scan"
+aliases: ["lint"]
+# aliases: ["readpe-lint", "pescan"]
+options:
+  - option_strings: ["--verbose"]
+
+---
+prog: "readpe libraries"
+# aliases: ["peldd"]
+
+---
+prog: "readpe features"
+aliases: ["security"]
+# aliases: ["readpe-security", "pesec"]
+
+---
+prog: "readpe certificates"
+# aliases: ["pesec"]
+options:
+  - option_strings: ["--out"]
+    metavar: "certout"
+    complete: ["file"]
+  - option_strings: ["--format"]
+    metavar: "certformat"
+    complete: ["choices", ["text","x509","pem"]]
+
+---
+prog: "readpe hash"
+# aliases: ["pehash"]
+
+# TODO:
+# Figure out how to do
+# readpe section <section_name>|@<section_index> {hash|str}
+#
+# pehash --section <section_name>
+#      => readpe section {section_name} hash
+# pehash --section_index <section_index>
+#      => readpe section @<section_index> hash
+# 
+# pestr
+#      => readpe strings
+# pestr --min-length
+#      => readpe [...] strings --min-length
+# pestr --offset
+#      => readpe [...] strings --offset
+# pestr --section
+#      => readpe section {section_name} strings

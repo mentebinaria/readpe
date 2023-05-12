@@ -1,10 +1,10 @@
 /* vim: set ts=4 sw=4 noet: */
 /*
-	pev - the PE file analyzer toolkit
+	readpe - the PE file analyzer toolkit
 
 	output_plugin.h - Symbols and APIs to be used by output plugins.
 
-	Copyright (C) 2014 pev authors
+	Copyright (C) 2014 - 2025 readpe authors
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 	OpenSSL library under certain conditions as described in each
 	individual source file, and distribute linked combinations
 	including the two.
-	
+
 	You must obey the GNU General Public License in all respects
 	for all of the code used other than OpenSSL.  If you modify
 	file(s) with this exception, you may extend this exception to your
@@ -35,6 +35,8 @@
 */
 
 #pragma once
+#ifndef READPE_OUTPUT_PLUGIN_H
+#define READPE_OUTPUT_PLUGIN_H
 
 #include "plugin.h"
 #include "output.h"
@@ -64,6 +66,7 @@ extern "C" {
 //
 
 typedef struct _output_plugin_api {
+	enum readpe_plugin_type_id plugin_type_id; // should always be
 	const char * (* output_cmdline)(void);
 	int (* output_plugin_register_format)(const format_t *format);
 	void (* output_plugin_unregister_format)(const format_t *format);
@@ -79,3 +82,5 @@ output_plugin_api_t *output_plugin_api_ptr(void);
 #ifdef __cplusplus
 }
 #endif
+#endif // READPE_OUTPUT_PLUGIN_H
+

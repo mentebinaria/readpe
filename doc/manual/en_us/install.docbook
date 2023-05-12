@@ -65,10 +65,10 @@ named pev-x.xx.tar.gz, where x.xx is the version number you want.
 </para>
 
 <para>You can have the most up to date source code from the
-<ulink url="https://github.com/merces/pev">pev repository on GitHub</ulink> (recommended).
+<ulink url="https://github.com/mentebinaria/readpe">pev repository on GitHub</ulink> (recommended).
 If you have git installed, run the following:</para>
 
-<prompt>$ </prompt> <command>git clone --recursive git://github.com/merces/pev.git</command>
+<prompt>$ </prompt> <command>git clone --recursive git://github.com/mentebinaria/readpe.git</command>
 
 <para>
 Even without git installed, you can download a ZIP or tarball file from project web page
@@ -83,7 +83,7 @@ Make sure you have the following dependencies installed and working properly:
 </para>
 
 <simplelist>
-<member><ulink url="https://github.com/merces/libpe">libpe</ulink> (included if you've used the --recursive option of git command)</member>
+<member><ulink url="https://github.com/mentebinaria/readpe">libpe</ulink> (included with in the repository under lib/libpe)</member>
 <member>libssl (used by pehash and pesec)</member>
 <member>gcc</member>
 <member>make</member>

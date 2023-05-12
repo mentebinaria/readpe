@@ -62,7 +62,7 @@ LIBS = -lssl -lcrypto
 #	override CFLAGS += -fPIC
 #endif
 
-VERSION = 1.0
+VERSION = 0.82
 LIBNAME = libpe
 
 SRC_DIRS = $(srcdir) $(srcdir)/libfuzzy

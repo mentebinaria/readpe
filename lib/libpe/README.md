@@ -1,20 +1,19 @@
 # libpe
 
-[![LGPLv3](https://www.gnu.org/graphics/lgplv3-88x31.png)](http://www.gnu.org/licenses/lgpl.html) ![C/C++ CI](https://github.com/merces/libpe/workflows/C/C++%20CI/badge.svg)
+[![LGPLv3](https://www.gnu.org/graphics/lgplv3-88x31.png)](http://www.gnu.org/licenses/lgpl.html) ![C/C++ CI](https://github.com/mentebinaria/readpe/workflows/C/C++%20CI/badge.svg)
 
-The PE library used by [pev](https://github.com/merces/pev) - the PE file toolkit purely written in C and available to many platforms.
+The PE library used by [pev](https://github.com/mentebinaria/readpe) - the PE file toolkit purely written in C and available to many platforms.
 
 ## Features
 
 - Support for both 32 and 64-bits PE files.
 - ssdeep support (built-in libfuzzy).
-- Disassemble support (built-in libudis86).
 - Imphash support.
 - Crypographic digests calculation (using OpeenSSL).
 
 ## How to get the source code
 
-    git clone https://github.com/merces/libpe.git
+    git clone https://github.com/mentebinaria/readpe.git
 
 ## How to build on Linux
 

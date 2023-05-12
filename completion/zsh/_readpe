@@ -1,0 +1,14 @@
+#compdef readpe
+#
+# Completion script for swaylock
+#
+compdef _gnu_generic readpe
+compdef _gnu_generic pedis
+compdef _gnu_generic pehash
+compdef _gnu_generic peldd
+compdef _gnu_generic pepack
+compdef _gnu_generic peres
+compdef _gnu_generic pescan
+compdef _gnu_generic pesec
+compdef _gnu_generic pestr
+

@@ -43,7 +43,19 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.81 - January 7, 2017
+pev 0.82 - May 12, 2023
+ * added more image machine types
+ - fix build on GNU/hurd and kFreeBSD
+ - fix crash on executables with zero segments
+ - fix various minor memory leaks
+ - improve makefile to make build reproducible
+ - pedis: show error on not x86 code
+ - peres: ignore header resource size
+ - pestr: fix bug with wide character detection
+ - readpe: fix date overflow bug
+ - rva2ofs: fix bug when exe has no offset
+
+pev 0.81 - January 12, 2021
 
  + peldd: new tool to display what DLL's a PE file depends on.
 

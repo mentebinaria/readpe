@@ -34,11 +34,12 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
 #include "common.h"
-#include "../lib/libudis86/udis86.h"
+#include "plugins.h"
 #include <errno.h>
 #include <limits.h>
-#include "plugins.h"
+#include <libudis86/udis86.h>
 
 #define PROGRAM "pedis"
 
@@ -316,7 +317,7 @@ static void disassemble_offset(pe_ctx_t *ctx, const options_t *options, ud_t *ud
 	}
 }
 
-int main(int argc, char *argv[])
+int pedis(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);

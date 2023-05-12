@@ -34,6 +34,7 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
 #include "common.h"
 
 #define PROGRAM "rva2ofs"
@@ -82,7 +83,7 @@ static void parse_options(int argc, char *argv[])
 	}
 }
 
-int main(int argc, char *argv[])
+int rva2ofs(int argc, char *argv[])
 {
 	//PEV_INITIALIZE();
 

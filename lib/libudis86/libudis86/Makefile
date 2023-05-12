@@ -19,13 +19,17 @@ endif
 # #############################################
 
 RESCOMP = windres
-DEFINES += -D_GNU_SOURCE
-INCLUDES += -Iinclude
+DEFINES += -DHAVE_STRING_H=1
+INCLUDES +=
 FORCE_INCLUDE +=
 ALL_CPPFLAGS += $(CPPFLAGS) -MD -MP $(DEFINES) $(INCLUDES)
+ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS)
+ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS)
 ALL_RESFLAGS += $(RESFLAGS) $(DEFINES) $(INCLUDES)
-LIBS += -lcrypto -lm
+LIBS +=
 LDDEPS +=
+ALL_LDFLAGS += $(LDFLAGS) -s
+LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
 define PREBUILDCMDS
 endef
 define PRELINKCMDS
@@ -34,22 +38,14 @@ define POSTBUILDCMDS
 endef
 
 ifeq ($(config),debug)
-TARGETDIR = ../../build/Debug
-TARGET = $(TARGETDIR)/libpe.a
+TARGETDIR = ../../../build/Debug
+TARGET = $(TARGETDIR)/libudis86.a
 OBJDIR = obj/Debug
-ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS)
-ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS)
-ALL_LDFLAGS += $(LDFLAGS) -s
-LINKCMD = $(AR) -rcs "$@" $(OBJECTS)
 
 else ifeq ($(config),release)
-TARGETDIR = ../../build/Release
-TARGET = $(TARGETDIR)/libpe.so
+TARGETDIR = ../../../build/Release
+TARGET = $(TARGETDIR)/libudis86.a
 OBJDIR = obj/Release
-ALL_CFLAGS += $(CFLAGS) $(ALL_CPPFLAGS) -fPIC
-ALL_CXXFLAGS += $(CXXFLAGS) $(ALL_CPPFLAGS) -fPIC
-ALL_LDFLAGS += $(LDFLAGS) -shared -Wl,-soname=libpe.so -s
-LINKCMD = $(CC) -o "$@" $(OBJECTS) $(RESOURCES) $(ALL_LDFLAGS) $(LIBS)
 
 endif
 
@@ -63,26 +59,18 @@ endif
 GENERATED :=
 OBJECTS :=
 
-GENERATED += $(OBJDIR)/edit_dist.o
-GENERATED += $(OBJDIR)/error.o
-GENERATED += $(OBJDIR)/exports.o
-GENERATED += $(OBJDIR)/fuzzy.o
-GENERATED += $(OBJDIR)/hashes.o
-GENERATED += $(OBJDIR)/imports.o
-GENERATED += $(OBJDIR)/misc.o
-GENERATED += $(OBJDIR)/pe.o
-GENERATED += $(OBJDIR)/resources.o
-GENERATED += $(OBJDIR)/utils.o
-OBJECTS += $(OBJDIR)/edit_dist.o
-OBJECTS += $(OBJDIR)/error.o
-OBJECTS += $(OBJDIR)/exports.o
-OBJECTS += $(OBJDIR)/fuzzy.o
-OBJECTS += $(OBJDIR)/hashes.o
-OBJECTS += $(OBJDIR)/imports.o
-OBJECTS += $(OBJDIR)/misc.o
-OBJECTS += $(OBJDIR)/pe.o
-OBJECTS += $(OBJDIR)/resources.o
-OBJECTS += $(OBJDIR)/utils.o
+GENERATED += $(OBJDIR)/decode.o
+GENERATED += $(OBJDIR)/itab.o
+GENERATED += $(OBJDIR)/syn-att.o
+GENERATED += $(OBJDIR)/syn-intel.o
+GENERATED += $(OBJDIR)/syn.o
+GENERATED += $(OBJDIR)/udis86.o
+OBJECTS += $(OBJDIR)/decode.o
+OBJECTS += $(OBJDIR)/itab.o
+OBJECTS += $(OBJDIR)/syn-att.o
+OBJECTS += $(OBJDIR)/syn-intel.o
+OBJECTS += $(OBJDIR)/syn.o
+OBJECTS += $(OBJDIR)/udis86.o
 
 # Rules
 # #############################################
@@ -92,7 +80,7 @@ all: $(TARGET)
 
 $(TARGET): $(GENERATED) $(OBJECTS) $(LDDEPS) | $(TARGETDIR)
 	$(PRELINKCMDS)
-	@echo Linking pe
+	@echo Linking udis86
 	$(SILENT) $(LINKCMD)
 	$(POSTBUILDCMDS)
 
@@ -113,7 +101,7 @@ else
 endif
 
 clean:
-	@echo Cleaning pe
+	@echo Cleaning udis86
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) rm -f  $(TARGET)
 	$(SILENT) rm -rf $(GENERATED)
@@ -131,7 +119,7 @@ ifneq (,$(PCH))
 $(OBJECTS): $(GCH) | $(PCH_PLACEHOLDER)
 $(GCH): $(PCH) | prebuild
 	@echo $(notdir $<)
-	$(SILENT) $(CC) -x c-header $(ALL_CFLAGS) -o "$@" -MF "$(@:%.gch=%.d)" -c "$<"
+	$(SILENT) $(CXX) -x c++-header $(ALL_CXXFLAGS) -o "$@" -MF "$(@:%.gch=%.d)" -c "$<"
 $(PCH_PLACEHOLDER): $(GCH) | $(OBJDIR)
 ifeq (posix,$(SHELLTYPE))
 	$(SILENT) touch "$@"
@@ -146,34 +134,22 @@ endif
 # File Rules
 # #############################################
 
-$(OBJDIR)/error.o: error.c
+$(OBJDIR)/decode.o: decode.c
 	@echo "$(notdir $<)"
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/exports.o: exports.c
+$(OBJDIR)/itab.o: itab.c
 	@echo "$(notdir $<)"
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/hashes.o: hashes.c
+$(OBJDIR)/syn-att.o: syn-att.c
 	@echo "$(notdir $<)"
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/imports.o: imports.c
+$(OBJDIR)/syn-intel.o: syn-intel.c
 	@echo "$(notdir $<)"
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/edit_dist.o: libfuzzy/edit_dist.c
+$(OBJDIR)/syn.o: syn.c
 	@echo "$(notdir $<)"
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/fuzzy.o: libfuzzy/fuzzy.c
-	@echo "$(notdir $<)"
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/misc.o: misc.c
-	@echo "$(notdir $<)"
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/pe.o: pe.c
-	@echo "$(notdir $<)"
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/resources.o: resources.c
-	@echo "$(notdir $<)"
-	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
-$(OBJDIR)/utils.o: utils.c
+$(OBJDIR)/udis86.o: udis86.c
 	@echo "$(notdir $<)"
 	$(SILENT) $(CC) $(ALL_CFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 

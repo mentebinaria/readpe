@@ -34,26 +34,22 @@
 	files in the program, then also delete it here.
 */
 
+#include "pesec.h"
+#include "libpe/context.h"
+#include "libpe/pe.h"
+#include "main.h"
 #include "common.h"
+#include "compat/strlcat.h"
+#include "plugins.h"
 #include <string.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
-#include "compat/strlcat.h"
-#include "plugins.h"
 
 #define PROGRAM "pesec"
 
-typedef enum {
-	CERT_FORMAT_TEXT = 1,
-	CERT_FORMAT_PEM = 2,
-	CERT_FORMAT_DER = 3
-} cert_format_e;
-
-typedef struct {
-	cert_format_e certoutform;
-	BIO *certout;
-} options_t;
+// FIXME
+typedef certificate_settings options_t;
 
 static void usage(void)
 {
@@ -175,7 +171,7 @@ find stack cookies, a.k.a canary, buffer security check
 option in MVS 2010
 */
 // FIXME: What about other versions?
-static bool stack_cookies(pe_ctx_t *ctx)
+bool stack_cookies(pe_ctx_t *ctx)
 {
 	static const unsigned char mvs2010[] = {
 		0x55, 0x8b, 0xec, 0x83,
@@ -201,6 +197,40 @@ static bool stack_cookies(pe_ctx_t *ctx)
 	}
 
 	return found == sizeof(mvs2010);
+}
+
+void print_securities(pe_ctx_t *ctx)
+{
+	IMAGE_OPTIONAL_HEADER *optional = pe_optional(ctx);
+	if (optional == NULL) exit(EXIT_FAILURE); // FIXME: exit
+	
+	uint16_t dllchar = 0;
+	switch (optional->type) {
+	default:
+	    exit(EXIT_FAILURE); // FIXME: exit
+	case MAGIC_PE32:
+	    dllchar = optional->_32->DllCharacteristics;
+	    break;
+	case MAGIC_PE64:
+	    dllchar = optional->_64->DllCharacteristics;
+	    break;
+	}
+	static char field[MAX_MSG];
+	// aslr
+	snprintf(field, MAX_MSG, "ASLR");
+	output(field, (dllchar & 0x40) ? "yes" : "no");
+	
+	// dep/nx
+	snprintf(field, MAX_MSG, "DEP/NX");
+	output(field, (dllchar & 0x100) ? "yes" : "no");
+	
+	// seh
+	snprintf(field, MAX_MSG, "SEH");
+	output(field, (dllchar & 0x400) ? "no" : "yes");
+	
+	// stack cookies
+	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
+	output(field, stack_cookies(ctx) ? "yes" : "no");
 }
 
 static void print_certificate(BIO *out, cert_format_e format, X509 *cert)
@@ -329,7 +359,7 @@ error:
 	return result;
 }
 
-static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
+void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 {
 	const IMAGE_DATA_DIRECTORY * const directory = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_SECURITY);
 	if (directory == NULL)
@@ -432,7 +462,7 @@ static void parse_certificates(const options_t *options, pe_ctx_t *ctx)
 	output_close_scope(); // certificates
 }
 
-int main(int argc, char *argv[])
+int pesec(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);
@@ -464,41 +494,7 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	IMAGE_OPTIONAL_HEADER *optional = pe_optional(&ctx);
-	if (optional == NULL)
-		return EXIT_FAILURE;
-
-	uint16_t dllchar = 0;
-	switch (optional->type) {
-		default:
-			return EXIT_FAILURE;
-		case MAGIC_PE32:
-			dllchar = optional->_32->DllCharacteristics;
-			break;
-		case MAGIC_PE64:
-			dllchar = optional->_64->DllCharacteristics;
-			break;
-	}
-
-	output_open_document();
-
-	static char field[MAX_MSG];
-
-	// aslr
-	snprintf(field, MAX_MSG, "ASLR");
-	output(field, (dllchar & 0x40) ? "yes" : "no");
-
-	// dep/nx
-	snprintf(field, MAX_MSG, "DEP/NX");
-	output(field, (dllchar & 0x100) ? "yes" : "no");
-
-	// seh
-	snprintf(field, MAX_MSG, "SEH");
-	output(field, (dllchar & 0x400) ? "no" : "yes");
-
-	// stack cookies
-	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
-	output(field, stack_cookies(&ctx) ? "yes" : "no");
+	print_securities(&ctx);
 
 	// certificados
 	parse_certificates(options, &ctx);

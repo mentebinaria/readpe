@@ -55,7 +55,7 @@ override CFLAGS += \
 	-W -Wall -Wextra -pedantic -std=c99 -c
 override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 #override LDFLAGS += -lssl -lcrypto
-LIBS = -lssl -lcrypto
+LIBS = -lssl -lcrypto -lm
 
 # --- FIX: -fPIC is necessary to ALL shared objects! Changed above.
 #ifneq ($(PLATFORM_OS), CYGWIN)

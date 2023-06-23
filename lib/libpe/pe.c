@@ -216,6 +216,9 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			//fprintf(stderr, "ROM image is not supported\n");
 			return LIBPE_E_UNSUPPORTED_IMAGE;
 		case MAGIC_PE32:
+			if (ctx->pe.coff_hdr->SizeOfOptionalHeader <
+			    sizeof(IMAGE_OPTIONAL_HEADER_32))
+				return LIBPE_E_UNSUPPORTED_IMAGE;
 			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
 				sizeof(IMAGE_OPTIONAL_HEADER_32)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
@@ -227,6 +230,9 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			ctx->pe.imagebase = ctx->pe.optional_hdr._32->ImageBase;
 			break;
 		case MAGIC_PE64:
+			if (ctx->pe.coff_hdr->SizeOfOptionalHeader <
+			    sizeof(IMAGE_OPTIONAL_HEADER_64))
+				return LIBPE_E_UNSUPPORTED_IMAGE;
 			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
 				sizeof(IMAGE_OPTIONAL_HEADER_64)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;

@@ -539,14 +539,38 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 	} ImageDllCharacteristicsName;
 
 	static const ImageDllCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NX_COMPAT),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_ISOLATION),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_SEH),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_BIND),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_APPCONTAINER),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_WDM_DRIVER),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_GUARD_CF),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE)
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_dll_image_dllcharacteristic_name(ImageDllCharacteristics characteristic) {
+	typedef struct {
+		ImageDllCharacteristics characteristic;
+		const char * const name;
+	} ImageDllCharacteristicsName;
+
+	static const ImageDllCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_LIBRARY_PROCESS_INIT),
+		LIBPE_ENTRY(IMAGE_LIBRARY_PROCESS_TERM),
+		LIBPE_ENTRY(IMAGE_LIBRARY_THREAD_INIT),
+		LIBPE_ENTRY(IMAGE_LIBRARY_THREAD_TERM),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_X86_THUNK),
 	};
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {

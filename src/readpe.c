@@ -333,7 +333,7 @@ static void print_directories(pe_ctx_t *ctx)
 	output_close_scope(); // Data directories
 }
 
-static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
+static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	typedef struct {
@@ -457,8 +457,12 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 				if (header->_32->DllCharacteristics & flag) {
-					const char *characteristic_name = pe_image_dllcharacteristic_name(flag);
+					const char *characteristic_name = NULL;
 					char formatted_characteristic_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						characteristic_name = pe_dll_image_dllcharacteristic_name(flag);
+					if (characteristic_name == NULL)
+						characteristic_name = pe_image_dllcharacteristic_name(flag);
 					if (characteristic_name == NULL) {
 						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
 						characteristic_name = formatted_characteristic_name;
@@ -568,8 +572,12 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 				if (header->_64->DllCharacteristics & flag) {
-					const char *characteristic_name = pe_image_dllcharacteristic_name(flag);
+					const char *characteristic_name = NULL;
 					char formatted_characteristic_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						characteristic_name = pe_dll_image_dllcharacteristic_name(flag);
+					if (characteristic_name == NULL)
+						characteristic_name = pe_image_dllcharacteristic_name(flag);
 					if (characteristic_name == NULL) {
 						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
 						characteristic_name = formatted_characteristic_name;
@@ -913,7 +921,7 @@ int main(int argc, char *argv[])
 	if (options->opt || options->all_headers || options->all) {
 		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
 		if (header_ptr)
-			print_optional_header(header_ptr);
+			print_optional_header(&ctx, header_ptr);
 		else { LIBPE_WARNING("unable to read Optional (Image) file header"); }
 	}
 

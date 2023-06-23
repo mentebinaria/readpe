@@ -112,6 +112,18 @@ typedef enum {
 	IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE	= 0x8000
 } ImageDllCharacteristics;
 
+// PECOFF 4.0 (https://bytepointer.com/resources/pecoff_v4.0.htm) and WDK's ntimage.h
+typedef enum {
+	// DLL initialization function: Halt prior to executing first instruction.
+	IMAGE_LOADER_FLAGS_BREAK_ON_LOAD	= 0x00000001,
+	// DLL initialization function: Break prior to executing first instruction; effect is similar to a breakpoint.
+	IMAGE_LOADER_FLAGS_DEBUG_ON_LOAD	= 0x00000002,
+	// COM+ image executable; obsolete and automatically set by loader when IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR is present.
+	IMAGE_LOADER_FLAGS_COMPLUS		= 0x00000001,
+	// Global subsections apply across TS sessions.
+	IMAGE_LOADER_FLAGS_SYSTEM_GLOBAL	= 0x01000000
+} ImageLoaderFlags;
+
 typedef enum {
 	MAGIC_ROM	= 0x107,
 	MAGIC_PE32	= 0x10b,
@@ -200,7 +212,7 @@ typedef struct {
 	uint64_t SizeOfStackCommit;
 	uint64_t SizeOfHeapReserve;
 	uint64_t SizeOfHeapCommit;
-	uint32_t LoaderFlags; /* must be zero */
+	uint32_t LoaderFlags;
 	uint32_t NumberOfRvaAndSizes;
 	// IMAGE_DATA_DIRECTORY DataDirectory[MAX_DIRECTORIES];
 } IMAGE_OPTIONAL_HEADER_64;

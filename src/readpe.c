@@ -506,6 +506,32 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfHeapCommit);
 			output("Size of heap space to commit", s);
+
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "%#x", header->_32->LoaderFlags);
+			output("Loader Flags", s);
+
+			output_open_scope("Loader Flags names", OUTPUT_SCOPE_TYPE_ARRAY);
+
+			for (uint32_t i=0, flag=0x00000001; i < 32; i++, flag <<= 1) {
+				if (header->_32->LoaderFlags & flag) {
+					const char *flag_name = NULL;
+					char formatted_flag_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						flag_name = pe_dll_image_loader_flags_name(flag);
+					if (flag_name == NULL)
+						flag_name = pe_image_loader_flags_name(flag);
+					if (flag_name == NULL) {
+						snprintf(formatted_flag_name, sizeof(formatted_flag_name)-1, "UNKNOWN[%#x]", flag);
+						flag_name = formatted_flag_name;
+					}
+					output(NULL, flag_name);
+				}
+			}
+
+			output_close_scope(); // Loader Flags names
+#endif
+
 			break;
 		}
 		case MAGIC_PE64:
@@ -621,6 +647,32 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 
 			snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfHeapCommit);
 			output("Size of heap space to commit", s);
+
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "%#x", header->_64->LoaderFlags);
+			output("Loader Flags", s);
+
+			output_open_scope("Loader Flags names", OUTPUT_SCOPE_TYPE_ARRAY);
+
+			for (uint32_t i=0, flag=0x00000001; i < 32; i++, flag <<= 1) {
+				if (header->_64->LoaderFlags & flag) {
+					const char *flag_name = NULL;
+					char formatted_flag_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						flag_name = pe_dll_image_loader_flags_name(flag);
+					if (flag_name == NULL)
+						flag_name = pe_image_loader_flags_name(flag);
+					if (flag_name == NULL) {
+						snprintf(formatted_flag_name, sizeof(formatted_flag_name)-1, "UNKNOWN[%#x]", flag);
+						flag_name = formatted_flag_name;
+					}
+					output(NULL, flag_name);
+				}
+			}
+
+			output_close_scope(); // Loader Flags names
+#endif
+
 			break;
 		}
 	}

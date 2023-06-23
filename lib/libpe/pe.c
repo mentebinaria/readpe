@@ -580,6 +580,42 @@ const char *pe_dll_image_dllcharacteristic_name(ImageDllCharacteristics characte
 	return NULL;
 }
 
+const char *pe_image_loader_flags_name(ImageLoaderFlags flags) {
+	typedef struct {
+		ImageLoaderFlags flags;
+		const char * const name;
+	} ImageLoaderFlagsName;
+
+	static const ImageLoaderFlagsName names[] = {
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_COMPLUS),
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_SYSTEM_GLOBAL),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (flags == names[i].flags)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_dll_image_loader_flags_name(ImageLoaderFlags flags) {
+	typedef struct {
+		ImageLoaderFlags flags;
+		const char * const name;
+	} ImageLoaderFlagsName;
+
+	static const ImageLoaderFlagsName names[] = {
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_BREAK_ON_LOAD),
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_DEBUG_ON_LOAD),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (flags == names[i].flags)
+			return names[i].name;
+	}
+	return NULL;
+}
+
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
 	typedef struct {
 		WindowsSubsystem subsystem;

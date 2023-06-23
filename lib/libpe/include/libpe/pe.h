@@ -101,6 +101,7 @@ const char *pe_dll_image_dllcharacteristic_name(ImageDllCharacteristics characte
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
+const char *pe_m68k_section_characteristic_name(SectionCharacteristics characteristic);
 
 // Hash functions
 size_t pe_hash_recommended_size(void);

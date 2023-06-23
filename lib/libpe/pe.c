@@ -651,17 +651,22 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 	} SectionCharacteristicsName;
 
 	static const SectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_SCN_SCALE_INDEX),
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_NO_LOAD),
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_GROUPED),
 		LIBPE_ENTRY(IMAGE_SCN_TYPE_NO_PAD),
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_COPY),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_CODE),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_INITIALIZED_DATA),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_UNINITIALIZED_DATA),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_OTHER),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_INFO),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_OVERLAY),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_REMOVE),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_COMDAT),
 		LIBPE_ENTRY(IMAGE_SCN_NO_DEFER_SPEC_EXC),
 		LIBPE_ENTRY(IMAGE_SCN_GPREL),
-		LIBPE_ENTRY(IMAGE_SCN_MEM_PURGEABLE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_16BIT),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_LOCKED),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_PRELOAD),
 		LIBPE_ENTRY(IMAGE_SCN_ALIGN_1BYTES),
@@ -686,6 +691,28 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 		LIBPE_ENTRY(IMAGE_SCN_MEM_EXECUTE),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_READ),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_WRITE)
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_m68k_section_characteristic_name(SectionCharacteristics characteristic) {
+	typedef struct {
+		SectionCharacteristics characteristic;
+		const char * const name;
+	} SectionCharacteristicsName;
+
+	static const SectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PROTECTED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_FARDATA),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_SYSHEAP),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PURGEABLE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_LOCKED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PRELOAD),
 	};
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {

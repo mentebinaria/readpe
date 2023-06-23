@@ -190,7 +190,6 @@ static void print_sections(pe_ctx_t *ctx)
 		"is readable",
 		"is writable"
 	};
-#endif
 	// valid flags only for executables referenced in pecoffv8
 	static const unsigned int valid_flags[] = {
 		IMAGE_SCN_CNT_CODE,
@@ -206,8 +205,8 @@ static void print_sections(pe_ctx_t *ctx)
 		IMAGE_SCN_MEM_READ,
 		IMAGE_SCN_MEM_WRITE
 	};
-
 	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
+#endif
 
 	output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
 
@@ -251,22 +250,44 @@ static void print_sections(pe_ctx_t *ctx)
 
 		output_open_scope("Characteristic Names", OUTPUT_SCOPE_TYPE_ARRAY);
 
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 		for (size_t j=0; j < max_flags; j++) {
 			if (sections[i]->Characteristics & valid_flags[j]) {
-#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 				snprintf(s, MAX_MSG, "%s", flags_name[j]);
 				output(NULL, s);
+			}
+		}
 #else
-				const char *characteristic_name = pe_section_characteristic_name(valid_flags[j]);
+		if (1) {
+			for (unsigned int flag = 1; flag != 0; flag <<= 1) {
+				if (flag & 0x00F00000)
+					continue;
+				if (sections[i]->Characteristics & flag) {
+					const char *characteristic_name = NULL;
+					char formatted_characteristic_name[32];
+					if (pe_coff(ctx)->Machine == IMAGE_FILE_MACHINE_M68K)
+						characteristic_name = pe_m68k_section_characteristic_name(flag);
+					if (characteristic_name == NULL)
+						characteristic_name = pe_section_characteristic_name(flag);
+					if (characteristic_name == NULL) {
+						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+						characteristic_name = formatted_characteristic_name;
+					}
+					output(NULL, characteristic_name);
+				}
+			}
+			if (sections[i]->Characteristics & 0x00F00000) {
+				unsigned int flag = sections[i]->Characteristics & 0x00F00000;
+				const char *characteristic_name = pe_section_characteristic_name(flag);
 				char formatted_characteristic_name[32];
 				if (characteristic_name == NULL) {
-					snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", valid_flags[j]);
+					snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
 					characteristic_name = formatted_characteristic_name;
 				}
 				output(NULL, characteristic_name);
-#endif
 			}
 		}
+#endif
 
 		output_close_scope(); // Characteristic Names
 

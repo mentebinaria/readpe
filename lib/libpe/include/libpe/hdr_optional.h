@@ -39,10 +39,14 @@ typedef enum {
 	IMAGE_SUBSYSTEM_WINDOWS_GUI					= 2,
 	// Windows character-mode user interface (CUI) subsystem
 	IMAGE_SUBSYSTEM_WINDOWS_CUI					= 3,
+	// Old Windows CE subsystem
+	IMAGE_SUBSYSTEM_WINDOWS_OLD_CE_GUI				= 4,
 	// OS/2 CUI subsystem
 	IMAGE_SUBSYSTEM_OS2_CUI						= 5,
 	// POSIX CUI subsystem
 	IMAGE_SUBSYSTEM_POSIX_CUI					= 7,
+	// MMOSA/Native Win32E
+	IMAGE_SUBSYSTEM_MMOSA					= 8,
 	// Windows CE system
 	IMAGE_SUBSYSTEM_WINDOWS_CE_GUI				= 9,
 	// Extensible Firmware Interface (EFI) application
@@ -55,8 +59,10 @@ typedef enum {
 	IMAGE_SUBSYSTEM_EFI_ROM						= 13,
 	// Xbox system
 	IMAGE_SUBSYSTEM_XBOX						= 14,
-	// Boot application.
-	IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION	= 16
+	// Boot application
+	IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION	= 16,
+	// XBOX Code Catalog
+	IMAGE_SUBSYSTEM_XBOX_CODE_CATALOG		= 17
 } WindowsSubsystem;
 
 // REFERENCE: http://msdn.microsoft.com/en-us/library/windows/desktop/ms680339(v=vs.85).aspx

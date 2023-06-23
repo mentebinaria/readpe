@@ -82,6 +82,23 @@ typedef enum {
 	IMAGE_SCN_MEM_WRITE				= -2147483648 // The section is writeable. (0x80000000U)
 } SectionCharacteristics;
 
+// Used only when IMAGE_ROM_OPTIONAL_HEADER is present
+typedef enum {
+	STYP_DUMMY	= 0x00000001, // Dummy
+	STYP_TEXT	= 0x00000020, // Text
+	STYP_DATA	= 0x00000040, // Data
+	STYP_SBSS	= 0x00000080, // GP Uninit Data
+	STYP_RDATA	= 0x00000100, // Readonly Data
+	STYP_SDATA	= 0x00000200, // GP Init Data
+	STYP_BSS	= 0x00000400, // Uninit Data
+	STYP_UCODE	= 0x00000800, // UCode
+	STYP_LIT8	= 0x08000000, // Literal 8
+	STYP_LIT4	= 0x10000000, // Literal 4
+	S_NRELOC_OVFL	= 0x20000000, // Non-Relocatable overlay
+	STYP_LIB	= 0x40000000, // Library
+	STYP_INIT	= -2147483648 // Init Code (0x80000000U)
+} ROMSectionCharacteristics;
+
 #pragma pack(push, 1)
 
 // Quoting pecoff_v8.docx: "Entries in the section table are numbered starting from one (1)".
@@ -98,7 +115,7 @@ typedef struct {
 	uint32_t PointerToLinenumbers; // deprecated
 	uint16_t NumberOfRelocations;
 	uint16_t NumberOfLinenumbers; // deprecated
-	uint32_t Characteristics; // SectionCharacteristics
+	uint32_t Characteristics; // SectionCharacteristics or ROMSectionCharacteristics
 } IMAGE_SECTION_HEADER;
 
 #pragma pack(pop)

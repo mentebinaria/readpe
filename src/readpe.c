@@ -258,7 +258,19 @@ static void print_sections(pe_ctx_t *ctx)
 			}
 		}
 #else
-		if (1) {
+		if (pe_use_rom_section_characteristic(ctx)) {
+			for (unsigned int flag = 1; flag != 0; flag <<= 1) {
+				if (sections[i]->Characteristics & flag) {
+					const char *characteristic_name = pe_rom_section_characteristic_name(flag);
+					char formatted_characteristic_name[32];
+					if (characteristic_name == NULL) {
+						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+						characteristic_name = formatted_characteristic_name;
+					}
+					output(NULL, characteristic_name);
+				}
+			}
+		} else {
 			for (unsigned int flag = 1; flag != 0; flag <<= 1) {
 				if (flag & 0x00F00000)
 					continue;
@@ -390,6 +402,57 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 
 	switch (header->type)
 	{
+		case MAGIC_ROM:
+		{
+			snprintf(s, MAX_MSG, "%#x (%s)", header->_rom->Magic, "ROM");
+			output("Magic number", s);
+
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_rom->MajorLinkerVersion);
+			output("Linker major version", s);
+
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_rom->MinorLinkerVersion);
+			output("Linker minor version", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->SizeOfCode);
+			output("Size of .text section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->SizeOfInitializedData);
+			output("Size of .data section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->SizeOfUninitializedData);
+			output("Size of .bss section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->AddressOfEntryPoint);
+			output("Entrypoint", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->BaseOfCode);
+			output("Address of .text section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->BaseOfData);
+			output("Address of .data section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->BaseOfBss);
+			output("Address of .bss section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->GprMask);
+			output("GprMask", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[0]);
+			output("CprMask[0]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[1]);
+			output("CprMask[1]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[2]);
+			output("CprMask[2]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[3]);
+			output("CprMask[3]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->GpValue);
+			output("GpValue", s);
+			break;
+		}
 		case MAGIC_PE32:
 		{
 			snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, "PE32");

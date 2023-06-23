@@ -222,6 +222,7 @@ typedef struct {
 	size_t length;
 	IMAGE_OPTIONAL_HEADER_32 *_32;
 	IMAGE_OPTIONAL_HEADER_64 *_64;
+	IMAGE_ROM_OPTIONAL_HEADER *_rom;
 } IMAGE_OPTIONAL_HEADER;
 
 #pragma pack(pop)

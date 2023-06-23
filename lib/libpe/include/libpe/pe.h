@@ -78,6 +78,7 @@ bool pe_is_loaded(const pe_ctx_t *ctx);
 bool pe_is_pe(const pe_ctx_t *ctx);
 bool pe_is_exec(const pe_ctx_t *ctx);
 bool pe_is_obj(const pe_ctx_t *ctx);
+bool pe_is_rom(const pe_ctx_t *ctx);
 bool pe_is_dll(const pe_ctx_t *ctx);
 uint64_t pe_filesize(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);
@@ -106,6 +107,8 @@ const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
 const char *pe_m68k_section_characteristic_name(SectionCharacteristics characteristic);
+const char *pe_rom_section_characteristic_name(ROMSectionCharacteristics characteristic);
+bool pe_use_rom_section_characteristic(pe_ctx_t *ctx);
 
 // Hash functions
 size_t pe_hash_recommended_size(void);

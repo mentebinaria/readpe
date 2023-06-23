@@ -220,10 +220,18 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	switch (ctx->pe.optional_hdr.type) {
 		default:
-		case MAGIC_ROM:
-			// Oh boy! We do not support ROM. Abort!
-			//fprintf(stderr, "ROM image is not supported\n");
 			return LIBPE_E_UNSUPPORTED_IMAGE;
+		case MAGIC_ROM:
+			if (ctx->pe.coff_hdr->SizeOfOptionalHeader !=
+			    sizeof(IMAGE_ROM_OPTIONAL_HEADER))
+				return LIBPE_E_UNSUPPORTED_IMAGE;
+			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
+				sizeof(IMAGE_ROM_OPTIONAL_HEADER)))
+				return LIBPE_E_MISSING_OPTIONAL_HEADER;
+			ctx->pe.optional_hdr._rom = ctx->pe.optional_hdr_ptr;
+			ctx->pe.optional_hdr.length = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
+			ctx->pe.entrypoint = ctx->pe.optional_hdr._rom->AddressOfEntryPoint;
+			break;
 		case MAGIC_PE32:
 			if (ctx->pe.coff_hdr->SizeOfOptionalHeader <
 			    sizeof(IMAGE_OPTIONAL_HEADER_32))
@@ -327,7 +335,7 @@ bool pe_is_loaded(const pe_ctx_t *ctx) {
 }
 
 bool pe_is_pe(const pe_ctx_t *ctx) {
-	return pe_is_exec(ctx) || pe_is_obj(ctx);
+	return pe_is_exec(ctx) || pe_is_obj(ctx) || pe_is_rom(ctx);
 }
 
 bool pe_is_exec(const pe_ctx_t *ctx) {
@@ -345,6 +353,18 @@ bool pe_is_exec(const pe_ctx_t *ctx) {
 bool pe_is_obj(const pe_ctx_t *ctx) {
 	// Object file does not have neither MZ header nor PE\0\0 signature nor optional header
 	if (ctx->pe.dos_hdr != NULL || ctx->pe.signature != 0 || ctx->pe.optional_hdr_ptr != NULL)
+		return false;
+
+	return true;
+}
+
+bool pe_is_rom(const pe_ctx_t *ctx) {
+	// ROM file does not have neither MZ header nor PE\0\0 signature
+	if (ctx->pe.dos_hdr != NULL || ctx->pe.signature != 0)
+		return false;
+
+	// ROM file has either MAGIC_ROM optional header (R3000, R4000, R10000, ALPHA) or MAGIC_PE32 optional header (I386, MPPC_601, POWERPC, ...)
+	if (ctx->pe.optional_hdr_ptr == NULL || (ctx->pe.optional_hdr.type != MAGIC_ROM && ctx->pe.optional_hdr.type != MAGIC_PE32))
 		return false;
 
 	return true;
@@ -817,4 +837,37 @@ const char *pe_m68k_section_characteristic_name(SectionCharacteristics character
 			return names[i].name;
 	}
 	return NULL;
+}
+
+const char *pe_rom_section_characteristic_name(ROMSectionCharacteristics characteristic) {
+	typedef struct {
+		ROMSectionCharacteristics characteristic;
+		const char * const name;
+	} ROMSectionCharacteristicsName;
+
+	static const ROMSectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(STYP_DUMMY),
+		LIBPE_ENTRY(STYP_TEXT),
+		LIBPE_ENTRY(STYP_DATA),
+		LIBPE_ENTRY(STYP_SBSS),
+		LIBPE_ENTRY(STYP_RDATA),
+		LIBPE_ENTRY(STYP_SDATA),
+		LIBPE_ENTRY(STYP_BSS),
+		LIBPE_ENTRY(STYP_UCODE),
+		LIBPE_ENTRY(STYP_LIT8),
+		LIBPE_ENTRY(STYP_LIT4),
+		LIBPE_ENTRY(S_NRELOC_OVFL),
+		LIBPE_ENTRY(STYP_LIB),
+		LIBPE_ENTRY(STYP_INIT),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+bool pe_use_rom_section_characteristic(pe_ctx_t *ctx) {
+	return ctx->pe.optional_hdr_ptr != NULL && ctx->pe.optional_hdr.type == MAGIC_ROM;
 }

@@ -613,7 +613,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 		{ IMAGE_FILE_LOCAL_SYMS_STRIPPED,		"local symbols removed (deprecated)"		},
 		{ IMAGE_FILE_AGGRESSIVE_WS_TRIM,		"aggressively trim (deprecated for Windows 2000 and later)" },
 		{ IMAGE_FILE_LARGE_ADDRESS_AWARE,		"can handle more than 2 GB addresses"		},
-		{ IMAGE_FILE_RESERVED,					""											},
+		{ IMAGE_FILE_16BIT_MACHINE,			""											},
 		{ IMAGE_FILE_BYTES_REVERSED_LO,			"little-endian (deprecated)"				},
 		{ IMAGE_FILE_32BIT_MACHINE,				"32-bit machine"							},
 		{ IMAGE_FILE_DEBUG_STRIPPED,			"debugging information removed"				},

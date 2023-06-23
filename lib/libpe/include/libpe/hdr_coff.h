@@ -102,8 +102,8 @@ typedef enum {
 	// App can handle > 2gb addresses.
 	IMAGE_FILE_LARGE_ADDRESS_AWARE		= 0x0020,
 
-	// Reserved for future use.
-	IMAGE_FILE_RESERVED					= 0x0040,
+	// Machine based on 16-bit-word architecture.
+	IMAGE_FILE_16BIT_MACHINE		= 0x0040,
 
 	// Little endian: LSB precedes MSB in memory.
 	// Deprecated and should be zero.

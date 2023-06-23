@@ -53,6 +53,12 @@ typedef struct {
 	uint16_t num_sections;
 	void *sections_ptr;
 	IMAGE_SECTION_HEADER **sections; // array up to MAX_SECTIONS
+	// Symbols
+	uint32_t num_symbols;
+	void *symbols_ptr;
+	// Strings
+	uint32_t strings_size;
+	const char *strings_ptr;
 	uint64_t entrypoint;
 	uint64_t imagebase;
 } pe_file_t;

@@ -289,6 +289,25 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 		ctx->pe.sections_ptr = NULL;
 	}
 
+	if (ctx->pe.coff_hdr->PointerToSymbolTable != 0) {
+		uint32_t symbols_offset = ctx->pe.coff_hdr->PointerToSymbolTable;
+		if (symbols_offset < ctx->map_size) {
+			ctx->pe.symbols_ptr = LIBPE_PTR_ADD(ctx->map_addr, symbols_offset);
+			ctx->pe.num_symbols = ctx->pe.coff_hdr->NumberOfSymbols;
+			if (symbols_offset + ctx->pe.num_symbols * 18 < ctx->map_size) {
+				ctx->pe.strings_ptr = LIBPE_PTR_ADD(ctx->pe.symbols_ptr, ctx->pe.num_symbols * 18);
+				ctx->pe.strings_size = *(uint32_t *)ctx->pe.strings_ptr;
+				if (ctx->pe.strings_size < 4 ||
+				    symbols_offset + ctx->pe.num_symbols * 18 + ctx->pe.strings_size > ctx->map_size) {
+					ctx->pe.strings_ptr = NULL;
+					ctx->pe.strings_size = 0;
+				}
+			}
+			if (ctx->pe.num_symbols == 0)
+				ctx->pe.symbols_ptr = NULL;
+		}
+	}
+
 	return LIBPE_E_OK;
 }
 
@@ -437,10 +456,19 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 }
 
 const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *section_hdr, char *out_name, size_t out_name_size) {
-	assert(ctx != NULL); // TODO we don't actually need *ctx here
+	assert(ctx != NULL);
 	assert(out_name_size >= SECTION_NAME_SIZE+1);
 	strncpy(out_name, (const char *)section_hdr->Name, SECTION_NAME_SIZE);
 	out_name[SECTION_NAME_SIZE-1] = '\0';
+	if (out_name[0] == '/' && out_name[1] >= '0' && out_name[1] <= '9' && ctx->pe.strings_ptr) {
+		char *endptr = NULL;
+		long int offset = -1;
+		errno = 0;
+		offset = strtol(out_name+1, &endptr, 10);
+		if (errno == 0 && *endptr == 0 && offset >= 0 && offset < ctx->pe.strings_size) {
+			return ctx->pe.strings_ptr + offset;
+		}
+	}
 	return out_name;
 }
 

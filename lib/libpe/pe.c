@@ -170,8 +170,7 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 
 pe_err_e pe_parse(pe_ctx_t *ctx) {
 	ctx->pe.dos_hdr = ctx->map_addr;
-	if (ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
-		return LIBPE_E_NOT_A_PE_FILE;
+	if (ctx->pe.dos_hdr->e_magic == MAGIC_MZ) {
 
 	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
 		ctx->pe.dos_hdr->e_lfanew);
@@ -192,10 +191,20 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
 		LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
+
+	} else if (pe_machine_type_name(ctx->pe.dos_hdr->e_magic) != NULL) {
+		ctx->pe.coff_hdr = (void *)ctx->pe.dos_hdr;
+		ctx->pe.dos_hdr = NULL;
+	} else {
+		return LIBPE_E_NOT_A_PE_FILE;
+	}
+
 	if (!pe_can_read(ctx, ctx->pe.coff_hdr, sizeof(IMAGE_COFF_HEADER)))
 		return LIBPE_E_MISSING_COFF_HEADER;
 
 	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
+
+	if (ctx->pe.coff_hdr->SizeOfOptionalHeader > 0) {
 
 	// Optional header points right after the COFF header.
 	ctx->pe.optional_hdr_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr,
@@ -245,6 +254,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			break;
 	}
 
+	}
+
 	if (ctx->pe.num_directories > MAX_DIRECTORIES) {
 		//fprintf(stderr, "Too many directories (%u)\n", ctx->pe.num_directories);
 		return LIBPE_E_TOO_MANY_DIRECTORIES;
@@ -255,13 +266,13 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 		return LIBPE_E_TOO_MANY_SECTIONS;
 	}
 
-	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
-		ctx->pe.optional_hdr.length);
+	if (ctx->pe.optional_hdr_ptr)
+		ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
+			ctx->pe.optional_hdr.length);
 
-	uint32_t sections_offset = LIBPE_SIZEOF_MEMBER(pe_file_t, signature)
-		+ sizeof(IMAGE_FILE_HEADER)
+	uint32_t sections_offset = sizeof(IMAGE_FILE_HEADER)
 		+ (uint32_t)ctx->pe.coff_hdr->SizeOfOptionalHeader;
-	ctx->pe.sections_ptr = LIBPE_PTR_ADD(signature_ptr, sections_offset);
+	ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr, sections_offset);
 
 	if (ctx->pe.num_directories > 0) {
 		ctx->pe.directories = malloc(ctx->pe.num_directories
@@ -316,6 +327,10 @@ bool pe_is_loaded(const pe_ctx_t *ctx) {
 }
 
 bool pe_is_pe(const pe_ctx_t *ctx) {
+	return pe_is_exec(ctx) || pe_is_obj(ctx);
+}
+
+bool pe_is_exec(const pe_ctx_t *ctx) {
 	// Check MZ header
 	if (ctx->pe.dos_hdr == NULL || ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
 		return false;
@@ -327,7 +342,17 @@ bool pe_is_pe(const pe_ctx_t *ctx) {
 	return true;
 }
 
+bool pe_is_obj(const pe_ctx_t *ctx) {
+	// Object file does not have neither MZ header nor PE\0\0 signature nor optional header
+	if (ctx->pe.dos_hdr != NULL || ctx->pe.signature != 0 || ctx->pe.optional_hdr_ptr != NULL)
+		return false;
+
+	return true;
+}
+
 bool pe_is_dll(const pe_ctx_t *ctx) {
+	if (!pe_is_exec(ctx))
+		return false;
 	if (ctx->pe.coff_hdr == NULL)
 		return false;
 	return ctx->pe.coff_hdr->Characteristics & IMAGE_FILE_DLL ? true : false;
@@ -418,6 +443,8 @@ IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx) {
 }
 
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx) {
+	if (ctx->pe.optional_hdr_ptr == NULL)
+		return NULL;
 	return &ctx->pe.optional_hdr;
 }
 

@@ -979,7 +979,7 @@ int main(int argc, char *argv[])
 		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
 		if (header_ptr)
 			print_dos_header(header_ptr);
-		else { LIBPE_WARNING("unable to read DOS header"); }
+		else if (pe_is_exec(&ctx)) { LIBPE_WARNING("unable to read DOS header"); }
 	}
 
 	// coff/file header
@@ -995,7 +995,7 @@ int main(int argc, char *argv[])
 		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
 		if (header_ptr)
 			print_optional_header(&ctx, header_ptr);
-		else { LIBPE_WARNING("unable to read Optional (Image) file header"); }
+		else if (pe_is_exec(&ctx)) { LIBPE_WARNING("unable to read Optional (Image) file header"); }
 	}
 
 	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
@@ -1005,7 +1005,7 @@ int main(int argc, char *argv[])
 	if (options->dirs || options->all) {
 		if (directories != NULL)
 			print_directories(&ctx);
-		else if (!directories_warned) {
+		else if (pe_is_exec(&ctx) && !directories_warned) {
 			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
@@ -1015,7 +1015,7 @@ int main(int argc, char *argv[])
 	if (options->imports || options->all) {
 		if (directories != NULL)
 			print_imports(&ctx);
-		else if (!directories_warned) {
+		else if (pe_is_exec(&ctx) && !directories_warned) {
 			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
@@ -1025,7 +1025,7 @@ int main(int argc, char *argv[])
 	if (options->exports || options->all) {
 		if (directories != NULL)
 			print_exports(&ctx);
-		else if (!directories_warned) {
+		else if (pe_is_exec(&ctx) && !directories_warned) {
 			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}

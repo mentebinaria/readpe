@@ -76,6 +76,8 @@ pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
 bool pe_is_loaded(const pe_ctx_t *ctx);
 bool pe_is_pe(const pe_ctx_t *ctx);
+bool pe_is_exec(const pe_ctx_t *ctx);
+bool pe_is_obj(const pe_ctx_t *ctx);
 bool pe_is_dll(const pe_ctx_t *ctx);
 uint64_t pe_filesize(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);

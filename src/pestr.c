@@ -34,6 +34,8 @@
 	files in the program, then also delete it here.
 */
 
+#include "pestr.h"
+#include "main.h"
 #include "common.h"
 #include <ctype.h>
 #include <wctype.h>
@@ -44,11 +46,8 @@
 #define BUFSIZE 4
 #define LINE_BUFFER 32768
 
-typedef struct {
-	unsigned short strsize;
-	bool offset;
-	bool section;
-} options_t;
+// FIXME
+typedef string_settings options_t;
 
 static void usage(void)
 {
@@ -181,7 +180,65 @@ static void printb(	pe_ctx_t *ctx,
 	putchar('\n');
 }
 
-int main(int argc, char *argv[])
+void print_strings( pe_ctx_t *ctx, const options_t *options) {
+	const uint64_t pe_size = pe_filesize(ctx);
+	const uint8_t *pe_raw_data = ctx->map_addr;
+
+	uint16_t chunk;
+	size_t buff_start = 0;
+	size_t odd_wbuff_start = 0;
+	size_t even_wbuff_start = 0;
+
+	for (size_t pe_raw_offset = 0; pe_raw_offset < pe_size; ++pe_raw_offset) {
+		const uint8_t byte = pe_raw_data[pe_raw_offset];
+
+		if (pe_raw_offset+1 < pe_size)
+			// Byte swap; Internal PE uses little endian while C uses big endian
+			chunk = byte | pe_raw_data[pe_raw_offset+1]<<8;
+		else
+			chunk = 0;
+
+		if (isprint(byte)) {
+			if ( buff_start == 0 ) {
+				buff_start = pe_raw_offset;
+			}
+		} else {
+			if ( buff_start != 0 ) {
+				if ((pe_raw_offset - buff_start) >= (options->strsize ? options->strsize : 4))
+					printb(ctx, options, pe_raw_data, buff_start, pe_raw_offset, false);
+				buff_start = 0;
+			}
+		}
+
+		if (iswprint(chunk)) {
+			if( pe_raw_offset & 0x1 ) {
+				if ( odd_wbuff_start == 0 ) {
+					odd_wbuff_start = pe_raw_offset;
+				}
+			} else {
+				if ( even_wbuff_start == 0 ) {
+					even_wbuff_start = pe_raw_offset;
+				}
+			}
+		} else {
+			if( pe_raw_offset & 0x1 ) {
+				if ( odd_wbuff_start != 0 ) {
+					if ((pe_raw_offset - odd_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
+						printb(ctx, options, pe_raw_data, odd_wbuff_start, pe_raw_offset, true);
+					odd_wbuff_start = 0;
+				}
+			} else {
+				if ( even_wbuff_start != 0 ) {
+					if ((pe_raw_offset - even_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
+						printb(ctx, options, pe_raw_data, even_wbuff_start, pe_raw_offset, true);
+					even_wbuff_start = 0;
+				}
+			}
+		}
+	}
+}
+
+int pestr(int argc, char *argv[])
 {
 	if (argc < 2) {
 		usage();
@@ -208,61 +265,8 @@ int main(int argc, char *argv[])
 	if (!pe_is_pe(&ctx))
 		EXIT_ERROR("not a valid PE file");
 
-	const uint64_t pe_size = pe_filesize(&ctx);
-	const uint8_t *pe_raw_data = ctx.map_addr;
+	print_strings(&ctx, options);
 
-	uint16_t chunk;
-	size_t buff_start = 0;
-	size_t odd_wbuff_start = 0;
-	size_t even_wbuff_start = 0;
-
-	for (size_t pe_raw_offset = 0; pe_raw_offset < pe_size; ++pe_raw_offset) {
-		const uint8_t byte = pe_raw_data[pe_raw_offset];
-
-		if (pe_raw_offset+1 < pe_size)
-			// Byte swap; Internal PE uses little endian while C uses big endian
-			chunk = byte | pe_raw_data[pe_raw_offset+1]<<8;
-		else
-			chunk = 0;
-
-		if (isprint(byte)) {
-			if ( buff_start == 0 ) {
-				buff_start = pe_raw_offset;
-			}
-		} else {
-			if ( buff_start != 0 ) {
-				if ((pe_raw_offset - buff_start) >= (options->strsize ? options->strsize : 4))
-					printb(&ctx, options, pe_raw_data, buff_start, pe_raw_offset, false);
-				buff_start = 0;
-			}
-		}
-
-		if (iswprint(chunk)) {
-			if( pe_raw_offset & 0x1 ) {
-				if ( odd_wbuff_start == 0 ) {
-					odd_wbuff_start = pe_raw_offset;
-				}
-			} else {
-				if ( even_wbuff_start == 0 ) {
-					even_wbuff_start = pe_raw_offset;
-				}
-			}
-		} else {
-			if( pe_raw_offset & 0x1 ) {
-				if ( odd_wbuff_start != 0 ) {
-					if ((pe_raw_offset - odd_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
-						printb(&ctx, options, pe_raw_data, odd_wbuff_start, pe_raw_offset, true);
-					odd_wbuff_start = 0;
-				}
-			} else {
-				if ( even_wbuff_start != 0 ) {
-					if ((pe_raw_offset - even_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
-						printb(&ctx, options, pe_raw_data, even_wbuff_start, pe_raw_offset, true);
-					even_wbuff_start = 0;
-				}
-			}
-		}
-	}
 
 	// libera a memoria
 	free_options(options);

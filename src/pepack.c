@@ -34,6 +34,7 @@
 	files in the program, then also delete it here.
 */
 
+#include "main.h"
 #include "common.h"
 #include "plugins.h"
 
@@ -241,7 +242,7 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset, FIL
 	return false;
 }
 
-int main(int argc, char *argv[])
+int pepack(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);

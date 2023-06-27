@@ -34,10 +34,14 @@
 	files in the program, then also delete it here.
 */
 
+#include "readpe.h"
+#include "libpe/context.h"
+#include "libpe/directories.h"
+#include "main.h"
 #include "common.h"
+#include "output.h"
 #include <time.h>
 #include <ctype.h>
-#include "output.h"
 
 #define PROGRAM "readpe"
 
@@ -72,6 +76,15 @@ static void usage(void)
 		" -V, --version							 Show version.\n"
 		" --help								 Show this help.\n",
 		PROGRAM, PROGRAM, formats);
+}
+
+IMAGE_DATA_DIRECTORY **get_pe_directories(pe_ctx_t *ctx)
+{
+	IMAGE_DATA_DIRECTORY **directories = pe_directories(ctx);
+	if (directories == NULL)
+        LIBPE_WARNING("directories not found");
+
+	return directories;
 }
 
 static void parse_headers(options_t *options, const char *optarg)
@@ -173,7 +186,7 @@ static options_t *parse_options(int argc, char *argv[])
 	return options;
 }
 
-static void print_sections(pe_ctx_t *ctx)
+void print_sections(pe_ctx_t *ctx)
 {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	static const char * const flags_name[] = {
@@ -276,7 +289,7 @@ static void print_sections(pe_ctx_t *ctx)
 	output_close_scope(); // Sections
 }
 
-static void print_directories(pe_ctx_t *ctx)
+void print_directories(pe_ctx_t *ctx)
 {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	typedef struct {
@@ -333,8 +346,12 @@ static void print_directories(pe_ctx_t *ctx)
 	output_close_scope(); // Data directories
 }
 
-static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
+void print_optional_header(pe_ctx_t *ctx)
 {
+	IMAGE_OPTIONAL_HEADER *header = pe_optional(ctx);
+	if (!header)
+	    LIBPE_WARNING("unable to read Optional (Image) file header");
+
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	typedef struct {
 		WindowsSubsystem subsystem;
@@ -599,8 +616,12 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 	output_close_scope(); // Optional/Image heade
 }
 
-static void print_coff_header(IMAGE_COFF_HEADER *header)
+void print_coff_header(pe_ctx_t *ctx)
 {
+    IMAGE_COFF_HEADER *header = pe_coff(ctx);
+    if (!header)
+        LIBPE_WARNING("unable to read COFF file header");
+
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	typedef struct {
 		ImageCharacteristics characteristic;
@@ -721,8 +742,13 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	output_close_scope(); // COFF/File header
 }
 
-static void print_dos_header(IMAGE_DOS_HEADER *header)
+void print_dos_header(pe_ctx_t *ctx)
 {
+	
+    IMAGE_DOS_HEADER *header = pe_dos(ctx);
+    if (!header)
+        LIBPE_WARNING("unable to read DOS header");
+
 	char s[MAX_MSG];
 
 	output_open_scope("DOS Header", OUTPUT_SCOPE_TYPE_OBJECT);
@@ -778,7 +804,7 @@ static void print_dos_header(IMAGE_DOS_HEADER *header)
 	output_close_scope(); // DOS Header
 }
 
-static void print_exports(pe_ctx_t *ctx)
+void print_exports(pe_ctx_t *ctx)
 {
 	output_open_scope("Exported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 
@@ -824,7 +850,7 @@ static void print_exports(pe_ctx_t *ctx)
 	output_close_scope(); // Exported functions
 }
 
-static void print_imports(pe_ctx_t *ctx)
+void print_imports(pe_ctx_t *ctx)
 {
 	output_open_scope("Imported functions", OUTPUT_SCOPE_TYPE_ARRAY);
 
@@ -860,7 +886,7 @@ static void print_imports(pe_ctx_t *ctx)
 	output_close_scope(); // Imported functions
 }
 
-int main(int argc, char *argv[])
+int _main(int argc, char *argv[])
 {
 	pev_config_t config;
 	PEV_INITIALIZE(&config);
@@ -895,59 +921,37 @@ int main(int argc, char *argv[])
 
 	// dos header
 	if (options->dos || options->all_headers || options->all) {
-		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
-		if (header_ptr)
-			print_dos_header(header_ptr);
-		else { LIBPE_WARNING("unable to read DOS header"); }
+		print_dos_header(&ctx);
 	}
 
 	// coff/file header
 	if (options->coff || options->all_headers || options->all) {
-		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
-		if (header_ptr)
-			print_coff_header(header_ptr);
-		else { LIBPE_WARNING("unable to read COFF file header"); }
+		print_coff_header(&ctx);
 	}
 
 	// optional header
 	if (options->opt || options->all_headers || options->all) {
-		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
-		if (header_ptr)
-			print_optional_header(header_ptr);
-		else { LIBPE_WARNING("unable to read Optional (Image) file header"); }
+		print_optional_header(&ctx);
 	}
 
-	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
-	bool directories_warned = false;
+	IMAGE_DATA_DIRECTORY **directories = get_pe_directories(&ctx);
 
 	// directories
 	if (options->dirs || options->all) {
 		if (directories != NULL)
 			print_directories(&ctx);
-		else if (!directories_warned) {
-			LIBPE_WARNING("directories not found");
-			directories_warned = true;
-		}
 	}
 
 	// imports
 	if (options->imports || options->all) {
 		if (directories != NULL)
 			print_imports(&ctx);
-		else if (!directories_warned) {
-			LIBPE_WARNING("directories not found");
-			directories_warned = true;
-		}
 	}
 
 	// exports
 	if (options->exports || options->all) {
 		if (directories != NULL)
 			print_exports(&ctx);
-		else if (!directories_warned) {
-			LIBPE_WARNING("directories not found");
-			directories_warned = true;
-		}
 	}
 
 	// sections

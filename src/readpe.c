@@ -509,6 +509,40 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MinorSubsystemVersion);
 			output("Minor version of subsystem", s);
 
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "Win32 version value:             %#x", header->_32->Win32VersionValue);
+			output_open_scope(s, OUTPUT_SCOPE_TYPE_OBJECT);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", header->_32->Win32VersionValue & 0xff);
+			output("Overwrite OS major version", s);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_32->Win32VersionValue >> 8) & 0xff);
+			output("Overwrite OS minor version", s);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_32->Win32VersionValue >> 16) & 0x3fff);
+			output("Overwrite OS build number", s);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else {
+				uint8_t platform_id = header->_32->Win32VersionValue >> 30;
+				static const char *const win32_version_value_platform_id[4] = { "NT", "CE", "Win32s", "Win9x" };
+				snprintf(s, MAX_MSG, "%u (%s)", platform_id, win32_version_value_platform_id[platform_id]);
+			}
+			output("Overwrite OS platform id", s);
+
+			output_close_scope();
+#endif
+
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfImage);
 			output("Size of image", s);
 
@@ -649,6 +683,40 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 
 			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MinorSubsystemVersion);
 			output("Minor version of subsystem", s);
+
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "Win32 version value:             %#x", header->_64->Win32VersionValue);
+			output_open_scope(s, OUTPUT_SCOPE_TYPE_OBJECT);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", header->_64->Win32VersionValue & 0xff);
+			output("Overwrite OS major version", s);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_64->Win32VersionValue >> 8) & 0xff);
+			output("Overwrite OS minor version", s);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_64->Win32VersionValue >> 16) & 0x3fff);
+			output("Overwrite OS build number", s);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else {
+				uint8_t platform_id = header->_64->Win32VersionValue >> 30;
+				static const char *const win32_version_value_platform_id[4] = { "NT", "CE", "Win32s", "Win9x" };
+				snprintf(s, MAX_MSG, "%u (%s)", platform_id, win32_version_value_platform_id[platform_id]);
+			}
+			output("Overwrite OS platform id", s);
+
+			output_close_scope();
+#endif
 
 			snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfImage);
 			output("Size of image", s);

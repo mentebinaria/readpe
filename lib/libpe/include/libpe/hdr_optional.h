@@ -168,7 +168,7 @@ typedef struct {
 	uint16_t MinorImageVersion;
 	uint16_t MajorSubsystemVersion;
 	uint16_t MinorSubsystemVersion;
-	uint32_t Reserved1;
+	uint32_t Win32VersionValue;
 	uint32_t SizeOfImage;
 	uint32_t SizeOfHeaders;
 	uint32_t CheckSum;
@@ -202,7 +202,7 @@ typedef struct {
 	uint16_t MinorImageVersion;
 	uint16_t MajorSubsystemVersion;
 	uint16_t MinorSubsystemVersion;
-	uint32_t Reserved1;
+	uint32_t Win32VersionValue;
 	uint32_t SizeOfImage;
 	uint32_t SizeOfHeaders;
 	uint32_t CheckSum;

@@ -496,6 +496,10 @@ int main(int argc, char *argv[])
 	snprintf(field, MAX_MSG, "SEH");
 	output(field, (dllchar & 0x400) ? "no" : "yes");
 
+	// cfg
+	snprintf(field, MAX_MSG, "CFG");
+	output(field, (dllchar & 0x4000) ? "yes" : "no");
+
 	// stack cookies
 	snprintf(field, MAX_MSG, "Stack cookies (EXPERIMENTAL)");
 	output(field, stack_cookies(&ctx) ? "yes" : "no");

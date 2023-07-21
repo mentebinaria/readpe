@@ -107,7 +107,9 @@ typedef enum {
 	// Machine based on 16-bit-word architecture.
 	IMAGE_FILE_16BIT_MACHINE		= 0x0040,
 
-	// Little endian: LSB precedes MSB in memory.
+	// Bytes of the word are reversed from CPU defaults.
+	// Test either IMAGE_FILE_BYTES_REVERSED_LO or IMAGE_FILE_BYTES_REVERSED_HI, they are in the same bit position in each short word.
+	// Microsoft PE 32-Bit LINK.EXE Version 1.00 always sets this bit, but no words are reversed. New LINK.EXE versions never set this bit.
 	// Deprecated and should be zero.
 	IMAGE_FILE_BYTES_REVERSED_LO		= 0x0080,
 
@@ -136,7 +138,9 @@ typedef enum {
 	// File should be run only on a UP machine.
 	IMAGE_FILE_UP_SYSTEM_ONLY			= 0x4000,
 
-	// Big endian: MSB precedes LSB in memory.
+	// Bytes of the word are reversed from CPU defaults.
+	// Test either IMAGE_FILE_BYTES_REVERSED_LO or IMAGE_FILE_BYTES_REVERSED_HI, they are in the same bit position in each short word.
+	// Microsoft PE 32-Bit LINK.EXE Version 1.00 always sets this bit, but no words are reversed. New LINK.EXE versions never set this bit.
 	// Deprecated and should be zero.
 	IMAGE_FILE_BYTES_REVERSED_HI		= 0x8000
 } ImageCharacteristics;

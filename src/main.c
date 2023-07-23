@@ -86,6 +86,7 @@ enum ARGUMENTS {
     MODE_END,
 
     COMMAND_SCAN = 2000, // -- pescan
+    COMMAND_EXTRACT,
     COMMAND_HASH = 2100, // -- pehash
     // COMMAND_HASH_MD5,
     // COMMAND_HASH_SHA1,
@@ -112,6 +113,7 @@ enum HASH_ALGO {
 static struct argument_options_t {
     unsigned int list : 1;
     unsigned int all : 1;
+	char *format;
 } argument_options;
 
 typedef struct {
@@ -200,6 +202,90 @@ int main(int argc, char *argv[]) {
     if (strstr(bin_name, "ofs2rva") == bin_name) exit(ofs2rva(argc, argv));
     if (strstr(bin_name, "rva2ofs") == bin_name) exit(rva2ofs(argc, argv));
 
+    //------------------------------------------------------------------------//
+
+    static const struct option readpe_options[] = {
+        {"help",         no_argument,       NULL, 1  },
+        {"all",          no_argument,       NULL, 'A'},
+        {"all-headers",  no_argument,       NULL, 'H'},
+        {"all-sections", no_argument,       NULL, 'S'},
+        {"header",       required_argument, NULL, 'h'},
+        {"imports",      no_argument,       NULL, 'i'},
+        {"exports",      no_argument,       NULL, 'e'},
+        {"dirs",         no_argument,       NULL, 'd'},
+        {"format",       required_argument, NULL, 'f'},
+        {"version",      no_argument,       NULL, 'V'},
+        {NULL,           0,                 NULL, 0  }
+    };
+
+    static const struct option pedis_options[] = {
+        {"help",       no_argument,       NULL, 1  },
+        {"att",        no_argument,       NULL, 2  },
+        {"",           required_argument, NULL, 'n'},
+        {"entrypoint", no_argument,       NULL, 'e'},
+        {"mode",       required_argument, NULL, 'm'},
+        {"offset",     required_argument, NULL, 'o'},
+        {"rva",        required_argument, NULL, 'r'},
+        {"section",    required_argument, NULL, 's'},
+        {"format",     required_argument, NULL, 'f'},
+        {"version",    no_argument,       NULL, 'V'},
+        {NULL,         0,                 NULL, 0  }
+    };
+
+    static const struct option pehash_options[] = {
+        {"help",          no_argument,       NULL, 1  },
+        {"format",        required_argument, NULL, 'f'},
+        {"all",           no_argument,       NULL, 'a'},
+        {"content",       no_argument,       NULL, 'c'},
+        {"header",        required_argument, NULL, 'h'},
+        {"section-name",  required_argument, NULL, 's'},
+        {"section-index", required_argument, NULL, 2  },
+        {"version",       no_argument,       NULL, 'V'},
+        {NULL,            0,                 NULL, 0  }
+    };
+
+    static const struct option peres_options[] = {
+        {"all",           required_argument, NULL, 'a'},
+        {"format",        required_argument, NULL, 'f'},
+        {"info",          no_argument,       NULL, 'i'},
+        {"list",          no_argument,       NULL, 'l'},
+        {"statistics",    no_argument,       NULL, 's'},
+        {"extract",       no_argument,       NULL, 'x'},
+        {"named-extract", no_argument,       NULL, 'X'},
+        {"file-version",  no_argument,       NULL, 'v'},
+        {"version",       no_argument,       NULL, 'V'},
+        {"help",          no_argument,       NULL, 1  },
+        {NULL,            0,                 NULL, 0  }
+    };
+
+    static const struct option pescan_options[] = {
+        {"format",  required_argument, NULL, 'f'},
+        {"help",    no_argument,       NULL, 1  },
+        {"verbose", no_argument,       NULL, 'v'},
+        {"version", no_argument,       NULL, 'V'},
+        {NULL,      0,                 NULL, 0  }
+    };
+
+    static const struct option pesec_options[] = {
+        {"format",      required_argument, NULL, 'f'},
+        {"certoutform", required_argument, NULL, 'c'},
+        {"certout",     required_argument, NULL, 'o'},
+        {"help",        no_argument,       NULL, 1  },
+        {"version",     no_argument,       NULL, 'V'},
+        {NULL,          0,                 NULL, 0  }
+    };
+
+    static const struct option pestr_options[] = {
+        {"offset",     no_argument,       NULL, 'o'},
+        {"section",    no_argument,       NULL, 's'},
+        {"min-length", required_argument, NULL, 'n'},
+        {"help",       no_argument,       NULL, 1  },
+        {"version",    no_argument,       NULL, 'V'},
+        {NULL,         0,                 NULL, 0  }
+    };
+
+    //------------------------------------------------------------------------//
+
     static const mode_option header_mode[] = {
         {"dos",      NULL, 0, NULL, MODE_HEADER_DOS     },
         {"coff",     NULL, 0, NULL, MODE_HEADER_COFF    },
@@ -210,14 +296,14 @@ int main(int argc, char *argv[]) {
     };
 
     static const mode_option resource_mode[] = {
-        {"--info",         NULL, 0, NULL, 'i'},
-        {"--statistics",   NULL, 0, NULL, 's'},
-        {"--extract",      NULL, 0, NULL, 'e'},
-        {"--name-extract", NULL, 0, NULL, 'n'},
-        {"--file-version", NULL, 0, NULL, 'v'},
-        {"--list",         NULL, 0, NULL, 'l'},
-        {"--help",         NULL, 0, NULL, 1  },
-        {NULL,             NULL, 0, NULL, 0  }
+        {"extract",        NULL, 0, NULL, COMMAND_EXTRACT},
+        {"--info",         NULL, 0, NULL, 'i'            },
+        {"--statistics",   NULL, 0, NULL, 's'            },
+        {"--name-extract", NULL, 0, NULL, 'n'            },
+        {"--file-version", NULL, 0, NULL, 'v'            },
+        {"--list",         NULL, 0, NULL, 'l'            },
+        {"--help",         NULL, 0, NULL, 1              },
+        {NULL,             NULL, 0, NULL, 0              }
     };
 
     static const mode_option directory_mode[] = {
@@ -244,23 +330,23 @@ int main(int argc, char *argv[]) {
     // };
 
     static const mode_option base_mode[] = {
-        {"headers",      header_mode,    0,                 NULL, MODE_HEADER      },
-        {"directories",  directory_mode, 0,                 NULL, MODE_DIRECTORY   },
-        {"exports",      NULL,           0,                 NULL, MODE_EXPORTS     },
-        {"imports",      NULL,           0,                 NULL, MODE_IMPORTS     },
-        {"resources",    NULL,           0,                 NULL, MODE_RESOURCES   },
-        {"certificates", NULL,           0,                 NULL, MODE_CERTIFICATES},
-        {"sections",     section_mode,   0,                 NULL, MODE_SECTION     },
-        {"libraries",    NULL,           0,                 NULL, MODE_LIBRARY     },
-        {"strings",      NULL,           0,                 NULL, MODE_STRINGS     },
-        {"security",     NULL,           0,                 NULL, MODE_SECURITY    },
-        {"hash",         NULL,           optional_argument, NULL, COMMAND_HASH     },
-        {"scan",         NULL,           0,                 NULL, COMMAND_SCAN     },
-        {"--format",     NULL,           0,                 NULL, 'f'              },
-        {"--version",    NULL,           0,                 NULL, 'V'              },
-        {"--complete",   NULL,           0,                 NULL, 2                },
-        {"--help",       NULL,           0,                 NULL, 1                },
-        {NULL,           NULL,           0,                 NULL, 0                }
+        {"headers",      header_mode,    0, NULL, MODE_HEADER      },
+        {"directories",  directory_mode, 0, NULL, MODE_DIRECTORY   },
+        {"exports",      NULL,           0, NULL, MODE_EXPORTS     },
+        {"imports",      NULL,           0, NULL, MODE_IMPORTS     },
+        {"resources",    NULL,           0, NULL, MODE_RESOURCES   },
+        {"certificates", NULL,           0, NULL, MODE_CERTIFICATES},
+        {"sections",     section_mode,   0, NULL, MODE_SECTION     },
+        {"libraries",    NULL,           0, NULL, MODE_LIBRARY     },
+        {"strings",      NULL,           0, NULL, MODE_STRINGS     },
+        {"security",     NULL,           0, NULL, MODE_SECURITY    },
+        {"hash",         NULL,           0, NULL, COMMAND_HASH     },
+        {"scan",         NULL,           0, NULL, COMMAND_SCAN     },
+        {"--format",     NULL,           0, NULL, 'f'              },
+        {"--version",    NULL,           0, NULL, 'V'              },
+        {"--complete",   NULL,           0, NULL, 2                },
+        {"--help",       NULL,           0, NULL, 1                },
+        {NULL,           NULL,           0, NULL, 0                }
     };
 
     //------------------------------------------------------------------------//
@@ -311,6 +397,9 @@ int main(int argc, char *argv[]) {
         case 'a':
             argument_options.all = true;
             break;
+		case 'f':
+			argument_options.format = "text";
+			break;
         case 'l':
             argument_options.list = true;
             break;
@@ -349,11 +438,13 @@ int main(int argc, char *argv[]) {
     output_open_document();
 
     switch (select) {
+	case 0:
     case MODE_HEADER:
         // TODO: --list, --all
-        printf("* dos\n* coff\n* optional\n");
+        print_dos_header(&ctx);
+        print_coff_header(&ctx);
+        print_optional_header(&ctx);
         break;
-
     case MODE_HEADER_DOS:
         print_dos_header(&ctx);
         break;
@@ -402,10 +493,10 @@ int main(int argc, char *argv[]) {
         // case MODE_EXCEPTIONS:
 
     case MODE_SECURITY:
-		print_securities(&ctx);
+        print_securities(&ctx);
         // fall through
     case MODE_CERTIFICATES: {
-		// TODO: settings
+        // TODO: settings
         certificate_settings set = {1, NULL};
         parse_certificates(&set, &ctx);
         break;

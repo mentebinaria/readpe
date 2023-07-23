@@ -73,19 +73,18 @@
 void *malloc_s(size_t size);
 void *calloc_s(size_t nmemb, size_t size);
 
-#define PEV_INITIALIZE(config) \
-	do { \
-		memset(config, 0, sizeof(*config)); \
-		pev_load_config(config); \
-		int ret = plugins_load_all(config); \
-		if (ret < 0) \
-			exit(EXIT_FAILURE); \
-		output_init(); /* Requires plugin for text output. */ \
-	} while (0)
+static inline void PEV_INITIALIZE(pev_config_t *config) {
+	memset(config, 0, sizeof(*config));
+	pev_load_config(config);
+	int ret = plugins_load_all(config);
+	if (ret < 0)
+		exit(EXIT_FAILURE);
+	output_init(); /* Requires plugin for text output. */
+}
 
-#define PEV_FINALIZE(config) \
-	do { \
-		output_term(); \
-		plugins_unload_all(); \
-		pev_cleanup_config(config); \
-	} while (0)
+static inline void PEV_FINALIZE(pev_config_t *config) {
+	output_term();
+	plugins_unload_all();
+	pev_cleanup_config(config);
+}
+

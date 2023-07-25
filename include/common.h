@@ -76,9 +76,7 @@ void *calloc_s(size_t nmemb, size_t size);
 static inline void PEV_INITIALIZE(pev_config_t *config) {
 	memset(config, 0, sizeof(*config));
 	pev_load_config(config);
-	int ret = plugins_load_all(config);
-	if (ret < 0)
-		exit(EXIT_FAILURE);
+	plugins_load_all(config);
 	output_init(); /* Requires plugin for text output. */
 }
 

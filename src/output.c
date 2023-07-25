@@ -47,7 +47,7 @@
 // Global variables
 //
 
-#define FORMAT_ID_FOR_TEXT 3
+const unsigned int TEXT_SPACES = 32;
 
 static bool g_is_document_open = false;
 static const format_t *g_format = NULL;
@@ -62,6 +62,87 @@ typedef struct _format_entry {
 } format_entry_t;
 
 static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats = SLIST_HEAD_INITIALIZER(g_registered_formats);
+
+//
+// Internal text output
+//
+
+static char *escape_text(const format_t *format, const char *str) {
+	return output_plugin_api_ptr()->escape(format, str);
+}
+
+static void to_text_format(
+	const format_t *format,
+	const output_type_e type,
+	const output_scope_t *scope,
+	const char *key,
+	const char *value)
+{
+	static int indent = 0;
+
+	char * const escaped_key = format->escape_fn(format, key);
+	char * const escaped_value = format->escape_fn(format, value);
+
+	switch (type) {
+		default:
+			break;
+		case OUTPUT_TYPE_SCOPE_OPEN:
+			switch (scope->type) {
+				default:
+					break;
+				case OUTPUT_SCOPE_TYPE_DOCUMENT:
+					break;
+				case OUTPUT_SCOPE_TYPE_OBJECT:
+					if (key) {
+						printf(INDENT(indent++, "%s\n"), escaped_key);
+					} else {
+						indent++;
+					}
+					break;
+				case OUTPUT_SCOPE_TYPE_ARRAY:
+					//putchar('\n');
+					if (key) {
+						printf(INDENT(indent++, "%s\n"), escaped_key);
+					} else {
+						indent++;
+					}
+					break;
+			}
+			break;
+		case OUTPUT_TYPE_SCOPE_CLOSE:
+			indent--;
+			break;
+		case OUTPUT_TYPE_ATTRIBUTE:
+		{
+			const size_t key_size = key ? strlen(key) : 0;
+			if (key && value) {
+				printf(INDENT(indent, "%s:%*c%s\n"), escaped_key, (int)(TEXT_SPACES - key_size), ' ', escaped_value);
+			} else if (key) {
+				printf(INDENT(indent, "%s\n"), escaped_key);
+			} else if (value) {
+				printf(INDENT(indent, "%*c%s\n"), (int)(TEXT_SPACES - key_size + 1), ' ', escaped_value);
+			}
+			break;
+		}
+	}
+
+	if (escaped_key != NULL)
+		free(escaped_key);
+	if (escaped_value != NULL)
+		free(escaped_value);
+}
+
+// ----------------------------------------------------------------------------
+
+static const format_t g_text_format = {
+	0,
+	"text",
+	&to_text_format,
+	&escape_text,
+	NULL
+};
+
+
 
 //
 // Definition of internal functions
@@ -124,7 +205,7 @@ void output(const char *key, const char *value) {
 }
 
 void output_init(void) {
-	g_format = _lookup_format_by_id(FORMAT_ID_FOR_TEXT);
+	g_format = &g_text_format;
 	g_scope_stack = STACK_ALLOC(15);
 	if (g_scope_stack == NULL)
 		abort();

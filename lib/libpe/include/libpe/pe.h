@@ -58,7 +58,6 @@ extern "C" {
 static const uint32_t IMAGE_ORDINAL_FLAG32 = 0x80000000;
 static const uint64_t IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
 
-#define SIGNATURE_NE 0x454E // NE\0\0 in little-endian
 #define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
 
 typedef enum {

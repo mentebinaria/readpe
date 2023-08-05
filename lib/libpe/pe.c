@@ -177,14 +177,13 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	if (!pe_can_read(ctx, signature_ptr, LIBPE_SIZEOF_MEMBER(pe_file_t, signature)))
 		return LIBPE_E_INVALID_LFANEW;
 
-	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
+	// NT signature (PE\0\0)
 	ctx->pe.signature = *signature_ptr;
 
 	switch (ctx->pe.signature) {
 		default:
 			//fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
 			return LIBPE_E_INVALID_SIGNATURE;
-		case SIGNATURE_NE:
 		case SIGNATURE_PE:
 			break;
 	}

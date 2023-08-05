@@ -1115,6 +1115,15 @@ int main(int argc, char *argv[])
 
 	// coff/file header
 	if (options->coff || options->all_headers || options->all) {
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+		if (ctx.pe.signature) {
+			static char s[MAX_MSG];
+			output_open_scope("PE header", OUTPUT_SCOPE_TYPE_OBJECT);
+			snprintf(s, MAX_MSG, "0x%08x (PE)", ctx.pe.signature);
+			output("Signature", s);
+			output_close_scope();
+		}
+#endif
 		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
 		if (header_ptr)
 			print_coff_header(header_ptr);

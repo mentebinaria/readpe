@@ -22,6 +22,7 @@
 #ifndef LIBPE_H
 #define LIBPE_H
 
+#include <stdint.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,7 +47,10 @@ extern "C" {
 #include "resources.h"
 #include "utils.h"
 
-#define MAGIC_MZ 0x5a4d // Belongs to the DOS header
+static const char __MAGIC_MZ[2] = {'M','Z'};
+static const uint16_t MAGIC_MZ = ('Z' <<8) + 'M';
+
+// #define MAGIC_MZ 0x5a4d // Belongs to the DOS header
 #define MAX_DIRECTORIES 16
 #define MAX_SECTIONS 96
 

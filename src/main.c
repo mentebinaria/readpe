@@ -43,6 +43,7 @@
 #include "pestr.h"
 #include "readpe.h"
 #include <bits/getopt_ext.h>
+#include <bits/stdint-uintn.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,7 +78,7 @@ enum ARGUMENTS {
     // MODE_IAT,
     // MODE_DELAY_IMPORT_DESCRIPTOR,
     // MODE_CLR_RUNTIME_HEADER,
-    MODE_SECURITY, // TODO: Duplicate of MODE_CERTIFICATES,
+    MODE_SECURITY, // Duplicate of MODE_CERTIFICATES,
     MODE_SECTION = 1200,
     MODE_LIBRARY = 1300, // -- peldd
     MODE_STRINGS = 1400, // -- pestr
@@ -96,7 +97,6 @@ enum ARGUMENTS {
 
     COMMAND_DISASSAMBLE = 100000, // -- pedis
     COMMAND_PACK,                 // -- pepack
-    COMMAND_TRANSFORM = 101000,
     // COMMAND_ADDRESSING_RELATIVE, // -- ofs2rva
     // COMMAND_ADDRESSING_OFFSET,   // -- rva2ofs
 };
@@ -110,23 +110,54 @@ enum HASH_ALGO {
     HASH_ALL
 };
 
-static struct argument_options_t {
+enum ARG_VARIABLE_TYPE {
+    VAR_BOOL = 1,
+    VAR_CSTRING,
+    VAR_UINT16
+};
+
+static struct _conf_t {
     unsigned int list : 1;
     unsigned int all : 1;
-	char *format;
-} argument_options;
+    char *format;
+    certificate_settings certificate;
+    string_settings string;
+} conf;
 
 typedef struct {
     const char *const name;
     const void *const sub;
+    const int value;
     const int has_arg;
-    const int *const flag;
-    const int val;
+    const void *variable;
+    const enum ARG_VARIABLE_TYPE type;
 } mode_option;
 
-int getopt_mode(int argc, char *const argv[], const mode_option **mode_options,
-                int *restrict select, int *restrict index) {
-    if (*index >= argc) return -1;
+bool str2bool(const char *const str)
+{
+    if (str == NULL)
+	{
+		// TODO Do this better
+		EXIT_ERROR("Internal error (str2bool)");
+	}
+    else if (*str == '0')
+        return false;
+    else if (*str == '1')
+        return true;
+    else if (strcmp(str, "false") == 0)
+        return false;
+    else if (strcmp(str, "true") == 0)
+        return true;
+    else
+        EXIT_ERROR("Bad bool variable");
+}
+
+int getopt_mode(int argc, char *const argv[],
+                const mode_option **const mode_options, int *restrict select,
+                int *restrict index)
+{
+    if (*index >= argc)
+        return -1;
     char *const arg = argv[*index];
     *index += 1;
 
@@ -134,15 +165,52 @@ int getopt_mode(int argc, char *const argv[], const mode_option **mode_options,
 
     for (int i = 0; (*mode_options)[i].name != NULL; ++i) {
         mode_option opt = (*mode_options)[i];
+		char *eq = strchr(arg, '=');
+
+		if(eq != NULL) {
+			*eq = '\0';
+		}
         // printf("%s %s\n", arg, opt.name);
-        if (strcmp(arg, opt.name) == 0) {
-            val = opt.val;
+        if (strcmp(opt.name, arg) == 0) {
+            val = opt.value;
+
+            if (opt.variable != NULL) {
+                char *var;
+                if (opt.has_arg) {
+                    if (eq == NULL) {
+                        if (*index < argc) {
+                            var = argv[*index];
+                            *index += 1;
+                        } else {
+							EXIT_ERROR("NO NEXT VAL ERROR");
+						}
+                    } else {
+                        var = eq+1;
+                    }
+                }
+
+                switch (opt.type) {
+                case VAR_BOOL:
+                    if (opt.has_arg)
+                        *(bool *)opt.variable = str2bool(var);
+                    else
+                        *(bool *)opt.variable = true;
+                    break;
+                case VAR_UINT16:
+                    if (!opt.has_arg)
+                        *(uint16_t *)opt.variable = 99;
+                    break;
+                }
+            }
+
             if (opt.sub != NULL) {
                 *mode_options = opt.sub;
             }
+
             if (val >= MODE_START) {
                 *select = val;
             }
+
             break;
         }
     }
@@ -151,7 +219,8 @@ int getopt_mode(int argc, char *const argv[], const mode_option **mode_options,
 }
 
 // GNU compliant version output
-void version(void) {
+__attribute__((noreturn)) void version(void)
+{
     printf("readpe %s\n"
            "Copyright (C) 2023 readpe authors\n"
            "License GPLv2+: GNU GPL version 2 or later "
@@ -164,18 +233,22 @@ void version(void) {
 }
 
 // GNU compliant help output
-void help(void) {
+__attribute__((noreturn)) void help(void)
+{
     printf("Usage: readpe [<pe-file>] [<mode>] [<command>] [<pe-file>]\n");
 
-    printf("\nReport bugs to: https://github.com/mentebinaria/readpe/issues\n");
+    printf(
+        "\nReport bugs to: https://github.com/mentebinaria/readpe/issues\n");
     exit(EXIT_SUCCESS);
 }
 
-void complete(const mode_option *opts) {
+void complete(const mode_option *opts)
+{
     size_t i = 0;
     const mode_option *c;
     while ((c = &opts[i])) {
-        if (c->name == NULL) break;
+        if (c->name == NULL)
+            break;
         printf("%s ", c->name);
         ++i;
     }
@@ -185,22 +258,33 @@ void complete(const mode_option *opts) {
 
 void usage(void) {}
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     const char *tmp_name = strrchr(argv[0], '/');
     // If no '/' in caller (called from env) we set it to the original caller
     const char *bin_name = tmp_name ? tmp_name + 1 : argv[0];
 
     // Legacy executables
-    if (strstr(bin_name, "pedis") == bin_name) exit(pedis(argc, argv));
-    if (strstr(bin_name, "peldd") == bin_name) exit(peldd(argc, argv));
-    if (strstr(bin_name, "peres") == bin_name) exit(peres(argc, argv));
-    if (strstr(bin_name, "pesec") == bin_name) exit(pesec(argc, argv));
-    if (strstr(bin_name, "pestr") == bin_name) exit(pestr(argc, argv));
-    if (strstr(bin_name, "pehash") == bin_name) exit(pehash(argc, argv));
-    if (strstr(bin_name, "pepack") == bin_name) exit(pepack(argc, argv));
-    if (strstr(bin_name, "pescan") == bin_name) exit(pescan(argc, argv));
-    if (strstr(bin_name, "ofs2rva") == bin_name) exit(ofs2rva(argc, argv));
-    if (strstr(bin_name, "rva2ofs") == bin_name) exit(rva2ofs(argc, argv));
+    if (strstr(bin_name, "peldd") == bin_name)
+        exit(peldd(argc, argv));
+    if (strstr(bin_name, "pestr") == bin_name)
+        exit(pestr(argc, argv));
+    if (strstr(bin_name, "pescan") == bin_name)
+        exit(pescan(argc, argv));
+    if (strstr(bin_name, "pehash") == bin_name)
+        exit(pehash(argc, argv));
+    if (strstr(bin_name, "pesec") == bin_name)
+        exit(pesec(argc, argv));
+    if (strstr(bin_name, "peres") == bin_name)
+        exit(peres(argc, argv));
+    if (strstr(bin_name, "pedis") == bin_name)
+        exit(pedis(argc, argv));
+    if (strstr(bin_name, "pepack") == bin_name)
+        exit(pepack(argc, argv));
+    if (strstr(bin_name, "ofs2rva") == bin_name)
+        exit(ofs2rva(argc, argv));
+    if (strstr(bin_name, "rva2ofs") == bin_name)
+        exit(rva2ofs(argc, argv));
 
     //------------------------------------------------------------------------//
 
@@ -286,36 +370,64 @@ int main(int argc, char *argv[]) {
 
     //------------------------------------------------------------------------//
 
-    static const mode_option header_mode[] = {
-        {"dos",      NULL, 0, NULL, MODE_HEADER_DOS     },
-        {"coff",     NULL, 0, NULL, MODE_HEADER_COFF    },
-        {"optional", NULL, 0, NULL, MODE_HEADER_OPTIONAL},
-        {"--list",   NULL, 0, NULL, 'l'                 },
-        {"--help",   NULL, 0, NULL, 1                   },
-        {NULL,       NULL, 0, NULL, 0                   }
+    static const mode_option default_mode[] = {
+        {"--list", NULL, 'l', 0, NULL, 0},
+        {"--help", NULL, 1,   0, NULL, 0},
+        {NULL,     NULL, 0,   0, NULL, 0}
     };
 
-    static const mode_option resource_mode[] = {
-        {"extract",        NULL, 0, NULL, COMMAND_EXTRACT},
-        {"--info",         NULL, 0, NULL, 'i'            },
-        {"--statistics",   NULL, 0, NULL, 's'            },
-        {"--name-extract", NULL, 0, NULL, 'n'            },
-        {"--file-version", NULL, 0, NULL, 'v'            },
-        {"--list",         NULL, 0, NULL, 'l'            },
-        {"--help",         NULL, 0, NULL, 1              },
-        {NULL,             NULL, 0, NULL, 0              }
+    static const mode_option header_mode[] = {
+        {"dos",      NULL, MODE_HEADER_DOS,      0, NULL, 0},
+        {"coff",     NULL, MODE_HEADER_COFF,     0, NULL, 0},
+        {"optional", NULL, MODE_HEADER_OPTIONAL, 0, NULL, 0},
+        {"--list",   NULL, 'l',                  0, NULL, 0},
+        {"--help",   NULL, 1,                    0, NULL, 0},
+        {NULL,       NULL, 0,                    0, NULL, 0}
     };
 
     static const mode_option directory_mode[] = {
-        {"--list", NULL, 0, NULL, 'l'},
-        {"--help", NULL, 0, NULL, 1  },
-        {NULL,     NULL, 0, NULL, 0  }
+        {"--list", NULL, 'l', 0, NULL, 0},
+        {"--help", NULL, 1,   0, NULL, 0},
+        {NULL,     NULL, 0,   0, NULL, 0}
+    };
+
+    static const mode_option resource_mode[] = {
+        {"extract",        NULL, COMMAND_EXTRACT, 0, NULL, 0},
+        {"--info",         NULL, 'i',             0, NULL, 0},
+        {"--statistics",   NULL, 's',             0, NULL, 0},
+        {"--name-extract", NULL, 'n',             0, NULL, 0},
+        {"--file-version", NULL, 'v',             0, NULL, 0},
+        {"--list",         NULL, 'l',             0, NULL, 0},
+        {"--help",         NULL, 1,               0, NULL, 0},
+        {NULL,             NULL, 0,               0, NULL, 0}
+    };
+
+    static const mode_option certificate_mode[] = {
+        {"--list",        NULL, 'l', 0,                 NULL, 0},
+        {"--certoutform", NULL, 'c', required_argument, NULL, 0},
+        {"--certout",     NULL, 'o', required_argument, NULL, 0},
+        {"--help",        NULL, 1,   0,                 NULL, 0},
+        {NULL,            NULL, 0,   0,                 NULL, 0}
+    };
+
+    static const mode_option security_mode[] = {
+        {"--list", NULL, 'l', 0, NULL, 0},
+        {"--help", NULL, 1,   0, NULL, 0},
+        {NULL,     NULL, 0,   0, NULL, 0}
     };
 
     static const mode_option section_mode[] = {
-        {"--list", NULL, 0, NULL, 'l'},
-        {"--help", NULL, 0, NULL, 1  },
-        {NULL,     NULL, 0, NULL, 0  }
+        {"--list", NULL, 'l', 0, NULL, 0},
+        {"--help", NULL, 1,   0, NULL, 0},
+        {NULL,     NULL, 0,   0, NULL, 0}
+    };
+
+    static const mode_option strings_mode[] = {
+        {"--offset",     NULL, 'o', true,  &conf.string.offset,  VAR_BOOL  },
+        {"--section",    NULL, 's', false, &conf.string.section, VAR_BOOL  },
+        {"--min-length", NULL, 'n', true,  &conf.string.strsize, VAR_UINT16},
+        {"--help",       NULL, 1,   false, NULL,                 0         },
+        {NULL,           NULL, 0,   0,     NULL,                 0         }
     };
 
     // static const mode_option hash_mode[] = {
@@ -330,23 +442,22 @@ int main(int argc, char *argv[]) {
     // };
 
     static const mode_option base_mode[] = {
-        {"headers",      header_mode,    0, NULL, MODE_HEADER      },
-        {"directories",  directory_mode, 0, NULL, MODE_DIRECTORY   },
-        {"exports",      NULL,           0, NULL, MODE_EXPORTS     },
-        {"imports",      NULL,           0, NULL, MODE_IMPORTS     },
-        {"resources",    NULL,           0, NULL, MODE_RESOURCES   },
-        {"certificates", NULL,           0, NULL, MODE_CERTIFICATES},
-        {"sections",     section_mode,   0, NULL, MODE_SECTION     },
-        {"libraries",    NULL,           0, NULL, MODE_LIBRARY     },
-        {"strings",      NULL,           0, NULL, MODE_STRINGS     },
-        {"security",     NULL,           0, NULL, MODE_SECURITY    },
-        {"hash",         NULL,           0, NULL, COMMAND_HASH     },
-        {"scan",         NULL,           0, NULL, COMMAND_SCAN     },
-        {"--format",     NULL,           0, NULL, 'f'              },
-        {"--version",    NULL,           0, NULL, 'V'              },
-        {"--complete",   NULL,           0, NULL, 2                },
-        {"--help",       NULL,           0, NULL, 1                },
-        {NULL,           NULL,           0, NULL, 0                }
+        {"headers",      header_mode,      MODE_HEADER,       0, NULL, 0},
+        {"directories",  directory_mode,   MODE_DIRECTORY,    0, NULL, 0},
+        {"exports",      default_mode,     MODE_EXPORTS,      0, NULL, 0},
+        {"imports",      default_mode,     MODE_IMPORTS,      0, NULL, 0},
+        {"resources",    resource_mode,    MODE_RESOURCES,    0, NULL, 0},
+        {"certificates", certificate_mode, MODE_CERTIFICATES, 0, NULL, 0},
+        {"security",     security_mode,    MODE_SECURITY,     0, NULL, 0},
+        {"sections",     section_mode,     MODE_SECTION,      0, NULL, 0},
+        {"libraries",    default_mode,     MODE_LIBRARY,      0, NULL, 0},
+        {"strings",      strings_mode,     MODE_STRINGS,      0, NULL, 0},
+        {"scan",         NULL,             COMMAND_SCAN,      0, NULL, 0},
+        {"hash",         NULL,             COMMAND_HASH,      0, NULL, 0},
+        {"--format",     NULL,             'f',               0, NULL, 0},
+        {"--version",    NULL,             'V',               0, NULL, 0},
+        {"--help",       NULL,             1,                 0, NULL, 0},
+        {NULL,           NULL,             0,                 0, NULL, 0}
     };
 
     //------------------------------------------------------------------------//
@@ -370,7 +481,8 @@ int main(int argc, char *argv[]) {
     };
     */
 
-    if (argc < 2) help();
+    if (argc < 2)
+        help();
 
     const mode_option *mode = base_mode;
     int c, f_arg = 0, select = 0, index = 1;
@@ -381,7 +493,8 @@ int main(int argc, char *argv[]) {
     }
 
     while ((c = getopt_mode(argc, argv, &mode, &select, &index))) {
-        if (c < 0) break;
+        if (c < 0)
+            break;
         // printf("%i\n", c);
 
         switch (c) {
@@ -395,15 +508,14 @@ int main(int argc, char *argv[]) {
             version();
             break;
         case 'a':
-            argument_options.all = true;
+            conf.all = true;
             break;
-		case 'f':
-			argument_options.format = "text";
-			break;
+        case 'f':
+            conf.format = "text";
+            break;
         case 'l':
-            argument_options.list = true;
+            conf.list = true;
             break;
-
         default:
             break;
             // exit(EXIT_FAILURE);
@@ -413,7 +525,8 @@ int main(int argc, char *argv[]) {
     if ((f_arg == 0) && (access(argv[argc - 1], F_OK) == 0)) {
         f_arg = argc - 1;
     }
-    if (f_arg == 0) help();
+    if (f_arg == 0)
+        help();
 
     // printf("%i\n", file);
 
@@ -430,7 +543,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    if (!pe_is_pe(&ctx)) EXIT_ERROR("not a valid PE file");
+    if (!pe_is_pe(&ctx))
+        EXIT_ERROR("not a valid PE file");
 
     pev_config_t config;
     PEV_INITIALIZE(&config);
@@ -438,7 +552,15 @@ int main(int argc, char *argv[]) {
     output_open_document();
 
     switch (select) {
-	case 0:
+    case ARG_NONE:
+        print_dos_header(&ctx);
+        print_coff_header(&ctx);
+        print_optional_header(&ctx);
+        print_directories(&ctx);
+        print_imports(&ctx);
+        print_exports(&ctx);
+        print_sections(&ctx);
+        break;
     case MODE_HEADER:
         // TODO: --list, --all
         print_dos_header(&ctx);
@@ -454,26 +576,18 @@ int main(int argc, char *argv[]) {
     case MODE_HEADER_OPTIONAL:
         print_optional_header(&ctx);
         break;
-
-    case MODE_DIRECTORY: {
-        IMAGE_DATA_DIRECTORY **directories = get_pe_directories(&ctx);
-        if (directories != NULL) print_directories(&ctx);
+    case MODE_DIRECTORY:
+        print_directories(&ctx);
         break;
-    }
-
-    case MODE_EXPORTS: {
-        IMAGE_DATA_DIRECTORY **directories = get_pe_directories(&ctx);
-        if (directories != NULL) print_exports(&ctx);
+    case MODE_EXPORTS:
+        print_exports(&ctx);
         break;
-    }
-
-    case MODE_IMPORTS: {
-        IMAGE_DATA_DIRECTORY **directories = get_pe_directories(&ctx);
-        if (directories != NULL) print_imports(&ctx);
+    case MODE_IMPORTS:
+        print_imports(&ctx);
         break;
-    }
 
     case MODE_RESOURCES: {
+        // TODO
         pe_resources_t *resources = pe_resources(&ctx);
         if (resources == NULL || resources->err != LIBPE_E_OK) {
             LIBPE_WARNING("This file has no resources");
@@ -485,7 +599,8 @@ int main(int argc, char *argv[]) {
         peres_show_nodes(&ctx, root_node);
         peres_show_stats(root_node);
         peres_show_list(&ctx, root_node);
-        // peres_save_all_resources(&ctx, root_node, options->namedExtract);
+        // peres_save_all_resources(&ctx, root_node,
+        // options->namedExtract);
         peres_show_version(&ctx, root_node);
         break;
     }
@@ -495,12 +610,9 @@ int main(int argc, char *argv[]) {
     case MODE_SECURITY:
         print_securities(&ctx);
         // fall through
-    case MODE_CERTIFICATES: {
-        // TODO: settings
-        certificate_settings set = {1, NULL};
-        parse_certificates(&set, &ctx);
+    case MODE_CERTIFICATES:
+        parse_certificates(&conf.certificate, &ctx);
         break;
-    }
 
         // case MODE_BASE_RELOCATIONS:
         // case MODE_DEBUG:
@@ -513,14 +625,9 @@ int main(int argc, char *argv[]) {
         // case MODE_DELAY_IMPORT_DESCRIPTOR:
         // case MODE_CLR_RUNTIME_HEADER:
 
-    case MODE_SECTION: {
-        if (pe_sections(&ctx) != NULL)
-            print_sections(&ctx);
-        else {
-            LIBPE_WARNING("unable to read sections");
-        }
+    case MODE_SECTION:
+        print_sections(&ctx);
         break;
-    }
 
     case MODE_LIBRARY: {
         IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
@@ -533,11 +640,9 @@ int main(int argc, char *argv[]) {
         break;
     }
 
-    case MODE_STRINGS: {
-        string_settings set;
-        print_strings(&ctx, &set);
+    case MODE_STRINGS:
+        print_strings(&ctx, &conf.string);
         break;
-    }
 
     case COMMAND_HASH:
         // case COMMAND_HASH_MD5:
@@ -557,14 +662,13 @@ int main(int argc, char *argv[]) {
 
     case COMMAND_DISASSAMBLE:
     case COMMAND_PACK:
-    case COMMAND_TRANSFORM:
         // case COMMAND_ADDRESSING_RELATIVE:
         // case COMMAND_ADDRESSING_OFFSET:
         printf("Not Implemented\n");
         break;
-    default:
-        // printf("Unknown Argument: %d\n", select);
-        break;
+        // default:
+        //     // printf("Unknown Argument: %d\n", select);
+        //     break;
     }
 
     output_close_document();

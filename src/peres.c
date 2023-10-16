@@ -436,7 +436,7 @@ fallback_untouched:
 
 static void peres_save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node, bool namedExtract)
 {
-	UNUSED(ctx);
+	// UNUSED(ctx);
 	assert(node != NULL);
 	assert(node->type == LIBPE_RDT_DATA_ENTRY);
 	assert(node->dirLevel == LIBPE_RDT_LEVEL3);

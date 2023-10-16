@@ -361,8 +361,10 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 	const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
 
 	output_scope_t * const scope = malloc(sizeof *scope);
-	if (scope == NULL)
+	if (scope == NULL) {
+		fprintf(stderr, "DEBUG: output_open_scope: vscope_depth=%d ABORT\n", STACK_COUNT(g_scope_stack));
 		abort(); // Abort because it failed miserably!
+	}
 
 	scope->name = scope_name == NULL ? NULL : strdup(scope_name);
 	scope->type = scope_type;
@@ -374,7 +376,7 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type) {
 		scope->parent_type = parent_scope->type;
 	}
 
-	//fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
+	// fprintf(stderr, "DEBUG: output_open_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 
@@ -397,7 +399,7 @@ void output_close_scope(void) {
 	const char *value = NULL;
 	const output_type_e type = OUTPUT_TYPE_SCOPE_CLOSE;
 
-	//fprintf(stderr, "DEBUG: output_close_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
+	// fprintf(stderr, "DEBUG: output_close_scope: scope_depth=%d\n", STACK_COUNT(g_scope_stack));
 	if (g_format != NULL)
 		g_format->output_fn(g_format, type, scope, key, value);
 

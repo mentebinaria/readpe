@@ -225,12 +225,17 @@ void print_sections(pe_ctx_t *ctx)
 	output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
 
 	const uint32_t num_sections = pe_sections_count(ctx);
-	if (num_sections == 0 || num_sections > MAX_SECTIONS)
+	if (num_sections == 0 || num_sections > MAX_SECTIONS) {
+		output_close_scope(); // Sections
 		return;
+	}
 
 	IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
-	if (sections == NULL)
+	if (sections == NULL) {
+        LIBPE_WARNING("unable to read sections");
+		output_close_scope(); // Sections
 		return;
+	}
 
 	static char s[MAX_MSG];
 	static char section_name_buffer[SECTION_NAME_SIZE+1];

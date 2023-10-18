@@ -58,8 +58,7 @@ extern "C" {
 static const uint32_t IMAGE_ORDINAL_FLAG32 = 0x80000000;
 static const uint64_t IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
 
-#define SIGNATURE_NE 0x454E // NE\0\0 in little-endian
-#define SIGNATURE_PE 0x4550 // PE\0\0 in little-endian
+#define SIGNATURE_PE 0x00004550 // PE\0\0 in little-endian
 
 typedef enum {
 	LIBPE_OPT_NOCLOSE_FD = (1 << 0), // Keeps `stream` open for further usage.
@@ -76,6 +75,9 @@ pe_err_e pe_unload(pe_ctx_t *ctx);
 pe_err_e pe_parse(pe_ctx_t *ctx);
 bool pe_is_loaded(const pe_ctx_t *ctx);
 bool pe_is_pe(const pe_ctx_t *ctx);
+bool pe_is_exec(const pe_ctx_t *ctx);
+bool pe_is_obj(const pe_ctx_t *ctx);
+bool pe_is_rom(const pe_ctx_t *ctx);
 bool pe_is_dll(const pe_ctx_t *ctx);
 uint64_t pe_filesize(const pe_ctx_t *ctx);
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva);
@@ -97,9 +99,15 @@ const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *sec
 const char *pe_machine_type_name(MachineType type);
 const char *pe_image_characteristic_name(ImageCharacteristics characteristic);
 const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characteristic);
+const char *pe_dll_image_dllcharacteristic_name(ImageDllCharacteristics characteristic);
+const char *pe_image_loader_flags_name(ImageLoaderFlags flags);
+const char *pe_dll_image_loader_flags_name(ImageLoaderFlags flags);
 const char *pe_windows_subsystem_name(WindowsSubsystem subsystem);
 const char *pe_directory_name(ImageDirectoryEntry entry);
 const char *pe_section_characteristic_name(SectionCharacteristics characteristic);
+const char *pe_m68k_section_characteristic_name(SectionCharacteristics characteristic);
+const char *pe_rom_section_characteristic_name(ROMSectionCharacteristics characteristic);
+bool pe_use_rom_section_characteristic(pe_ctx_t *ctx);
 
 // Hash functions
 size_t pe_hash_recommended_size(void);

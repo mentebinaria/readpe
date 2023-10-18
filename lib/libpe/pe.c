@@ -170,32 +170,40 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 
 pe_err_e pe_parse(pe_ctx_t *ctx) {
 	ctx->pe.dos_hdr = ctx->map_addr;
-	if (ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
-		return LIBPE_E_NOT_A_PE_FILE;
+	if (ctx->pe.dos_hdr->e_magic == MAGIC_MZ) {
 
 	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
 		ctx->pe.dos_hdr->e_lfanew);
 	if (!pe_can_read(ctx, signature_ptr, LIBPE_SIZEOF_MEMBER(pe_file_t, signature)))
 		return LIBPE_E_INVALID_LFANEW;
 
-	// NT signature (PE\0\0), or 16-bit Windows NE signature (NE\0\0).
+	// NT signature (PE\0\0)
 	ctx->pe.signature = *signature_ptr;
 
 	switch (ctx->pe.signature) {
 		default:
 			//fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
 			return LIBPE_E_INVALID_SIGNATURE;
-		case SIGNATURE_NE:
 		case SIGNATURE_PE:
 			break;
 	}
 
 	ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
 		LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
+
+	} else if (pe_machine_type_name(ctx->pe.dos_hdr->e_magic) != NULL) {
+		ctx->pe.coff_hdr = (void *)ctx->pe.dos_hdr;
+		ctx->pe.dos_hdr = NULL;
+	} else {
+		return LIBPE_E_NOT_A_PE_FILE;
+	}
+
 	if (!pe_can_read(ctx, ctx->pe.coff_hdr, sizeof(IMAGE_COFF_HEADER)))
 		return LIBPE_E_MISSING_COFF_HEADER;
 
 	ctx->pe.num_sections = ctx->pe.coff_hdr->NumberOfSections;
+
+	if (ctx->pe.coff_hdr->SizeOfOptionalHeader > 0) {
 
 	// Optional header points right after the COFF header.
 	ctx->pe.optional_hdr_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr,
@@ -211,11 +219,22 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 
 	switch (ctx->pe.optional_hdr.type) {
 		default:
-		case MAGIC_ROM:
-			// Oh boy! We do not support ROM. Abort!
-			//fprintf(stderr, "ROM image is not supported\n");
 			return LIBPE_E_UNSUPPORTED_IMAGE;
+		case MAGIC_ROM:
+			if (ctx->pe.coff_hdr->SizeOfOptionalHeader !=
+			    sizeof(IMAGE_ROM_OPTIONAL_HEADER))
+				return LIBPE_E_UNSUPPORTED_IMAGE;
+			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
+				sizeof(IMAGE_ROM_OPTIONAL_HEADER)))
+				return LIBPE_E_MISSING_OPTIONAL_HEADER;
+			ctx->pe.optional_hdr._rom = ctx->pe.optional_hdr_ptr;
+			ctx->pe.optional_hdr.length = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
+			ctx->pe.entrypoint = ctx->pe.optional_hdr._rom->AddressOfEntryPoint;
+			break;
 		case MAGIC_PE32:
+			if (ctx->pe.coff_hdr->SizeOfOptionalHeader <
+			    sizeof(IMAGE_OPTIONAL_HEADER_32))
+				return LIBPE_E_UNSUPPORTED_IMAGE;
 			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
 				sizeof(IMAGE_OPTIONAL_HEADER_32)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
@@ -227,6 +246,9 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			ctx->pe.imagebase = ctx->pe.optional_hdr._32->ImageBase;
 			break;
 		case MAGIC_PE64:
+			if (ctx->pe.coff_hdr->SizeOfOptionalHeader <
+			    sizeof(IMAGE_OPTIONAL_HEADER_64))
+				return LIBPE_E_UNSUPPORTED_IMAGE;
 			if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
 				sizeof(IMAGE_OPTIONAL_HEADER_64)))
 				return LIBPE_E_MISSING_OPTIONAL_HEADER;
@@ -239,6 +261,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			break;
 	}
 
+	}
+
 	if (ctx->pe.num_directories > MAX_DIRECTORIES) {
 		//fprintf(stderr, "Too many directories (%u)\n", ctx->pe.num_directories);
 		return LIBPE_E_TOO_MANY_DIRECTORIES;
@@ -249,13 +273,13 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 		return LIBPE_E_TOO_MANY_SECTIONS;
 	}
 
-	ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
-		ctx->pe.optional_hdr.length);
+	if (ctx->pe.optional_hdr_ptr)
+		ctx->pe.directories_ptr = LIBPE_PTR_ADD(ctx->pe.optional_hdr_ptr,
+			ctx->pe.optional_hdr.length);
 
-	uint32_t sections_offset = LIBPE_SIZEOF_MEMBER(pe_file_t, signature)
-		+ sizeof(IMAGE_FILE_HEADER)
+	uint32_t sections_offset = sizeof(IMAGE_FILE_HEADER)
 		+ (uint32_t)ctx->pe.coff_hdr->SizeOfOptionalHeader;
-	ctx->pe.sections_ptr = LIBPE_PTR_ADD(signature_ptr, sections_offset);
+	ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr, sections_offset);
 
 	if (ctx->pe.num_directories > 0) {
 		ctx->pe.directories = malloc(ctx->pe.num_directories
@@ -283,6 +307,25 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 		ctx->pe.sections_ptr = NULL;
 	}
 
+	if (ctx->pe.coff_hdr->PointerToSymbolTable != 0) {
+		uint32_t symbols_offset = ctx->pe.coff_hdr->PointerToSymbolTable;
+		if (symbols_offset < ctx->map_size) {
+			ctx->pe.symbols_ptr = LIBPE_PTR_ADD(ctx->map_addr, symbols_offset);
+			ctx->pe.num_symbols = ctx->pe.coff_hdr->NumberOfSymbols;
+			if (symbols_offset + ctx->pe.num_symbols * 18 < ctx->map_size) {
+				ctx->pe.strings_ptr = LIBPE_PTR_ADD(ctx->pe.symbols_ptr, ctx->pe.num_symbols * 18);
+				ctx->pe.strings_size = *(uint32_t *)ctx->pe.strings_ptr;
+				if (ctx->pe.strings_size < 4 ||
+				    symbols_offset + ctx->pe.num_symbols * 18 + ctx->pe.strings_size > ctx->map_size) {
+					ctx->pe.strings_ptr = NULL;
+					ctx->pe.strings_size = 0;
+				}
+			}
+			if (ctx->pe.num_symbols == 0)
+				ctx->pe.symbols_ptr = NULL;
+		}
+	}
+
 	return LIBPE_E_OK;
 }
 
@@ -291,6 +334,10 @@ bool pe_is_loaded(const pe_ctx_t *ctx) {
 }
 
 bool pe_is_pe(const pe_ctx_t *ctx) {
+	return pe_is_exec(ctx) || pe_is_obj(ctx) || pe_is_rom(ctx);
+}
+
+bool pe_is_exec(const pe_ctx_t *ctx) {
 	// Check MZ header
 	if (ctx->pe.dos_hdr == NULL || ctx->pe.dos_hdr->e_magic != MAGIC_MZ)
 		return false;
@@ -302,7 +349,29 @@ bool pe_is_pe(const pe_ctx_t *ctx) {
 	return true;
 }
 
+bool pe_is_obj(const pe_ctx_t *ctx) {
+	// Object file does not have neither MZ header nor PE\0\0 signature nor optional header
+	if (ctx->pe.dos_hdr != NULL || ctx->pe.signature != 0 || ctx->pe.optional_hdr_ptr != NULL)
+		return false;
+
+	return true;
+}
+
+bool pe_is_rom(const pe_ctx_t *ctx) {
+	// ROM file does not have neither MZ header nor PE\0\0 signature
+	if (ctx->pe.dos_hdr != NULL || ctx->pe.signature != 0)
+		return false;
+
+	// ROM file has either MAGIC_ROM optional header (R3000, R4000, R10000, ALPHA) or MAGIC_PE32 optional header (I386, MPPC_601, POWERPC, ...)
+	if (ctx->pe.optional_hdr_ptr == NULL || (ctx->pe.optional_hdr.type != MAGIC_ROM && ctx->pe.optional_hdr.type != MAGIC_PE32))
+		return false;
+
+	return true;
+}
+
 bool pe_is_dll(const pe_ctx_t *ctx) {
+	if (!pe_is_exec(ctx))
+		return false;
 	if (ctx->pe.coff_hdr == NULL)
 		return false;
 	return ctx->pe.coff_hdr->Characteristics & IMAGE_FILE_DLL ? true : false;
@@ -393,6 +462,8 @@ IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx) {
 }
 
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx) {
+	if (ctx->pe.optional_hdr_ptr == NULL)
+		return NULL;
 	return &ctx->pe.optional_hdr;
 }
 
@@ -431,10 +502,19 @@ IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name) {
 }
 
 const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *section_hdr, char *out_name, size_t out_name_size) {
-	assert(ctx != NULL); // TODO we don't actually need *ctx here
+	assert(ctx != NULL);
 	assert(out_name_size >= SECTION_NAME_SIZE+1);
 	strncpy(out_name, (const char *)section_hdr->Name, SECTION_NAME_SIZE);
-	out_name[out_name_size-1] = '\0';
+	out_name[SECTION_NAME_SIZE-1] = '\0';
+	if (out_name[0] == '/' && out_name[1] >= '0' && out_name[1] <= '9' && ctx->pe.strings_ptr) {
+		char *endptr = NULL;
+		long int offset = -1;
+		errno = 0;
+		offset = strtol(out_name+1, &endptr, 10);
+		if (errno == 0 && *endptr == 0 && offset >= 0 && offset < ctx->pe.strings_size) {
+			return ctx->pe.strings_ptr + offset;
+		}
+	}
 	return out_name;
 }
 
@@ -448,6 +528,7 @@ const char *pe_machine_type_name(MachineType type) {
 
 	static const MachineEntry names[] = {
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_UNKNOWN),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ALPHA_OLD),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ALPHA),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ALPHA64),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_AM33),
@@ -455,25 +536,35 @@ const char *pe_machine_type_name(MachineType type) {
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARM),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARMV7),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARM64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARM64EC),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_ARM64X),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_CEE),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_CEF),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_CHPE_X86),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_EBC),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_I386),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_I860),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_IA64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_LOONGARCH32),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_LOONGARCH64),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_M32R),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_M68K),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPS16),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPSFPU),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MIPSFPU16),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_MPPC_601),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_OMNI),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_PARISC),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPC),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPCFP),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_POWERPCBE),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_R3000),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_R3000_BE),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_R4000),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_R10000),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_RISCV32),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_RISCV64),
+		LIBPE_ENTRY(IMAGE_FILE_MACHINE_RISCV128),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3DSP),
 		LIBPE_ENTRY(IMAGE_FILE_MACHINE_SH3E),
@@ -504,7 +595,7 @@ const char *pe_image_characteristic_name(ImageCharacteristics characteristic) {
 		LIBPE_ENTRY(IMAGE_FILE_LOCAL_SYMS_STRIPPED),
 		LIBPE_ENTRY(IMAGE_FILE_AGGRESSIVE_WS_TRIM),
 		LIBPE_ENTRY(IMAGE_FILE_LARGE_ADDRESS_AWARE),
-		LIBPE_ENTRY(IMAGE_FILE_RESERVED),
+		LIBPE_ENTRY(IMAGE_FILE_16BIT_MACHINE),
 		LIBPE_ENTRY(IMAGE_FILE_BYTES_REVERSED_LO),
 		LIBPE_ENTRY(IMAGE_FILE_32BIT_MACHINE),
 		LIBPE_ENTRY(IMAGE_FILE_DEBUG_STRIPPED),
@@ -530,18 +621,78 @@ const char *pe_image_dllcharacteristic_name(ImageDllCharacteristics characterist
 	} ImageDllCharacteristicsName;
 
 	static const ImageDllCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_FORCE_INTEGRITY),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NX_COMPAT),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_ISOLATION),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_SEH),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_NO_BIND),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_APPCONTAINER),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_WDM_DRIVER),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_GUARD_CF),
 		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE)
 	};
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
 		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_dll_image_dllcharacteristic_name(ImageDllCharacteristics characteristic) {
+	typedef struct {
+		ImageDllCharacteristics characteristic;
+		const char * const name;
+	} ImageDllCharacteristicsName;
+
+	static const ImageDllCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_LIBRARY_PROCESS_INIT),
+		LIBPE_ENTRY(IMAGE_LIBRARY_PROCESS_TERM),
+		LIBPE_ENTRY(IMAGE_LIBRARY_THREAD_INIT),
+		LIBPE_ENTRY(IMAGE_LIBRARY_THREAD_TERM),
+		LIBPE_ENTRY(IMAGE_DLLCHARACTERISTICS_X86_THUNK),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_image_loader_flags_name(ImageLoaderFlags flags) {
+	typedef struct {
+		ImageLoaderFlags flags;
+		const char * const name;
+	} ImageLoaderFlagsName;
+
+	static const ImageLoaderFlagsName names[] = {
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_COMPLUS),
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_SYSTEM_GLOBAL),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (flags == names[i].flags)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_dll_image_loader_flags_name(ImageLoaderFlags flags) {
+	typedef struct {
+		ImageLoaderFlags flags;
+		const char * const name;
+	} ImageLoaderFlagsName;
+
+	static const ImageLoaderFlagsName names[] = {
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_BREAK_ON_LOAD),
+		LIBPE_ENTRY(IMAGE_LOADER_FLAGS_DEBUG_ON_LOAD),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (flags == names[i].flags)
 			return names[i].name;
 	}
 	return NULL;
@@ -558,15 +709,18 @@ const char *pe_windows_subsystem_name(WindowsSubsystem subsystem) {
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_NATIVE),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_GUI),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_OLD_CE_GUI),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_OS2_CUI),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_POSIX_CUI),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_MMOSA),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_CE_GUI),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_APPLICATION),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_EFI_ROM),
 		LIBPE_ENTRY(IMAGE_SUBSYSTEM_XBOX),
-		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION)
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION),
+		LIBPE_ENTRY(IMAGE_SUBSYSTEM_XBOX_CODE_CATALOG)
 	};
 
 	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
@@ -615,17 +769,22 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 	} SectionCharacteristicsName;
 
 	static const SectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_SCN_SCALE_INDEX),
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_NO_LOAD),
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_GROUPED),
 		LIBPE_ENTRY(IMAGE_SCN_TYPE_NO_PAD),
+		LIBPE_ENTRY(IMAGE_SCN_TYPE_COPY),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_CODE),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_INITIALIZED_DATA),
 		LIBPE_ENTRY(IMAGE_SCN_CNT_UNINITIALIZED_DATA),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_OTHER),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_INFO),
+		LIBPE_ENTRY(IMAGE_SCN_LNK_OVERLAY),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_REMOVE),
 		LIBPE_ENTRY(IMAGE_SCN_LNK_COMDAT),
 		LIBPE_ENTRY(IMAGE_SCN_NO_DEFER_SPEC_EXC),
 		LIBPE_ENTRY(IMAGE_SCN_GPREL),
-		LIBPE_ENTRY(IMAGE_SCN_MEM_PURGEABLE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_16BIT),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_LOCKED),
 		LIBPE_ENTRY(IMAGE_SCN_MEM_PRELOAD),
 		LIBPE_ENTRY(IMAGE_SCN_ALIGN_1BYTES),
@@ -657,4 +816,59 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 			return names[i].name;
 	}
 	return NULL;
+}
+
+const char *pe_m68k_section_characteristic_name(SectionCharacteristics characteristic) {
+	typedef struct {
+		SectionCharacteristics characteristic;
+		const char * const name;
+	} SectionCharacteristicsName;
+
+	static const SectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PROTECTED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_FARDATA),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_SYSHEAP),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PURGEABLE),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_LOCKED),
+		LIBPE_ENTRY(IMAGE_SCN_MEM_PRELOAD),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+const char *pe_rom_section_characteristic_name(ROMSectionCharacteristics characteristic) {
+	typedef struct {
+		ROMSectionCharacteristics characteristic;
+		const char * const name;
+	} ROMSectionCharacteristicsName;
+
+	static const ROMSectionCharacteristicsName names[] = {
+		LIBPE_ENTRY(STYP_DUMMY),
+		LIBPE_ENTRY(STYP_TEXT),
+		LIBPE_ENTRY(STYP_DATA),
+		LIBPE_ENTRY(STYP_SBSS),
+		LIBPE_ENTRY(STYP_RDATA),
+		LIBPE_ENTRY(STYP_SDATA),
+		LIBPE_ENTRY(STYP_BSS),
+		LIBPE_ENTRY(STYP_UCODE),
+		LIBPE_ENTRY(STYP_LIT8),
+		LIBPE_ENTRY(STYP_LIT4),
+		LIBPE_ENTRY(S_NRELOC_OVFL),
+		LIBPE_ENTRY(STYP_LIB),
+		LIBPE_ENTRY(STYP_INIT),
+	};
+
+	for (unsigned int i=0; i < LIBPE_SIZEOF_ARRAY(names); i++) {
+		if (characteristic == names[i].characteristic)
+			return names[i].name;
+	}
+	return NULL;
+}
+
+bool pe_use_rom_section_characteristic(pe_ctx_t *ctx) {
+	return ctx->pe.optional_hdr_ptr != NULL && ctx->pe.optional_hdr.type == MAGIC_ROM;
 }

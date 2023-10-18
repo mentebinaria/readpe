@@ -142,6 +142,12 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output) {
 		default:
 			// TODO(jweyrich): handle unknown type.
 			exit(1);
+		case MAGIC_ROM:
+		{
+			const unsigned char *data = (const unsigned char *)sample->_rom;
+			const uint64_t data_size = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
+			return get_hashes(output, "IMAGE_ROM_OPTIONAL_HEADER", data, data_size);
+		}
 		case MAGIC_PE32:
 		{
 			const unsigned char *data = (const unsigned char *)sample->_32;

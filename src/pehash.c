@@ -301,8 +301,12 @@ int main(int argc, char *argv[])
 	  const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(&ctx);
 	  switch (opt_hdr->type) {
 		 case MAGIC_ROM:
-			// Oh boy! We do not support ROM. Abort!
-			LIBPE_WARNING("ROM image is not supported");
+			if (!pe_can_read(&ctx, opt_hdr->_rom, sizeof(IMAGE_ROM_OPTIONAL_HEADER))) {
+			   // TODO: Should we report something?
+			   break;
+			}
+			data = (const unsigned char *)opt_hdr->_rom;
+			data_size = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
 			break;
 		 case MAGIC_PE32:
 			if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {

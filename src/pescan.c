@@ -530,8 +530,10 @@ int main(int argc, char *argv[])
 	if (optional == NULL) {
 		LIBPE_WARNING("unable to read optional header");
 	} else {
-		uint32_t ep = (optional->_32 ? optional->_32->AddressOfEntryPoint :
-			(optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
+		uint32_t ep = optional->_32 ? optional->_32->AddressOfEntryPoint :
+			      optional->_64 ? optional->_64->AddressOfEntryPoint :
+			      optional->_rom ? optional->_rom->AddressOfEntryPoint :
+			      0;
 
 		// fake ep
 		if (ep == 0) {

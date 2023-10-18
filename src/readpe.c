@@ -190,7 +190,6 @@ static void print_sections(pe_ctx_t *ctx)
 		"is readable",
 		"is writable"
 	};
-#endif
 	// valid flags only for executables referenced in pecoffv8
 	static const unsigned int valid_flags[] = {
 		IMAGE_SCN_CNT_CODE,
@@ -206,8 +205,8 @@ static void print_sections(pe_ctx_t *ctx)
 		IMAGE_SCN_MEM_READ,
 		IMAGE_SCN_MEM_WRITE
 	};
-
 	static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
+#endif
 
 	output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
 
@@ -251,22 +250,56 @@ static void print_sections(pe_ctx_t *ctx)
 
 		output_open_scope("Characteristic Names", OUTPUT_SCOPE_TYPE_ARRAY);
 
+#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 		for (size_t j=0; j < max_flags; j++) {
 			if (sections[i]->Characteristics & valid_flags[j]) {
-#ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 				snprintf(s, MAX_MSG, "%s", flags_name[j]);
 				output(NULL, s);
+			}
+		}
 #else
-				const char *characteristic_name = pe_section_characteristic_name(valid_flags[j]);
+		if (pe_use_rom_section_characteristic(ctx)) {
+			for (unsigned int flag = 1; flag != 0; flag <<= 1) {
+				if (sections[i]->Characteristics & flag) {
+					const char *characteristic_name = pe_rom_section_characteristic_name(flag);
+					char formatted_characteristic_name[32];
+					if (characteristic_name == NULL) {
+						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+						characteristic_name = formatted_characteristic_name;
+					}
+					output(NULL, characteristic_name);
+				}
+			}
+		} else {
+			for (unsigned int flag = 1; flag != 0; flag <<= 1) {
+				if (flag & 0x00F00000)
+					continue;
+				if (sections[i]->Characteristics & flag) {
+					const char *characteristic_name = NULL;
+					char formatted_characteristic_name[32];
+					if (pe_coff(ctx)->Machine == IMAGE_FILE_MACHINE_M68K)
+						characteristic_name = pe_m68k_section_characteristic_name(flag);
+					if (characteristic_name == NULL)
+						characteristic_name = pe_section_characteristic_name(flag);
+					if (characteristic_name == NULL) {
+						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
+						characteristic_name = formatted_characteristic_name;
+					}
+					output(NULL, characteristic_name);
+				}
+			}
+			if (sections[i]->Characteristics & 0x00F00000) {
+				unsigned int flag = sections[i]->Characteristics & 0x00F00000;
+				const char *characteristic_name = pe_section_characteristic_name(flag);
 				char formatted_characteristic_name[32];
 				if (characteristic_name == NULL) {
-					snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", valid_flags[j]);
+					snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
 					characteristic_name = formatted_characteristic_name;
 				}
 				output(NULL, characteristic_name);
-#endif
 			}
 		}
+#endif
 
 		output_close_scope(); // Characteristic Names
 
@@ -333,7 +366,7 @@ static void print_directories(pe_ctx_t *ctx)
 	output_close_scope(); // Data directories
 }
 
-static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
+static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	typedef struct {
@@ -369,6 +402,57 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 	switch (header->type)
 	{
+		case MAGIC_ROM:
+		{
+			snprintf(s, MAX_MSG, "%#x (%s)", header->_rom->Magic, "ROM");
+			output("Magic number", s);
+
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_rom->MajorLinkerVersion);
+			output("Linker major version", s);
+
+			snprintf(s, MAX_MSG, "%" PRIu8, header->_rom->MinorLinkerVersion);
+			output("Linker minor version", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->SizeOfCode);
+			output("Size of .text section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->SizeOfInitializedData);
+			output("Size of .data section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->SizeOfUninitializedData);
+			output("Size of .bss section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->AddressOfEntryPoint);
+			output("Entrypoint", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->BaseOfCode);
+			output("Address of .text section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->BaseOfData);
+			output("Address of .data section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->BaseOfBss);
+			output("Address of .bss section", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->GprMask);
+			output("GprMask", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[0]);
+			output("CprMask[0]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[1]);
+			output("CprMask[1]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[2]);
+			output("CprMask[2]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->CprMask[3]);
+			output("CprMask[3]", s);
+
+			snprintf(s, MAX_MSG, "%#x", header->_rom->GpValue);
+			output("GpValue", s);
+			break;
+		}
 		case MAGIC_PE32:
 		{
 			snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, "PE32");
@@ -425,6 +509,40 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%" PRIu16, header->_32->MinorSubsystemVersion);
 			output("Minor version of subsystem", s);
 
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "Win32 version value:             %#x", header->_32->Win32VersionValue);
+			output_open_scope(s, OUTPUT_SCOPE_TYPE_OBJECT);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", header->_32->Win32VersionValue & 0xff);
+			output("Overwrite OS major version", s);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_32->Win32VersionValue >> 8) & 0xff);
+			output("Overwrite OS minor version", s);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_32->Win32VersionValue >> 16) & 0x3fff);
+			output("Overwrite OS build number", s);
+
+			if (header->_32->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else {
+				uint8_t platform_id = header->_32->Win32VersionValue >> 30;
+				static const char *const win32_version_value_platform_id[4] = { "NT", "CE", "Win32s", "Win9x" };
+				snprintf(s, MAX_MSG, "%u (%s)", platform_id, win32_version_value_platform_id[platform_id]);
+			}
+			output("Overwrite OS platform id", s);
+
+			output_close_scope();
+#endif
+
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfImage);
 			output("Size of image", s);
 
@@ -457,8 +575,12 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 				if (header->_32->DllCharacteristics & flag) {
-					const char *characteristic_name = pe_image_dllcharacteristic_name(flag);
+					const char *characteristic_name = NULL;
 					char formatted_characteristic_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						characteristic_name = pe_dll_image_dllcharacteristic_name(flag);
+					if (characteristic_name == NULL)
+						characteristic_name = pe_image_dllcharacteristic_name(flag);
 					if (characteristic_name == NULL) {
 						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
 						characteristic_name = formatted_characteristic_name;
@@ -481,6 +603,32 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			snprintf(s, MAX_MSG, "%#x", header->_32->SizeOfHeapCommit);
 			output("Size of heap space to commit", s);
+
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "%#x", header->_32->LoaderFlags);
+			output("Loader Flags", s);
+
+			output_open_scope("Loader Flags names", OUTPUT_SCOPE_TYPE_ARRAY);
+
+			for (uint32_t i=0, flag=0x00000001; i < 32; i++, flag <<= 1) {
+				if (header->_32->LoaderFlags & flag) {
+					const char *flag_name = NULL;
+					char formatted_flag_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						flag_name = pe_dll_image_loader_flags_name(flag);
+					if (flag_name == NULL)
+						flag_name = pe_image_loader_flags_name(flag);
+					if (flag_name == NULL) {
+						snprintf(formatted_flag_name, sizeof(formatted_flag_name)-1, "UNKNOWN[%#x]", flag);
+						flag_name = formatted_flag_name;
+					}
+					output(NULL, flag_name);
+				}
+			}
+
+			output_close_scope(); // Loader Flags names
+#endif
+
 			break;
 		}
 		case MAGIC_PE64:
@@ -536,6 +684,40 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 			snprintf(s, MAX_MSG, "%" PRIu16, header->_64->MinorSubsystemVersion);
 			output("Minor version of subsystem", s);
 
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "Win32 version value:             %#x", header->_64->Win32VersionValue);
+			output_open_scope(s, OUTPUT_SCOPE_TYPE_OBJECT);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", header->_64->Win32VersionValue & 0xff);
+			output("Overwrite OS major version", s);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_64->Win32VersionValue >> 8) & 0xff);
+			output("Overwrite OS minor version", s);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else
+				snprintf(s, MAX_MSG, "%u", (header->_64->Win32VersionValue >> 16) & 0x3fff);
+			output("Overwrite OS build number", s);
+
+			if (header->_64->Win32VersionValue == 0)
+				strcpy(s, "(default)");
+			else {
+				uint8_t platform_id = header->_64->Win32VersionValue >> 30;
+				static const char *const win32_version_value_platform_id[4] = { "NT", "CE", "Win32s", "Win9x" };
+				snprintf(s, MAX_MSG, "%u (%s)", platform_id, win32_version_value_platform_id[platform_id]);
+			}
+			output("Overwrite OS platform id", s);
+
+			output_close_scope();
+#endif
+
 			snprintf(s, MAX_MSG, "%#x", header->_64->SizeOfImage);
 			output("Size of image", s);
 
@@ -568,8 +750,12 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			for (uint16_t i=0, flag=0x0001; i < 16; i++, flag <<= 1) {
 				if (header->_64->DllCharacteristics & flag) {
-					const char *characteristic_name = pe_image_dllcharacteristic_name(flag);
+					const char *characteristic_name = NULL;
 					char formatted_characteristic_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						characteristic_name = pe_dll_image_dllcharacteristic_name(flag);
+					if (characteristic_name == NULL)
+						characteristic_name = pe_image_dllcharacteristic_name(flag);
 					if (characteristic_name == NULL) {
 						snprintf(formatted_characteristic_name, sizeof(formatted_characteristic_name)-1, "UNKNOWN[%#x]", flag);
 						characteristic_name = formatted_characteristic_name;
@@ -592,6 +778,32 @@ static void print_optional_header(IMAGE_OPTIONAL_HEADER *header)
 
 			snprintf(s, MAX_MSG, "%#"PRIx64, header->_64->SizeOfHeapCommit);
 			output("Size of heap space to commit", s);
+
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+			snprintf(s, MAX_MSG, "%#x", header->_64->LoaderFlags);
+			output("Loader Flags", s);
+
+			output_open_scope("Loader Flags names", OUTPUT_SCOPE_TYPE_ARRAY);
+
+			for (uint32_t i=0, flag=0x00000001; i < 32; i++, flag <<= 1) {
+				if (header->_64->LoaderFlags & flag) {
+					const char *flag_name = NULL;
+					char formatted_flag_name[32];
+					if (pe_coff(ctx)->Characteristics & IMAGE_FILE_DLL)
+						flag_name = pe_dll_image_loader_flags_name(flag);
+					if (flag_name == NULL)
+						flag_name = pe_image_loader_flags_name(flag);
+					if (flag_name == NULL) {
+						snprintf(formatted_flag_name, sizeof(formatted_flag_name)-1, "UNKNOWN[%#x]", flag);
+						flag_name = formatted_flag_name;
+					}
+					output(NULL, flag_name);
+				}
+			}
+
+			output_close_scope(); // Loader Flags names
+#endif
+
 			break;
 		}
 	}
@@ -613,7 +825,7 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 		{ IMAGE_FILE_LOCAL_SYMS_STRIPPED,		"local symbols removed (deprecated)"		},
 		{ IMAGE_FILE_AGGRESSIVE_WS_TRIM,		"aggressively trim (deprecated for Windows 2000 and later)" },
 		{ IMAGE_FILE_LARGE_ADDRESS_AWARE,		"can handle more than 2 GB addresses"		},
-		{ IMAGE_FILE_RESERVED,					""											},
+		{ IMAGE_FILE_16BIT_MACHINE,			""											},
 		{ IMAGE_FILE_BYTES_REVERSED_LO,			"little-endian (deprecated)"				},
 		{ IMAGE_FILE_32BIT_MACHINE,				"32-bit machine"							},
 		{ IMAGE_FILE_DEBUG_STRIPPED,			"debugging information removed"				},
@@ -898,11 +1110,20 @@ int main(int argc, char *argv[])
 		IMAGE_DOS_HEADER *header_ptr = pe_dos(&ctx);
 		if (header_ptr)
 			print_dos_header(header_ptr);
-		else { LIBPE_WARNING("unable to read DOS header"); }
+		else if (pe_is_exec(&ctx)) { LIBPE_WARNING("unable to read DOS header"); }
 	}
 
 	// coff/file header
 	if (options->coff || options->all_headers || options->all) {
+#ifndef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
+		if (ctx.pe.signature) {
+			static char s[MAX_MSG];
+			output_open_scope("PE header", OUTPUT_SCOPE_TYPE_OBJECT);
+			snprintf(s, MAX_MSG, "0x%08x (PE)", ctx.pe.signature);
+			output("Signature", s);
+			output_close_scope();
+		}
+#endif
 		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
 		if (header_ptr)
 			print_coff_header(header_ptr);
@@ -913,8 +1134,8 @@ int main(int argc, char *argv[])
 	if (options->opt || options->all_headers || options->all) {
 		IMAGE_OPTIONAL_HEADER *header_ptr = pe_optional(&ctx);
 		if (header_ptr)
-			print_optional_header(header_ptr);
-		else { LIBPE_WARNING("unable to read Optional (Image) file header"); }
+			print_optional_header(&ctx, header_ptr);
+		else if (pe_is_exec(&ctx)) { LIBPE_WARNING("unable to read Optional (Image) file header"); }
 	}
 
 	IMAGE_DATA_DIRECTORY **directories = pe_directories(&ctx);
@@ -924,7 +1145,7 @@ int main(int argc, char *argv[])
 	if (options->dirs || options->all) {
 		if (directories != NULL)
 			print_directories(&ctx);
-		else if (!directories_warned) {
+		else if (pe_is_exec(&ctx) && !directories_warned) {
 			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
@@ -934,7 +1155,7 @@ int main(int argc, char *argv[])
 	if (options->imports || options->all) {
 		if (directories != NULL)
 			print_imports(&ctx);
-		else if (!directories_warned) {
+		else if (pe_is_exec(&ctx) && !directories_warned) {
 			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}
@@ -944,7 +1165,7 @@ int main(int argc, char *argv[])
 	if (options->exports || options->all) {
 		if (directories != NULL)
 			print_exports(&ctx);
-		else if (!directories_warned) {
+		else if (pe_is_exec(&ctx) && !directories_warned) {
 			LIBPE_WARNING("directories not found");
 			directories_warned = true;
 		}

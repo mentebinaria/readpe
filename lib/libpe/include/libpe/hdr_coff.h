@@ -30,6 +30,7 @@ extern "C" {
 
 typedef enum {
 	IMAGE_FILE_MACHINE_UNKNOWN		= 0x0,
+	IMAGE_FILE_MACHINE_ALPHA_OLD		= 0x183,
 	IMAGE_FILE_MACHINE_ALPHA		= 0x184,
 	IMAGE_FILE_MACHINE_ALPHA64		= 0x284,
 	IMAGE_FILE_MACHINE_AM33			= 0x1d3,
@@ -37,25 +38,35 @@ typedef enum {
 	IMAGE_FILE_MACHINE_ARM			= 0x1c0,
 	IMAGE_FILE_MACHINE_ARMV7		= 0x1c4,
 	IMAGE_FILE_MACHINE_ARM64		= 0xaa64,
+	IMAGE_FILE_MACHINE_ARM64EC		= 0xa641,
+	IMAGE_FILE_MACHINE_ARM64X		= 0xa64e,
 	IMAGE_FILE_MACHINE_CEE			= 0xc0ee,
 	IMAGE_FILE_MACHINE_CEF			= 0xcef,
+	IMAGE_FILE_MACHINE_CHPE_X86		= 0x3a64,
 	IMAGE_FILE_MACHINE_EBC			= 0xebc,
 	IMAGE_FILE_MACHINE_I386			= 0x14c,
 	IMAGE_FILE_MACHINE_I860			= 0x14d,
 	IMAGE_FILE_MACHINE_IA64			= 0x200,
+	IMAGE_FILE_MACHINE_LOONGARCH32		= 0x6232,
+	IMAGE_FILE_MACHINE_LOONGARCH64		= 0x6264,
 	IMAGE_FILE_MACHINE_M32R			= 0x9041,
 	IMAGE_FILE_MACHINE_M68K			= 0x268,
 	IMAGE_FILE_MACHINE_MIPS16		= 0x266,
 	IMAGE_FILE_MACHINE_MIPSFPU		= 0x366,
 	IMAGE_FILE_MACHINE_MIPSFPU16	= 0x466,
 	IMAGE_FILE_MACHINE_MPPC_601		= 0x601,
+	IMAGE_FILE_MACHINE_OMNI			= 0xace1,
 	IMAGE_FILE_MACHINE_PARISC		= 0x290,
 	IMAGE_FILE_MACHINE_POWERPC		= 0x1f0,
 	IMAGE_FILE_MACHINE_POWERPCFP	= 0x1f1,
+	IMAGE_FILE_MACHINE_POWERPCBE		= 0x1f2,
 	IMAGE_FILE_MACHINE_R3000		= 0x162,
 	IMAGE_FILE_MACHINE_R3000_BE		= 0x160,
 	IMAGE_FILE_MACHINE_R4000		= 0x166,
 	IMAGE_FILE_MACHINE_R10000		= 0x168,
+	IMAGE_FILE_MACHINE_RISCV32		= 0x5032,
+	IMAGE_FILE_MACHINE_RISCV64		= 0x5064,
+	IMAGE_FILE_MACHINE_RISCV128		= 0x5128,
 	IMAGE_FILE_MACHINE_SH3			= 0x1a2,
 	IMAGE_FILE_MACHINE_SH3DSP		= 0x1a3,
 	IMAGE_FILE_MACHINE_SH3E			= 0x1a4,
@@ -93,10 +104,12 @@ typedef enum {
 	// App can handle > 2gb addresses.
 	IMAGE_FILE_LARGE_ADDRESS_AWARE		= 0x0020,
 
-	// Reserved for future use.
-	IMAGE_FILE_RESERVED					= 0x0040,
+	// Machine based on 16-bit-word architecture.
+	IMAGE_FILE_16BIT_MACHINE		= 0x0040,
 
-	// Little endian: LSB precedes MSB in memory.
+	// Bytes of the word are reversed from CPU defaults.
+	// Test either IMAGE_FILE_BYTES_REVERSED_LO or IMAGE_FILE_BYTES_REVERSED_HI, they are in the same bit position in each short word.
+	// Microsoft PE 32-Bit LINK.EXE Version 1.00 always sets this bit, but no words are reversed. New LINK.EXE versions never set this bit.
 	// Deprecated and should be zero.
 	IMAGE_FILE_BYTES_REVERSED_LO		= 0x0080,
 
@@ -125,7 +138,9 @@ typedef enum {
 	// File should be run only on a UP machine.
 	IMAGE_FILE_UP_SYSTEM_ONLY			= 0x4000,
 
-	// Big endian: MSB precedes LSB in memory.
+	// Bytes of the word are reversed from CPU defaults.
+	// Test either IMAGE_FILE_BYTES_REVERSED_LO or IMAGE_FILE_BYTES_REVERSED_HI, they are in the same bit position in each short word.
+	// Microsoft PE 32-Bit LINK.EXE Version 1.00 always sets this bit, but no words are reversed. New LINK.EXE versions never set this bit.
 	// Deprecated and should be zero.
 	IMAGE_FILE_BYTES_REVERSED_HI		= 0x8000
 } ImageCharacteristics;

@@ -148,9 +148,11 @@ int pe_has_fake_entrypoint(pe_ctx_t *ctx) {
 	if (optional == NULL)
 		return -1; // Unable to read optional header.
 
-	const uint32_t ep = optional->_32
-		? optional->_32->AddressOfEntryPoint
-		: (optional->_64 ? optional->_64->AddressOfEntryPoint : 0);
+	const uint32_t ep =
+		optional->_32 ? optional->_32->AddressOfEntryPoint :
+		optional->_64 ? optional->_64->AddressOfEntryPoint :
+		optional->_rom ? optional->_rom->AddressOfEntryPoint :
+		0;
 
 	int value;
 

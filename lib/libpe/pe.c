@@ -171,25 +171,24 @@ pe_err_e pe_unload(pe_ctx_t *ctx) {
 pe_err_e pe_parse(pe_ctx_t *ctx) {
 	ctx->pe.dos_hdr = ctx->map_addr;
 	if (ctx->pe.dos_hdr->e_magic == MAGIC_MZ) {
+	    const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
+	    	ctx->pe.dos_hdr->e_lfanew);
+	    if (!pe_can_read(ctx, signature_ptr, LIBPE_SIZEOF_MEMBER(pe_file_t, signature)))
+	    	return LIBPE_E_INVALID_LFANEW;
 
-	const uint32_t *signature_ptr = LIBPE_PTR_ADD(ctx->pe.dos_hdr,
-		ctx->pe.dos_hdr->e_lfanew);
-	if (!pe_can_read(ctx, signature_ptr, LIBPE_SIZEOF_MEMBER(pe_file_t, signature)))
-		return LIBPE_E_INVALID_LFANEW;
+	    // NT signature (PE\0\0)
+	    ctx->pe.signature = *signature_ptr;
 
-	// NT signature (PE\0\0)
-	ctx->pe.signature = *signature_ptr;
+	    switch (ctx->pe.signature) {
+	    	default:
+	    		//fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
+	    		return LIBPE_E_INVALID_SIGNATURE;
+	    	case SIGNATURE_PE:
+	    		break;
+	    }
 
-	switch (ctx->pe.signature) {
-		default:
-			//fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
-			return LIBPE_E_INVALID_SIGNATURE;
-		case SIGNATURE_PE:
-			break;
-	}
-
-	ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
-		LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
+	    ctx->pe.coff_hdr = LIBPE_PTR_ADD(signature_ptr,
+	    	LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
 
 	} else if (pe_machine_type_name(ctx->pe.dos_hdr->e_magic) != NULL) {
 		ctx->pe.coff_hdr = (void *)ctx->pe.dos_hdr;

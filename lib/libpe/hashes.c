@@ -21,7 +21,7 @@
 
 #include "libpe/hashes.h"
 
-#include "error.h"
+#include "libpe/error.h"
 #include "libpe/pe.h"
 #include "libfuzzy/fuzzy.h"
 #include "libpe/ordlookup.h"

@@ -21,6 +21,7 @@
 
 #include "libpe/hashes.h"
 
+#include "error.h"
 #include "libpe/pe.h"
 #include "libfuzzy/fuzzy.h"
 #include "libpe/ordlookup.h"
@@ -139,9 +140,6 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output) {
 	const IMAGE_OPTIONAL_HEADER *sample = pe_optional(ctx);
 
 	switch (sample->type) {
-		default:
-			// TODO(jweyrich): handle unknown type.
-			exit(1);
 		case MAGIC_ROM:
 		{
 			const unsigned char *data = (const unsigned char *)sample->_rom;
@@ -160,6 +158,8 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output) {
 			const uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
 			return get_hashes(output, "IMAGE_OPTIONAL_HEADER_64", data, data_size);
 		}
+		default:
+			return LIBPE_E_UNSUPPORTED_IMAGE;
 	}
 }
 

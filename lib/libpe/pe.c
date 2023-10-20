@@ -504,7 +504,7 @@ const char *pe_section_name(const pe_ctx_t *ctx, const IMAGE_SECTION_HEADER *sec
 	assert(ctx != NULL);
 	assert(out_name_size >= SECTION_NAME_SIZE+1);
 	strncpy(out_name, (const char *)section_hdr->Name, SECTION_NAME_SIZE);
-	out_name[SECTION_NAME_SIZE-1] = '\0';
+	out_name[SECTION_NAME_SIZE] = '\0';
 	if (out_name[0] == '/' && out_name[1] >= '0' && out_name[1] <= '9' && ctx->pe.strings_ptr) {
 		char *endptr = NULL;
 		long int offset = -1;

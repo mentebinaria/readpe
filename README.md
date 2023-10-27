@@ -17,6 +17,13 @@ and analyze PE (Portable Executables) binaries.
     apt install libssl-dev
     yum install openssl-devel
 
+## How to install on Linux
+
+    cd readpe
+    sudo make install
+    echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/libpe.conf
+    sudo ldconfig
+
 ## How to build on macOS
 
     cd readpe
@@ -64,6 +71,10 @@ Please install OpenSSL for your system. Use a package manager to make things eas
 make sure you've set both CFLAGS and LDFLAGS environment variables according.
 
 Please check the [online documentation](https://pev.sourceforge.io/doc/manual/en_us/) for more details.
+
+### I get an `error while loading shared libraries: libpe.so.1: cannot open shared object file: No such file or directory`. How can I fix that?
+
+Please refer to ['How to install on Linux'](#how-to-install-on-linux).
 
 ## License
 

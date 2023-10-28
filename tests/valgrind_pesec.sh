@@ -17,3 +17,4 @@ for sample in $samples; do
 done
 
 echo "$n samples analyzed. $err errors." > /dev/fd/2
+exit $err

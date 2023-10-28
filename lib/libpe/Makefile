@@ -53,7 +53,7 @@ override CFLAGS += \
 	-I"./include" \
 	-fPIC \
 	-W -Wall -Wextra -pedantic -std=c99 -c
-override CPPFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+
 #override LDFLAGS += -lssl -lcrypto
 LIBS = -lssl -lcrypto -lm
 

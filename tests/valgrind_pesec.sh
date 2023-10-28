@@ -10,7 +10,7 @@ for sample in $samples; do
 	echo -e "\n$sample"
 
 	for format in text csv xml html; do
-		$prog -f $format $sample || let err++
+		$prog -f $format $sample > /dev/null 2>&1 || let err++
 	done
 
 	let n++

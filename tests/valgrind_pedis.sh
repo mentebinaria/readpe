@@ -12,7 +12,7 @@ for sample in $samples; do
 	func=$(../src/build/readpe -f csv "$sample" | grep Entry | cut -d, -f2)
 
 	for format in text csv xml html; do
-		$prog -f $format -r $func $sample || let err++
+		$prog -f $format -r $func $sample > /dev/null 2>&1 || let err++
 	done
 
 	let n++

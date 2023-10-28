@@ -8,7 +8,7 @@ err=0
 for sample in $samples; do
 
 	echo -e "\n$sample"
-	$prog $sample || let err++
+	$prog $sample > /dev/null 2>&1 || let err++
 	let n++
 done
 

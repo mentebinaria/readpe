@@ -14,20 +14,20 @@ for sample in $samples; do
 	echo $sample
 
 	for opt in $opts_noarg; do
-		$readpe $opt $sample || let err++
+		$readpe $opt $sample > /dev/null 2>&1 || let err++
 	done
 
 	for format in text csv xml html; do
 		for opt in $opts_noarg; do
-			$readpe -f $format $opt $sample || let err++
+			$readpe -f $format $opt $sample > /dev/null 2>&1 || let err++
 		done
 	done
 
 	for i in 0 1 2; do
-		$readpe ${opts_arg[i]} $sample || let err++
+		$readpe ${opts_arg[i]} $sample > /dev/null 2>&1 || let err++
 		for format in text csv xml html; do
 			for opt in $opts_noarg; do
-				$readpe -f $format $opt ${opts_arg[i]} $sample || let err++
+				$readpe -f $format $opt ${opts_arg[i]} $sample > /dev/null 2>&1 || let err++
 			done
 		done
 	done

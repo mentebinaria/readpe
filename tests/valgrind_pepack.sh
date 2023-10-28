@@ -1,6 +1,6 @@
 #!/bin/bash
 
-prog="valgrind -q ../src/pepack"
+prog="valgrind -q ../src/build/pepack"
 samples=../support_files/samples/*
 
 n=0

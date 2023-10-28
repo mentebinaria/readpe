@@ -1,7 +1,7 @@
 #!/bin/bash
 
-readpe="valgrind -q ../src/readpe"
-samples=../support_files/samples/dep.exe
+readpe="valgrind -q ../src/build/readpe"
+samples=../support_files/samples/*
 opts_noarg='-A -H -d -i'
 opts_arg[0]='-h dos'
 opts_arg[1]='-h coff'
@@ -19,17 +19,17 @@ for sample in $samples; do
 
 	for format in text csv xml html; do
 		for opt in $opts_noarg; do
-			$readpe $opt $sample || let err++
+			$readpe -f $format $opt $sample || let err++
 		done
 	done
 
 	for i in 0 1 2; do
-		$readpe ${opts_arg[i]} $sample
-	for format in text csv xml html; do
-		for opt in $opts_noarg; do
-			$readpe -f $format $opt $sample || let err++
+		$readpe ${opts_arg[i]} $sample || let err++
+		for format in text csv xml html; do
+			for opt in $opts_noarg; do
+				$readpe -f $format $opt ${opts_arg[i]} $sample || let err++
+			done
 		done
-	done
 	done
 	let n++
 

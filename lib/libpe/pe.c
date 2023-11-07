@@ -230,6 +230,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 			ctx->pe.optional_hdr.length = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
 			ctx->pe.entrypoint = ctx->pe.optional_hdr._rom->AddressOfEntryPoint;
 			break;
+		case MAGIC_PE32_0:
 		case MAGIC_PE32:
 			if (ctx->pe.coff_hdr->SizeOfOptionalHeader <
 			    sizeof(IMAGE_OPTIONAL_HEADER_32))

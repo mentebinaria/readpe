@@ -474,6 +474,7 @@ int main(int argc, char *argv[])
 			return EXIT_FAILURE;
 		case MAGIC_ROM:
 			break;
+		case MAGIC_PE32_0:
 		case MAGIC_PE32:
 			dllchar = optional->_32->DllCharacteristics;
 			break;

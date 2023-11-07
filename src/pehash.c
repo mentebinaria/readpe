@@ -308,6 +308,7 @@ int main(int argc, char *argv[])
 			data = (const unsigned char *)opt_hdr->_rom;
 			data_size = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
 			break;
+		 case MAGIC_PE32_0:
 		 case MAGIC_PE32:
 			if (!pe_can_read(&ctx, opt_hdr->_32, sizeof(IMAGE_OPTIONAL_HEADER_32))) {
 			   // TODO: Should we report something?

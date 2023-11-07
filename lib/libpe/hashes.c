@@ -146,6 +146,7 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output) {
 			const uint64_t data_size = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
 			return get_hashes(output, "IMAGE_ROM_OPTIONAL_HEADER", data, data_size);
 		}
+		case MAGIC_PE32_0:
 		case MAGIC_PE32:
 		{
 			const unsigned char *data = (const unsigned char *)sample->_32;
@@ -410,6 +411,7 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
+			case MAGIC_PE32_0:
 			case MAGIC_PE32:
 				{
 					const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);

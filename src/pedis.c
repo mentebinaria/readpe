@@ -357,6 +357,7 @@ int main(int argc, char *argv[])
 		default:
 			EXIT_ERROR("Unsupported architecture.");
 			return EXIT_FAILURE;
+		case MAGIC_PE32_0: mode_bits = 32; break;
 		case MAGIC_PE32: mode_bits = 32; break;
 		case MAGIC_PE64: mode_bits = 64; break;
 	}

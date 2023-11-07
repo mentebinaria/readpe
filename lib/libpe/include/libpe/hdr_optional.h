@@ -125,6 +125,7 @@ typedef enum {
 } ImageLoaderFlags;
 
 typedef enum {
+	MAGIC_PE32_0	= 0x000,
 	MAGIC_ROM	= 0x107,
 	MAGIC_PE32	= 0x10b,
 	MAGIC_PE64	= 0x20b // PE32+

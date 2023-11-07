@@ -453,9 +453,10 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 			output("GpValue", s);
 			break;
 		}
+		case MAGIC_PE32_0:
 		case MAGIC_PE32:
 		{
-			snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, "PE32");
+			snprintf(s, MAX_MSG, "%#x (%s)", header->_32->Magic, header->type == MAGIC_PE32_0 ? "PE32 ZERO" : "PE32");
 			output("Magic number", s);
 
 			snprintf(s, MAX_MSG, "%" PRIu8, header->_32->MajorLinkerVersion);

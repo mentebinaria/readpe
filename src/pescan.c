@@ -216,6 +216,7 @@ static int pe_get_tls_callbacks(pe_ctx_t *ctx, const options_t *options)
 			switch (optional_hdr->type) {
 				default:
 					return 0;
+				case MAGIC_PE32_0:
 				case MAGIC_PE32:
 				{
 					const IMAGE_TLS_DIRECTORY32 *tls_dir = LIBPE_PTR_ADD(ctx->map_addr, ofs);

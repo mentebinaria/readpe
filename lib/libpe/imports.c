@@ -79,6 +79,7 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 
 	while (1) {
 		switch (ctx->pe.optional_hdr.type) {
+			case MAGIC_PE32_0:
 			case MAGIC_PE32:
 			{
 				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
@@ -153,6 +154,7 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 
 	for (uint32_t i=0; i < imported_dll->functions_count; i++) {
 		switch (ctx->pe.optional_hdr.type) {
+			case MAGIC_PE32_0:
 			case MAGIC_PE32:
 			{
 				const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);

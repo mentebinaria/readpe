@@ -102,6 +102,7 @@ typedef enum {
 	IMAGE_FILE_AGGRESSIVE_WS_TRIM		= 0x0010,
 
 	// App can handle > 2gb addresses.
+	// Image can be loaded at address above 2GB.
 	IMAGE_FILE_LARGE_ADDRESS_AWARE		= 0x0020,
 
 	// Machine based on 16-bit-word architecture.
@@ -127,7 +128,9 @@ typedef enum {
 	// swap file.
 	IMAGE_FILE_NET_RUN_FROM_SWAP		= 0x0800,
 
-	// The image file is a system file, not a user program.
+	// The image file is a system kernel-mode file, not a user program.
+	// Images with this flag can't be loaded in user-mode. Images without
+	// this flag can be loaded in both kernel-mode and user-mode.
 	IMAGE_FILE_SYSTEM					= 0x1000,
 
 	// The image file is a dynamic-link library (DLL). Such files are
@@ -135,7 +138,9 @@ typedef enum {
 	// they cannot be directly run.
 	IMAGE_FILE_DLL						= 0x2000,
 
-	// File should be run only on a UP machine.
+	// File should be run only on a UP (uniprocessor) machine.
+	// When running on multiprocessor machine, process has assigned
+	// one selected core via CPU affinity on which it always run.
 	IMAGE_FILE_UP_SYSTEM_ONLY			= 0x4000,
 
 	// Bytes of the word are reversed from CPU defaults.

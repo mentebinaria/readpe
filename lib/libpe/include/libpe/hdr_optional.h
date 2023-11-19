@@ -79,7 +79,8 @@ typedef enum {
 	// This does not apply to the first thread allocated.
 	IMAGE_LIBRARY_THREAD_TERM			= 0x0008,
 	// IMAGE_DLLCHARACTERISTICS_RESERVED_10			= 0x0010,
-	// ASLR with 64 bit address space
+	// ASLR with 64 bit address space.
+	// Image can be loaded at address above 4GB.
 	IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA		= 0x0020,
 	// The DLL can be relocated at load time.
 	IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE			= 0x0040,
@@ -89,6 +90,9 @@ typedef enum {
 	// Prevents code execution on the stack, in the PE header and sections without IMAGE_SCN_MEM_EXECUTE.
 	IMAGE_DLLCHARACTERISTICS_NX_COMPAT				= 0x0100,
 	// The image is isolation aware, but should not be isolated.
+	// Prevents loading of manifest file (from embedded resource or external file .manifest)
+	// and prevents setting of default activation context.
+	// https://learn.microsoft.com/en-us/windows/win32/sbscs/manifest-files-reference
 	IMAGE_DLLCHARACTERISTICS_NO_ISOLATION			= 0x0200,
 	// The image does not use structured exception handling (SEH).
 	// No handlers can be called in this image.

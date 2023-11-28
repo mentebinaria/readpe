@@ -15,6 +15,7 @@ arch=$(uname -m)
 so=$(uname -s) # We use `-s` because `-o` is not supported on Mac OS X
 so=${so#*/}
 version=$(sed -n 's/^.*VERSION \"\([0-9]\.[0-9]*\)\"/\1/p' $INC_DIR/common.h)
+err=0
 
 function test_build
 {
@@ -40,6 +41,7 @@ function test_binary
 		eval ${onsuccess}
 	else
 		eval ${onfailure}
+		err=1
 		return # Stop at error
 	fi
 }
@@ -64,6 +66,7 @@ function test_binary_using_all_formats
 			eval ${onsuccess}
 		else
 			eval ${onfailure}
+			err=1
 			break # Stop at 1st error
 		fi
 	done
@@ -109,6 +112,7 @@ function test_binary_output_against_expected_output
 		eval ${onfailure}
 		#echo "Showing differences:"
 		#head -n 5 tmp.diff
+		err=1
 		return # Stop at error
 	fi
 }
@@ -288,18 +292,23 @@ case "$1" in
 		if [ $# -ne 2 ]
 		then
 			echo "missing argument: use $0 pe32 <binary file>"
+			exit 1
 		else
 			test_pe32 $2
+			exit $err
 		fi
 		;;
 	"pe64")
-		test_pe64 ;;
+		test_pe64
+		exit $err ;;
 	"regression")
 		if [ $# -ne 2 ]
 		then
 			echo "missing argument: use $0 regression <binary file>"
+			exit 1
 		else
 			test_regression $2
+			exit $err
 		fi
 		;;
 	*)

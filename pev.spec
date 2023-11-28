@@ -1,5 +1,5 @@
 Name:           pev
-Version:        0.82
+Version:        0.83
 Release:        1
 License:        GPL2
 URL:            http://pev.sf.net/

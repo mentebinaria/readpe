@@ -43,6 +43,15 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
+pev 0.83 - November 28, 2023
+ * Add Linux install info to readme
+ * Remove _FORTIFY_SOURCE definitions
+ - Fix 8 character long section names being cut off
+ - Various improvements for readpe
+ - Removed all exit() calls from libpe
+ - Fix and improve tests
+
+
 pev 0.82 - May 12, 2023
  * added more image machine types
  - fix build on GNU/hurd and kFreeBSD

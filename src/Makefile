@@ -61,13 +61,6 @@ override CPPFLAGS += \
 	-DSHAREDIR="\"$(SHAREDIR)"\" \
 	-DPLUGINSDIR="\"$(pluginsdir)"\"
 
-# Some gcc/clang builds (depends on the distro) already define _FORTIFY_SOURCE internally, so we
-# only define it if it has not been already. This avoids redefinition warnings and weakening
-# those distros' hardening settings.
-ifneq ($(findstring _FORTIFY_SOURCE, $(CPPFLAGS)), _FORTIFY_SOURCE)
-        override CPPFLAGS += -D_FORTIFY_SOURCE=1
-endif
-
 ifeq ($(PLATFORM_OS), Darwin)
 	# We disable warnings for deprecated declarations since Apple deprecated OpenSSL in Mac OS X 10.7
 	override CFLAGS += -Wno-deprecated-declarations

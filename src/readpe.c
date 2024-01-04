@@ -997,9 +997,11 @@ static void print_exports(pe_ctx_t *ctx)
 
 	const pe_exports_t *exports = pe_exports(ctx);
 	
-	if (exports->functions_count > 0) {
+	if (exports->name || exports->functions_count > 0) {
 		output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("Name", exports->name);
+	}
+	if (exports->functions_count > 0) {
 		output_open_scope("Functions", OUTPUT_SCOPE_TYPE_ARRAY);
 	}
 		
@@ -1031,6 +1033,8 @@ static void print_exports(pe_ctx_t *ctx)
 
 	if (exports->functions_count > 0) {
 		output_close_scope(); // Functions
+	}
+	if (exports->name || exports->functions_count > 0) {
 		output_close_scope(); // Library
 	}
 

@@ -59,7 +59,7 @@
 
 #define MAX_MSG 81
 #define MAX_PATH 256
-#define VERSION "0.83"
+#define VERSION "0.84"
 #define TOOLKIT "from pev " VERSION " <https://github.com/mentebinaria/readpe/> toolkit"
 #define COPY \
 "License GPLv2+: GNU GPL version 2 or later <https://www.gnu.org/licenses/gpl-2.0.txt>.\n" \

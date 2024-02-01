@@ -1,7 +1,7 @@
 #!/bin/bash
 
 readpe="valgrind -q ../src/build/readpe"
-samples=../support_files/samples/*
+samples=../samples/*
 opts_noarg='-A -H -d -i'
 opts_arg[0]='-h dos'
 opts_arg[1]='-h coff'

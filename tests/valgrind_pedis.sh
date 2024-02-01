@@ -1,7 +1,7 @@
 #!/bin/bash
 
 prog="valgrind -q ../src/build/pedis"
-samples=../support_files/samples/*
+samples=../samples/*
 
 n=0
 err=0

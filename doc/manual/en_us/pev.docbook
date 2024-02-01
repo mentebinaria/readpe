@@ -43,6 +43,9 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
+pev 0.84 - February 1, 2024
+ * Add test executable
+
 pev 0.83 - November 28, 2023
  * Add Linux install info to readme
  * Remove _FORTIFY_SOURCE definitions

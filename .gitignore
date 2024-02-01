@@ -27,7 +27,8 @@ src/readpe
 src/rva2ofs
 src/peres
 src/plugins/build/
-tests/samples
+tests/samples/*
+!tests/samples/helloworld.exe
 tests/*.exe
 tests/*.bin
 tests/*.log

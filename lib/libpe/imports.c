@@ -90,7 +90,7 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 				if (thunk_type == 0)
 					return count;
 
-				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+				bool is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
 				if (!is_ordinal) {
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
@@ -112,7 +112,7 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 				if (thunk_type == 0)
 					return count;
 
-				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+				bool is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
 				if (!is_ordinal) {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
@@ -169,11 +169,11 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 				}
 
 				// If the MSB of the member is 1, the function is exported by ordinal.
-				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+				is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
 				if (is_ordinal) {
 					hint = 0;
-					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32) & 0xffff;
+					ordinal = (thunk->u1.Ordinal & ~(IMAGE_ORDINAL_MASK(ctx))) & 0xffff;
 				} else {
 					const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -209,11 +209,11 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx, pe_imported_dll_t *impor
 				}
 
 				// If the MSB of the member is 1, the function is exported by ordinal.
-				is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+				is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
 				if (is_ordinal) {
 					hint = 0; // No hint
-					ordinal = (thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64) & 0xffff;
+					ordinal = (thunk->u1.Ordinal & ~(IMAGE_ORDINAL_MASK(ctx))) & 0xffff;
 				} else {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);

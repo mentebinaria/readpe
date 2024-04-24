@@ -2,7 +2,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2017 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -54,7 +54,7 @@ static uint32_t get_dll_count(pe_ctx_t *ctx) {
 			break;
 
 		ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
-		
+
 		const uint64_t aux = ofs; // Store current ofs
 		ofs = pe_rva2ofs(ctx, id->Name);
 		if (ofs == 0)
@@ -70,7 +70,7 @@ static uint32_t get_dll_count(pe_ctx_t *ctx) {
 		ofs = aux; // Restore previous ofs
 	}
 
-	return count;	
+	return count;
 }
 
 static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
@@ -112,8 +112,8 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset) {
 				if (thunk_type == 0)
 					return count;
 
-				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
-				
+				bool is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+
 				if (!is_ordinal) {
 					uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 					const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -261,7 +261,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx) {
 	}
 
 	imports->err = LIBPE_E_OK;
-	
+
 	imports->dll_count = get_dll_count(ctx);
 	if (imports->dll_count == 0)
 		return imports;
@@ -330,7 +330,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx) {
 		if (ofs == 0) {
 			break;
 		}
-	
+
 		pe_err_e parse_err = parse_imported_functions(ctx, dll, ofs);
 		if (parse_err != LIBPE_E_OK) {
 			imports->err = parse_err;

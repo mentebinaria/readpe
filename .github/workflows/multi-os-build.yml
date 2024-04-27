@@ -35,19 +35,13 @@ jobs:
 
     steps:
 
-    - name: Install packages
-      uses: delgurth/get-package@v6
-      with:
-        # Space-separated list of packages to install using brew install.  Will only run if on OSX.
-        brew: openssl
-    
     - name: Checkout with submodules
       uses: actions/checkout@v3
       with:
         submodules: 'true'
 
     - name: Compile
-      run: CFLAGS="-I/usr/local/opt/openssl/include/" LDFLAGS="-L/usr/local/opt/openssl/lib/" make
+      run: CFLAGS="-I$(brew --prefix openssl@1.1)/include/" LDFLAGS="-L$(brew --prefix openssl@1.1)/lib/" make
       
   build-win64:
 

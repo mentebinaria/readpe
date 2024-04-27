@@ -2,7 +2,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2017 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -298,11 +298,11 @@ pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx) {
 		// TODO(jweyrich): Should we report an error? If yes, we need a redesign.
 		return NULL;
 	}
-	
+
 	result->err = LIBPE_E_OK;
 
 	const size_t num_sections = pe_sections_count(ctx);
-	
+
 	// Allocate an array of pointers once so we can store each pe_hash_t pointer in the
 	// respective result->sections[i].
 	result->sections = calloc(num_sections, sizeof(pe_hash_t *));
@@ -362,7 +362,7 @@ pe_hash_t *pe_get_file_hash(pe_ctx_t *ctx) {
 	if (status != LIBPE_E_OK)
 		abort();
 	return hash;
-} 
+}
 
 typedef struct element {
 	char *dll_name;
@@ -423,15 +423,15 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					if (thunk_type == 0)
 						return;
 
-					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG32) != 0;
+					is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
 					if (is_ordinal) {
-						errcode = asprintf(&hint_str, "%"PRIu32, 
-										   thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG32);
-						
+						errcode = asprintf(&hint_str, "%"PRIu32,
+										   thunk->u1.Ordinal & ~((uint32_t)IMAGE_ORDINAL_MASK(ctx)));
+
 						// FIX-ME: devemos abortar a execucao?
 						PEV_ABORT_IF(errcode == -1);
-						
+
 					} else {
 						const uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
 						const IMAGE_IMPORT_BY_NAME *imp_name = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
@@ -469,12 +469,12 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					if (thunk_type == 0)
 						return;
 
-					is_ordinal = (thunk_type & IMAGE_ORDINAL_FLAG64) != 0;
+					is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
 					if (is_ordinal) {
 						errcode = asprintf(&hint_str, "%"PRIu64,
-										   (uint64_t)(thunk->u1.Ordinal & ~IMAGE_ORDINAL_FLAG64));
-						
+										   (uint64_t)(thunk->u1.Ordinal & ~(IMAGE_ORDINAL_MASK(ctx))));
+
 						PEV_ABORT_IF(errcode == -1);
 
 					} else {
@@ -568,8 +568,8 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset, char
 					pe_get_all_ord_lkp_func_name_with_hint(el, oleaut32_arr, hint);
 				} else if (strncmp(dll_name, "ws2_32", 6) == 0 && is_ordinal) {
 					pe_get_all_ord_lkp_func_name_with_hint(el, ws2_32_arr, hint);
-				} 
-				else 
+				}
+				else
 				{
 					if (is_ordinal) {
 						char* ord_str = NULL;
@@ -617,7 +617,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 	}
 
 	uint64_t ofs = pe_rva2ofs(ctx, va);
-	
+
 	element_t *elt, *tmp, *head = NULL;
 	int count = 0;
 
@@ -666,7 +666,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor) {
 		free(dll_name);
 
 		// Restore previous ofs
-		ofs = aux; 
+		ofs = aux;
 	}
 
 	LL_COUNT(head, elt, count);

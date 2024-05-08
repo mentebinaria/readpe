@@ -1062,7 +1062,7 @@ static void print_imports(pe_ctx_t *ctx)
 					output("Ordinal", ordinal_str);
 				} else {
 					char hint_str[16];
-					snprintf(hint_str, sizeof(hint_str)-1, "%"PRIu16, func->hint);
+					snprintf(hint_str, sizeof(hint_str)-1, "0x%"PRIx16, func->hint);
 					output("Hint", hint_str);
 					output("Name", func->name);
 				}

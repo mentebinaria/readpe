@@ -1012,18 +1012,22 @@ static void print_exports(pe_ctx_t *ctx)
 
 			char ordinal_str[32] = { 0 };
 			char address_str[16] = { 0 };
+			char hint_str[16] = { 0 };
 			snprintf(ordinal_str, sizeof(ordinal_str)-1, "%"PRIu32, func->ordinal);
 			snprintf(address_str, sizeof(address_str)-1, "%#"PRIx32, func->address);
+			snprintf(hint_str, sizeof(hint_str)-1, "0x%"PRIx32, func->hint);
 
 			if (func->fwd_name != NULL) {
 				char full_name[300 * 2 + 4];
 				snprintf(full_name, sizeof(full_name)-1, "%s -> %s", func->name, func->fwd_name);
 				output("Ordinal", ordinal_str);
 				output("Address", address_str);
+				output("Hint", hint_str);
 				output("Name", full_name);
 			} else {
 				output("Ordinal", ordinal_str);
 				output("Address", address_str);
+				output("Hint", hint_str);
 				output("Name", func->name);
 			}
 

@@ -31,6 +31,7 @@ extern "C" {
 
 typedef struct {
 	uint32_t ordinal; // ordinal of the function
+	uint32_t hint; // hint (name index) of the function
 	char *name; // name of the function
 	char *fwd_name; // name of the forwarded function
 	uint32_t address; // address of the function

@@ -104,10 +104,14 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	uint64_t offsets_to_Names[exp->NumberOfFunctions];
 	memset(offsets_to_Names, 0, sizeof(offsets_to_Names));  // This is needed for VLAs.
 
+	uint32_t hint_name_indexes[exp->NumberOfFunctions];
+	memset(hint_name_indexes, 0, sizeof(hint_name_indexes));
+
 	//
 	// Names
 	//
 	
+	// Names table is indexed by hint (name index) number
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;
 		uint16_t *entry_ordinal_list = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
@@ -116,6 +120,8 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 			// TODO: Should we report something?
 			break;
 		}
+
+		// In this NameOrdinals table is stored unbiased ordinal number
 		const uint16_t ordinal = *entry_ordinal_list;
 
 		uint64_t entry_name_list_ptr = offset_to_AddressOfNames + sizeof(uint32_t) * i;
@@ -131,6 +137,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 
         if (ordinal < exp->NumberOfFunctions) {
             offsets_to_Names[ordinal] = entry_name_ofs;
+            hint_name_indexes[ordinal] = i;
         }
 	}
 
@@ -138,6 +145,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	// Functions
 	//
 
+	// Functions table is indexed by unbiased ordinal number
 	for (uint32_t i=0; i < exp->NumberOfFunctions; i++) {
 		uint64_t entry_va_list_ptr = offset_to_AddressOfFunctions + sizeof(uint32_t) * i;
 		uint32_t *entry_va_list = LIBPE_PTR_ADD(ctx->map_addr, entry_va_list_ptr);
@@ -174,6 +182,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 		}
 
 		exports->functions[i].ordinal = ordinal_base + i;
+		exports->functions[i].hint = hint_name_indexes[i];
 		exports->functions[i].address = entry_va;
 
 		exports->functions[i].name = strdup(fname);

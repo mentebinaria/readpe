@@ -68,10 +68,8 @@ else ifeq ($(PLATFORM_OS), GNU)
 else ifeq ($(PLATFORM_OS), GNU/kFreeBSD)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).so $^
 else ifeq ($(PLATFORM_OS), Darwin)
-	$(LINK) -headerpad_max_install_names -dynamiclib \
+	$(LINK) -headerpad_max_install_names -bundle \
 		-undefined dynamic_lookup -fno-common \
-		-install_name $(LIBNAME).$(VERSION).dylib \
-		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		$(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dylib $^
 else ifeq ($(PLATFORM_OS), CYGWIN)
 	$(LINK) -shared $(LDFLAGS) -o ${plugins_BUILDDIR}/$(LIBNAME).dll $^

@@ -106,7 +106,7 @@ else ifeq ($(PLATFORM_OS), GNU/kFreeBSD)
 	$(LINK) -shared -Wl,-soname,$(LIBNAME).so.1 $(LDFLAGS) -o $(LIBNAME).so $^ $(LIBS)
 else ifeq ($(PLATFORM_OS), Darwin)
 	$(LINK) -headerpad_max_install_names -dynamiclib \
-		-flat_namespace -install_name $(LIBNAME).$(VERSION).dylib \
+		-flat_namespace -install_name $(libdir)/$(LIBNAME).$(VERSION).dylib \
 		-current_version $(VERSION) -compatibility_version $(VERSION) \
 		$(LDFLAGS) -o $(LIBNAME).dylib $^ $(LIBS)
 else ifeq ($(PLATFORM_OS), CYGWIN)

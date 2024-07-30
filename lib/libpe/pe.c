@@ -873,3 +873,25 @@ const char *pe_rom_section_characteristic_name(ROMSectionCharacteristics charact
 bool pe_use_rom_section_characteristic(pe_ctx_t *ctx) {
 	return ctx->pe.optional_hdr_ptr != NULL && ctx->pe.optional_hdr.type == MAGIC_ROM;
 }
+
+bool pe_is_repro(pe_ctx_t *ctx) {
+	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_DEBUG);
+	if (dir == NULL)
+		return false;
+
+	uint64_t va = dir->VirtualAddress;
+	if (va == 0)
+		return false;
+
+	uint64_t ofs = pe_rva2ofs(ctx, va);
+	const IMAGE_DEBUG_DIRECTORY *debugs = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+	uint32_t count = dir->Size / sizeof(debugs[0]);
+	for (uint32_t i = 0; i < count; i++) {
+		if (!pe_can_read(ctx, &debugs[i], sizeof(debugs[i])))
+			return false;
+		if (debugs[i].Type == IMAGE_DEBUG_TYPE_REPRO)
+			return true;
+	}
+
+	return false;
+}

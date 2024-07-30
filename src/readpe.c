@@ -812,7 +812,7 @@ static void print_optional_header(pe_ctx_t *ctx, IMAGE_OPTIONAL_HEADER *header)
 	output_close_scope(); // Optional/Image heade
 }
 
-static void print_coff_header(IMAGE_COFF_HEADER *header)
+static void print_coff_header(pe_ctx_t *ctx, IMAGE_COFF_HEADER *header)
 {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
 	typedef struct {
@@ -891,12 +891,16 @@ static void print_coff_header(IMAGE_COFF_HEADER *header)
 	snprintf(s, MAX_MSG, "%" PRIu16, header->NumberOfSections);
 	output("Number of sections", s);
 
-	char timestr[40] = "invalid";
-	const time_t timestamp = header->TimeDateStamp;
-	struct tm *t = gmtime(&timestamp);
-	if (t)
-		strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
-	snprintf(s, MAX_MSG, "%" PRIu32 " (%s)", header->TimeDateStamp, timestr);
+	if (pe_is_repro(ctx)) {
+		snprintf(s, MAX_MSG, "0x%" PRIx32 " (reproducible hash)", header->TimeDateStamp);
+	} else {
+		char timestr[40] = "invalid";
+		const time_t timestamp = header->TimeDateStamp;
+		struct tm *t = gmtime(&timestamp);
+		if (t)
+			strftime(timestr, sizeof(timestr), "%a, %d %b %Y %H:%M:%S UTC", t);
+		snprintf(s, MAX_MSG, "%" PRIu32 " (%s)", header->TimeDateStamp, timestr);
+	}
 	output("Date/time stamp", s);
 
 	snprintf(s, MAX_MSG, "%#x", header->PointerToSymbolTable);
@@ -1135,7 +1139,7 @@ int main(int argc, char *argv[])
 #endif
 		IMAGE_COFF_HEADER *header_ptr = pe_coff(&ctx);
 		if (header_ptr)
-			print_coff_header(header_ptr);
+			print_coff_header(&ctx, header_ptr);
 		else { LIBPE_WARNING("unable to read COFF file header"); }
 	}
 

@@ -111,6 +111,7 @@ const char *pe_section_characteristic_name(SectionCharacteristics characteristic
 const char *pe_m68k_section_characteristic_name(SectionCharacteristics characteristic);
 const char *pe_rom_section_characteristic_name(ROMSectionCharacteristics characteristic);
 bool pe_use_rom_section_characteristic(pe_ctx_t *ctx);
+bool pe_is_repro(pe_ctx_t *ctx);
 
 // Hash functions
 size_t pe_hash_recommended_size(void);

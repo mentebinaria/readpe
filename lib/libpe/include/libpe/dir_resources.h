@@ -47,6 +47,7 @@ typedef enum {
 	RT_MESSAGETABLE		= 11, // string table
 	RT_GROUP_CURSOR		= 12, // cursor group
 	RT_GROUP_ICON		= 14, // icon group
+	RT_NAMETABLE		= 15, // name table (removed in Windows 3.1)
 	RT_VERSION			= 16, // version information
 	RT_DLGINCLUDE		= 17, // names of header files for dialogs (*.h) used by compiler
 	RT_PLUGPLAY			= 19, // data determined by application
@@ -55,6 +56,7 @@ typedef enum {
 	RT_ANIICON			= 22, // animated icon
 	RT_HTML				= 23, // html page
 	RT_MANIFEST			= 24, // manifest of Windows XP build
+	RT_PSZ				= 204, // string resource (used for ttf font file name)
 	RT_DLGINIT			= 240, // strings used for initiating some controls in dialogs
 	RT_TOOLBAR			= 241 // configuration of toolbars
 } ResourceType;

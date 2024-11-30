@@ -1132,7 +1132,7 @@ int main(int argc, char *argv[])
 		if (ctx.pe.signature) {
 			static char s[MAX_MSG];
 			output_open_scope("PE header", OUTPUT_SCOPE_TYPE_OBJECT);
-			snprintf(s, MAX_MSG, "0x%08x (PE)", ctx.pe.signature);
+			snprintf(s, MAX_MSG, "0x%08x (%.4s)", ctx.pe.signature, (const char *)&ctx.pe.signature);
 			output("Signature", s);
 			output_close_scope();
 		}

@@ -62,6 +62,8 @@ static const uint64_t IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
    IMAGE_ORDINAL_FLAG32 : IMAGE_ORDINAL_FLAG64)
 
 #define SIGNATURE_PE 0x00004550 // PE\0\0 in little-endian
+#define SIGNATURE_PL 0x00004C50 // PL\0\0 in little-endian, used by Phar Lap TNT DOS extender
+#define SIGNATURE_PX 0x00005850 // PX\0\0 in little-endian, used by HX DOS extender
 
 typedef enum {
 	LIBPE_OPT_NOCLOSE_FD = (1 << 0), // Keeps `stream` open for further usage.

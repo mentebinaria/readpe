@@ -184,6 +184,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx) {
 	    		//fprintf(stderr, "Invalid signature: %x\n", ctx->pe.signature);
 	    		return LIBPE_E_INVALID_SIGNATURE;
 	    	case SIGNATURE_PE:
+	    	case SIGNATURE_PL:
+	    	case SIGNATURE_PX:
 	    		break;
 	    }
 
@@ -343,7 +345,7 @@ bool pe_is_exec(const pe_ctx_t *ctx) {
 		return false;
 
 	// Check PE signature
-	if (ctx->pe.signature != SIGNATURE_PE)
+	if (ctx->pe.signature != SIGNATURE_PE && ctx->pe.signature != SIGNATURE_PL && ctx->pe.signature != SIGNATURE_PX)
 		return false;
 
 	return true;

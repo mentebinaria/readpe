@@ -48,7 +48,7 @@ static const pe_resource_entry_info_t g_resource_dataentry_info_table[] = {
 	{ "RT_GROUP_CURSOR",	RT_GROUP_CURSOR,	".cur",		"groupcursors"	},
 	{ "???_13",				13,					".13",		"_13"			},
 	{ "RT_GROUP_ICON",		RT_GROUP_ICON,		".ico",		"groupicons"	},
-	{ "RT_NAMETABLE",		RT_NAMETABLE,			".rc",		"nametable"		},
+	{ "RT_NAMETABLE",		RT_NAMETABLE,		".rc",		"nametable"		},
 	{ "RT_VERSION",			RT_VERSION,			".rc",		"versions"		},
 	{ "RT_DLGINCLUDE",		RT_DLGINCLUDE,		".rc",		"dlgincludes"	},
 	{ "???_18",				18,					".18",		"_18"			},
@@ -58,7 +58,7 @@ static const pe_resource_entry_info_t g_resource_dataentry_info_table[] = {
 	{ "RT_ANIICON",			RT_ANIICON,			".rc",		"aniicons"		},
 	{ "RT_HTML",			RT_HTML,			".html",	"htmls"			},
 	{ "RT_MANIFEST",		RT_MANIFEST,		".xml",		"manifests"		},
-	{ "RT_PSZ",			RT_PSZ,				".rc"		"psz"			},
+	{ "RT_PSZ",			    RT_PSZ,				".rc",		"psz"			},
 	{ "RT_DLGINIT",			RT_DLGINIT,			".rc",		"dlginits"		},
 	{ "RT_TOOLBAR",			RT_TOOLBAR,			".rc",		"toolbars"		},
 	{ NULL }

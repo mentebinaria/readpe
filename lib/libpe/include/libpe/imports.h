@@ -46,6 +46,8 @@ typedef struct {
 	pe_err_e err;
 	uint32_t dll_count;
 	pe_imported_dll_t *dlls; // array of DLLs
+	uint32_t delay_dll_count;
+	pe_imported_dll_t *delay_dlls;
 } pe_imports_t;
 
 void pe_imports_dealloc(pe_imports_t *imports);

@@ -1049,14 +1049,8 @@ static void print_exports(pe_ctx_t *ctx)
 	output_close_scope(); // Exported functions
 }
 
-static void print_imports(pe_ctx_t *ctx)
+static void print_import_library(const pe_imported_dll_t *dll)
 {
-	output_open_scope("Imported functions", OUTPUT_SCOPE_TYPE_ARRAY);
-
-	const pe_imports_t *imports = pe_imports(ctx);
-	for (size_t i=0; i < imports->dll_count; i++) {
-		const pe_imported_dll_t *dll = &imports->dlls[i];
-		output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
 		output("Name", dll->name);
 		output_open_scope("Functions", OUTPUT_SCOPE_TYPE_ARRAY);
 
@@ -1079,7 +1073,24 @@ static void print_imports(pe_ctx_t *ctx)
 		}
 		
 		output_close_scope(); // Functions
+}
+
+static void print_imports(pe_ctx_t *ctx)
+{
+	output_open_scope("Imported functions", OUTPUT_SCOPE_TYPE_ARRAY);
+
+	const pe_imports_t *imports = pe_imports(ctx);
+	for (size_t i=0; i < imports->dll_count; i++) {
+		const pe_imported_dll_t *dll = &imports->dlls[i];
+		output_open_scope("Library", OUTPUT_SCOPE_TYPE_OBJECT);
+		print_import_library(dll);
 		output_close_scope(); // Library
+	}
+	for (size_t i=0; i < imports->delay_dll_count; i++) {
+		const pe_imported_dll_t *dll = &imports->delay_dlls[i];
+		output_open_scope("Delay Loaded Library", OUTPUT_SCOPE_TYPE_OBJECT);
+		print_import_library(dll);
+		output_close_scope(); // Delay Loaded Library
 	}
 
 	output_close_scope(); // Imported functions

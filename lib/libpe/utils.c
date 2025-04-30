@@ -3,7 +3,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2017 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -104,7 +104,7 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter) {
 	}
 	strcpy( p, strings[i] );
 
-//	
+//
 //	// Null terminate it.
 //	result[--result_length] = '\0';
 //

@@ -136,7 +136,7 @@ readpe: $(pev_BUILDDIR)/readpe.o $(pev_OBJS)
 
 rva2ofs: $(pev_BUILDDIR)/rva2ofs.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
-	
+
 peldd: $(pev_BUILDDIR)/peldd.o $(pev_OBJS)
 	$(CC) $< -o $(pev_BUILDDIR)/$@ $(pev_COMMON_DEPS) $(LDFLAGS) $(CFLAGS) $(CPPFLAGS)
 

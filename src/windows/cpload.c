@@ -23,7 +23,7 @@
     OpenSSL library under certain conditions as described in each
     individual source file, and distribute linked combinations
     including the two.
-    
+
     You must obey the GNU General Public License in all respects
     for all of the code used other than OpenSSL.  If you modify
     file(s) with this exception, you may extend this exception to your
@@ -87,7 +87,7 @@ int main(int argc, char* argv[])
     }
 
     printf("loading library...\n");
-    
+
     if (IsDebuggerPresent())
         __asm__("int $3");
 
@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
 
     printf("looking for CPlApplet()...\n");
     _cplapplet = (cplapplet) GetProcAddress(dll, "CPlApplet");
-    
+
     if (!_cplapplet)
     {
         fprintf(stderr, "CPlApplet function not found. Aborting...\n");
@@ -127,10 +127,10 @@ int main(int argc, char* argv[])
                     _cplapplet(NULL, CPL_NEWINQUIRE, 0, &newcplinfo);
                 else
                     _cplapplet(NULL, i, NULL, NULL);
-                
+
                 break;
             }
-            
+
         }
     }
     else // send all messages
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
         _cplapplet(NULL, CPL_STARTWPARMS, NULL, NULL);
         _cplapplet(NULL, CPL_SETUP, NULL, NULL);
     }
-    
+
     FreeLibrary(dll);
     return 0;
 }

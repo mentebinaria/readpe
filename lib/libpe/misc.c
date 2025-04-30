@@ -2,7 +2,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2017 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -159,7 +159,7 @@ int pe_has_fake_entrypoint(pe_ctx_t *ctx) {
 	if (ep == 0) {
 		value = -2; // null
 	}  else if (pe_check_fake_entrypoint(ctx, ep)) {
-		value = 1; // fake 
+		value = 1; // fake
 	}  else {
 		value = 0; // normal
 	}
@@ -207,11 +207,11 @@ static int count_tls_callbacks(pe_ctx_t *ctx) {
 
 		if (!can_process)
 			continue;
-		
+
 		ofs = tls_addr - sections[i]->VirtualAddress + sections[i]->PointerToRawData;
 
 		switch (optional_hdr->type) {
-			default: 
+			default:
 				return 0;
 			case MAGIC_PE32_0:
 			case MAGIC_PE32:
@@ -277,6 +277,6 @@ int pe_get_tls_callback(pe_ctx_t *ctx) {
 		ret = LIBPE_E_NO_FUNCTIONS_FOUND; // found no functions
 	else if (callbacks > 0)
 		ret = callbacks;
-	
+
 	return ret;
 }

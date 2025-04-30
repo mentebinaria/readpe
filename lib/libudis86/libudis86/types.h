@@ -2,25 +2,25 @@
  *
  * Copyright (c) 2002-2013 Vivek Thampi
  * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without modification, 
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
- *     * Redistributions of source code must retain the above copyright notice, 
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright notice, 
- *       this list of conditions and the following disclaimer in the documentation 
+ *     * Redistributions in binary form must reproduce the above copyright notice,
+ *       this list of conditions and the following disclaimer in the documentation
  *       and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR 
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #ifndef UD_TYPES_H
@@ -39,7 +39,7 @@
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 # include <stdint.h>
 # include <stdio.h>
-# define inline __inline /* MS Visual Studio requires __inline 
+# define inline __inline /* MS Visual Studio requires __inline
                             instead of inline for C code */
 #elif !defined(__UD_STANDALONE__)
 # include <stdio.h>
@@ -74,13 +74,13 @@ enum ud_type
   UD_R_SP,  UD_R_BP,  UD_R_SI,  UD_R_DI,
   UD_R_R8W, UD_R_R9W, UD_R_R10W,  UD_R_R11W,
   UD_R_R12W,  UD_R_R13W,  UD_R_R14W,  UD_R_R15W,
-  
+
   /* 32 bit GPRs */
   UD_R_EAX, UD_R_ECX, UD_R_EDX, UD_R_EBX,
   UD_R_ESP, UD_R_EBP, UD_R_ESI, UD_R_EDI,
   UD_R_R8D, UD_R_R9D, UD_R_R10D,  UD_R_R11D,
   UD_R_R12D,  UD_R_R13D,  UD_R_R14D,  UD_R_R15D,
-  
+
   /* 64 bit GPRs */
   UD_R_RAX, UD_R_RCX, UD_R_RDX, UD_R_RBX,
   UD_R_RSP, UD_R_RBP, UD_R_RSI, UD_R_RDI,
@@ -89,14 +89,14 @@ enum ud_type
 
   /* segment registers */
   UD_R_ES,  UD_R_CS,  UD_R_SS,  UD_R_DS,
-  UD_R_FS,  UD_R_GS,  
+  UD_R_FS,  UD_R_GS,
 
   /* control registers*/
   UD_R_CR0, UD_R_CR1, UD_R_CR2, UD_R_CR3,
   UD_R_CR4, UD_R_CR5, UD_R_CR6, UD_R_CR7,
   UD_R_CR8, UD_R_CR9, UD_R_CR10,  UD_R_CR11,
   UD_R_CR12,  UD_R_CR13,  UD_R_CR14,  UD_R_CR15,
-  
+
   /* debug registers */
   UD_R_DR0, UD_R_DR1, UD_R_DR2, UD_R_DR3,
   UD_R_DR4, UD_R_DR5, UD_R_DR6, UD_R_DR7,
@@ -109,7 +109,7 @@ enum ud_type
 
   /* x87 registers */
   UD_R_ST0, UD_R_ST1, UD_R_ST2, UD_R_ST3,
-  UD_R_ST4, UD_R_ST5, UD_R_ST6, UD_R_ST7, 
+  UD_R_ST4, UD_R_ST5, UD_R_ST6, UD_R_ST7,
 
   /* extended multimedia registers */
   UD_R_XMM0,  UD_R_XMM1,  UD_R_XMM2,  UD_R_XMM3,
@@ -120,7 +120,7 @@ enum ud_type
   UD_R_RIP,
 
   /* Operand Types */
-  UD_OP_REG,  UD_OP_MEM,  UD_OP_PTR,  UD_OP_IMM,  
+  UD_OP_REG,  UD_OP_MEM,  UD_OP_PTR,  UD_OP_IMM,
   UD_OP_JIMM, UD_OP_CONST
 };
 
@@ -150,7 +150,7 @@ struct ud_operand {
   uint8_t         size;
   enum ud_type    base;
   enum ud_type    index;
-  uint8_t         scale;  
+  uint8_t         scale;
   uint8_t         offset;
   union ud_lval   lval;
   /*

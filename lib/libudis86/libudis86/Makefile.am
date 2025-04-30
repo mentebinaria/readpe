@@ -32,7 +32,7 @@ BUILT_SOURCES = \
     itab.h
 
 #
-# DLLs may not contain undefined symbol references.  
+# DLLs may not contain undefined symbol references.
 # We have the linker check this explicitly.
 #
 if TARGET_WINDOWS

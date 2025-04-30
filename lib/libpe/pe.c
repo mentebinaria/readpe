@@ -2,7 +2,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2017 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -63,7 +63,7 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 	}
 
 	int ret = 0;
-	
+
 	// Stat the fd to retrieve the file informations.
 	// If file is a symlink, fstat will stat the pointed file, not the link.
 	struct stat stat;

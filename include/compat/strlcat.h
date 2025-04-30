@@ -1,4 +1,4 @@
-/* vim: set ts=4 sw=4 noet: */
+/* vim :set ts=4 sw=4 sts=4 et : */
 #ifndef STRLCAT_H_INCLUDED
 #define STRLCAT_H_INCLUDED
 

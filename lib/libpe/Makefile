@@ -83,7 +83,7 @@ all: libpe
 #
 # It makes a difference where in the command you write this option; the linker searches and processes
 # libraries and object files in the order they are specified. Thus, ‘foo.o -lz bar.o’ searches library
-# ‘z’ after file foo.o but before bar.o. If bar.o refers to functions in ‘z’, those functions 
+# ‘z’ after file foo.o but before bar.o. If bar.o refers to functions in ‘z’, those functions
 # may not be loaded.
 #
 

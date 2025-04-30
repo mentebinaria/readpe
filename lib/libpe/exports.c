@@ -2,7 +2,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2017 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -38,7 +38,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	exports->err = LIBPE_E_OK;
 
 	const IMAGE_DATA_DIRECTORY *dir = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_EXPORT);
-	if (dir == NULL) { 
+	if (dir == NULL) {
 		return exports;
 	}
 
@@ -65,9 +65,9 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	}
 
 	exports->name = strdup(name_ptr);
-	
+
 	const uint32_t ordinal_base = exp->Base;
-	
+
 	ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
 	const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
 	if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
@@ -110,7 +110,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx) {
 	//
 	// Names
 	//
-	
+
 	// Names table is indexed by hint (name index) number
 	for (uint32_t i=0; i < exp->NumberOfNames; i++) {
 		uint64_t entry_ordinal_list_ptr = offset_to_AddressOfNameOrdinals + sizeof(uint16_t) * i;

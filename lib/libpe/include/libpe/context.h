@@ -2,7 +2,7 @@
     libpe - the PE library
 
     Copyright (C) 2010 - 2023 libpe authors
-    
+
     This file is part of libpe.
 
     libpe is free software: you can redistribute it and/or modify
@@ -28,7 +28,7 @@
 #include "hdr_dos.h"
 #include "hdr_coff.h"
 #include "hdr_optional.h"
-#include "directories.h" 
+#include "directories.h"
 #include "sections.h"
 #include "imports.h"
 #include "exports.h"

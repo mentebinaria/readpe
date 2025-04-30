@@ -111,7 +111,7 @@ libudis86_la_OBJECTS = $(am_libudis86_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
 libudis86_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libudis86_la_LDFLAGS) $(LDFLAGS) -o $@
@@ -122,11 +122,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/build/depcomp
 am__depfiles_maybe = depfiles
@@ -140,7 +140,7 @@ LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -148,7 +148,7 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
+am__v_CCLD_1 =
 SOURCES = $(libudis86_la_SOURCES)
 DIST_SOURCES = $(libudis86_la_SOURCES)
 am__can_run_installinfo = \
@@ -324,7 +324,7 @@ BUILT_SOURCES = \
 
 
 #
-# DLLs may not contain undefined symbol references.  
+# DLLs may not contain undefined symbol references.
 # We have the linker check this explicitly.
 #
 @TARGET_WINDOWS_TRUE@libudis86_la_LDFLAGS = -no-undefined -version-info 0:0:0
@@ -398,7 +398,7 @@ clean-libLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
-libudis86.la: $(libudis86_la_OBJECTS) $(libudis86_la_DEPENDENCIES) $(EXTRA_libudis86_la_DEPENDENCIES) 
+libudis86.la: $(libudis86_la_OBJECTS) $(libudis86_la_DEPENDENCIES) $(EXTRA_libudis86_la_DEPENDENCIES)
 	$(AM_V_CCLD)$(libudis86_la_LINK) -rpath $(libdir) $(libudis86_la_OBJECTS) $(libudis86_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:

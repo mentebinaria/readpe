@@ -2,25 +2,25 @@
  *
  * Copyright (c) 2002-2013 Vivek Thampi
  * All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without modification, 
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
  * are permitted provided that the following conditions are met:
- * 
- *     * Redistributions of source code must retain the above copyright notice, 
+ *
+ *     * Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright notice, 
- *       this list of conditions and the following disclaimer in the documentation 
+ *     * Redistributions in binary form must reproduce the above copyright notice,
+ *       this list of conditions and the following disclaimer in the documentation
  *       and/or other materials provided with the distribution.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR 
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
- * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "types.h"
@@ -34,11 +34,11 @@
  * opr_cast() - Prints an operand cast.
  * -----------------------------------------------------------------------------
  */
-static void 
+static void
 opr_cast(struct ud* u, struct ud_operand* op)
 {
   if (u->br_far) {
-    ud_asmprintf(u, "far "); 
+    ud_asmprintf(u, "far ");
   }
   switch(op->size) {
   case  8: ud_asmprintf(u, "byte " ); break;
@@ -80,12 +80,12 @@ static void gen_operand(struct ud* u, struct ud_operand* op, int syn_cast)
       }
     }
     if (op->offset != 0) {
-      ud_syn_print_mem_disp(u, op, (op->base  != UD_NONE || 
+      ud_syn_print_mem_disp(u, op, (op->base  != UD_NONE ||
                                     op->index != UD_NONE) ? 1 : 0);
     }
     ud_asmprintf(u, "]");
     break;
-      
+
   case UD_OP_IMM:
     ud_syn_print_imm(u, op);
     break;
@@ -98,11 +98,11 @@ static void gen_operand(struct ud* u, struct ud_operand* op, int syn_cast)
   case UD_OP_PTR:
     switch (op->size) {
       case 32:
-        ud_asmprintf(u, "word 0x%x:0x%x", op->lval.ptr.seg, 
+        ud_asmprintf(u, "word 0x%x:0x%x", op->lval.ptr.seg,
           op->lval.ptr.off & 0xFFFF);
         break;
       case 48:
-        ud_asmprintf(u, "dword 0x%x:0x%x", op->lval.ptr.seg, 
+        ud_asmprintf(u, "dword 0x%x:0x%x", op->lval.ptr.seg,
           op->lval.ptr.off);
         break;
     }
@@ -118,7 +118,7 @@ static void gen_operand(struct ud* u, struct ud_operand* op, int syn_cast)
 }
 
 /* =============================================================================
- * translates to intel syntax 
+ * translates to intel syntax
  * =============================================================================
  */
 extern void
@@ -169,7 +169,7 @@ ud_translate_intel(struct ud* u)
       if (u->operand[1].type == UD_OP_IMM   ||
           u->operand[1].type == UD_OP_CONST ||
           u->operand[1].type == UD_NONE     ||
-          (u->operand[0].size != u->operand[1].size && 
+          (u->operand[0].size != u->operand[1].size &&
            u->operand[1].type != UD_OP_REG)) {
           cast = 1;
       } else if (u->operand[1].type == UD_OP_REG &&
@@ -195,7 +195,7 @@ ud_translate_intel(struct ud* u)
     int cast = 0;
     ud_asmprintf(u, ", ");
     if (u->operand[1].type == UD_OP_MEM &&
-        u->operand[0].size != u->operand[1].size && 
+        u->operand[0].size != u->operand[1].size &&
         !ud_opr_is_sreg(&u->operand[0])) {
       cast = 1;
     }

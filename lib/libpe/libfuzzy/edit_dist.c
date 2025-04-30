@@ -10,7 +10,7 @@
 
 /* The authors make no claims as to the fitness or correctness of this software
  * for any use whatsoever, and it is provided as is. Any use of this software
- * is at the user's own risk. 
+ * is at the user's own risk.
  */
 
 #include <stdio.h>
@@ -231,7 +231,7 @@ edit_distn(const char *from, int from_len, const char *to, int to_len)
 		    N(row, col + 1) + ins,
 		    W(row + 1, col) + del);
 	    if (from[col] == to[row - 1] && col > 0 &&
-		    from[col - 1] == to[row])		    
+		    from[col - 1] == to[row])
 		buffer[index] = min2(buffer[index],
 			NNWW(row - 1, col - 1) + swap_cost);
 

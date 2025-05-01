@@ -42,12 +42,14 @@ and analyze PE (Portable Executables) binaries.
 
 **NOTE**: The following packages must be installed along with your Cygwin:
 
-- gcc-core
-- binutils
-- make
-- zip
-- openssl-devel
-- git (just to clone the repository and make things easier)
+| Category | Package       |
+|----------|---------------|
+| Archive  | zip           |
+| Devel    | binutils      |
+| Devel    | gcc-core      |
+| Devel    | git           |
+| Devel    | make          |
+| Net      | libssl-devel  |
 
 ## FAQ
 

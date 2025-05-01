@@ -1,7 +1,7 @@
 LIBPE_DIR = lib/libpe
 PEV_DIR = src
 VERSION = 0.84
-ZIPDIR = pev-$(VERSION)-win
+ZIPDIR = readpe-$(VERSION)-win
 ZIPFILE = $(ZIPDIR).zip
 
 all:
@@ -18,7 +18,7 @@ zip:
 	cp $(PEV_DIR)/userdb.txt $(ZIPDIR)
 	cp lib/libpe/libpe.dll $(ZIPDIR)/
 	cp /usr/bin/cygwin1.dll $(ZIPDIR)/
-	cp /usr/bin/cygcrypto-1*.dll $(ZIPDIR)/
+	cp /usr/bin/cygcrypto-3.dll $(ZIPDIR)/
 	cp /usr/bin/cygz.dll $(ZIPDIR)/
 	cp README.md $(ZIPDIR)/
 	cp $(PEV_DIR)/build/*.exe $(ZIPDIR)/

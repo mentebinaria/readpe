@@ -138,7 +138,7 @@ static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
         uint32_t sect_offset = sections[i]->PointerToRawData;
         uint32_t sect_size = sections[i]->SizeOfRawData;
 
-        if (offset >= sect_offset && offset <= (sect_offset + sect_size)) {
+        if (offset >= sect_offset && offset < (sect_offset + sect_size)) {
             return (unsigned char *)sections[i]->Name;
         }
     }

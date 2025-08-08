@@ -1,10 +1,13 @@
-<chapter id="pev">
-<title>What is pev?</title>
+<chapter id="readpe">
+<title>What is readpe?</title>
 
 <para>
-Since version 0.50, pev is a multiplatform toolkit to work with PE (Portable
+Since version 0.50, pev has been a multiplatform toolkit to work with PE (Portable
 Executable) binaries. Its main goal is to provide feature-rich tool for proper
 analyze binaries, specially suspicious ones.</para>
+
+<para> This larger scope was reflected in version 0.83 when it was renamed to
+readpe</para>
 
 <sect1 id="history">
 <title>History</title>
@@ -30,6 +33,11 @@ and split pev into various programs beyond a library, called libpe. Currently
 most of pev toolkit programs depends on libpe.
 </para>
 
+<para>
+Witth version 0.83 it was decided to rename the project to readpe
+to reflect it's larger scope.
+</para>
+
 </sect1>
 
 <sect1 id="changelog">
@@ -43,10 +51,27 @@ Legend:
 - Bug fixed
 ! Known issue / missing feature
 
-pev 0.84 - February 1, 2024
+readpe 0.85 - August 8, 2025
+ + Recognize PL and PX signatures for PE EXE files
+ * Add some missing RT_ constants
+ * Recognize reproducible hash stored in TimeDateStamp
+ * Add IMAGE_DEBUG_DIRECTORY structure definition
+ * Parse and print hints (name indexes) from the export table
+ * Print hints (name indexes) from import table in hexadecimal notation
+ * Add IMAGE_FILE_MACHINE_TAHOE
+ * Print library name if it is stored also when the library has no exports
+ * Extend description of flags
+ * Recognize PE32 binaries with zero type of optional header
+ - Fix bug in libpe ordinal mask handling
+ - Fix library install name and plugin type on macOS
+ - Fix --help output spacing
+ - Fix ofs2section name
+ - Fix pehash printing wrong characters
+
+readpe 0.84 - February 1, 2024
  * Add test executable
 
-pev 0.83 - November 28, 2023
+readpe 0.83 - November 28, 2023
  * Add Linux install info to readme
  * Remove _FORTIFY_SOURCE definitions
  - Fix 8 character long section names being cut off

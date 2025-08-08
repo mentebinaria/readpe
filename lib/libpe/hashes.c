@@ -186,6 +186,7 @@ static void to_hex_str(const uint8_t* input, char* output, size_t n)
 		*output++ = "0123456789abcdef"[b >> 4];
 		*output++ = "0123456789abcdef"[b & 0xf];
 	}
+	*output = '\0';
 }
 
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name, const unsigned char *data, size_t data_size) {

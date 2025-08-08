@@ -182,6 +182,7 @@ static void print_basic_hash(const unsigned char *data, size_t data_size)
     char *hash_value = malloc_s(hash_value_size);
 
     for (size_t i=0; i < sizeof(basic_hashes) / sizeof(char *); i++) {
+		memset(hash_value, 0, hash_value_size);
         pe_hash_raw_data(hash_value, hash_value_size, basic_hashes[i], data, data_size);
         output(basic_hashes[i], hash_value);
     }

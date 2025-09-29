@@ -14,7 +14,6 @@ set(HEADERS
     ../include/stack.h
 
     dylib.h
-    legacy.h
 )
 
 set(SOURCES
@@ -41,20 +40,28 @@ set(SOURCES
     certificates.c
     scan.c
 
-    legacy/pehash.c
-    legacy/peldd.c
-    legacy/pepack.c
-    legacy/peres.c
-    legacy/pescan.c
-    legacy/pesec.c
-    legacy/pestr.c
-    legacy/readpe.c
-    legacy/ofs2rva.c
-    legacy/rva2ofs.c
 )
 
-if(BUILD_DISASSEMBLER)
-    list(APPEND SOURCES legacy/pedis.c )
+if(BUILD_LEGACY)
+    if(BUILD_DISASSEMBLER)
+        list(APPEND SOURCES legacy/pedis.c )
+    endif()
+
+    list(APPEND HEADERS
+        legacy.h
+    )
+    list(APPEND SOURCES
+        legacy/pehash.c
+        legacy/peldd.c
+        legacy/pepack.c
+        legacy/peres.c
+        legacy/pescan.c
+        legacy/pesec.c
+        legacy/pestr.c
+        legacy/readpe.c
+        legacy/ofs2rva.c
+        legacy/rva2ofs.c
+    )
 endif()
 
 if(BUILD_STATIC)
@@ -82,8 +89,6 @@ add_compile_definitions(
     PLUGINSDIR="src/plugins"
 )
 
-
-
 find_package(OpenSSL)
 
 add_executable(readpe ${HEADERS} ${SOURCES})
@@ -95,10 +100,17 @@ target_include_directories(readpe PRIVATE
 
 target_link_libraries(readpe PRIVATE pe OpenSSL::Crypto m)
 
-if(BUILD_DISASSEMBLER)
-    target_link_libraries(readpe PRIVATE udis86)
-    target_compile_definitions(readpe
-        READPE_DISASSEMBLER=1
+
+if(BUILD_LEGACY)
+    if(BUILD_DISASSEMBLER)
+        target_link_libraries(readpe PRIVATE udis86)
+        target_compile_definitions(readpe PRIVATE
+            READPE_DISASSEMBLER=1
+        )
+    endif()
+
+    target_compile_definitions(readpe PRIVATE
+        READPE_LEGACY=1
     )
 endif()
 
@@ -118,4 +130,11 @@ else()
         -ggdb3
     )
 endif()
+
+install(TARGETS readpe
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include
+)
 

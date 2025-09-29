@@ -40,8 +40,17 @@ set(SOURCES
 	utils.c
 )
 
-add_library(pe STATIC ${HEADERS} ${SOURCES})
-target_include_directories(pe PRIVATE "include")
+find_package(OpenSSL REQUIRED)
+
+if(BUILD_STATIC)
+    add_library(pe STATIC ${HEADERS} ${SOURCES})
+else()
+    add_library(pe SHARED ${HEADERS} ${SOURCES})
+endif()
+
+target_link_libraries(pe PRIVATE OpenSSL::Crypto OpenSSL::SSL )
+
+target_include_directories(pe PRIVATE "include" ${OPENSSL_INCLUDE_DIR} )
 if(MSVC)
 	target_compile_options(pe PRIVATE /W4 /WX)
 else()
@@ -57,4 +66,12 @@ else()
 		-Wconversion
 	)
 endif()
+
+install(TARGETS pe
+    EXPORT peTargets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    INCLUDES DESTINATION include/libpe
+)
 

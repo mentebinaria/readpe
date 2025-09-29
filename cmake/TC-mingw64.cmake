@@ -5,8 +5,20 @@ set(CMAKE_SYSTEM_NAME Windows)
 # enable_language(C,CXX)
 
 # which compilers to use for C and C++
-set(CMAKE_C_COMPILER   i686-w64-mingw32-gcc)
-set(CMAKE_CXX_COMPILER i686-w64-mingw32-g++)
+find_program(GNUCCi686W86Mingw32 NAMES
+    i686-w64-mingw32-gcc
+    i686-w64-mingw32-gcc-win32
+    i686-w64-mingw32-gcc-posix
+    REQUIRED
+)
+find_program(GNUPlusPlusi686W86Mingw32 NAMES
+    i686-w64-mingw32-g++
+    i686-w64-mingw32-g++-win32
+    i686-w64-mingw32-g++-posix
+    REQUIRED
+)
+set(CMAKE_C_COMPILER ${GNUCCi686W86Mingw32})
+set(CMAKE_CXX_COMPILER ${GNUPlusPlusi686W86Mingw32})
 
 # where is the target environment located
 set(CMAKE_FIND_ROOT_PATH /usr/i686-w64-mingw32)

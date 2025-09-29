@@ -36,10 +36,13 @@
 
 #include "common.h"
 #include "config.h"
-#include "legacy.h"
 #include "modes.h"
 #include "output.h"
 #include "readpe.h"
+
+#ifdef READPE_LEGACY
+#include "legacy.h"
+#endif
 
 #include <getopt.h>
 #include <libpe/context.h>
@@ -302,6 +305,7 @@ static const struct mode_option base_mode[] = {
 
 // ------------------------------------------------------------------------- //
 
+#ifdef READPE_LEGACY
 static void legacy(int argc, char *argv[])
 {
     const char *bin_name = strrchr(argv[0], '/');
@@ -332,7 +336,7 @@ static void legacy(int argc, char *argv[])
             else if (bin_name[2] == 'd' && bin_name[3] == 'i') {
                 exit(pedis(argc, argv));
             }
-#endif
+#endif // READPE_DISASSEMBLER
         } else if (bin_name[2] == 'l' && bin_name[3] == 'd'
                    && bin_name[4] == 'd') {
             exit(peldd(argc, argv));
@@ -350,6 +354,7 @@ static void legacy(int argc, char *argv[])
     //     }
     // }
 }
+#endif // READPE_LEGACY
 
 // -------------------------------------------------------------------------
 
@@ -723,7 +728,9 @@ static const char *parse_options(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+#ifdef READPE_LEGACY
     legacy(argc, argv);
+#endif // READPE_LEGACY
 
     // Print help when no arguments are given
     if (argc < 2) {

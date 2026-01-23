@@ -118,6 +118,7 @@ void                   print_dependencies(pe_ctx_t *ctx);
 
 void                   print_resources(pe_ctx_t *ctx);
 void                   print_resources_list(pe_ctx_t *ctx);
+void                   print_resources_tree(pe_ctx_t *ctx);
 void                   print_resources_stats(pe_ctx_t *ctx);
 void                   print_file_version(pe_ctx_t *ctx);
 void                   extract_all_resources(pe_ctx_t *ctx, bool named);

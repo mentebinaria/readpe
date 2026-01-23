@@ -23,6 +23,7 @@
 
 #include "libpe/macros.h"
 #include "libpe/pe.h"
+
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <stdio.h>
@@ -31,7 +32,7 @@
 
 static uint32_t get_dll_count(pe_ctx_t *ctx)
 {
-    uint32_t count = 0;
+    uint32_t                    count = 0;
 
     const IMAGE_DATA_DIRECTORY *dir
         = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -49,19 +50,19 @@ static uint32_t get_dll_count(pe_ctx_t *ctx)
 
     while (1) {
         IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+        if (! pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
             // TODO: Should we report something?
             return count;
         }
 
-        if (!id->u1.OriginalFirstThunk && !id->FirstThunk) {
+        if (! id->u1.OriginalFirstThunk && ! id->FirstThunk) {
             break;
         }
 
         ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
 
         const uint64_t aux = ofs; // Store current ofs
-        ofs = pe_rva2ofs(ctx, id->Name);
+        ofs                = pe_rva2ofs(ctx, id->Name);
         if (ofs == 0) {
             break;
         }
@@ -82,7 +83,7 @@ static uint32_t get_dll_count(pe_ctx_t *ctx)
 
 static uint32_t get_delay_dll_count(pe_ctx_t *ctx)
 {
-    uint32_t count = 0;
+    uint32_t                    count = 0;
 
     const IMAGE_DATA_DIRECTORY *dir
         = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
@@ -100,19 +101,19 @@ static uint32_t get_delay_dll_count(pe_ctx_t *ctx)
 
     while (1) {
         IMAGE_DELAYLOAD_DESCRIPTOR *dd = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, dd, sizeof(IMAGE_DELAYLOAD_DESCRIPTOR))) {
+        if (! pe_can_read(ctx, dd, sizeof(IMAGE_DELAYLOAD_DESCRIPTOR))) {
             // TODO: Should we report something?
             return count;
         }
 
-        if (!dd->ImportNameTableRVA) {
+        if (! dd->ImportNameTableRVA) {
             break;
         }
 
         ofs += sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
 
         const uint64_t aux = ofs; // Store current ofs
-        ofs = pe_rva2ofs(ctx, dd->DllNameRVA);
+        ofs                = pe_rva2ofs(ctx, dd->DllNameRVA);
         if (ofs == 0) {
             break;
         }
@@ -132,7 +133,7 @@ static uint32_t get_delay_dll_count(pe_ctx_t *ctx)
 static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset,
                                     bool rva_based)
 {
-    uint64_t ofs = offset - (rva_based ? 0 : ctx->pe.imagebase);
+    uint64_t ofs   = offset - (rva_based ? 0 : ctx->pe.imagebase);
     uint32_t count = 0;
 
     while (1) {
@@ -140,25 +141,27 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset,
         case MAGIC_PE32_0:
         case MAGIC_PE32: {
             const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+            if (! pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
                 return count;
             }
 
             // Type punning
-            const uint32_t thunk_type = *(uint32_t *)thunk;
+            const uint32_t thunk_type = *(uint32_t *) thunk;
             if (thunk_type == 0) {
                 return count;
             }
 
             bool is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
-            if (!is_ordinal) {
-                const uint32_t rva = thunk->u1.AddressOfData
-                                     - (rva_based ? 0 : ctx->pe.imagebase);
-                const uint64_t imp_ofs = pe_rva2ofs(ctx, rva);
+            if (! is_ordinal) {
+                const uint32_t rva
+                    = thunk->u1.AddressOfData
+                      - (rva_based ? 0 : (uint32_t) ctx->pe.imagebase);
+                const uint64_t              imp_ofs = pe_rva2ofs(ctx, rva);
                 const IMAGE_IMPORT_BY_NAME *imp_name
                     = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-                if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                if (! pe_can_read(ctx, imp_name,
+                                  sizeof(IMAGE_IMPORT_BY_NAME))) {
                     return count;
                 }
             }
@@ -168,24 +171,25 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset,
         }
         case MAGIC_PE64: {
             const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+            if (! pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
                 return count;
             }
 
-            const uint64_t thunk_type = *(uint64_t *)thunk;
+            const uint64_t thunk_type = *(uint64_t *) thunk;
             if (thunk_type == 0) {
                 return count;
             }
 
             bool is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
-            if (!is_ordinal) {
+            if (! is_ordinal) {
                 uint64_t rva = thunk->u1.AddressOfData
                                - (rva_based ? 0 : ctx->pe.imagebase);
-                uint64_t imp_ofs = pe_rva2ofs(ctx, rva);
+                uint64_t                    imp_ofs = pe_rva2ofs(ctx, rva);
                 const IMAGE_IMPORT_BY_NAME *imp_name
                     = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-                if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                if (! pe_can_read(ctx, imp_name,
+                                  sizeof(IMAGE_IMPORT_BY_NAME))) {
                     return count;
                 }
             }
@@ -201,11 +205,11 @@ static uint32_t get_functions_count(pe_ctx_t *ctx, uint64_t offset,
     return count;
 }
 
-static pe_err_e parse_imported_functions(pe_ctx_t *ctx,
+static pe_err_e parse_imported_functions(pe_ctx_t          *ctx,
                                          pe_imported_dll_t *imported_dll,
                                          uint64_t offset, bool rva_based)
 {
-    imported_dll->err = LIBPE_E_OK;
+    imported_dll->err             = LIBPE_E_OK;
     imported_dll->functions_count = get_functions_count(ctx, offset, rva_based);
 
     imported_dll->functions
@@ -216,26 +220,26 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx,
     }
 
     // FIX: Unecessary to fill the buffer with zeroes.
-    char fname[MAX_FUNCTION_NAME];
+    char         fname[MAX_FUNCTION_NAME];
     const size_t size_fname = sizeof(fname);
 
-    bool is_ordinal = false;
-    uint16_t ordinal = 0;
-    uint16_t hint = 0;
-    uint64_t ofs = offset - (rva_based ? 0 : ctx->pe.imagebase);
+    bool         is_ordinal = false;
+    uint16_t     ordinal    = 0;
+    uint16_t     hint       = 0;
+    uint64_t     ofs        = offset - (rva_based ? 0 : ctx->pe.imagebase);
 
     for (uint32_t i = 0; i < imported_dll->functions_count; i++) {
         switch (ctx->pe.optional_hdr.type) {
         case MAGIC_PE32_0:
         case MAGIC_PE32: {
             const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+            if (! pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
                 imported_dll->err = LIBPE_E_INVALID_THUNK;
                 return imported_dll->err;
             }
 
             // Type punning
-            const uint32_t thunk_type = *(uint32_t *)thunk;
+            const uint32_t thunk_type = *(uint32_t *) thunk;
             if (thunk_type == 0) {
                 imported_dll->err = LIBPE_E_INVALID_THUNK;
                 return imported_dll->err;
@@ -250,20 +254,22 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx,
                 ordinal
                     = (thunk->u1.Ordinal & ~(IMAGE_ORDINAL_MASK(ctx))) & 0xffff;
             } else {
-                const uint32_t rva = thunk->u1.AddressOfData
-                                     - (rva_based ? 0 : ctx->pe.imagebase);
-                const uint64_t imp_ofs = pe_rva2ofs(ctx, rva);
+                const uint32_t rva
+                    = thunk->u1.AddressOfData
+                      - (rva_based ? 0 : (uint32_t) ctx->pe.imagebase);
+                const uint64_t              imp_ofs = pe_rva2ofs(ctx, rva);
                 const IMAGE_IMPORT_BY_NAME *imp_name
                     = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-                if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                if (! pe_can_read(ctx, imp_name,
+                                  sizeof(IMAGE_IMPORT_BY_NAME))) {
                     imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
                     return imported_dll->err;
                 }
 
-                hint = imp_name->Hint;
+                hint    = imp_name->Hint;
                 ordinal = 0;
 
-                strncpy(fname, (char *)imp_name->Name, size_fname - 1);
+                strncpy(fname, (char *) imp_name->Name, size_fname - 1);
                 // Because `strncpy` does not guarantee to NUL terminate the
                 // string itself, this must be done explicitly.
                 fname[size_fname - 1] = '\0';
@@ -274,14 +280,14 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx,
         }
         case MAGIC_PE64: {
             const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+            if (! pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
                 imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
                 return imported_dll
                     ->err; // DO something so that API notifies of the error
             }
 
             // Type punning
-            const uint64_t thunk_type = *(uint64_t *)thunk;
+            const uint64_t thunk_type = *(uint64_t *) thunk;
             if (thunk_type == 0) {
                 imported_dll->err = LIBPE_E_INVALID_THUNK;
                 return imported_dll->err;
@@ -298,18 +304,19 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx,
             } else {
                 const uint64_t rva = thunk->u1.AddressOfData
                                      - (rva_based ? 0 : ctx->pe.imagebase);
-                const uint64_t imp_ofs = pe_rva2ofs(ctx, rva);
+                const uint64_t              imp_ofs = pe_rva2ofs(ctx, rva);
                 const IMAGE_IMPORT_BY_NAME *imp_name
                     = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-                if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                if (! pe_can_read(ctx, imp_name,
+                                  sizeof(IMAGE_IMPORT_BY_NAME))) {
                     imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
                     return imported_dll->err;
                 }
 
-                hint = imp_name->Hint;
+                hint    = imp_name->Hint;
                 ordinal = 0; // No ordinal
 
-                strncpy(fname, (char *)imp_name->Name, size_fname - 1);
+                strncpy(fname, (char *) imp_name->Name, size_fname - 1);
                 // Because `strncpy` does not guarantee to NUL terminate the
                 // string itself, this must be done explicitly.
                 fname[size_fname - 1] = '\0';
@@ -320,10 +327,10 @@ static pe_err_e parse_imported_functions(pe_ctx_t *ctx,
         }
         }
 
-        imported_dll->functions[i].hint = hint;
+        imported_dll->functions[i].hint    = hint;
         imported_dll->functions[i].ordinal = ordinal;
 
-        if (!is_ordinal) {
+        if (! is_ordinal) {
             imported_dll->functions[i].name = strdup(fname);
             if (imported_dll->functions[i].name == NULL) {
                 imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
@@ -349,9 +356,9 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         return NULL;
     }
 
-    imports->err = LIBPE_E_OK;
+    imports->err             = LIBPE_E_OK;
 
-    imports->dll_count = get_dll_count(ctx);
+    imports->dll_count       = get_dll_count(ctx);
     imports->delay_dll_count = get_delay_dll_count(ctx);
     if (imports->dll_count == 0 && imports->delay_dll_count == 0) {
         return imports;
@@ -396,33 +403,33 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
 
     for (uint32_t i = 0; i < imports->dll_count; i++) {
         IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+        if (! pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
             break;
         }
 
-        if (!id->u1.OriginalFirstThunk && !id->FirstThunk) {
+        if (! id->u1.OriginalFirstThunk && ! id->FirstThunk) {
             break;
         }
 
         ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
         const uint64_t aux = ofs; // Store current ofs
 
-        ofs = pe_rva2ofs(ctx, id->Name);
+        ofs                = pe_rva2ofs(ctx, id->Name);
         if (ofs == 0) {
             break;
         }
 
         const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+        if (! pe_can_read(ctx, dll_name_ptr, 1)) {
             // TODO: Should we report something?
             break;
         }
 
-        pe_imported_dll_t *const dll = &imports->dlls[i];
+        pe_imported_dll_t *const dll           = &imports->dlls[i];
 
         // Allocate string to store DLL name
-        const size_t dll_name_size = MAX_DLL_NAME;
-        dll->name = calloc(1, dll_name_size);
+        const size_t             dll_name_size = MAX_DLL_NAME;
+        dll->name                              = calloc(1, dll_name_size);
         if (dll->name == NULL) {
             imports->err = LIBPE_E_ALLOCATION_FAILURE;
             return imports;
@@ -435,9 +442,9 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         // itself, this must be done explicitly.
         dll->name[dll_name_size - 1] = '\0';
 
-        ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk
-                                  ? id->u1.OriginalFirstThunk
-                                  : id->FirstThunk);
+        ofs                          = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk
+                                                           ? id->u1.OriginalFirstThunk
+                                                           : id->FirstThunk);
         if (ofs == 0) {
             break;
         }
@@ -470,18 +477,18 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
 
     for (uint32_t i = 0; i < imports->delay_dll_count; i++) {
         IMAGE_DELAYLOAD_DESCRIPTOR *dd = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, dd, sizeof(IMAGE_DELAYLOAD_DESCRIPTOR))) {
+        if (! pe_can_read(ctx, dd, sizeof(IMAGE_DELAYLOAD_DESCRIPTOR))) {
             break;
         }
 
-        if (!dd->ImportNameTableRVA) {
+        if (! dd->ImportNameTableRVA) {
             break;
         }
 
         ofs += sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
         const uint64_t aux = ofs; // Store current ofs
 
-        ofs = pe_rva2ofs(
+        ofs                = pe_rva2ofs(
             ctx, dd->DllNameRVA
                      - (dd->Attributes.u1.RvaBased ? 0 : ctx->pe.imagebase));
         if (ofs == 0) {
@@ -489,16 +496,16 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         }
 
         const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+        if (! pe_can_read(ctx, dll_name_ptr, 1)) {
             // TODO: Should we report something?
             break;
         }
 
-        pe_imported_dll_t *const dll = &imports->delay_dlls[i];
+        pe_imported_dll_t *const dll           = &imports->delay_dlls[i];
 
         // Allocate string to store DLL name
-        const size_t dll_name_size = MAX_DLL_NAME;
-        dll->name = calloc(1, dll_name_size);
+        const size_t             dll_name_size = MAX_DLL_NAME;
+        dll->name                              = calloc(1, dll_name_size);
         if (dll->name == NULL) {
             imports->err = LIBPE_E_ALLOCATION_FAILURE;
             return imports;
@@ -511,7 +518,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         // itself, this must be done explicitly.
         dll->name[dll_name_size - 1] = '\0';
 
-        ofs = pe_rva2ofs(ctx, dd->ImportNameTableRVA);
+        ofs                          = pe_rva2ofs(ctx, dd->ImportNameTableRVA);
         if (ofs == 0) {
             break;
         }

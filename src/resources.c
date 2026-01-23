@@ -51,7 +51,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-static const char *g_resourceDir = "resources";
+static const char          *g_resourceDir = "resources";
+
+static const unsigned char *g_tree__      = u8"─";
+static const unsigned char *g_tree_i      = u8"│";
+static const unsigned char *g_tree_l      = u8"└";
+static const unsigned char *g_tree_t      = u8"├";
 
 #pragma pack(push, 1)
 typedef struct {
@@ -294,6 +299,40 @@ static void print_resource_list(const pe_resource_node_t *node)
     print_resource_list(node->nextNode);
 }
 
+static void print_resource_node_leaf(const pe_resource_node_t *node,
+                                     uint8_t                   depth)
+{
+    switch (node->type) {
+    case LIBPE_RDT_DIRECTORY_ENTRY:
+        printf("D");
+        break;
+    case LIBPE_RDT_DATA_ENTRY:
+        printf("F");
+        break;
+    default:
+        return;
+    }
+
+    printf("%*s+", depth - 1, "");
+
+    char node_info[MAX_PATH];
+    memset(node_info, 0, sizeof(node_info));
+    build_resource_node_filename(node_info, sizeof(node_info), node);
+    printf("%s (%d bytes)\n", node_info, node->raw.dataEntry->Size);
+}
+
+static void print_resource_branch(const pe_resource_node_t *node, uint8_t depth)
+{
+    if (node == NULL) {
+        return;
+    }
+
+    print_resource_node_leaf(node, depth);
+
+    print_resource_branch(node->childNode, depth + 1);
+    print_resource_branch(node->nextNode, depth);
+}
+
 static void restore_resource_icon(struct stored_resource         *resource,
                                   const pe_resource_entry_info_t *entry_info,
                                   void *raw_data_ptr, size_t raw_data_size)
@@ -363,12 +402,12 @@ static void restore_resource(struct stored_resource         *resource,
     }
 
     switch (entry_info->type) {
-    default:
-        goto fallback_untouched;
     case RT_ICON:
         restore_resource_icon(resource, entry_info, raw_data_ptr,
                               raw_data_size);
         break;
+    default:
+        goto fallback_untouched;
     }
 
     if (resource->is_modified) {
@@ -619,6 +658,12 @@ void print_resources_list(pe_ctx_t *ctx)
 {
     pe_resource_node_t *root_node = get_root_node(ctx);
     print_resource_list(root_node);
+}
+
+void print_resources_tree(pe_ctx_t *ctx)
+{
+    pe_resource_node_t *root_node = get_root_node(ctx);
+    print_resource_branch(root_node, 0);
 }
 
 void print_resources(pe_ctx_t *ctx)

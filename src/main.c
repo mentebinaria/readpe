@@ -140,7 +140,7 @@ ATTRIBUTE_NORETURN static void help(void)
           "                         Supported submodes are section names\n"
           "                         and section indexes\n"
           "  directories        Output list of available PE directories\n"
-          "  exports            Output exported sumbols\n"
+          "  exports            Output exported symbols\n"
           "  imports            Output imported libraries and symbols\n"
           "  resources          Output information or extract resources\n"
           "  certificates       Output information or extract certificates\n"
@@ -162,99 +162,91 @@ ATTRIBUTE_NORETURN static void help(void)
     exit(EXIT_SUCCESS);
 }
 
-ATTRIBUTE_NORETURN static void complete(const struct mode_option *opts)
-{
-    size_t                    i = 0;
-    const struct mode_option *c;
-    while ((c = &opts[i])) {
-        if (c->name == NULL) {
-            break;
-        }
-        printf("%s ", c->name);
-        ++i;
-    }
-    printf("\n");
-    exit(EXIT_SUCCESS);
-}
-
 // ------------------------------------------------------------------------- //
 
-static const char          scan_shortopts[] = "f:v";
+static const char          scan_shortopts[] = "vf:hV";
 static const struct option scan_longopts[]  = {
-    {"format",  required_argument, NULL, 'f'},
-    {"help",    no_argument,       NULL, 1  },
     {"verbose", no_argument,       NULL, 'v'},
+    {"format",  required_argument, NULL, 'f'},
+    {"help",    no_argument,       NULL, 'h'},
+    {"version", no_argument,       NULL, 'V'},
     {NULL,      0,                 NULL, 0  }
 };
 
-static const char          res_shortopts[] = "lvhf:";
+static const char          res_shortopts[] = "ltvsf:hV";
 static const struct option res_longopts[]  = {
-    {"format",       required_argument, NULL, 'f'},
-    {"help",         no_argument,       NULL, 'h'},
     {"list",         no_argument,       NULL, 'l'},
-    {"statistics",   no_argument,       NULL, 's'},
     {"tree",         no_argument,       NULL, 't'},
     {"verbose",      no_argument,       NULL, 'v'},
     {"file-version", no_argument,       NULL, 2  },
+    {"statistics",   no_argument,       NULL, 's'},
+    {"format",       required_argument, NULL, 'f'},
+    {"help",         no_argument,       NULL, 'h'},
+    {"version",      no_argument,       NULL, 'V'},
     {NULL,           0,                 NULL, 0  }
 };
 
-static const char          ext_shortopts[] = "e";
+static const char          ext_shortopts[] = "nhV";
 static const struct option ext_longopts[]  = {
-    {"help",  no_argument, NULL, 'h'},
-    {"named", no_argument, NULL, 'n'},
-    {NULL,    0,           NULL, 0  }
+    {"named",   no_argument, NULL, 'n'},
+    {"help",    no_argument, NULL, 'h'},
+    {"version", no_argument, NULL, 'V'},
+    {NULL,      0,           NULL, 0  }
 };
 
-static const char          cert_shortopts[] = "o:c:hf:";
+static const char          cert_shortopts[] = "of:hV";
 static const struct option cert_longopts[]  = {
-    {"certout",   required_argument, NULL, 'o'},
-    {"outformat", required_argument, NULL, 'c'},
-    {"format",    required_argument, NULL, 'f'},
-    {"help",      no_argument,       NULL, 'h'},
-    {NULL,        0,                 NULL, 0  }
+    {"out",     required_argument, NULL, 'o'},
+    {"format",  required_argument, NULL, 'f'},
+    {"help",    no_argument,       NULL, 'h'},
+    {"version", no_argument,       NULL, 'V'},
+    {NULL,      0,                 NULL, 0  }
 };
 
-static const char          section_short[] = "Ali:n:hf:";
+static const char          section_short[] = "ali:n:f:hV";
 static const struct option section_long[]  = {
-    {"all",    no_argument,       NULL, 'A'},
-    {"list",   no_argument,       NULL, 'l'},
-    {"index",  required_argument, NULL, 'i'},
-    {"name",   required_argument, NULL, 'n'},
-    {"format", required_argument, NULL, 'f'},
-    {"help",   no_argument,       NULL, 'h'},
-    {NULL,     0,                 NULL, 0  }
+    {"all",     no_argument,       NULL, 'a'},
+    {"list",    no_argument,       NULL, 'l'},
+    {"index",   required_argument, NULL, 'i'},
+    {"name",    required_argument, NULL, 'n'},
+    {"format",  required_argument, NULL, 'f'},
+    {"help",    no_argument,       NULL, 'h'},
+    {"version", no_argument,       NULL, 'V'},
+    {NULL,      0,                 NULL, 0  }
 };
 
-static const char          dir_shortopts[] = "lvhf:";
+static const char          dir_shortopts[] = "lvf:hV";
 static const struct option dir_longopts[]  = {
     {"list",    no_argument,       NULL, 'l'},
     {"verbose", no_argument,       NULL, 'v'},
     {"format",  required_argument, NULL, 'f'},
     {"help",    no_argument,       NULL, 'h'},
+    {"version", no_argument,       NULL, 'V'},
     {NULL,      0,                 NULL, 0  }
 };
 
-static const char          default_shortopts[] = "hf:";
+static const char          default_shortopts[] = "f:hV";
 static const struct option default_longopts[]  = {
-    {"format", required_argument, NULL, 'f'},
-    {"help",   no_argument,       NULL, 'h'},
-    {NULL,     0,                 NULL, 0  }
+    {"format",  required_argument, NULL, 'f'},
+    {"help",    no_argument,       NULL, 'h'},
+    {"version", no_argument,       NULL, 'V'},
+    {NULL,      0,                 NULL, 0  }
 };
 
-static const char          extended_shortopts[] = "Alhf:";
+static const char          extended_shortopts[] = "alf:hV";
 static const struct option extended_longopts[]  = {
-    {"all",    no_argument,       NULL, 'A'},
-    {"list",   no_argument,       NULL, 'l'},
-    {"format", required_argument, NULL, 'f'},
-    {"help",   no_argument,       NULL, 'h'},
-    {NULL,     0,                 NULL, 0  }
+    {"all",     no_argument,       NULL, 'a'},
+    {"list",    no_argument,       NULL, 'l'},
+    {"format",  required_argument, NULL, 'f'},
+    {"help",    no_argument,       NULL, 'h'},
+    {"version", no_argument,       NULL, 'V'},
+    {NULL,      0,                 NULL, 0  }
 };
 
-static const char          base_shortopts[] = "Vhf:";
+static const char          base_shortopts[] = "f:hV";
 static const struct option base_longopts[]  = {
-    {"get-output-plugins", no_argument,       NULL, 'p'},
     {"file-version",       no_argument,       NULL, 2  },
+    {"get-output-plugins", no_argument,       NULL, 3  },
     {"format",             required_argument, NULL, 'f'},
     {"help",               no_argument,       NULL, 'h'},
     {"version",            no_argument,       NULL, 'V'},
@@ -317,46 +309,38 @@ static void legacy(int argc, char *argv[])
         return;
     }
 
-    if (bin_name[0] == 'p' && bin_name[1] == 'e') {
-        if (bin_name[2] == 's') {
-            if (bin_name[3] == 'c' && bin_name[4] == 'a') {
-                exit(pescan(argc, argv));
-            } else if (bin_name[3] == 'e' && bin_name[4] == 'c') {
-                exit(pesec(argc, argv));
-            } else if (bin_name[3] == 't' && bin_name[4] == 'r') {
-                exit(pestr(argc, argv));
-            }
-        } else if (bin_name[4] == 's') {
-            if (bin_name[2] == 'h' && bin_name[3] == 'a') {
-                exit(pehash(argc, argv));
-            } else if (bin_name[2] == 'r' && bin_name[3] == 'e') {
-                exit(peres(argc, argv));
-            }
-#ifdef READPE_DISASSEMBLER
-            else if (bin_name[2] == 'd' && bin_name[3] == 'i') {
-                exit(pedis(argc, argv));
-            }
-#endif // READPE_DISASSEMBLER
-        } else if (bin_name[2] == 'l' && bin_name[3] == 'd'
-                   && bin_name[4] == 'd') {
-            exit(peldd(argc, argv));
-        } else if (bin_name[2] == 'p' && bin_name[3] == 'a'
-                   && bin_name[4] == 'c') {
-            exit(pepack(argc, argv));
-        }
+    if (strstr(bin_name, "peldd") == bin_name) {
+        exit(rva2ofs(argc, argv));
+    } else if (strstr(bin_name, "pesec") == bin_name) {
+        exit(ofs2rva(argc, argv));
+    } else if (strstr(bin_name, "pestr") == bin_name) {
+        exit(ofs2rva(argc, argv));
+    } else if (strstr(bin_name, "peres") == bin_name) {
+        exit(ofs2rva(argc, argv));
     }
-    // else if (bin_name[3] == '2') {
-    //     if (strstr(bin_name, "ofs2rva") == bin_name) {
-    //         exit(ofs2rva(argc, argv));
-    //     }
-    //     if (strstr(bin_name, "rva2ofs") == bin_name) {
-    //         exit(rva2ofs(argc, argv));
-    //     }
-    // }
+#ifdef READPE_DISASSEMBLER
+    else if (strstr(bin_name, "pedis") == bin_name) {
+        exit(ofs2rva(argc, argv));
+    }
+#endif // READPE_DISASSEMBLER
+    else if (strstr(bin_name, "pescan") == bin_name) {
+        exit(ofs2rva(argc, argv));
+    } else if (strstr(bin_name, "pehash") == bin_name) {
+        exit(ofs2rva(argc, argv));
+    } else if (strstr(bin_name, "pepack") == bin_name) {
+        exit(rva2ofs(argc, argv));
+    }
+#if 0
+    else if (strstr(bin_name, "ofs2rva") == bin_name) {
+        exit(ofs2rva(argc, argv));
+    } else if (strstr(bin_name, "rva2ofs") == bin_name) {
+        exit(rva2ofs(argc, argv));
+    }
+#endif
 }
 #endif // READPE_LEGACY
 
-// -------------------------------------------------------------------------
+// ------------------------------------------------------------------------- //
 
 static int handle_file(const char *filename)
 {
@@ -395,6 +379,7 @@ static int handle_file(const char *filename)
         break;
     case MODE_HEADERS:
         if (g_settings.list) {
+            // TODO:
             printf("dos\ncoff\noptional\n");
             break;
         }
@@ -439,8 +424,7 @@ static int handle_file(const char *filename)
         }
 
         if (g_settings.res_tree) {
-            // TODO:
-            printf("Not Implemented\n");
+            print_resources_tree(&ctx);
             printed = true;
         }
 
@@ -539,7 +523,7 @@ static int handle_file(const char *filename)
     return EXIT_SUCCESS;
 }
 
-// -------------------------------------------------------------------------
+// ------------------------------------------------------------------------- //
 
 static const char *parse_options(int argc, char *argv[])
 {
@@ -549,6 +533,11 @@ static const char *parse_options(int argc, char *argv[])
     const struct mode_option *modeargs  = base_mode;
 
     int c, file_arg = 0, mode = 0, mode_context = 0, index = 1;
+
+    if (access(argv[1], F_OK) == 0) {
+        optind++;
+        file_arg = 1;
+    }
 
     while (
         (c = getopt_mode(argc, argv, shortargs, longargs, modeargs, &index))) {
@@ -566,14 +555,11 @@ static const char *parse_options(int argc, char *argv[])
 
         switch (c) {
         // ARGUMENTS
-        case 1:
-            help();
-            break;
         case 2:
             g_settings.file_version = true;
             modeargs                = NULL;
             break;
-        case 'A':
+        case 'a':
             if (mode == MODE_HEADERS || mode == MODE_SECTIONS) {
                 g_settings.all = true;
                 modeargs       = NULL;
@@ -588,6 +574,7 @@ static const char *parse_options(int argc, char *argv[])
                 printf("readpe-resources --help:\n");
                 exit(EXIT_SUCCESS);
             }
+            help();
             break;
         case 'f':
             if (mode == MODE_CERTIFICATES) {
@@ -723,8 +710,7 @@ static const char *parse_options(int argc, char *argv[])
     return argv[file_arg];
 }
 
-// -------------------------------------------------------------------------
-// //
+// ------------------------------------------------------------------------- //
 
 int main(int argc, char *argv[])
 {

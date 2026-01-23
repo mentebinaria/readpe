@@ -39,7 +39,6 @@ set(SOURCES
     security.c
     certificates.c
     scan.c
-
 )
 
 if(BUILD_LEGACY)
@@ -80,6 +79,7 @@ endif()
 
 if(WIN32)
     append( SOURCES
+        compat/asprintf.c
         windows/cpload.c
     )
 endif()

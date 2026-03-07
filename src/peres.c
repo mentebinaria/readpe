@@ -562,7 +562,7 @@ static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
         if (version_node != NULL) {
             const uint64_t data_offset = pe_rva2ofs(ctx, version_node->raw.dataEntry->OffsetToData);
             const size_t data_size = version_node->raw.dataEntry->Size;
-            const void *data_ptr = LIBPE_PTR_ADD(ctx->map_addr, 32 + data_offset); // TODO(jweyrich): The literal 32 refers to the size of the
+            const void *data_ptr = LIBPE_PTR_ADD(ctx->map_addr, 40 + data_offset); // 40 = offset of Value in VS_VERSIONINFO
             if (!pe_can_read(ctx, data_ptr, data_size)) {
                 LIBPE_WARNING("Cannot read VS_FIXEDFILEINFO");
                 return;

@@ -23,12 +23,14 @@
 #include "libpe/dir_resources.h"
 #include "libpe/pe.h"
 #include "libpe/utlist.h"
+#include "libpe/types_resources.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <uchar.h>
 #include <unistd.h>
 
 // REFERENCE: https://msdn.microsoft.com/en-us/library/ms648009(v=vs.85).aspx
@@ -603,6 +605,75 @@ static void *pe_resource_base_ptr(pe_ctx_t *ctx) {
 	}
 
 	return ptr;
+}
+
+bool pe_resource_contains_version_node(const pe_resource_node_t *node) {
+    if (node->type != LIBPE_RDT_DIRECTORY_ENTRY)
+        return false;
+    if (node->dirLevel != LIBPE_RDT_LEVEL1) // dirLevel == 1 belongs to the resource type directory.
+        return false;
+    return node->raw.directoryEntry->u0.data.NameOffset == RT_VERSION;
+}
+
+const VS_FIXEDFILEINFO *pe_resource_get_fixedfileinfo(const pe_ctx_t *ctx, const pe_resource_node_t *node, void **child_out)
+{
+    if (node == NULL)
+        return NULL;
+
+    VS_FIXEDFILEINFO *info_ptr = NULL;
+
+    pe_resource_node_search_result_t search_result = {0};
+    pe_resource_search_nodes(&search_result, node, pe_resource_contains_version_node);
+
+    pe_resource_node_search_result_item_t *result_item = {0};
+    LL_FOREACH(search_result.items, result_item) {
+        const pe_resource_node_t *version_node = pe_resource_find_node_by_type_and_level(result_item->node, LIBPE_RDT_DATA_ENTRY, LIBPE_RDT_LEVEL3);
+        if (version_node != NULL) {
+            const uint64_t data_offset = pe_rva2ofs(ctx, version_node->raw.dataEntry->OffsetToData);
+            const size_t data_size = version_node->raw.dataEntry->Size;
+            const VS_VERSIONINFO_HEAD *data_ptr = (VS_VERSIONINFO_HEAD *) LIBPE_PTR_ADD(ctx->map_addr, data_offset);
+            if (!pe_can_read(ctx, data_ptr, data_size)) {
+                LIBPE_WARNING("Cannot read VS_FIXEDFILEINFO");
+                break;
+            }
+
+            const char16_t *szkey = LIBPE_PTR_ADD(data_ptr, sizeof(VS_VERSIONINFO_HEAD));
+
+            // char key[256];
+            // mbstate_t state = {0};
+            int key_size = 0;
+            // We could test this against the string "VS_VERSIONINFO"
+            for(;key_size < 256;++key_size) {
+                // c16rtomb(&key[key_size], szkey[key_size], &state);
+
+                // We are looking for the end of the string
+                // Sadly there is no portable function to help us with
+                // 16 bit charatcers
+                if( szkey[key_size] == 0 ) break;
+            }
+            // printf("\n%s\n", key);
+
+            int info_offset = (key_size*sizeof(char16_t)) + sizeof(VS_VERSIONINFO_HEAD);
+            // Align to next 32bit/4byte
+            info_offset += 4-(info_offset%4);
+
+            info_ptr = (VS_FIXEDFILEINFO *) LIBPE_PTR_ADD(data_ptr, info_offset);
+
+            if( info_ptr->dwSignature != 0xFEEF04BD ) {
+                LIBPE_WARNING("Wrong signature for VS_FIXEDFILEINFO");
+                info_ptr = NULL;
+            }
+
+            if(child_out != NULL) {
+                *child_out = LIBPE_PTR_ADD(data_ptr, info_offset + data_ptr->wValueLength);
+            }
+
+            break;
+        }
+    }
+    pe_resources_dealloc_node_search_result(&search_result);
+
+    return info_ptr;
 }
 
 pe_resources_t *pe_resources(pe_ctx_t *ctx) {

@@ -30,7 +30,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <uchar.h>
 #include <unistd.h>
 
 // REFERENCE: https://msdn.microsoft.com/en-us/library/ms648009(v=vs.85).aspx
@@ -637,7 +636,7 @@ const VS_FIXEDFILEINFO *pe_resource_get_fixedfileinfo(const pe_ctx_t *ctx, const
                 break;
             }
 
-            const char16_t *szkey = LIBPE_PTR_ADD(data_ptr, sizeof(VS_VERSIONINFO_HEAD));
+            const uint16_t *szkey = LIBPE_PTR_ADD(data_ptr, sizeof(VS_VERSIONINFO_HEAD));
 
             // char key[256];
             // mbstate_t state = {0};
@@ -653,7 +652,7 @@ const VS_FIXEDFILEINFO *pe_resource_get_fixedfileinfo(const pe_ctx_t *ctx, const
             }
             // printf("\n%s\n", key);
 
-            int info_offset = (key_size*sizeof(char16_t)) + sizeof(VS_VERSIONINFO_HEAD);
+            int info_offset = (key_size*sizeof(uint16_t)) + sizeof(VS_VERSIONINFO_HEAD);
             // Align to next 32bit/4byte
             info_offset += 4-(info_offset%4);
 

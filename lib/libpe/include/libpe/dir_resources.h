@@ -23,8 +23,6 @@
 #define LIBPE_DIR_RESOURCES_H
 
 #include <stdint.h>
-#include <uchar.h>
-#include <wchar.h>
 
 #ifdef __cplusplus
 extern "C" {

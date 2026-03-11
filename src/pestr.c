@@ -36,6 +36,7 @@
 
 #include "common.h"
 #include <ctype.h>
+#include <wchar.h>
 #include <wctype.h>
 #include <errno.h>
 #include <limits.h>

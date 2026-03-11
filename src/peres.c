@@ -35,12 +35,15 @@
 */
 
 #include "common.h"
+#include <libpe/dir_resources.h>
 #include <libpe/utlist.h>
 #include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <uchar.h>
 #include <unistd.h>
+#include <wchar.h>
 
 #define PROGRAM "peres"
 
@@ -553,41 +556,26 @@ static void peres_show_version(pe_ctx_t *ctx, const pe_resource_node_t *node)
     if (node == NULL)
         return;
 
-    pe_resource_node_search_result_t search_result = {0};
-    pe_resource_search_nodes(&search_result, node, peres_contains_version_node);
+    const VS_FIXEDFILEINFO *info_ptr = pe_resource_get_fixedfileinfo(ctx, node, NULL);
 
-    pe_resource_node_search_result_item_t *result_item = {0};
-    LL_FOREACH(search_result.items, result_item) {
-        const pe_resource_node_t *version_node = pe_resource_find_node_by_type_and_level(result_item->node, LIBPE_RDT_DATA_ENTRY, LIBPE_RDT_LEVEL3);
-        if (version_node != NULL) {
-            const uint64_t data_offset = pe_rva2ofs(ctx, version_node->raw.dataEntry->OffsetToData);
-            const size_t data_size = version_node->raw.dataEntry->Size;
-            const void *data_ptr = LIBPE_PTR_ADD(ctx->map_addr, 32 + data_offset); // TODO(jweyrich): The literal 32 refers to the size of the
-            if (!pe_can_read(ctx, data_ptr, data_size)) {
-                LIBPE_WARNING("Cannot read VS_FIXEDFILEINFO");
-                return;
-            }
+    if(info_ptr == NULL)
+        return;
 
-            const VS_FIXEDFILEINFO *info_ptr = data_ptr;
+    static char value[MAX_MSG];
 
-            static char value[MAX_MSG];
+    snprintf(value, MAX_MSG, "%u.%u.%u.%u",
+        (uint32_t)(info_ptr->dwFileVersionMS & 0xffff0000) >> 16,
+        (uint32_t)info_ptr->dwFileVersionMS & 0x0000ffff,
+        (uint32_t)(info_ptr->dwFileVersionLS & 0xffff0000) >> 16,
+        (uint32_t)info_ptr->dwFileVersionLS & 0x0000ffff);
+    output("File Version", value);
 
-            snprintf(value, MAX_MSG, "%u.%u.%u.%u",
-                (uint32_t)(info_ptr->dwFileVersionMS & 0xffff0000) >> 16,
-                (uint32_t)info_ptr->dwFileVersionMS & 0x0000ffff,
-                (uint32_t)(info_ptr->dwFileVersionLS & 0xffff0000) >> 16,
-                (uint32_t)info_ptr->dwFileVersionLS & 0x0000ffff);
-            output("File Version", value);
-
-            snprintf(value, MAX_MSG, "%u.%u.%u.%u",
-                (uint32_t)(info_ptr->dwProductVersionMS & 0xffff0000) >> 16,
-                (uint32_t)info_ptr->dwProductVersionMS & 0x0000ffff,
-                (uint32_t)(info_ptr->dwProductVersionLS & 0xffff0000) >> 16,
-                (uint32_t)info_ptr->dwProductVersionLS & 0x0000ffff);
-            output("Product Version", value);
-        }
-    }
-    pe_resources_dealloc_node_search_result(&search_result);
+    snprintf(value, MAX_MSG, "%u.%u.%u.%u",
+        (uint32_t)(info_ptr->dwProductVersionMS & 0xffff0000) >> 16,
+        (uint32_t)info_ptr->dwProductVersionMS & 0x0000ffff,
+        (uint32_t)(info_ptr->dwProductVersionLS & 0xffff0000) >> 16,
+        (uint32_t)info_ptr->dwProductVersionLS & 0x0000ffff);
+    output("Product Version", value);
 }
 
 typedef struct {
@@ -671,12 +659,14 @@ int main(int argc, char **argv)
     pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
+        free_options(options);
         return EXIT_FAILURE;
     }
 
     err = pe_parse(&ctx);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
+        free_options(options);
         return EXIT_FAILURE;
     }
 
@@ -688,6 +678,7 @@ int main(int argc, char **argv)
     pe_resources_t *resources = pe_resources(&ctx);
     if (resources == NULL || resources->err != LIBPE_E_OK) {
         LIBPE_WARNING("This file has no resources");
+        free_options(options);
         return EXIT_SUCCESS;
     }
 

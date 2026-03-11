@@ -74,6 +74,7 @@ pe_resource_node_t *pe_resource_find_node_by_type_and_level(const pe_resource_no
 pe_resource_node_t *pe_resource_find_parent_node_by_type_and_level(const pe_resource_node_t *node, pe_resource_node_type_e type, uint32_t dirLevel);
 char *pe_resource_parse_string_u(pe_ctx_t *ctx, char *output, size_t output_size, const IMAGE_RESOURCE_DATA_STRING_U *data_string_ptr);
 void pe_resources_dealloc(pe_resources_t *obj);
+const VS_FIXEDFILEINFO *pe_resource_get_fixedfileinfo(const pe_ctx_t *ctx, const pe_resource_node_t *node, void **child_out);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -23,6 +23,7 @@
 #define LIBPE_DIR_RESOURCES_H
 
 #include <stdint.h>
+#include <uchar.h>
 #include <wchar.h>
 
 #ifdef __cplusplus
@@ -106,6 +107,12 @@ typedef struct {
 	uint32_t CodePage;
 	uint32_t Reserved;
 } IMAGE_RESOURCE_DATA_ENTRY;
+
+typedef struct {
+  uint16_t         wLength;
+  uint16_t         wValueLength;
+  uint16_t         wType;
+} VS_VERSIONINFO_HEAD;
 
 typedef struct {
    uint32_t dwSignature;

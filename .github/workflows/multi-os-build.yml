@@ -20,7 +20,7 @@ jobs:
         # Space-separated list of packages to install using apt-get.  Will only run if on ubuntu.
         apt-get: libssl-dev cmake binutils-mingw-w64-i686 gcc-mingw-w64-i686 g++-mingw-w64-i686
     - name: Checkout with submodules
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: config shared=${{ matrix.shared }}
       run: >-
         cmake
@@ -35,7 +35,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Checkout with submodules
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: config
       run: >-
         cmake
@@ -43,10 +43,8 @@ jobs:
         -DENABLE_TESTS=Off
     - name: Compile
       run: cmake --build build
-#    - name: Compile
-#      run: CFLAGS="-I$(brew --prefix openssl@1.1)/include/" LDFLAGS="-L$(brew --prefix openssl@1.1)/lib/" make
       
-  build-win64:
+  build-win64-cygwin:
     runs-on: windows-latest
     steps:
     - name: Install Cygwin
@@ -54,11 +52,10 @@ jobs:
       # uses: egor-tensin/setup-cygwin@4f96f9fecb8c952fa32ff791b0a77d93d5191bb4
       uses: egor-tensin/setup-cygwin@v4
       with:
-        platform: x64 # optional, default is x64
         install-dir: c:\tools\cygwin # optional, default is C:\tools\cygwin
         packages: gcc-core gcc-g++ binutils make ninja zip libssl-devel cmake  # optional
     - name: Checkout with submodules
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Config
       run: >-
         cmake
@@ -69,8 +66,17 @@ jobs:
       run: cmake --build build
     - name: Pack
       run: cd build && cpack -G CygwinBinary
-#    - name: Compile
-#      run: make
-#    - name: Compile Windows-only tools and create a ZIP package
-#      run: make zip
 
+  build-win64-msvc:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Install OpenSSL
+      run: vcpkg install --triplet x64-windows
+    - name: Build with CL.EXE
+      run: |
+        cmake -G "NMake Makefiles" -B build -DENABLE_TESTS=Off -DVCPKG_ROOT="C:/vcpkg"
+        cmake --build build
+    - name: Package
+      run: cd build && cpack -G ZIP

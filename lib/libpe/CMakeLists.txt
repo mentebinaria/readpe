@@ -60,9 +60,11 @@ if(LIBPE_LINK_SSDEEP)
     )
 endif()
 
-target_include_directories(pe SYSTEM PRIVATE
-    "${uthash_INCLUDE_DIR}"
-)
+# target_include_directories(pe SYSTEM PRIVATE
+#     "${uthash_INCLUDE_DIR}"
+#     "${uthash_SOURCE_DIR}/include"
+# )
+
 target_include_directories(pe PRIVATE
     "${CMAKE_SOURCE_DIR}/include"
 )

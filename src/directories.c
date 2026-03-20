@@ -32,14 +32,14 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
-#include "output.h"
-#include "readpe.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/macros.h>
-#include <libpe/pe.h>
+#include <inttypes.h>
 #include <stdint.h>
-#include <string.h>
 
 IMAGE_DATA_DIRECTORY **get_pe_directories(pe_ctx_t *ctx)
 {

@@ -33,13 +33,16 @@
         files in the program, then also delete it here.
 */
 
-#include "readpe.h"
+#include "readpe/readpe.h"
 
-#include "../legacy.h"
-#include "common.h"
-#include "config.h"
+#include "legacy.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
 
-#include <libpe/macros.h>
+#include <getopt.h>
 
 #define PROGRAM "readpe"
 
@@ -74,32 +77,33 @@ static void usage(void)
 {
     static char formats[255];
     output_available_formats(formats, sizeof(formats), '|');
-    printf("Usage: %s OPTIONS FILE\n"
-           "Show PE file headers\n"
-           "\nExample: %s --header optional winzip.exe\n"
-           "\nOptions:\n"
-           " -A, --all								 Full output (default).\n"
-           " -H, --all-headers						 Show all PE headers.\n"
-           " -S, --all-sections					 Show PE section headers.\n"
-           " -f, --format <%s>  Change output format (default: text).\n"
-           " -d, --dirs							 Show data directories.\n"
-           " -h, --header <dos|coff|optional>		 Show specific header. It "
-           "can be used multiple times.\n"
-           " -i, --imports							 Show imported functions.\n"
-           " -e, --exports							 Show exported functions.\n"
-           " -V, --version							 Show version.\n"
-           " --help								 Show this help.\n",
-           PROGRAM, PROGRAM, formats);
+    printf(
+        "Usage: %s OPTIONS FILE\n"
+        "Show PE file headers\n"
+        "\nExample: %s --header optional winzip.exe\n"
+        "\nOptions:\n"
+        " -A, --all                                 Full output (default).\n"
+        " -H, --all-headers                         Show all PE headers.\n"
+        " -S, --all-sections                     Show PE section headers.\n"
+        " -f, --format <%s>  Change output format (default: text).\n"
+        " -d, --dirs                             Show data directories.\n"
+        " -h, --header <dos|coff|optional>         Show specific header. It "
+        "can be used multiple times.\n"
+        " -i, --imports                             Show imported functions.\n"
+        " -e, --exports                             Show exported functions.\n"
+        " -V, --version                             Show version.\n"
+        " --help                                 Show this help.\n",
+        PROGRAM, PROGRAM, formats);
 }
 
 static options_t *parse_options(int argc, char *argv[])
 {
-    options_t                 *options         = calloc_s(1, sizeof(options_t));
+    options_t *options = calloc_s(1, sizeof(options_t));
 
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "AHSh:dief:V";
+    static const char short_options[] = "AHSh:dief:V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"help",         no_argument,       NULL, 1  },
         {"all",          no_argument,       NULL, 'A'},
         {"all-headers",  no_argument,       NULL, 'H'},
@@ -184,9 +188,9 @@ int readpe(int argc, char *argv[])
 
     options_t *options = parse_options(argc, argv); // opcoes
 
-    pe_ctx_t   ctx;
+    pe_ctx_t ctx;
 
-    pe_err_e   err = pe_load_file(&ctx, argv[argc - 1]);
+    pe_err_e err = pe_load_file(&ctx, argv[argc - 1]);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;
@@ -219,9 +223,9 @@ int readpe(int argc, char *argv[])
         print_optional_header(&ctx);
     }
 
-    IMAGE_DATA_DIRECTORY **directories        = get_pe_directories(&ctx);
+    IMAGE_DATA_DIRECTORY **directories = get_pe_directories(&ctx);
 
-    bool                   directories_warned = false;
+    bool directories_warned = false;
     // directories
     if (options->dirs || options->all) {
         if (directories != NULL) {

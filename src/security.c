@@ -34,10 +34,12 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
-#include "readpe.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/macros.h>
 #include <stdlib.h>
 
 /*
@@ -59,8 +61,8 @@ bool stack_cookies(pe_ctx_t *ctx)
     const uint64_t filesize   = pe_filesize(ctx);
 
     // FIXME: Is this right?! Seems like partial matches will be
-    //		  Accumulated. Example: If all these bytes are found,
-    //		  separatelly in the file, this function will return true.
+    //          Accumulated. Example: If all these bytes are found,
+    //          separatelly in the file, this function will return true.
     for (uint64_t ofs = 0; ofs < filesize; ofs++) {
         for (size_t i = 0; i < sizeof(mvs2010); i++) {
             if (file_bytes[ofs] == mvs2010[i] && found == i) {

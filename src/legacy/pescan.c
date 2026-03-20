@@ -34,12 +34,15 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
-#include "readpe.h"
+#include "legacy.h"
+#include "libpe/context.h"
+#include "libpe/pe.h"
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/context.h>
-#include <libpe/macros.h>
+#include <getopt.h>
 #include <time.h>
 
 #define PROGRAM "pescan"
@@ -75,12 +78,12 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-    options_t                 *options         = calloc_s(1, sizeof(options_t));
+    options_t *options = calloc_s(1, sizeof(options_t));
 
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "f:vV";
+    static const char short_options[] = "f:vV";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"format",  required_argument, NULL, 'f'},
         {"help",    no_argument,       NULL, 1  },
         {"verbose", no_argument,       NULL, 'v'},
@@ -131,12 +134,12 @@ int pescan(int argc, char *argv[])
 
     output_set_cmdline(argc, argv);
 
-    options_t  *options = parse_options(argc, argv); // opcoes
+    options_t *options = parse_options(argc, argv); // opcoes
 
-    const char *path    = argv[argc - 1];
+    const char *path = argv[argc - 1];
     pe_ctx_t    ctx;
 
-    pe_err_e    err = pe_load_file(&ctx, path);
+    pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;

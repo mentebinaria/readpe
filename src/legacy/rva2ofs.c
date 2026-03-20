@@ -34,12 +34,14 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
+#include "legacy.h"
+#include "libpe/context.h"
+#include "libpe/error.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
 
 #include <getopt.h>
-#include <libpe/context.h>
-#include <libpe/error.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -60,9 +62,9 @@ static void usage(void)
 static void parse_options(int argc, char *argv[])
 {
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "V";
+    static const char short_options[] = "V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"help",    no_argument, NULL, 1  },
         {"version", no_argument, NULL, 'V'},
         {NULL,      0,           NULL, 0  }

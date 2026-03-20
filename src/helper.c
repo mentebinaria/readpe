@@ -32,27 +32,47 @@
         files in the program, then also delete it here.
 */
 
-#include "common.h"
+#include "readpe/helper.h"
+
+#include "plugins.h"
+#include "readpe/config.h"
+#include "readpe/output.h"
 
 #include <stdbool.h>
 #include <string.h>
 
 bool str2bool(const char *const str)
 {
+    bool r = false;
     if (str == NULL) {
         EXIT_ERROR("Internal error (str2bool)");
     } else if (*str == '0') {
-        return false;
+        r = false;
     } else if (*str == '1') {
-        return true;
+        r = true;
     } else if (strcmp(str, "false") == 0) {
-        return false;
+        r = false;
     } else if (strcmp(str, "true") == 0) {
-        return true;
+        r = true;
     } else {
         EXIT_ERROR("Bad bool variable");
     }
 
-    return false;
+    return r;
+}
+
+void readpe_initialize(struct readpe_config *config)
+{
+    memset(config, 0, sizeof(*config));
+    readpe_load_config(config);
+    plugins_load_all(config);
+    output_init(); /* Requires plugin for text output. */
+}
+
+void readpe_finalize(struct readpe_config *config)
+{
+    output_term();
+    plugins_unload_all();
+    readpe_cleanup_config(config);
 }
 

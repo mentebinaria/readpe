@@ -34,16 +34,17 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
-#include "output.h"
-#include "readpe.h"
+#include "compat.h"
+#include "legacy.h"
+#include "libpe/context.h"
+#include "libpe/error.h"
+#include "libpe/pe.h"
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
 #include <getopt.h>
-#include <libpe/context.h>
-#include <libpe/error.h>
-#include <libpe/macros.h>
-#include <libpe/pe.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -117,12 +118,12 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-    options_t                 *options         = calloc_s(1, sizeof(options_t));
+    options_t *options = calloc_s(1, sizeof(options_t));
 
     // parameters for getopt_long() function
-    static const char          short_options[] = "f:a:c:h:s:V";
+    static const char short_options[] = "f:a:c:h:s:V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"help",          no_argument,       NULL, 1  },
         {"format",        required_argument, NULL, 'f'},
         {"all",           no_argument,       NULL, 'a'},
@@ -163,7 +164,7 @@ static options_t *parse_options(int argc, char *argv[])
             options->all           = false;
             options->headers.all   = false;
             // TODO: How do we need to handle non-ascii names?
-            options->sections.name = strdup(optarg);
+            options->sections.name = readpe_strdup(optarg);
             break;
         case 2:
             options->all            = false;
@@ -207,9 +208,9 @@ int pehash(int argc, char *argv[])
 
     options_t *options = parse_options(argc, argv);
 
-    pe_ctx_t   ctx;
+    pe_ctx_t ctx;
 
-    pe_err_e   err = pe_load_file(&ctx, argv[argc - 1]);
+    pe_err_e err = pe_load_file(&ctx, argv[argc - 1]);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;

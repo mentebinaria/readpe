@@ -21,21 +21,27 @@
 */
 
 #include "libpe/utils.h"
+
+#include "compat.h"
 #include "libpe/error.h"
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifndef _MSC_VER
+#include <pwd.h>
+#endif
+
 bool pe_utils_str_ends_with(const char *text, const char *pattern)
 {
-    if (!text || !pattern) {
+    if (! text || ! pattern) {
         return false;
     }
 
@@ -44,7 +50,7 @@ bool pe_utils_str_ends_with(const char *text, const char *pattern)
         return false;
     }
 
-    return !memcmp(text + strlen(text) - n, pattern, n);
+    return ! memcmp(text + strlen(text) - n, pattern, n);
 }
 
 char *pe_utils_str_inplace_ltrim(char *str)
@@ -83,7 +89,7 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter)
     size_t i;
 
     if (strings == NULL || strings[0] == NULL) {
-        return strdup("");
+        return readpe_strdup("");
     }
 
     // Count how much memory the resulting string is going to need,
@@ -113,21 +119,22 @@ char *pe_utils_str_array_join(char *strings[], size_t count, char delimiter)
     strcpy(p, strings[i]);
 
     //
-    //	// Null terminate it.
-    //	result[--result_length] = '\0';
+    //    // Null terminate it.
+    //    result[--result_length] = '\0';
     //
-    //	// Join all strings.
-    //	char **current_string = strings;
-    //	char *current_char = current_string[0];
-    //	for (size_t i = 0; i < result_length; i++) {
-    //		if (*current_char != '\0') {
-    //			result[i] = *current_char++;
-    //		} else {
-    //			// Reached the end of a string. Add a delimiter and move to the
-    // next one. 			result[i] = delimiter; 			current_string++;
+    //    // Join all strings.
+    //    char **current_string = strings;
+    //    char *current_char = current_string[0];
+    //    for (size_t i = 0; i < result_length; i++) {
+    //        if (*current_char != '\0') {
+    //            result[i] = *current_char++;
+    //        } else {
+    //            // Reached the end of a string. Add a delimiter and move to
+    //            the
+    // next one.             result[i] = delimiter; current_string++;
     // current_char = current_string[0];
-    //		}
-    //	}
+    //        }
+    //    }
 
     return result;
 }
@@ -136,7 +143,7 @@ static char windows1252_char(uint16_t chr)
 {
     // windows-1252 Unicode codepoints from 0x80 to 0x9f.
     // These 32 unicode codepoints was taken from Wikipedia:
-    // 	  https://en.wikipedia.org/wiki/Windows-1252
+    //       https://en.wikipedia.org/wiki/Windows-1252
     static const uint16_t w1252chrs[]
         = {0x20ac,
            0, // invalid
@@ -153,16 +160,16 @@ static char windows1252_char(uint16_t chr)
 
     // Return any char in range of ASCII or ISO-8859-1.
     // FIXME: 0xa0 is a 'non breaking space'. It could be converted to ' ',
-    //		  but I didn't. Feel free to do it if you need.
+    //          but I didn't. Feel free to do it if you need.
     if (chr <= 0x7f || (chr >= 0xa0 && chr <= 0xff)) {
         // if ( chr == 0xa0 ) return ' '; else
-        return (char)chr;
+        return (char) chr;
     }
 
     // Return any char inside WINDOWS-1252 codepage range of 0x80 to 0x9f.
     for (unsigned int i = 0; i < sizeof w1252chrs / sizeof w1252chrs[0]; i++) {
         if (chr == w1252chrs[i]) {
-            return (char)(0x80 + i);
+            return (char) (0x80 + i);
         }
     }
 
@@ -175,7 +182,7 @@ void pe_utils_str_widechar2ascii(char *output, size_t output_size,
 {
     // FIX: Quick & dirty UFT16 to WINDOWS-1252 conversion
     size_t    length = pe_utils_min(output_size - 1, widechar_count);
-    uint16_t *p      = (uint16_t *)widechar;
+    uint16_t *p      = (uint16_t *) widechar;
     while (length--) {
         char c = windows1252_char(*p);
 
@@ -222,7 +229,7 @@ int pe_utils_is_file_readable(const char *path)
     }
 
     // Check if we're dealing with a regular file.
-    if (!S_ISREG(stat.st_mode)) {
+    if (! S_ISREG(stat.st_mode)) {
         close(fd);
         // fprintf(stderr, "%s is not a file\n", path);
         return LIBPE_E_NOT_A_FILE;
@@ -236,16 +243,21 @@ int pe_utils_is_file_readable(const char *path)
 // IMPORTANT: This is not thread-safe - not reentrant.
 const char *pe_utils_get_homedir(void)
 {
+#ifndef _MSC_VER
     const char *homedir = getenv("HOME");
     if (homedir != NULL) {
         return homedir;
     }
 
     // FIXME: Instead of using getpwuid() we could use
-    //				getpwuid_r() to make this function 'thread-safe'.
+    //            getpwuid_r() to make this function 'thread-safe'.
     errno              = 0;
     struct passwd *pwd = getpwuid(getuid());
 
     return pwd == NULL ? NULL : pwd->pw_dir;
+#else
+    // TODO
+    return NULL;
+#endif
 }
 

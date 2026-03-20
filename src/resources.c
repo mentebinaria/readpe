@@ -34,29 +34,34 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
+#include "libpe/resources.h"
+
+#include "compat.h"
 #include "libpe/context.h"
-#include "output.h"
-#include "readpe.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "libpe/types_resources.h"
+#include "libpe/utils.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
 #include <assert.h>
-#include <libpe/macros.h>
-#include <libpe/resources.h>
-#include <libpe/types_resources.h>
-#include <libpe/utils.h>
-#include <libpe/utlist.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <utlist.h>
 
-static const char          *g_resourceDir = "resources";
+static const char *g_resourceDir = "resources";
 
-static const unsigned char *g_tree__      = u8"─";
-static const unsigned char *g_tree_i      = u8"│";
-static const unsigned char *g_tree_l      = u8"└";
-static const unsigned char *g_tree_t      = u8"├";
+// TODO: Build tree
+// static const unsigned char *g_tree__      = u8"─";
+// static const unsigned char *g_tree_i      = u8"│";
+// static const unsigned char *g_tree_l      = u8"└";
+// static const unsigned char *g_tree_t      = u8"├";
 
 #pragma pack(push, 1)
 typedef struct {
@@ -241,8 +246,8 @@ static void build_resource_node_filename(char *output, size_t output_size,
 {
     char partial_path[MAX_PATH];
 
-    for (pe_resource_level_e level = LIBPE_RDT_LEVEL1; level <= node->dirLevel;
-         level++) {
+    for (pe_resource_level_e level = LIBPE_RDT_LEVEL1;
+         level <= (pe_resource_level_e) node->dirLevel; level++) {
         const pe_resource_node_t *dir_entry_node
             = pe_resource_find_parent_node_by_type_and_level(
                 node, LIBPE_RDT_DIRECTORY_ENTRY, level);
@@ -436,19 +441,19 @@ static void save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node,
         // TODO: Should we report something?
         fprintf(stderr,
                 "Attempted to read range [ %p, %p ] which is not within the "
-                "mapped range [ %p, %lx ]\n",
+                "mapped range [ %p, %p ]\n",
                 (void *) raw_data_ptr,
                 LIBPE_PTR_ADD(raw_data_ptr, raw_data_size), ctx->map_addr,
-                ctx->map_end);
+                (void *) ctx->map_end);
         return;
     }
 
     struct stat statDir;
     if (stat(g_resourceDir, &statDir) == -1) {
-        mkdir(g_resourceDir, 0700);
+        readpe_mkdir(g_resourceDir, 0700);
     }
 
-    char                     *dirName;
+    char *dirName;
 
     const pe_resource_node_t *folder_node
         = pe_resource_find_parent_node_by_type_and_level(
@@ -472,7 +477,7 @@ static void save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node,
     }
 
     if (stat(dirName, &statDir) == -1) {
-        mkdir(dirName, 0700);
+        readpe_mkdir(dirName, 0700);
     }
 
     const pe_resource_node_t *name_node
@@ -553,18 +558,6 @@ static void save_all_resources(pe_ctx_t *ctx, const pe_resource_node_t *node,
 
     save_all_resources(ctx, node->childNode, namedExtract);
     save_all_resources(ctx, node->nextNode, namedExtract);
-}
-
-static bool resources_has_version_node(const pe_resource_node_t *node)
-{
-    if (node->type != LIBPE_RDT_DIRECTORY_ENTRY) {
-        return false;
-    }
-    if (node->dirLevel != LIBPE_RDT_LEVEL1) { // dirLevel == 1 belongs to the
-                                              // resource type directory.
-        return false;
-    }
-    return node->raw.directoryEntry->u0.data.NameOffset == RT_VERSION;
 }
 
 static void print_resource_version(pe_ctx_t                 *ctx,

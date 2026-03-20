@@ -21,8 +21,11 @@
 
 #include "libpe/exports.h"
 
+#include "compat.h"
 #include "libpe/macros.h"
 #include "libpe/pe.h"
+
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -56,27 +59,27 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
 
     uint64_t ofs;
 
-    ofs = pe_rva2ofs(ctx, va);
+    ofs                               = pe_rva2ofs(ctx, va);
     const IMAGE_EXPORT_DIRECTORY *exp = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-    if (!pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
+    if (! pe_can_read(ctx, exp, sizeof(IMAGE_EXPORT_DIRECTORY))) {
         exports->err = LIBPE_E_EXPORTS_CANT_READ_DIR;
         return exports;
     }
 
-    ofs = pe_rva2ofs(ctx, exp->Name);
+    ofs                  = pe_rva2ofs(ctx, exp->Name);
     const char *name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-    if (!pe_can_read(ctx, name_ptr, 1)) {
+    if (! pe_can_read(ctx, name_ptr, 1)) {
         exports->err = LIBPE_E_EXPORTS_CANT_READ_RVA;
         return exports;
     }
 
-    exports->name = strdup(name_ptr);
+    exports->name = readpe_strdup(name_ptr);
 
     const uint32_t ordinal_base = exp->Base;
 
-    ofs = pe_rva2ofs(ctx, exp->AddressOfNames);
+    ofs                     = pe_rva2ofs(ctx, exp->AddressOfNames);
     const uint32_t *rva_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-    if (!pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
+    if (! pe_can_read(ctx, rva_ptr, sizeof(uint32_t))) {
         exports->err = LIBPE_E_EXPORTS_CANT_READ_RVA;
         return exports;
     }
@@ -112,12 +115,16 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
     const uint64_t offset_to_AddressOfNameOrdinals
         = pe_rva2ofs(ctx, exp->AddressOfNameOrdinals);
 
-    uint64_t offsets_to_Names[exp->NumberOfFunctions];
-    memset(offsets_to_Names, 0,
-           sizeof(offsets_to_Names)); // This is needed for VLAs.
+    uint64_t *offsets_to_Names
+        = calloc(exp->NumberOfFunctions, sizeof(uint64_t));
+    // uint64_t offsets_to_Names[exp->NumberOfFunctions];
+    // memset(offsets_to_Names, 0,
+    //        sizeof(offsets_to_Names)); // This is needed for VLAs.
 
-    uint32_t hint_name_indexes[exp->NumberOfFunctions];
-    memset(hint_name_indexes, 0, sizeof(hint_name_indexes));
+    uint32_t *hint_name_indexes
+        = calloc(exp->NumberOfFunctions, sizeof(uint32_t));
+    // uint32_t hint_name_indexes[exp->NumberOfFunctions];
+    // memset(hint_name_indexes, 0, sizeof(hint_name_indexes));
 
     //
     // Names
@@ -130,7 +137,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
         uint16_t *entry_ordinal_list
             = LIBPE_PTR_ADD(ctx->map_addr, entry_ordinal_list_ptr);
 
-        if (!pe_can_read(ctx, entry_ordinal_list, sizeof(uint16_t))) {
+        if (! pe_can_read(ctx, entry_ordinal_list, sizeof(uint16_t))) {
             // TODO: Should we report something?
             break;
         }
@@ -143,7 +150,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
         uint32_t *entry_name_list
             = LIBPE_PTR_ADD(ctx->map_addr, entry_name_list_ptr);
 
-        if (!pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
+        if (! pe_can_read(ctx, entry_name_list, sizeof(uint32_t))) {
             // TODO: Should we report something?
             break;
         }
@@ -152,7 +159,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
         const uint64_t entry_name_ofs = pe_rva2ofs(ctx, entry_name_rva);
 
         if (ordinal < exp->NumberOfFunctions) {
-            offsets_to_Names[ordinal] = entry_name_ofs;
+            offsets_to_Names[ordinal]  = entry_name_ofs;
             hint_name_indexes[ordinal] = i;
         }
     }
@@ -168,14 +175,14 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
         uint32_t *entry_va_list
             = LIBPE_PTR_ADD(ctx->map_addr, entry_va_list_ptr);
 
-        if (!pe_can_read(ctx, entry_va_list, sizeof(uint32_t))) {
+        if (! pe_can_read(ctx, entry_va_list, sizeof(uint32_t))) {
             break;
         }
 
         // Add `Base` to the element of `AddressOfNameOrdinals` array to get the
         // correct ordinal..
         // const uint16_t entry_ordinal = exp->Base + *entry_ordinal_list;
-        const uint32_t entry_va = *entry_va_list;
+        const uint32_t entry_va       = *entry_va_list;
         const uint64_t entry_name_ofs = offsets_to_Names[i];
 
         // FIX: Don't need to zero all elements!
@@ -189,7 +196,7 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
 
             // Validate whether it's ok to access at least 1 byte after
             // entry_name. It might be '\0', for example.
-            if (!pe_can_read(ctx, entry_name, 1)) {
+            if (! pe_can_read(ctx, entry_name, 1)) {
                 break;
             }
 
@@ -204,10 +211,10 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
         }
 
         exports->functions[i].ordinal = ordinal_base + i;
-        exports->functions[i].hint = hint_name_indexes[i];
+        exports->functions[i].hint    = hint_name_indexes[i];
         exports->functions[i].address = entry_va;
 
-        exports->functions[i].name = strdup(fname);
+        exports->functions[i].name = readpe_strdup(fname);
         if (exports->functions[i].name == NULL) {
             exports->err = LIBPE_E_ALLOCATION_FAILURE;
             return exports;
@@ -219,16 +226,16 @@ pe_exports_t *pe_exports(pe_ctx_t *ctx)
             // When a symbol is forwarded, its RVA points to a string containing
             // the name of the DLL and symbol to which it is forwarded.
             const uint64_t fw_entry_name_ofs = pe_rva2ofs(ctx, entry_va);
-            const char *fw_entry_name
+            const char    *fw_entry_name
                 = LIBPE_PTR_ADD(ctx->map_addr, fw_entry_name_ofs);
 
             // Validate whether it's ok to access at least 1 byte after
             // fw_entry_name. It might be '\0', for example.
-            if (!pe_can_read(ctx, fw_entry_name, 1)) {
+            if (! pe_can_read(ctx, fw_entry_name, 1)) {
                 break;
             }
 
-            exports->functions[i].fwd_name = strdup(fw_entry_name);
+            exports->functions[i].fwd_name = readpe_strdup(fw_entry_name);
             if (exports->functions[i].fwd_name == NULL) {
                 exports->err = LIBPE_E_ALLOCATION_FAILURE;
                 return exports;

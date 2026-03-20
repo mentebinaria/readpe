@@ -34,14 +34,16 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
-#include "readpe.h"
+#include "legacy.h"
+#include "libpe/context.h"
+#include "libpe/pe.h"
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
+#include "readpe/settings.h"
 
-#include <libpe/context.h>
-#include <libpe/dir_security.h>
-#include <libpe/macros.h>
-#include <libpe/pe.h>
+#include <getopt.h>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
@@ -53,30 +55,31 @@
 
 static struct readpe_settings g_settings;
 
-static void                   usage(void)
+static void usage(void)
 {
     static char formats[255];
     output_available_formats(formats, sizeof(formats), '|');
-    printf("Usage: %s [OPTIONS] FILE\n"
-           "Check for security features in PE files\n"
-           "\nExample: %s wordpad.exe\n"
-           "\nOptions:\n"
-           " -f, --format <%s>  Change output format (default: text)\n"
-           " -c, --certoutform <text|pem>			 Specifies the certificate "
-           "output format (default: text).\n"
-           " -o, --certout <filename>				 Specifies the output "
-           "filename to write certificates to (default: stdout).\n"
-           " -V, --version							 Show version.\n"
-           " --help								 Show this help.\n",
-           PROGRAM, PROGRAM, formats);
+    printf(
+        "Usage: %s [OPTIONS] FILE\n"
+        "Check for security features in PE files\n"
+        "\nExample: %s wordpad.exe\n"
+        "\nOptions:\n"
+        " -f, --format <%s>  Change output format (default: text)\n"
+        " -c, --certoutform <text|pem>             Specifies the certificate "
+        "output format (default: text).\n"
+        " -o, --certout <filename>                 Specifies the output "
+        "filename to write certificates to (default: stdout).\n"
+        " -V, --version                             Show version.\n"
+        " --help                                 Show this help.\n",
+        PROGRAM, PROGRAM, formats);
 }
 
 static void parse_options(int argc, char *argv[])
 {
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "f:c:o:V";
+    static const char short_options[] = "f:c:o:V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"format",      required_argument, NULL, 'f'},
         {"certoutform", required_argument, NULL, 'c'},
         {"certout",     required_argument, NULL, 'o'},
@@ -139,7 +142,7 @@ int pesec(int argc, char *argv[])
     const char *path = argv[argc - 1];
     pe_ctx_t    ctx;
 
-    pe_err_e    err = pe_load_file(&ctx, path);
+    pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;

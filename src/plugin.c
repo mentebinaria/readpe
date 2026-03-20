@@ -34,13 +34,14 @@
     files in the program, then also delete it here.
 */
 
-#include "output_plugin.h"
+#include "readpe/api.h"
+#include "readpe/plugin/output.h"
 
 #include <stdbool.h>
 
 static struct readpe_api g_api; // Garanteed to be zeroed.
 
-struct readpe_api       *readpe_api_ptr(void)
+struct readpe_api *readpe_api_ptr(void)
 {
     static bool initialized = false;
 

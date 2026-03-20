@@ -34,12 +34,14 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
+#include "libpe/context.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
 
 #include <ctype.h>
-#include <libpe/context.h>
-#include <libpe/macros.h>
-#include <libpe/pe.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -67,7 +69,7 @@ static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
         return false;
     }
 
-    *stub_offset             = (uint32_t) dos->e_cparhdr << 4;
+    *stub_offset = (uint32_t) dos->e_cparhdr << 4;
 
     // dos stub starts at e_cparhdr shifted by 4
     const char *dos_stub_ptr = LIBPE_PTR_ADD(ctx->map_addr, *stub_offset);
@@ -126,7 +128,7 @@ static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
  */
 static int pe_get_tls_callbacks(pe_ctx_t *ctx, bool verbose)
 {
-    int                          ret          = 0;
+    int ret = 0;
 
     const IMAGE_OPTIONAL_HEADER *optional_hdr = pe_optional(ctx);
     if (optional_hdr == NULL) {
@@ -145,7 +147,7 @@ static int pe_get_tls_callbacks(pe_ctx_t *ctx, bool verbose)
 
     const uint16_t num_sections = pe_sections_count(ctx);
 
-    uint64_t       ofs          = 0;
+    uint64_t ofs = 0;
 
     // search for tls in all sections
     for (uint16_t i = 0, j = 0; i < num_sections; i++) {
@@ -415,7 +417,7 @@ void pe_scan(pe_ctx_t *ctx, bool verbose)
     // File entropy
     const double entropy = pe_calculate_entropy_file(ctx);
 
-    static char  value[MAX_MSG];
+    static char value[MAX_MSG];
 
     if (entropy < 7.0) {
         snprintf(value, MAX_MSG, "%f (normal)", entropy);

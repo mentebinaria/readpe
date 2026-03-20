@@ -33,8 +33,10 @@
     files in the program, then also delete it here.
 */
 
-#include "output_plugin.h"
-#include "plugin.h"
+#include "readpe/api.h"
+#include "readpe/output.h"
+#include "readpe/plugin.h"
+#include "readpe/plugin/output.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -46,13 +48,13 @@
 #define PLUGIN_TYPE "output"
 #define PLUGIN_NAME FORMAT_NAME
 
-static const struct readpe_api *g_readpe_api    = NULL;
+static const struct readpe_api *g_readpe_api = NULL;
 
 // ------------------------------------------------------------------------- //
 
 // REFERENCE: https://tools.ietf.org/html/rfc7159
 // JSON entities '"', '\', ...
-static const entity_t           g_entities[255] = {
+static entity_t g_entities[255] = {
     NULL,      "\\u0001", "\\u0002", "\\u0003", "\\u0004",
     "\\u0005", "\\u0006", "\\u0007", "\\b",     "\\u0009", // 0-9
     "\\n",     "\\t",     "\\u000c", "\\r",     "\\u000e",
@@ -117,8 +119,8 @@ static void to_format(const struct format *format, const output_type_e type,
                       const output_scope_t *scope, const char *key,
                       const char *value)
 {
-    static int  indent          = 0;
-    static int  num_attr        = 0;
+    static int indent   = 0;
+    static int num_attr = 0;
 
     char *const escaped_key     = format->escape_fn(format, key);
     char *const escaped_value   = format->escape_fn(format, value);
@@ -216,12 +218,11 @@ static void to_format(const struct format *format, const output_type_e type,
 
 // ------------------------------------------------------------------------- //
 
-static const struct format g_format
-    = {.id             = FORMAT_ID,
-       .name           = FORMAT_NAME,
-       .output_fn      = &to_format,
-       .escape_fn      = &escape_json,
-       .entities_table = (entity_table_t) g_entities};
+static const struct format g_format = {.id             = FORMAT_ID,
+                                       .name           = FORMAT_NAME,
+                                       .output_fn      = to_format,
+                                       .escape_fn      = escape_json,
+                                       .entities_table = g_entities};
 
 // ------------------------------------------------------------------------- //
 
@@ -253,12 +254,12 @@ static void plugin_shutdown(void)
 
 // ------------------------------------------------------------------------- //
 
-struct readpe_output_plugin readpe_plugin = {
+READPE_API const struct readpe_output_plugin readpe_plugin = {
     {.type_id    = readpe_plugin_type_output,
      .loaded     = plugin_loaded,
      .initialize = plugin_initialize,
      .shutdown   = plugin_shutdown,
      .unloaded   = plugin_unloaded},
-    g_format
+    &g_format
 };
 

@@ -34,13 +34,9 @@
     files in the program, then also delete it here.
 */
 
-// #ifdef __STDC_ALLOC_LIB__
-// #define __STDC_WANT_LIB_EXT2__ 1
-// #else
-// #define _POSIX_C_SOURCE 200809L
-// #endif
+#include "readpe/config.h"
 
-#include "config.h"
+#include "compat.h"
 
 #include <libpe/error.h>
 #include <libpe/utils.h>
@@ -49,10 +45,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(__linux__)
-#include <linux/limits.h> // FIXME: Why?
-#elif defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)       \
-    || defined(__NetBSD__) || defined(__CYGWIN__)
+
+#ifndef _MSC_VER
 #include <limits.h>
 #endif
 
@@ -95,7 +89,7 @@ static int _load_config_and_parse(struct readpe_config *const    config,
     char  *p, *line = NULL;
     size_t size = 0;
 
-    while (getline(&line, &size, fp) != -1) {
+    while (readpe_getline(&line, &size, fp) != -1) {
         // remove newline
         if ((p = strrchr(line, '\n')) != NULL) {
             *p = '\0';
@@ -112,7 +106,7 @@ static int _load_config_and_parse(struct readpe_config *const    config,
 
             // fprintf(stderr, "DEBUG: '%s'='%s'\n", trimmed_param,
             // trimmed_value);
-            const bool  processed
+            const bool processed
                 = readpe_cb(config, trimmed_param, trimmed_value);
 
             if (! processed && config->user_defined.parse_callback != NULL) {
@@ -137,7 +131,7 @@ int readpe_load_config(struct readpe_config *const config)
 {
     char *buff;
 
-    int   ret = pe_utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
+    int ret = pe_utils_is_file_readable(DEFAULT_CONFIG_FILENAME);
     if (ret == LIBPE_E_OK) {
         if (! _load_config_and_parse(config, DEFAULT_CONFIG_FILENAME,
                                      _load_config_cb)) {

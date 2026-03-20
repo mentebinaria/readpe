@@ -34,12 +34,15 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
-#include "output.h"
-#include "readpe.h"
+#include "legacy.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/macros.h>
+#include <getopt.h>
 
 #define PROGRAM "peldd"
 
@@ -60,9 +63,9 @@ static void usage(void)
 static void parse_options(int argc, char *argv[])
 {
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "Vf:";
+    static const char short_options[] = "Vf:";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"help",    no_argument,       NULL, 1  },
         {"format",  required_argument, NULL, 'f'},
         {"version", no_argument,       NULL, 'V'},

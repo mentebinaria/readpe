@@ -26,7 +26,6 @@
 #include "libpe/pe.h"
 #include "libpe/types_resources.h"
 #include "libpe/utils.h"
-#include "libpe/utlist.h"
 
 #include <assert.h>
 #include <stdint.h>
@@ -35,6 +34,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <utlist.h>
 
 // REFERENCE:
 // https://msdn.microsoft.com/en-us/library/ms648009(v=vs.85).aspx
@@ -77,7 +77,7 @@ pe_resource_entry_info_lookup(uint32_t name_offset)
 
     p = g_resource_dataentry_info_table;
     while (p->name) {
-        if (p->type == name_offset) {
+        if (p->type == (ResourceType) name_offset) {
             return p;
         }
         p++;
@@ -565,7 +565,7 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
             if (! pe_can_read(ctx, data_string_ptr,
                               sizeof(IMAGE_RESOURCE_DATA_STRING_U))) {
                 LIBPE_WARNING("Cannot read IMAGE_RESOURCE_DATA_STRING_U");
-                return NULL;
+                return false;
             }
 
             node->name
@@ -708,7 +708,7 @@ pe_resource_get_fixedfileinfo(const pe_ctx_t           *ctx,
         return NULL;
     }
 
-    VS_FIXEDFILEINFO                *info_ptr      = NULL;
+    VS_FIXEDFILEINFO *info_ptr = NULL;
 
     pe_resource_node_search_result_t search_result = {0};
     pe_resource_search_nodes(&search_result, node,
@@ -750,8 +750,8 @@ pe_resource_get_fixedfileinfo(const pe_ctx_t           *ctx,
             }
             // printf("\n%s\n", key);
 
-            int info_offset
-                = (key_size * sizeof(uint16_t)) + sizeof(VS_VERSIONINFO_HEAD);
+            int info_offset = (key_size * (int) sizeof(uint16_t))
+                              + (int) sizeof(VS_VERSIONINFO_HEAD);
             // Align to next 32bit/4byte
             info_offset += 4 - (info_offset % 4);
 

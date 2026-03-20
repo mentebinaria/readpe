@@ -34,15 +34,14 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
 #include "common.h"
 #include "config.h"
+#include "legacy.h"
+#include "libudis86/udis86.h"
 #include "output.h"
 
-#include <bits/getopt_core.h>
-#include <bits/getopt_ext.h>
 #include <errno.h>
-#include <libudis86/udis86.h>
+#include <getopt.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -78,25 +77,27 @@ static void usage(void)
         "or LEAVE instruction)\n"
         "\nExample: %s -r 0x4c4df putty.exe\n"
         "\nOptions:\n"
-        " --att									 Set AT&T assembly syntax "
+        " --att                                     Set AT&T assembly syntax "
         "(default: Intel).\n"
-        " -e, --entrypoint						 Disassemble the entire "
+        " -e, --entrypoint                         Disassemble the entire "
         "entrypoint function.\n"
         " -f, --format <%s>  Change output format (default: text).\n"
-        " -m, --mode <16|32|64>					 Disassembly mode (default: "
+        " -m, --mode <16|32|64>                     Disassembly mode (default: "
         "auto).\n"
-        " -i <number>							 Number of instructions to "
+        " -i <number>                             Number of instructions to "
         "disassemble.\n"
-        " -n <number>							 Number of bytes to "
+        " -n <number>                             Number of bytes to "
         "disassemble\n"
-        " -o, --offset <offset>					 Disassemble at specified "
+        " -o, --offset <offset>                     Disassemble at specified "
         "offset, either in decimal or hexadecimal format (prefixed with 0x).\n"
-        " -r, --rva <rva>						 Disassemble at specified RVA, "
+        " -r, --rva <rva>                         Disassemble at specified "
+        "RVA, "
         "either in decimal or hexadecimal format (prefixed with 0x).\n"
-        " -s, --section <section_name>			 Disassemble en entire section "
+        " -s, --section <section_name>             Disassemble en entire "
+        "section "
         "given.\n"
-        " -V, --version							 Show version.\n"
-        " --help								 Show this help.\n",
+        " -V, --version                             Show version.\n"
+        " --help                                 Show this help.\n",
         PROGRAM, PROGRAM, formats);
 }
 
@@ -111,12 +112,12 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-    options_t                 *options         = calloc_s(1, sizeof(options_t));
+    options_t *options = calloc_s(1, sizeof(options_t));
 
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "em:i:n:o:r:s:f:V";
+    static const char short_options[] = "em:i:n:o:r:s:f:V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"help",       no_argument,       NULL, 1  },
         {"att",        no_argument,       NULL, 2  },
         {"",           required_argument, NULL, 'n'},
@@ -232,19 +233,19 @@ static char *insert_spaces(const char *s)
     size = size + (size / 2);
 
     // FIXME: Maybe a better approach to the loop below is:
-    //	new = malloc( size + 1 );
+    //    new = malloc( size + 1 );
     //
-    //	short *p = (short *)str;
-    //	short *q = (short *)new;
-    //	while ( wsize-- )
-    //	{
-    //		*q++ = *p++;
-    //		*(char *)q++ = ' ';
-    //	}
-    //	*(char *)q = 0;
-    //	return new;
+    //    short *p = (short *)str;
+    //    short *q = (short *)new;
+    //    while ( wsize-- )
+    //    {
+    //        *q++ = *p++;
+    //        *(char *)q++ = ' ';
+    //    }
+    //    *(char *)q = 0;
+    //    return new;
 
-    new  = calloc_s(1, size + 1);
+    new = calloc_s(1, size + 1);
 
     for (unsigned int i = 0, j = 0, pos = 0; i < size; i++) {
         if (pos == 2) {
@@ -263,10 +264,10 @@ static bool is_ret_instruction(unsigned char opcode)
 {
     switch (opcode) {
     case 0xc9: // leave (this isn't a ret instruction!).
-    // case 0xc2:	// ret imm16 (why not?)
+    // case 0xc2:    // ret imm16 (why not?)
     case 0xc3: // ret
     case 0xca: // retf imm16
-               // case 0xcb:	// retf (why not?)
+               // case 0xcb:    // retf (why not?)
         return true;
 
     default:
@@ -357,12 +358,12 @@ int pedis(int argc, char *argv[])
 
     output_set_cmdline(argc, argv);
 
-    options_t  *options = parse_options(argc, argv); // opcoes
+    options_t *options = parse_options(argc, argv); // opcoes
 
-    const char *path    = argv[argc - 1];
+    const char *path = argv[argc - 1];
     pe_ctx_t    ctx;
 
-    pe_err_e    err = pe_load_file(&ctx, path);
+    pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;

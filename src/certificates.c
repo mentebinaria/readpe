@@ -32,12 +32,14 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
-#include "compat/strlcat.h"
-#include "output.h"
-#include "readpe.h"
+#include "compat.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/macros.h>
+#include <inttypes.h>
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
@@ -54,7 +56,7 @@ static inline uint32_t roundBy8(uint32_t x) { return (x + 7) & 0xfffffff8; }
 //     return t;
 // }
 
-static cert_format_e   parse_certoutform(const char *l_optarg)
+static cert_format_e parse_certoutform(const char *l_optarg)
 {
     cert_format_e result = CERT_FORMAT_X509;
 
@@ -217,19 +219,19 @@ static void print_pkcs7_data(const CRYPT_DATA_BLOB *blob, cert_format_e format,
         EVP_PKEY_free(issuer_pubkey);
         output("Signature", valid_sig == 1 ? "valid" : "invalid");
 
+        char issuer_name[65];
+
         // Print signers
         output_open_scope("signers", OUTPUT_SCOPE_TYPE_ARRAY);
         for (int i = 0; i < numcerts; i++) {
             X509      *cert = sk_X509_value(certs, i);
             X509_NAME *name = X509_get_subject_name(cert);
 
-            int        issuer_name_len
-                = X509_NAME_get_text_by_NID(name, NID_commonName, NULL, 0);
+            memset(&issuer_name, 0, 65);
+            int issuer_name_len = X509_NAME_get_text_by_NID(
+                name, NID_commonName, issuer_name, 64);
             if (issuer_name_len > 0) {
                 output_open_scope("signer", OUTPUT_SCOPE_TYPE_OBJECT);
-                char issuer_name[issuer_name_len + 1];
-                X509_NAME_get_text_by_NID(name, NID_commonName, issuer_name,
-                                          issuer_name_len + 1);
                 output("Issuer", issuer_name);
                 output_close_scope(); // signer
             }
@@ -246,7 +248,7 @@ void print_certificates(pe_ctx_t *ctx, const char *format, const char *out)
 {
     cert_format_e out_format
         = format ? parse_certoutform(format) : CERT_FORMAT_X509;
-    BIO              *out_file   = parse_certout(out ? out : "stdout");
+    BIO *out_file = parse_certout(out ? out : "stdout");
 
     WIN_CERTIFICATE **certs      = NULL;
     uint32_t          cert_count = pe_certificates(ctx, &certs);
@@ -352,9 +354,9 @@ void print_certificates_info(pe_ctx_t *ctx, const char *format, const char *out,
             return;
         }
         // Type punning
-        uint32_t         dwLength = *(uint32_t *) dwLength_ptr;
+        uint32_t dwLength = *(uint32_t *) dwLength_ptr;
 
-        WIN_CERTIFICATE *cert     = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
+        WIN_CERTIFICATE *cert = LIBPE_PTR_ADD(ctx->map_addr, fileOffset);
         if (! pe_can_read(ctx, cert, dwLength)) {
             output_close_scope(); // certificates
             // TODO: Should we report something?

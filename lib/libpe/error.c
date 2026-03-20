@@ -20,7 +20,9 @@
 */
 
 #include "libpe/error.h"
+
 #include "libpe/macros.h"
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,15 +76,15 @@ const char *pe_error_msg(pe_err_e error)
 
     // FIX: Convoluted way to use negative errors! The code below is easier and
     // faster.
-    //	static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
-    //	size_t index = index_max + error;
-    //	return (index < index_max)
-    //		? errors[index]
-    //		: (index == index_max)
-    //			? errors[0] // LIBPE_E_OK
-    //			: "invalid error code";
+    //    static const size_t index_max = LIBPE_SIZEOF_ARRAY(errors);
+    //    size_t index = index_max + error;
+    //    return (index < index_max)
+    //        ? errors[index]
+    //        : (index == index_max)
+    //            ? errors[0] // LIBPE_E_OK
+    //            : "invalid error code";
 
-    unsigned int index = (unsigned int)abs(error);
+    unsigned int index = (unsigned int) abs(error);
     if (index >= LIBPE_SIZEOF_ARRAY(errors)) {
         return "invalid error code";
     }
@@ -132,6 +134,9 @@ void pe_error_print(FILE *stream, pe_err_e error)
         const char *errmsg_ptr = errmsg;
 #elif defined(_GNU_SOURCE) // GNU-specific
         const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof errmsg);
+#elif defined(_MSC_VER)    // C11
+        int         ret        = strerror_s(errmsg, sizeof(errmsg), errno);
+        const char *errmsg_ptr = errmsg;
 #else                      // Fallback to XSI-compliant
         /* int ret = */ strerror_r(errno, errmsg, sizeof errmsg);
         const char *errmsg_ptr = errmsg;

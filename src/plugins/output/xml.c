@@ -33,8 +33,10 @@
     files in the program, then also delete it here.
 */
 
-#include "output_plugin.h"
-#include "plugin.h"
+#include "readpe/api.h"
+#include "readpe/output.h"
+#include "readpe/plugin.h"
+#include "readpe/plugin/output.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,14 +47,14 @@
 #define PLUGIN_TYPE "output"
 #define PLUGIN_NAME FORMAT_NAME
 
-static const struct readpe_api *g_readpe_api    = NULL;
+static const struct readpe_api *g_readpe_api = NULL;
 
 // ------------------------------------------------------------------------- //
 
 // REFERENCE:
 // http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
 // XML entities '"', '&', '\'', '<', '>'
-static const entity_t           g_entities[255] = {
+static entity_t g_entities[255] = {
     NULL,   NULL, NULL,   NULL, NULL,     NULL, NULL, NULL, NULL,    NULL,
     NULL,   NULL, NULL,   NULL, NULL,     NULL, NULL, NULL, NULL,    NULL,
     NULL,   NULL, NULL,   NULL, NULL,     NULL, NULL, NULL, NULL,    NULL,
@@ -97,7 +99,7 @@ static void to_format(const format_t *format, const output_type_e type,
                       const output_scope_t *scope, const char *key,
                       const char *value)
 {
-    static int  indent        = 0;
+    static int indent = 0;
 
     // FIXME(jweyrich): Somehow output the XML root element.
 
@@ -174,12 +176,11 @@ static void to_format(const format_t *format, const output_type_e type,
 
 // ------------------------------------------------------------------------- //
 
-static const struct format g_format
-    = {.id             = FORMAT_ID,
-       .name           = FORMAT_NAME,
-       .output_fn      = &to_format,
-       .escape_fn      = &escape_xml,
-       .entities_table = (entity_table_t) g_entities};
+static const struct format g_format = {.id             = FORMAT_ID,
+                                       .name           = FORMAT_NAME,
+                                       .output_fn      = to_format,
+                                       .escape_fn      = escape_xml,
+                                       .entities_table = g_entities};
 
 // ------------------------------------------------------------------------- //
 
@@ -211,12 +212,12 @@ static void plugin_shutdown(void)
 
 // ------------------------------------------------------------------------- //
 
-struct readpe_output_plugin readpe_plugin = {
+READPE_API const struct readpe_output_plugin readpe_plugin = {
     {.type_id    = readpe_plugin_type_output,
      .loaded     = plugin_loaded,
      .initialize = plugin_initialize,
      .shutdown   = plugin_shutdown,
      .unloaded   = plugin_unloaded},
-    g_format
+    &g_format
 };
 

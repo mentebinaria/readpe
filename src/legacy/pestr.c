@@ -34,14 +34,18 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
-#include "readpe.h"
+#include "legacy.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/readpe.h"
+#include "readpe/settings.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
 #include <limits.h>
 #include <stdint.h>
+#include <wchar.h>
 #include <wctype.h>
 
 #define PROGRAM     "pestr"
@@ -50,7 +54,7 @@
 
 static struct readpe_settings g_settings;
 
-static void                   usage(void)
+static void usage(void)
 {
     printf(
         "Usage: %s OPTIONS FILE\n"
@@ -70,9 +74,9 @@ static void                   usage(void)
 static void parse_options(int argc, char *argv[])
 {
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "osn:V";
+    static const char short_options[] = "osn:V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"offset",     no_argument,       NULL, 'o'},
         {"section",    no_argument,       NULL, 's'},
         {"min-length", required_argument, NULL, 'n'},
@@ -177,10 +181,10 @@ void print_strings(pe_ctx_t *ctx)
     const uint64_t pe_size     = pe_filesize(ctx);
     const uint8_t *pe_raw_data = ctx->map_addr;
 
-    uint16_t       chunk;
-    size_t         buff_start       = 0;
-    size_t         odd_wbuff_start  = 0;
-    size_t         even_wbuff_start = 0;
+    uint16_t chunk;
+    size_t   buff_start       = 0;
+    size_t   odd_wbuff_start  = 0;
+    size_t   even_wbuff_start = 0;
 
     for (size_t pe_raw_offset = 0; pe_raw_offset < pe_size; ++pe_raw_offset) {
         const uint8_t byte = pe_raw_data[pe_raw_offset];
@@ -198,7 +202,7 @@ void print_strings(pe_ctx_t *ctx)
             }
         } else {
             if (buff_start != 0) {
-                if ((pe_raw_offset - buff_start)
+                if ((int) (pe_raw_offset - buff_start)
                     >= (g_settings.str_min_length ? g_settings.str_min_length
                                                   : 4)) {
                     printb(ctx, pe_raw_data, buff_start, pe_raw_offset, false);
@@ -220,7 +224,7 @@ void print_strings(pe_ctx_t *ctx)
         } else {
             if (pe_raw_offset & 0x1) {
                 if (odd_wbuff_start != 0) {
-                    if ((pe_raw_offset - odd_wbuff_start) / 2
+                    if ((int) (pe_raw_offset - odd_wbuff_start) / 2
                         >= (g_settings.str_min_length
                                 ? g_settings.str_min_length
                                 : 4)) {
@@ -231,7 +235,7 @@ void print_strings(pe_ctx_t *ctx)
                 }
             } else {
                 if (even_wbuff_start != 0) {
-                    if ((pe_raw_offset - even_wbuff_start) / 2
+                    if ((int) (pe_raw_offset - even_wbuff_start) / 2
                         >= (g_settings.str_min_length
                                 ? g_settings.str_min_length
                                 : 4)) {
@@ -257,7 +261,7 @@ int pestr(int argc, char *argv[])
     const char *path = argv[argc - 1];
     pe_ctx_t    ctx;
 
-    pe_err_e    err = pe_load_file(&ctx, path);
+    pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;

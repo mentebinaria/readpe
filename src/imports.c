@@ -32,13 +32,12 @@
     files in the program, then also delete it here.
 */
 
+#include "libpe/context.h"
+#include "libpe/pe.h"
 #include "output.h"
 #include "readpe.h"
 
-#include <libpe/context.h>
-#include <libpe/directories.h>
-#include <libpe/macros.h>
-#include <libpe/pe.h>
+#include <inttypes.h>
 
 void print_imports(pe_ctx_t *ctx)
 {

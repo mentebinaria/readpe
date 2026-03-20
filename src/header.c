@@ -31,13 +31,15 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
-#include "readpe.h"
+#include "libpe/context.h"
+#include "libpe/hdr_optional.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/context.h>
-#include <libpe/hdr_optional.h>
-#include <libpe/macros.h>
-#include <libpe/pe.h>
+#include <inttypes.h>
 #include <time.h>
 
 void print_optional_header(pe_ctx_t *ctx)

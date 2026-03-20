@@ -36,10 +36,17 @@
 
 #include "plugins.h"
 
-#include "compat/sys/queue.h"
-#include "config.h"
+#include "compat.h"
 #include "dylib.h"
-#include "plugin.h"
+#include "readpe/api.h"
+#include "readpe/config.h"
+#include "readpe/plugin.h"
+
+#ifdef __GNUC__
+#include <sys/queue.h>
+#else
+#include "sys/queue.h"
+#endif
 
 #include <dirent.h>
 #include <errno.h>
@@ -47,7 +54,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
 typedef struct _plugins_entry {
     dylib_t               library;
@@ -63,14 +69,14 @@ int plugins_load(const char *path)
     plugins_entry_t *entry = calloc(1, sizeof *entry);
 
     if (entry == NULL) {
-        fprintf(stderr, "plugin: allocation failed for entry\n");
+        fputs("plugin: allocation failed for entry\n", stderr);
         return -1;
     }
 
     dylib_t *library = &entry->library;
 
     // fprintf(stdout, "plugins: Loading '%s'... ", path);
-    int      ret     = dylib_load(library, path);
+    int ret = dylib_load(library, path);
     // fprintf(stdout, "%s.\n", ret < 0 ? "failed" : "ok");
     if (ret < 0) {
         free(entry);
@@ -91,7 +97,7 @@ int plugins_load(const char *path)
     if (entry->plugin->loaded != NULL) {
         const int loaded = entry->plugin->loaded();
         if (loaded < 0) {
-            fprintf(stderr, "plugins: plugin didn't load correctly\n");
+            fputs("plugins: plugin didn't load correctly\n", stderr);
             dylib_unload(library);
             free(entry);
             return -4;
@@ -101,7 +107,7 @@ int plugins_load(const char *path)
     const struct readpe_api *readpe_api = readpe_api_ptr();
     const int initialized               = entry->plugin->initialize(readpe_api);
     if (initialized < 0) {
-        fprintf(stderr, "plugins: plugin didn't initialize correctly\n");
+        fputs("plugins: plugin didn't initialize correctly\n", stderr);
         dylib_unload(library);
         free(entry);
         return -5;
@@ -150,11 +156,11 @@ int plugins_load_all_from_directory(const char *path)
     // long path_max = pathconf(path, _PC_PATH_MAX);
     // char *relative_path = malloc(path_max);
     // if (relative_path == NULL) {
-    //	fprintf(stderr, "plugins: allocation failed for relative path\n");
-    //	closedir(dir);
-    //	return -2;
+    //    fprintf(stderr, "plugins: allocation failed for relative path\n");
+    //    closedir(dir);
+    //    return -2;
     //}
-    char          *relative_path;
+    char *relative_path;
 
     int            load_count = 0;
     struct dirent *dir_entry;
@@ -189,7 +195,7 @@ int plugins_load_all_from_directory(const char *path)
 #elif defined(__APPLE__)
             const bool possible_plugin
                 = pe_utils_str_ends_with(filename, ".dylib") != 0;
-#elif defined(__CYGWIN__)
+#elif defined(__CYGWIN__) || defined(_MSC_VER)
             const bool possible_plugin
                 = pe_utils_str_ends_with(filename, ".dll") != 0;
 #else

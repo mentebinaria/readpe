@@ -32,12 +32,14 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
 #include "modes.h"
-#include "output.h"
-#include "readpe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
+#include "readpe/settings.h"
 
-#include <libpe/macros.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -47,7 +49,12 @@ static void print_basic_hash(const unsigned char *data, size_t data_size)
         return;
     }
 
-    const char  *basic_hashes[]  = {"md5", "sha1", "sha256", "ssdeep"};
+    const char *basic_hashes[] = {"md5", "sha1", "sha256"
+#ifdef LIBPE_LINK_SSDEEP
+                                  ,
+                                  "ssdeep"
+#endif
+    };
     const size_t hash_value_size = pe_hash_recommended_size();
     char        *hash_value      = malloc_s(hash_value_size);
 
@@ -76,7 +83,7 @@ void print_content_hash(pe_ctx_t *ctx)
     // output("imphash (Mandiant)", imphash);
     // free(imphash);
 
-    imphash       = pe_imphash(ctx, LIBPE_IMPHASH_FLAVOR_PEFILE);
+    imphash = pe_imphash(ctx, LIBPE_IMPHASH_FLAVOR_PEFILE);
 
     if (imphash) {
         output("imphash", imphash);
@@ -104,10 +111,10 @@ void print_coff_header_hash(pe_ctx_t *ctx)
 
 void print_optional_header_hash(pe_ctx_t *ctx)
 {
-    const unsigned char         *data      = NULL;
-    uint64_t                     data_size = 0;
+    const unsigned char *data      = NULL;
+    uint64_t             data_size = 0;
 
-    const IMAGE_OPTIONAL_HEADER *opt_hdr   = pe_optional(ctx);
+    const IMAGE_OPTIONAL_HEADER *opt_hdr = pe_optional(ctx);
     switch (opt_hdr->type) {
     case MAGIC_ROM:
         if (! pe_can_read(ctx, opt_hdr->_rom,

@@ -1,32 +1,30 @@
-project(readpe LANGUAGES C)
+project(readpe LANGUAGES C VERSION ${readpe_VERSION})
 
 set(HEADERS
-    ../include/compat/strlcat.h
-    ../include/compat/sys/queue.h
+    ${CMAKE_SOURCE_DIR}/include/readpe/config.h
+    ${CMAKE_SOURCE_DIR}/include/readpe/output.h
+    ${CMAKE_SOURCE_DIR}/include/readpe/readpe.h
+    ${CMAKE_SOURCE_DIR}/include/readpe/plugin.h
+    ${CMAKE_SOURCE_DIR}/include/readpe/helper.h
 
-    ../include/common.h
-    ../include/config.h
-    ../include/output.h
-    ../include/output_plugin.h
-    ../include/plugin.h
-    ../include/plugins.h
-    ../include/readpe.h
-    ../include/stack.h
+    ${CMAKE_SOURCE_DIR}/include/readpe/plugin/output.h
 
+    plugins.h
+    stack.h
     dylib.h
 )
 
 set(SOURCES
-    compat/strlcat.c
-
     main.c
 
+    certificates.c
     config.c
     directories.c
     dylib.c
     exports.c
     hash.c
     header.c
+    helper.c
     imports.c
     malloc_s.c
     output.c
@@ -35,19 +33,18 @@ set(SOURCES
     plugin.c
     plugins.c
     resources.c
+    scan.c
     section.c
     security.c
-    certificates.c
-    scan.c
 )
 
-if(BUILD_LEGACY)
+if(READPE_LEGACY)
     if(BUILD_DISASSEMBLER)
         list(APPEND SOURCES legacy/pedis.c )
     endif()
 
     list(APPEND HEADERS
-        legacy.h
+        legacy/legacy.h
     )
     list(APPEND SOURCES
         legacy/pehash.c
@@ -63,25 +60,22 @@ if(BUILD_LEGACY)
     )
 endif()
 
-if(BUILD_STATIC)
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    set(BUILD_SHARED_LIBS OFF)
-    set(CMAKE_EXE_LINKER_FLAGS "-no-pie -static")
-
-    # set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
-    # target_compile_options(your_target_name [PUBLIC|PRIVATE] /MT)
-    # target_link_options(your_target_name [PUBLIC|PRIVATE] /INCREMENTAL:NO /NODEFAULTLIB:MSVCRT)
-    # set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-    # https://stackoverflow.com/questions/24648357/compiling-a-static-executable-with-cmake
-    # set(CMAKE_MFC_FLAG 1)
-
-endif()
+# if(LIBPE_STATIC)
+#     if(WIN32)
+#         set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
+#     else()
+#         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+#         set(CMAKE_EXE_LINKER_FLAGS "-no-pie -static")
+#     endif()
+# endif()
 
 if(WIN32)
-    append( SOURCES
-        compat/asprintf.c
-        windows/cpload.c
-    )
+    if(!MSVC)
+        list(APPEND SOURCES windows/cpload.c)
+    endif()
+
+    # add_definitions(-DVER_COMPANYNAME_STR="")
+    add_definitions(-DVER_FILEVERSION_STR="${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},0")
 endif()
 
 add_compile_definitions(
@@ -89,19 +83,36 @@ add_compile_definitions(
     PLUGINSDIR="src/plugins"
 )
 
-find_package(OpenSSL)
+if(MSVC)
+    find_package(OpenSSL)
+else()
+    find_package(OpenSSL REQUIRED)
+endif()
+
+configure_file(version.h.in version.h @ONLY)
+add_definitions(-DHAS_CMAKE_VERSION)
 
 add_executable(readpe ${HEADERS} ${SOURCES})
 target_include_directories(readpe PRIVATE
-    "../include"
-    "../lib"
-    "../lib/libpe/include"
+    "${CMAKE_SOURCE_DIR}/include/readpe"
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
-target_link_libraries(readpe PRIVATE pe OpenSSL::Crypto m)
+if(LIBPE_LINK_SSDEEP)
+    target_compile_definitions(pe PRIVATE
+        -DLIBPE_LINK_SSDEEP=1
+    )
+endif()
 
+target_link_libraries(readpe PRIVATE
+    OpenSSL::Crypto
+    readpe::compat
+    readpe::libpe
+    uthash
+)
 
-if(BUILD_LEGACY)
+if(READPE_LEGACY)
     if(BUILD_DISASSEMBLER)
         target_link_libraries(readpe PRIVATE udis86)
         target_compile_definitions(readpe PRIVATE
@@ -115,12 +126,15 @@ if(BUILD_LEGACY)
 endif()
 
 if(MSVC)
+    target_link_libraries(readpe PRIVATE dirent)
     target_compile_options(readpe PRIVATE /W4 /WX)
-else()
+elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_link_libraries(readpe PRIVATE m)
     target_compile_options(readpe PRIVATE
         -Wall
         -Wextra
         -Wpedantic
+        -pedantic
         -Wshadow
         -Wundef
         -Wdouble-promotion

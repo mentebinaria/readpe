@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+set_and_check(pe_INCLUDEDIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
+
+if(NOT TARGET readpe::pe)
+  include(${CMAKE_CURRENT_LIST_DIR}/pe-targets.cmake)
+endif()
+
+set(pe_LIBRARIES readpe::pe)
+set(pe_INCLUDE_DIRS ${pe_INCLUDEDIR})
+

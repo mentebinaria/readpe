@@ -32,12 +32,14 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
-#include "output.h"
-#include "readpe.h"
+#include "libpe/context.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
 
-#include <libpe/context.h>
-#include <libpe/macros.h>
+#include <inttypes.h>
 
 void print_sections(pe_ctx_t *ctx)
 {
@@ -127,7 +129,7 @@ void print_section(pe_ctx_t *ctx, IMAGE_SECTION_HEADER *section,
 
     static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
 
-    static char         s[MAX_MSG];
+    static char s[MAX_MSG];
     output_open_scope("Section", OUTPUT_SCOPE_TYPE_OBJECT);
 
     if (section_name == NULL) {

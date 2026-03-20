@@ -34,7 +34,8 @@
     files in the program, then also delete it here.
 */
 
-#include "output_plugin.h"
+#include "compat.h"
+#include "readpe/plugin/output.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,7 +82,7 @@ char *escape_ex_quoted(const char *str, const entity_table_t entities)
     }
 
     if (str[0] == '\0') {
-        return strdup("\"\"");
+        return readpe_strdup("\"\"");
     }
 
     if (entities == NULL) {
@@ -102,7 +103,7 @@ char *escape_ex_quoted(const char *str, const entity_table_t entities)
     new_str[new_length]     = '\0';
 
     // `consumed` starts in 1 because of the initial quote.
-    size_t consumed         = 1;
+    size_t consumed = 1;
     for (size_t i = 0; i < old_length; i++) {
         const unsigned char index  = (unsigned char) str[i];
         const entity_t      entity = entities[index];
@@ -125,11 +126,11 @@ char *escape_ex(const char *str, const entity_table_t entities)
     }
 
     if (str[0] == '\0') {
-        return strdup("");
+        return readpe_strdup("");
     }
 
     if (entities == NULL) {
-        return strdup(str);
+        return readpe_strdup(str);
     }
 
     const size_t old_length = strlen(str);
@@ -142,7 +143,7 @@ char *escape_ex(const char *str, const entity_table_t entities)
 
     new_str[new_length] = '\0';
 
-    size_t consumed     = 0;
+    size_t consumed = 0;
     for (size_t i = 0; i < old_length; i++) {
         const unsigned char index  = (unsigned char) str[i];
         const entity_t      entity = entities[index];
@@ -175,14 +176,14 @@ extern void output_plugin_unregister_format(const format_t *format);
 struct readpe_output_api *readpe_output_api_ptr(void)
 {
     static struct readpe_output_api api
-        = {.cmdline               = output_cmdline,
-           .register_format       = output_plugin_register_format,
-           .unregister_format     = output_plugin_unregister_format,
-           .escape_count_chars_ex = escape_count_chars_ex,
-           .escape_ex             = escape_ex,
-           .escape_ex_quoted      = escape_ex_quoted,
-           .escape                = escape,
-           .escape_quoted         = escape_quoted};
+        = {.cmdline               = &output_cmdline,
+           .register_format       = &output_plugin_register_format,
+           .unregister_format     = &output_plugin_unregister_format,
+           .escape_count_chars_ex = &escape_count_chars_ex,
+           .escape_ex             = &escape_ex,
+           .escape_ex_quoted      = &escape_ex_quoted,
+           .escape                = &escape,
+           .escape_quoted         = &escape_quoted};
     return &api;
 }
 

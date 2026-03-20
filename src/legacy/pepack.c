@@ -34,10 +34,17 @@
     files in the program, then also delete it here.
 */
 
-#include "../legacy.h"
-#include "common.h"
+#include "compat.h"
+#include "legacy.h"
+#include "libpe/context.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "libpe/sections.h"
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
 
-#include <libpe/macros.h>
+#include <getopt.h>
 
 #define PROGRAM      "pepack"
 #define MAX_SIG_SIZE 2048
@@ -73,12 +80,12 @@ static void free_options(options_t *options)
 
 static options_t *parse_options(int argc, char *argv[])
 {
-    options_t                 *options         = calloc_s(1, sizeof(options_t));
+    options_t *options = calloc_s(1, sizeof(options_t));
 
     /* Parameters for getopt_long() function */
-    static const char          short_options[] = "d:f:V";
+    static const char short_options[] = "d:f:V";
 
-    static const struct option long_options[]  = {
+    static const struct option long_options[] = {
         {"database", required_argument, NULL, 'd'},
         {"format",   required_argument, NULL, 'f'},
         {"help",     no_argument,       NULL, 1  },
@@ -97,7 +104,7 @@ static options_t *parse_options(int argc, char *argv[])
             usage();
             exit(EXIT_SUCCESS);
         case 'd':
-            options->dbfile = strdup(optarg);
+            options->dbfile = readpe_strdup(optarg);
             break;
         case 'f':
             if (output_set_format_by_name(optarg) < 0) {
@@ -154,7 +161,7 @@ static bool opendb(FILE **fp, const options_t *options)
 {
     const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
 
-    *fp                = fopen(dbfile, "r");
+    *fp = fopen(dbfile, "r");
     // FIXME(jweyrich): Granted read permission to the informed dbfile, this
     // will succeed even if it's a directory!
     if (! *fp) {
@@ -240,7 +247,7 @@ static bool compare_signature(const unsigned char *data, uint64_t ep_offset,
         }
 
         // check if signature match
-        if (! strncasecmp(buff, "signature", 9)) {
+        if (! readpe_strncasecmp(buff, "signature", 9)) {
             if (match_peid_signature(data + ep_offset, buff + 9)) {
                 return true;
             }
@@ -261,12 +268,12 @@ int pepack(int argc, char *argv[])
 
     output_set_cmdline(argc, argv);
 
-    options_t  *options = parse_options(argc, argv); // opcoes
+    options_t *options = parse_options(argc, argv); // opcoes
 
-    const char *path    = argv[argc - 1];
+    const char *path = argv[argc - 1];
     pe_ctx_t    ctx;
 
-    pe_err_e    err = pe_load_file(&ctx, path);
+    pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
         pe_error_print(stderr, err);
         return EXIT_FAILURE;
@@ -295,7 +302,7 @@ int pepack(int argc, char *argv[])
                 PROGRAM);
     }
 
-    static char          value[MAX_MSG + 1];
+    static char value[MAX_MSG + 1];
 
     // TODO(jweyrich): Create a new API to retrieve map_addr.
     // TODO(jweyrich): Should we use `LIBPE_PTR_ADD(ctx->map_addr, ep_offset)`

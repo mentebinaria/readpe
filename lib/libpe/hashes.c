@@ -21,24 +21,30 @@
 
 #include "libpe/hashes.h"
 
-#include "libfuzzy/fuzzy.h"
+#include "compat.h"
+#include "libpe/dir_import.h"
 #include "libpe/error.h"
 #include "libpe/macros.h"
 #include "libpe/ordlookup.h"
 #include "libpe/pe.h"
-#include "libpe/utlist.h"
 
 #include <ctype.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <openssl/evp.h>
 #include <openssl/md5.h>
 #include <stdint.h>
 #include <string.h>
+#include <utlist.h>
+
+#ifdef LIBPE_LINK_SSDEEP
+#include "../fuzzy/fuzzy.h"
+#endif
 
 // add utility
 #define PEV_ABORT_IF(cond)                                                     \
     do {                                                                       \
-        (cond) ? abort() : (void)0;                                            \
+        (cond) ? abort() : (void) 0;                                           \
     } while (0)
 
 /* By liw. */
@@ -54,7 +60,7 @@ static char *last_strstr(char *haystack, const char *needle)
         if (p == NULL) {
             break;
         }
-        result = p;
+        result   = p;
         haystack = p + 1;
     }
 
@@ -67,13 +73,13 @@ static pe_err_e get_hashes(pe_hash_t *output, const char *name,
     pe_err_e ret = LIBPE_E_OK;
 
     const size_t hash_maxsize = pe_hash_recommended_size();
-    char *hash_value = calloc(1, hash_maxsize);
+    char        *hash_value   = calloc(1, hash_maxsize);
     if (hash_value == NULL) {
         ret = LIBPE_E_ALLOCATION_FAILURE;
         goto error;
     }
 
-    output->name = strdup(name);
+    output->name = readpe_strdup(name);
     if (output->name == NULL) {
         ret = LIBPE_E_ALLOCATION_FAILURE;
         goto error;
@@ -83,11 +89,11 @@ static pe_err_e get_hashes(pe_hash_t *output, const char *name,
 
     hash_ok
         = pe_hash_raw_data(hash_value, hash_maxsize, "md5", data, data_size);
-    if (!hash_ok) {
+    if (! hash_ok) {
         ret = LIBPE_E_HASHING_FAILED;
         goto error;
     }
-    output->md5 = strdup(hash_value);
+    output->md5 = readpe_strdup(hash_value);
     if (output->md5 == NULL) {
         ret = LIBPE_E_ALLOCATION_FAILURE;
         goto error;
@@ -95,11 +101,11 @@ static pe_err_e get_hashes(pe_hash_t *output, const char *name,
 
     hash_ok
         = pe_hash_raw_data(hash_value, hash_maxsize, "sha1", data, data_size);
-    if (!hash_ok) {
+    if (! hash_ok) {
         ret = LIBPE_E_HASHING_FAILED;
         goto error;
     }
-    output->sha1 = strdup(hash_value);
+    output->sha1 = readpe_strdup(hash_value);
     if (output->sha1 == NULL) {
         ret = LIBPE_E_ALLOCATION_FAILURE;
         goto error;
@@ -107,11 +113,11 @@ static pe_err_e get_hashes(pe_hash_t *output, const char *name,
 
     hash_ok
         = pe_hash_raw_data(hash_value, hash_maxsize, "sha256", data, data_size);
-    if (!hash_ok) {
+    if (! hash_ok) {
         ret = LIBPE_E_HASHING_FAILED;
         goto error;
     }
-    output->sha256 = strdup(hash_value);
+    output->sha256 = readpe_strdup(hash_value);
     if (output->sha256 == NULL) {
         ret = LIBPE_E_ALLOCATION_FAILURE;
         goto error;
@@ -119,11 +125,11 @@ static pe_err_e get_hashes(pe_hash_t *output, const char *name,
 
     hash_ok
         = pe_hash_raw_data(hash_value, hash_maxsize, "ssdeep", data, data_size);
-    if (!hash_ok) {
+    if (! hash_ok) {
         ret = LIBPE_E_HASHING_FAILED;
         goto error;
     }
-    output->ssdeep = strdup(hash_value);
+    output->ssdeep = readpe_strdup(hash_value);
     if (output->ssdeep == NULL) {
         ret = LIBPE_E_ALLOCATION_FAILURE;
         goto error;
@@ -136,17 +142,17 @@ error:
 
 static pe_err_e get_headers_dos_hash(pe_ctx_t *ctx, pe_hash_t *output)
 {
-    const IMAGE_DOS_HEADER *sample = pe_dos(ctx);
-    const unsigned char *data = (const unsigned char *)sample;
-    const uint64_t data_size = sizeof(IMAGE_DOS_HEADER);
+    const IMAGE_DOS_HEADER *sample    = pe_dos(ctx);
+    const unsigned char    *data      = (const unsigned char *) sample;
+    const uint64_t          data_size = sizeof(IMAGE_DOS_HEADER);
     return get_hashes(output, "IMAGE_DOS_HEADER", data, data_size);
 }
 
 static pe_err_e get_headers_coff_hash(pe_ctx_t *ctx, pe_hash_t *output)
 {
-    const IMAGE_COFF_HEADER *sample = pe_coff(ctx);
-    const unsigned char *data = (const unsigned char *)sample;
-    const uint64_t data_size = sizeof(IMAGE_COFF_HEADER);
+    const IMAGE_COFF_HEADER *sample    = pe_coff(ctx);
+    const unsigned char     *data      = (const unsigned char *) sample;
+    const uint64_t           data_size = sizeof(IMAGE_COFF_HEADER);
     return get_hashes(output, "IMAGE_COFF_HEADER", data, data_size);
 }
 
@@ -156,19 +162,19 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output)
 
     switch (sample->type) {
     case MAGIC_ROM: {
-        const unsigned char *data = (const unsigned char *)sample->_rom;
-        const uint64_t data_size = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
+        const unsigned char *data      = (const unsigned char *) sample->_rom;
+        const uint64_t       data_size = sizeof(IMAGE_ROM_OPTIONAL_HEADER);
         return get_hashes(output, "IMAGE_ROM_OPTIONAL_HEADER", data, data_size);
     }
     case MAGIC_PE32_0:
     case MAGIC_PE32: {
-        const unsigned char *data = (const unsigned char *)sample->_32;
-        const uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
+        const unsigned char *data      = (const unsigned char *) sample->_32;
+        const uint64_t       data_size = sizeof(IMAGE_OPTIONAL_HEADER_32);
         return get_hashes(output, "IMAGE_OPTIONAL_HEADER_32", data, data_size);
     }
     case MAGIC_PE64: {
-        const unsigned char *data = (const unsigned char *)sample->_64;
-        const uint64_t data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
+        const unsigned char *data      = (const unsigned char *) sample->_64;
+        const uint64_t       data_size = sizeof(IMAGE_OPTIONAL_HEADER_64);
         return get_hashes(output, "IMAGE_OPTIONAL_HEADER_64", data, data_size);
     }
     default:
@@ -177,16 +183,28 @@ static pe_err_e get_headers_optional_hash(pe_ctx_t *ctx, pe_hash_t *output)
 }
 
 // FIX: Don't need to allocate space for these constants!
+// As of SHA512
+// #define EVP_MAX_MD_SIZE 64
+// 64 * 2 + 1 = 129
 #define G_OPENSSL_HASH_MAXSIZE (EVP_MAX_MD_SIZE * 2 + 1)
+
+#ifdef LIBPE_LINK_SSDEEP
+// #define SPAMSUM_LENGTH 64
+// #define FUZZY_MAX_RESULT (2 * SPAMSUM_LENGTH + 20)
+// 2 * 64 + 20 = 148
 #define G_SSDEEP_HASH_MAXSIZE (FUZZY_MAX_RESULT)
+#endif
 
 size_t pe_hash_recommended_size(void)
 {
+#ifdef LIBPE_LINK_SSDEEP
     // Since standard C lacks max(), we do it manually.
     const size_t result = G_OPENSSL_HASH_MAXSIZE > G_SSDEEP_HASH_MAXSIZE
                               ? G_OPENSSL_HASH_MAXSIZE
                               : G_SSDEEP_HASH_MAXSIZE;
-
+#else
+    const size_t result = G_OPENSSL_HASH_MAXSIZE;
+#endif
     return result;
 }
 
@@ -195,8 +213,8 @@ static void to_hex_str(const uint8_t *input, char *output, size_t n)
 {
     for (const uint8_t *input_ptr = input; n; --n, ++input_ptr) {
         unsigned b = (*input_ptr);
-        *output++ = "0123456789abcdef"[b >> 4];
-        *output++ = "0123456789abcdef"[b & 0xf];
+        *output++  = "0123456789abcdef"[b >> 4];
+        *output++  = "0123456789abcdef"[b & 0xf];
     }
     *output = '\0';
 }
@@ -204,15 +222,17 @@ static void to_hex_str(const uint8_t *input, char *output, size_t n)
 bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name,
                       const unsigned char *data, size_t data_size)
 {
+#ifdef LIBPE_LINK_SSDEEP
     if (strcmp("ssdeep", alg_name) == 0) {
         if (output_size < G_SSDEEP_HASH_MAXSIZE) {
             // Not enough space.
             return false;
         }
 
-        fuzzy_hash_buf(data, (uint32_t)data_size, output);
+        fuzzy_hash_buf(data, (uint32_t) data_size, output);
         return true;
     }
+#endif
 
     if (output_size < G_OPENSSL_HASH_MAXSIZE) {
         // Not enough space.
@@ -226,11 +246,11 @@ bool pe_hash_raw_data(char *output, size_t output_size, const char *alg_name,
     }
 
     unsigned char md_value[EVP_MAX_MD_SIZE];
-    unsigned int md_len;
+    unsigned int  md_len;
 
 // See https://wiki.openssl.org/index.php/1.1_API_Changes
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-    EVP_MD_CTX md_ctx_auto;
+    EVP_MD_CTX  md_ctx_auto;
     EVP_MD_CTX *md_ctx = &md_ctx_auto;
 #else
     EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
@@ -296,7 +316,7 @@ pe_hash_headers_t *pe_get_headers_hashes(pe_ctx_t *ctx)
 
     result->coff = malloc(sizeof(pe_hash_t));
     if (result->coff == NULL) {
-        status = LIBPE_E_ALLOCATION_FAILURE;
+        status      = LIBPE_E_ALLOCATION_FAILURE;
         result->err = status;
         goto error;
     }
@@ -339,17 +359,17 @@ pe_hash_sections_t *pe_get_sections_hash(pe_ctx_t *ctx)
     IMAGE_SECTION_HEADER **const sections = pe_sections(ctx);
 
     for (size_t i = 0; i < num_sections; i++) {
-        uint64_t data_size = sections[i]->SizeOfRawData;
+        uint64_t             data_size = sections[i]->SizeOfRawData;
         const unsigned char *data
             = LIBPE_PTR_ADD(ctx->map_addr, sections[i]->PointerToRawData);
 
-        if (!pe_can_read(ctx, data, data_size)) {
+        if (! pe_can_read(ctx, data, data_size)) {
             // fprintf(stderr, "%s\n", "unable to read sections data");
             continue;
         }
 
         if (data_size) {
-            char *name = (char *)sections[i]->Name;
+            char *name = (char *) sections[i]->Name;
 
             pe_hash_t *section_hash = calloc(1, sizeof(pe_hash_t));
             if (section_hash == NULL) {
@@ -395,8 +415,8 @@ pe_hash_t *pe_get_file_hash(pe_ctx_t *ctx)
 }
 
 typedef struct element {
-    char *dll_name;
-    char *function_name;
+    char           *dll_name;
+    char           *function_name;
     // struct element *prev; // needed for a doubly-linked list only
     struct element *next; // needed for singly- or doubly-linked lists
 } element_t;
@@ -410,7 +430,7 @@ static void pe_transform_to_lowercase_str(char *str)
     }
 
     for (char *p = str; *p; ++p) {
-        *p = (char)tolower((unsigned char)*p);
+        *p = (char) tolower((unsigned char) *p);
     }
 }
 
@@ -419,9 +439,10 @@ static void pe_get_all_ord_lkp_func_name_with_hint(element_t *elem_ptr,
 {
     for (ord_t *p = ord_ptr; p->number; ++p) {
         if (hint == p->number) {
-            errno = 0;
-            elem_ptr->function_name = strdup(p->fname);
-            PEV_ABORT_IF(!elem_ptr->function_name || errno == ENOMEM);
+            errno                   = 0;
+            elem_ptr->function_name = readpe_strdup(p->fname);
+            PEV_ABORT_IF (! elem_ptr->function_name || errno == ENOMEM)
+                ;
             break;
         }
     }
@@ -438,23 +459,23 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
     uint64_t ofs = offset;
 
     char *hint_str = NULL;
-    char *fname = NULL;
+    char *fname    = NULL;
 
     bool is_ordinal = false;
-    int errcode = 0; // for asprintf return code
+    int  errcode    = 0; // for asprintf return code
 
     while (1) {
         switch (ctx->pe.optional_hdr.type) {
         case MAGIC_PE32_0:
         case MAGIC_PE32: {
             const IMAGE_THUNK_DATA32 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
+            if (! pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA32))) {
                 // TODO: Should we report something?
                 return;
             }
 
             // Type punning
-            const uint32_t thunk_type = *(uint32_t *)thunk;
+            const uint32_t thunk_type = *(uint32_t *) thunk;
             if (thunk_type == 0) {
                 return;
             }
@@ -464,23 +485,26 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
             if (is_ordinal) {
                 errcode = asprintf(&hint_str, "%" PRIu32,
                                    thunk->u1.Ordinal
-                                       & ~((uint32_t)IMAGE_ORDINAL_MASK(ctx)));
+                                       & ~((uint32_t) IMAGE_ORDINAL_MASK(ctx)));
 
                 // FIX-ME: devemos abortar a execucao?
-                PEV_ABORT_IF(errcode == -1);
+                PEV_ABORT_IF (errcode == -1)
+                    ;
 
             } else {
                 const uint64_t imp_ofs
                     = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
                 const IMAGE_IMPORT_BY_NAME *imp_name
                     = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-                if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                if (! pe_can_read(ctx, imp_name,
+                                  sizeof(IMAGE_IMPORT_BY_NAME))) {
                     // TODO: Should we report something?
                     return;
                 }
 
                 errcode = asprintf(&hint_str, "%" PRIu16, imp_name->Hint);
-                PEV_ABORT_IF(errcode == -1);
+                PEV_ABORT_IF (errcode == -1)
+                    ;
 
                 errno = 0;
 
@@ -488,8 +512,10 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
                 // we duplicate the string and put it in fname
                 // if you can't find '\ 0' copy up to the maximum
                 // MAX_FUNCTION_NAME - 1 characters
-                fname = strndup((char *)imp_name->Name, MAX_FUNCTION_NAME - 1);
-                PEV_ABORT_IF(!fname || errno == ENOMEM);
+                fname = readpe_strndup((char *) imp_name->Name,
+                                       MAX_FUNCTION_NAME - 1);
+                PEV_ABORT_IF (! fname || errno == ENOMEM)
+                    ;
             }
 
             ofs += sizeof(IMAGE_THUNK_DATA32);
@@ -497,13 +523,13 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
         }
         case MAGIC_PE64: {
             const IMAGE_THUNK_DATA64 *thunk = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
+            if (! pe_can_read(ctx, thunk, sizeof(IMAGE_THUNK_DATA64))) {
                 // TODO: Should we report something?
                 return;
             }
 
             // Type punning
-            const uint64_t thunk_type = *(uint64_t *)thunk;
+            const uint64_t thunk_type = *(uint64_t *) thunk;
             if (thunk_type == 0) {
                 return;
             }
@@ -511,27 +537,32 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
             is_ordinal = (thunk_type & (IMAGE_ORDINAL_MASK(ctx))) != 0;
 
             if (is_ordinal) {
-                errcode = asprintf(
-                    &hint_str, "%" PRIu64,
-                    (uint64_t)(thunk->u1.Ordinal & ~(IMAGE_ORDINAL_MASK(ctx))));
+                errcode = asprintf(&hint_str, "%" PRIu64,
+                                   (uint64_t) (thunk->u1.Ordinal
+                                               & ~(IMAGE_ORDINAL_MASK(ctx))));
 
-                PEV_ABORT_IF(errcode == -1);
+                PEV_ABORT_IF (errcode == -1)
+                    ;
 
             } else {
                 uint64_t imp_ofs = pe_rva2ofs(ctx, thunk->u1.AddressOfData);
                 const IMAGE_IMPORT_BY_NAME *imp_name
                     = LIBPE_PTR_ADD(ctx->map_addr, imp_ofs);
-                if (!pe_can_read(ctx, imp_name, sizeof(IMAGE_IMPORT_BY_NAME))) {
+                if (! pe_can_read(ctx, imp_name,
+                                  sizeof(IMAGE_IMPORT_BY_NAME))) {
                     // TODO: Should we report something?
                     return;
                 }
 
                 errcode = asprintf(&hint_str, "%" PRIu16, imp_name->Hint);
-                PEV_ABORT_IF(errcode == -1);
+                PEV_ABORT_IF (errcode == -1)
+                    ;
 
                 errno = 0;
-                fname = strndup((char *)imp_name->Name, MAX_FUNCTION_NAME - 1);
-                PEV_ABORT_IF(!fname || errno == ENOMEM);
+                fname = readpe_strndup((char *) imp_name->Name,
+                                       MAX_FUNCTION_NAME - 1);
+                PEV_ABORT_IF (! fname || errno == ENOMEM)
+                    ;
             }
             ofs += sizeof(IMAGE_THUNK_DATA64);
             break;
@@ -585,11 +616,12 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
             abort();
         }
 
-        errno = 0;
-        el->dll_name = strdup(dll_name);
+        errno        = 0;
+        el->dll_name = readpe_strdup(dll_name);
 
         // add verification of allocation error
-        PEV_ABORT_IF(!el->dll_name || errno == ENOMEM);
+        PEV_ABORT_IF (! el->dll_name || errno == ENOMEM)
+            ;
 
         switch (flavor) {
         default:
@@ -602,10 +634,11 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
             errno = 0;
 
             char *rest = NULL;
-            int hint = (int)strtol(hint_str, &rest, 10);
+            int   hint = (int) strtol(hint_str, &rest, 10);
 
             // should we treat the error or abort?
-            PEV_ABORT_IF(hint_str == rest || errno == ERANGE);
+            PEV_ABORT_IF (hint_str == rest || errno == ERANGE)
+                ;
 
             if (strncmp(dll_name, "oleaut32", 8) == 0 && is_ordinal) {
                 pe_get_all_ord_lkp_func_name_with_hint(el, oleaut32_arr, hint);
@@ -616,7 +649,8 @@ static void imphash_load_imported_functions(pe_ctx_t *ctx, uint64_t offset,
                     char *ord_str = NULL;
 
                     errcode = asprintf(&ord_str, "ord%s", hint_str);
-                    PEV_ABORT_IF(errcode == -1);
+                    PEV_ABORT_IF (errcode == -1)
+                        ;
 
                     el->function_name = ord_str;
                 } else {
@@ -641,7 +675,7 @@ static void freeNodes(element_t *currentNode)
 
     while (currentNode != NULL) {
         element_t *temp = currentNode;
-        currentNode = currentNode->next;
+        currentNode     = currentNode->next;
         free(temp->function_name);
         free(temp->dll_name);
         free(temp);
@@ -665,16 +699,16 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor)
     uint64_t ofs = pe_rva2ofs(ctx, va);
 
     element_t *elt, *tmp, *head = NULL;
-    int count = 0;
+    int        count = 0;
 
     while (1) {
         IMAGE_IMPORT_DESCRIPTOR *id = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
+        if (! pe_can_read(ctx, id, sizeof(IMAGE_IMPORT_DESCRIPTOR))) {
             // TODO: Should we report something?
             return NULL;
         }
 
-        if (!id->u1.OriginalFirstThunk && !id->FirstThunk) {
+        if (! id->u1.OriginalFirstThunk && ! id->FirstThunk) {
             break;
         }
 
@@ -682,25 +716,26 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor)
         const uint64_t aux = ofs; // Store current ofs
 
         ofs = pe_rva2ofs(ctx, id->Name);
-        if (ofs == 0 || ofs > (uint64_t)ctx->map_size) {
+        if (ofs == 0 || ofs > (uint64_t) ctx->map_size) {
             return NULL;
         }
 
         const char *dll_name_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-        if (!pe_can_read(ctx, dll_name_ptr, 1)) {
+        if (! pe_can_read(ctx, dll_name_ptr, 1)) {
             // TODO: Should we report something?
             break;
         }
 
         char *dll_name = NULL;
-        errno = 0;
+        errno          = 0;
 
         // if the character '\0' comes before MAX_DLL_NAME - 1
         // we duplicate the string and put it in fname
         // if you can't find '\ 0' copy up to the maximum
         // MAX_DLL_NAME - 1 characters
-        dll_name = strndup(dll_name_ptr, MAX_DLL_NAME - 1);
-        PEV_ABORT_IF(!dll_name || errno == ENOMEM);
+        dll_name = readpe_strndup(dll_name_ptr, MAX_DLL_NAME - 1);
+        PEV_ABORT_IF (! dll_name || errno == ENOMEM)
+            ;
 
         ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk
                                   ? id->u1.OriginalFirstThunk
@@ -724,7 +759,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor)
     // Allocate enough memory to store N times "dll_name.func_name,", plus 1
     // byte for the NUL terminator.
     const size_t imphash_string_size
-        = (size_t)count * (MAX_DLL_NAME + MAX_FUNCTION_NAME + 2) + 1;
+        = (size_t) count * (MAX_DLL_NAME + MAX_FUNCTION_NAME + 2) + 1;
     char *imphash_string = calloc(1, imphash_string_size);
 
     if (imphash_string == NULL) {
@@ -732,14 +767,13 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor)
         abort();
     }
 
-    LL_FOREACH_SAFE(head, elt, tmp)
-    {
+    LL_FOREACH_SAFE (head, elt, tmp) {
         sprintf(imphash_string + strlen(imphash_string), "%s.%s,",
                 elt->dll_name, elt->function_name);
         LL_DELETE(head, elt);
     }
 
-    assert(!elt);
+    assert(! elt);
     freeNodes(head);
 
     size_t imphash_string_len = strlen(imphash_string);
@@ -753,11 +787,11 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor)
     imphash_string[imphash_string_len - 1] = '\0';
     imphash_string_len--;
 
-    const unsigned char *data = (const unsigned char *)imphash_string;
-    const size_t data_size = imphash_string_len;
+    const unsigned char *data      = (const unsigned char *) imphash_string;
+    const size_t         data_size = imphash_string_len;
 
     const size_t hash_maxsize = pe_hash_recommended_size();
-    char *hash_value = calloc(1, hash_maxsize);
+    char        *hash_value   = calloc(1, hash_maxsize);
     if (hash_value == NULL) {
         free(imphash_string);
         // ret = LIBPE_E_ALLOCATION_FAILURE;
@@ -772,7 +806,7 @@ char *pe_imphash(pe_ctx_t *ctx, pe_imphash_flavor_e flavor)
     // printf("### DEBUG imphash_string [%zu] = %s\n", imphash_string_len,
     // imphash_string);
 
-    if (!hash_ok) {
+    if (! hash_ok) {
         free(hash_value);
         return NULL;
     }

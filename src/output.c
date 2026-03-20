@@ -34,23 +34,26 @@
     files in the program, then also delete it here.
 */
 
-#include "output.h"
+#include "readpe/output.h"
 
-#include "compat/strlcat.h"
-#include "compat/sys/queue.h"
-#include "output_plugin.h"
+#include "compat.h"
+#include "libpe/utils.h"
+#include "readpe/plugin/output.h"
 #include "stack.h"
+#include "sys/queue.h"
 
-#include <libpe/utils.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 //
 // Global variables
 //
 
-const unsigned int     TEXT_SPACES        = 32;
+const unsigned int TEXT_SPACES = 32;
 
 static bool            g_is_document_open = false;
 static const format_t *g_format           = NULL;
@@ -80,7 +83,7 @@ static void to_text_format(const format_t *format, const output_type_e type,
                            const output_scope_t *scope, const char *key,
                            const char *value)
 {
-    static int  indent        = 0;
+    static int indent = 0;
 
     char *const escaped_key   = format->escape_fn(format, key);
     char *const escaped_value = format->escape_fn(format, value);
@@ -151,7 +154,7 @@ static const struct format g_text_format = {.id             = 0,
 // Definition of internal functions
 //
 
-static format_entry_t     *_lookup_format_entry_by_id(format_id_t id)
+static format_entry_t *_lookup_format_entry_by_id(format_id_t id)
 {
     format_entry_t *entry;
     SLIST_FOREACH (entry, &g_registered_formats, entries) {
@@ -226,7 +229,7 @@ void output_init(void)
 void output_term(void)
 {
     free(g_cmdline);
-    g_cmdline                  = NULL;
+    g_cmdline = NULL;
 
     const uint16_t scope_depth = STACK_COUNT(g_scope_stack);
     if (scope_depth > 0) {
@@ -244,7 +247,7 @@ void output_term(void)
 
 const char *output_cmdline(void) { return g_cmdline; }
 
-void        output_set_cmdline(int argc, char *argv[])
+void output_set_cmdline(int argc, char *argv[])
 {
     g_argc = argc;
     g_argv = argv;
@@ -281,7 +284,7 @@ const format_t *output_parse_format(const char *format_name)
 
 void output_set_format(const format_t *format) { g_format = format; }
 
-int  output_set_format_by_name(const char *format_name)
+int output_set_format_by_name(const char *format_name)
 {
     const format_t *format = output_parse_format(format_name);
     if (format == NULL) {
@@ -308,7 +311,7 @@ size_t output_available_formats(char *buffer, size_t size, char separator)
         if (! truncated) {
             const char *format_name = entry->format->name;
 
-            consumed                = bsd_strlcat(buffer, format_name, size);
+            consumed = bsd_strlcat(buffer, format_name, size);
             if (consumed > size) {
                 // TODO(jweyrich): Handle truncation.
                 total_available++;
@@ -374,12 +377,12 @@ void output_open_scope(const char *scope_name, output_scope_type_e scope_type)
 {
     assert(g_format != NULL);
 
-    const char           *key         = scope_name;
-    const char           *value       = NULL;
-    const output_type_e   type        = OUTPUT_TYPE_SCOPE_OPEN;
-    const uint16_t        scope_depth = STACK_COUNT(g_scope_stack);
+    const char         *key         = scope_name;
+    const char         *value       = NULL;
+    const output_type_e type        = OUTPUT_TYPE_SCOPE_OPEN;
+    const uint16_t      scope_depth = STACK_COUNT(g_scope_stack);
 
-    output_scope_t *const scope       = malloc(sizeof *scope);
+    output_scope_t *const scope = malloc(sizeof *scope);
     if (scope == NULL) {
         fprintf(stderr, "DEBUG: output_open_scope: vscope_depth=%d ABORT\n",
                 STACK_COUNT(g_scope_stack));

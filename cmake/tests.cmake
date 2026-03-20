@@ -3,7 +3,7 @@ enable_testing()
 include(ExternalProject)
 ExternalProject_Add(texe
     SOURCE_DIR ${CMAKE_SOURCE_DIR}/t/texe/
-    CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/cmake/TC-mingw64.cmake"
+    CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_SOURCE_DIR}/cmake/toolchains/mingw64.cmake"
     INSTALL_COMMAND ""
 )
 

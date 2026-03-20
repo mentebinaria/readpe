@@ -34,24 +34,32 @@
         files in the program, then also delete it here.
 */
 
-#include "common.h"
-#include "config.h"
+#include "compat.h"
+#include "libpe/context.h"
+#include "libpe/error.h"
+#include "libpe/pe.h"
 #include "modes.h"
-#include "output.h"
-#include "readpe.h"
-
-#ifdef READPE_LEGACY
-#include "legacy.h"
-#endif
+#include "readpe/config.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+#include "readpe/readpe.h"
+#include "readpe/settings.h"
 
 #include <getopt.h>
-#include <libpe/context.h>
-#include <libpe/error.h>
-#include <libpe/macros.h>
-#include <libpe/pe.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Check if CMAKE created a version header
+#ifdef HAS_CMAKE_VERSION
+#include "version.h"
+#else
+#define READPE_VERSION "-UNVERSIONED-"
+#endif
+
+#ifdef READPE_LEGACY
+#include "legacy/legacy.h"
+#endif
 
 #if __GNUC__
 #define ATTRIBUTE_NORETURN __attribute__((noreturn))
@@ -122,7 +130,7 @@ ATTRIBUTE_NORETURN static void version(void)
            "This is free software: "
            "you are free to change and redistribute it.\n"
            "There is NO WARRANTY, to the extent permitted by law.\n",
-           VERSION);
+           READPE_VERSION);
     exit(EXIT_SUCCESS);
 }
 
@@ -534,7 +542,7 @@ static const char *parse_options(int argc, char *argv[])
 
     int c, file_arg = 0, mode = 0, mode_context = 0, index = 1;
 
-    if (access(argv[1], F_OK) == 0) {
+    if (readpe_access(argv[1], F_OK) == 0) {
         optind++;
         file_arg = 1;
     }
@@ -558,6 +566,13 @@ static const char *parse_options(int argc, char *argv[])
         case 2:
             g_settings.file_version = true;
             modeargs                = NULL;
+            break;
+        case 3:;
+            static char formats[255];
+            output_available_formats(formats, sizeof(formats), '|');
+            printf("Format: %s\nAvailable: %s\n", optarg, formats);
+
+            exit(EXIT_SUCCESS);
             break;
         case 'a':
             if (mode == MODE_HEADERS || mode == MODE_SECTIONS) {
@@ -697,7 +712,7 @@ static const char *parse_options(int argc, char *argv[])
         }
     }
 
-    if (access(argv[argc - 1], F_OK) == 0) {
+    if (readpe_access(argv[argc - 1], F_OK) == 0) {
         file_arg = argc - 1;
     }
     if (file_arg == 0) {

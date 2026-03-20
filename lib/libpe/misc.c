@@ -26,6 +26,7 @@
 
 #include "libpe/macros.h"
 #include "libpe/pe.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,7 +38,7 @@ static double calculate_entropy(const unsigned int counted_bytes[256],
     double entropy = 0.;
 
     for (size_t i = 0; i < 256; i++) {
-        double temp = (double)counted_bytes[i] / (double)total_length;
+        double temp = (double) counted_bytes[i] / (double) total_length;
         if (temp > 0.) {
             entropy += temp * fabs(log2(temp));
         }
@@ -57,27 +58,30 @@ double pe_calculate_entropy_file(pe_ctx_t *ctx)
         counted_bytes[byte]++;
     }
 
-    return calculate_entropy(counted_bytes, (size_t)filesize);
+    return calculate_entropy(counted_bytes, (size_t) filesize);
 }
 
 bool pe_fpu_trick(pe_ctx_t *ctx)
 {
     // TODO: What 0xdf has to do with fpu?
-    return !!memmem(ctx->map_addr, (size_t)ctx->map_size, "\xdf\xdf\xdf\xdf",
-                    4);
+#ifndef _MSC_VER
+    return ! ! memmem(ctx->map_addr, (size_t) ctx->map_size, "\xdf\xdf\xdf\xdf",
+                      4);
+#else
+    const char *opcode_ptr = ctx->map_addr;
 
-    //	const char *opcode_ptr = ctx->map_addr;
-    //
-    //	for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
-    //		if (*opcode_ptr++ == '\xdf') {
-    //			if (++times == 4)
-    //				return true;
-    //		} else {
-    //			times = 0;
-    //		}
-    //	}
-    //
-    //	return false;
+    for (size_t i = 0, times = 0; i < ctx->map_size; i++) {
+        if (*opcode_ptr++ == '\xdf') {
+            if (++times == 4) {
+                return true;
+            }
+        } else {
+            times = 0;
+        }
+    }
+
+    return false;
+#endif
 }
 
 int cpl_analysis(pe_ctx_t *ctx)
@@ -225,7 +229,7 @@ static int count_tls_callbacks(pe_ctx_t *ctx)
                                  && tls_addr < (sections[i]->VirtualAddress
                                                 + sections[i]->SizeOfRawData);
 
-        if (!can_process) {
+        if (! can_process) {
             continue;
         }
 
@@ -239,12 +243,13 @@ static int count_tls_callbacks(pe_ctx_t *ctx)
         case MAGIC_PE32: {
             const IMAGE_TLS_DIRECTORY32 *tls_dir
                 = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
+            if (! pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY32))) {
                 // TODO: Should we report something?
                 return 0;
             }
 
-            if (!(tls_dir->AddressOfCallBacks & optional_hdr->_32->ImageBase)) {
+            if (! (tls_dir->AddressOfCallBacks
+                   & optional_hdr->_32->ImageBase)) {
                 break;
             }
 
@@ -255,12 +260,13 @@ static int count_tls_callbacks(pe_ctx_t *ctx)
         case MAGIC_PE64: {
             const IMAGE_TLS_DIRECTORY64 *tls_dir
                 = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
+            if (! pe_can_read(ctx, tls_dir, sizeof(IMAGE_TLS_DIRECTORY64))) {
                 // TODO: Should we report something?
                 return 0;
             }
 
-            if (!(tls_dir->AddressOfCallBacks & optional_hdr->_64->ImageBase)) {
+            if (! (tls_dir->AddressOfCallBacks
+                   & optional_hdr->_64->ImageBase)) {
                 break;
             }
 
@@ -277,7 +283,7 @@ static int count_tls_callbacks(pe_ctx_t *ctx)
         // FIXME: Why this loop if 'funcaddr' isn't updated?
         do {
             const uint32_t *funcaddr_ptr = LIBPE_PTR_ADD(ctx->map_addr, ofs);
-            if (!pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
+            if (! pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
                 // TODO: Should we report something?
                 return 0;
             }

@@ -20,8 +20,11 @@
 */
 
 #include "libpe/pe.h"
+
+#include "compat.h"
 #include "libpe/macros.h"
 #include "libpe/resources.h"
+#include "libpe/sections.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -33,14 +36,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#ifndef _SLURP_EXECUTABLE
 #include <sys/mman.h>
 #include <sys/stat.h>
+#endif
 
 bool pe_can_read(const pe_ctx_t *ctx, const void *ptr, size_t size)
 {
-    const uintptr_t start = (uintptr_t)ptr;
+    const uintptr_t start = (uintptr_t) ptr;
     const uintptr_t end   = start + size;
-    return start >= (uintptr_t)ctx->map_addr && end <= (uintptr_t)ctx->map_end;
+    return start >= (uintptr_t) ctx->map_addr
+           && end <= (uintptr_t) ctx->map_end;
 }
 
 pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path)
@@ -48,12 +56,70 @@ pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path)
     return pe_load_file_ext(ctx, path, 0);
 }
 
+// Load entire executable into memory instead of memory mapping
+#ifdef _SLURP_EXECUTABLE
 pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 {
     // Cleanup the whole struct.
     memset(ctx, 0, sizeof(pe_ctx_t));
 
-    ctx->path = strdup(path);
+    size_t length = strlen(path);
+    ctx->path     = malloc(length);
+    strncpy(ctx->path, path, length);
+
+    if (ctx->path == NULL) {
+        return LIBPE_E_ALLOCATION_FAILURE;
+    }
+
+    // Open the file
+    FILE *fp = fopen(ctx->path, options & LIBPE_OPT_OPEN_RW ? "r+b" : "rb");
+    if (fp == NULL) {
+        return LIBPE_E_OPEN_FAILED;
+    }
+
+    // Grab the file size.
+    fseek(fp, 0L, SEEK_END);
+    long fsize = ftell(fp);
+    if (fsize == -1) {
+        fclose(fp);
+        return LIBPE_E_FSTAT_FAILED;
+    }
+    ctx->map_size = fsize;
+    ctx->map_addr = malloc(fsize);
+
+    if (ctx->map_addr == NULL) {
+        // perror("mmap");
+        fclose(fp);
+        return LIBPE_E_MMAP_FAILED;
+    }
+
+    ctx->map_end = (uintptr_t) LIBPE_PTR_ADD(ctx->map_addr, ctx->map_size);
+    fseek(fp, 0L, SEEK_SET);
+    size_t readsize = fread(ctx->map_addr, sizeof(char), ctx->map_size, fp);
+
+    if (readsize == 0) {
+        fclose(fp);
+        return LIBPE_E_MMAP_FAILED;
+    }
+
+    if (options & LIBPE_OPT_NOCLOSE_FD) {
+        ctx->stream = fp;
+    } else {
+        fclose(fp);
+    }
+
+    OpenSSL_add_all_digests();
+
+    return LIBPE_E_OK;
+}
+
+#else
+pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
+{
+    // Cleanup the whole struct.
+    memset(ctx, 0, sizeof(pe_ctx_t));
+
+    ctx->path = readpe_strdup(path);
     if (ctx->path == NULL) {
         // perror("strdup");
         return LIBPE_E_ALLOCATION_FAILURE;
@@ -67,7 +133,7 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
         return LIBPE_E_OPEN_FAILED;
     }
 
-    int         ret = 0;
+    int ret = 0;
 
     // Stat the fd to retrieve the file informations.
     // If file is a symlink, fstat will stat the pointed file, not the link.
@@ -80,14 +146,14 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
     }
 
     // Check if we're dealing with a regular file.
-    if (!S_ISREG(stat.st_mode)) {
+    if (! S_ISREG(stat.st_mode)) {
         close(fd);
         // fprintf(stderr, "%s is not a file\n", ctx->path);
         return LIBPE_E_NOT_A_FILE;
     }
 
     // Grab the file size.
-    ctx->map_size = stat.st_size;
+    ctx->map_size = (uintmax_t) stat.st_size;
 
     // Create the virtual memory mapping.
     int mprot     = options & LIBPE_OPT_OPEN_RW
@@ -97,14 +163,14 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
     // map this file. The file may not actually be updated until msync(2) or
     // munmap() is called.
     int mflags    = options & LIBPE_OPT_OPEN_RW ? MAP_SHARED : MAP_PRIVATE;
-    ctx->map_addr = mmap(NULL, (size_t)ctx->map_size, mprot, mflags, fd, 0);
+    ctx->map_addr = mmap(NULL, (size_t) ctx->map_size, mprot, mflags, fd, 0);
     if (ctx->map_addr == MAP_FAILED) {
         close(fd);
         // perror("mmap");
         return LIBPE_E_MMAP_FAILED;
     }
 
-    ctx->map_end = (uintptr_t)LIBPE_PTR_ADD(ctx->map_addr, ctx->map_size);
+    ctx->map_end = (uintptr_t) LIBPE_PTR_ADD(ctx->map_addr, ctx->map_size);
 
     if (options & LIBPE_OPT_NOCLOSE_FD) {
         // The file descriptor is not dup'ed, and will be closed when the stream
@@ -128,7 +194,7 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
     }
 
     // Give advice about how we'll use our memory mapping.
-    ret = madvise(ctx->map_addr, (size_t)ctx->map_size, MADV_SEQUENTIAL);
+    ret = madvise(ctx->map_addr, (size_t) ctx->map_size, MADV_SEQUENTIAL);
     if (ret < 0) {
         // perror("madvise");
         //  NOTE: This is a recoverable error. Do not abort.
@@ -138,6 +204,7 @@ pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 
     return LIBPE_E_OK;
 }
+#endif
 
 static void cleanup_cached_data(pe_ctx_t *ctx)
 {
@@ -166,11 +233,15 @@ pe_err_e pe_unload(pe_ctx_t *ctx)
 
     // Dealloc the virtual mapping.
     if (ctx->map_addr != NULL) {
-        int ret = munmap(ctx->map_addr, (size_t)ctx->map_size);
+#ifdef _MSC_VER
+        free(ctx->map_addr);
+#else
+        int ret = munmap(ctx->map_addr, (size_t) ctx->map_size);
         if (ret != 0) {
             // perror("munmap");
             return LIBPE_E_MUNMAP_FAILED;
         }
+#endif
     }
 
     CRYPTO_cleanup_all_ex_data();
@@ -188,8 +259,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
     if (ctx->pe.dos_hdr->e_magic == MAGIC_MZ) {
         const uint32_t *signature_ptr
             = LIBPE_PTR_ADD(ctx->pe.dos_hdr, ctx->pe.dos_hdr->e_lfanew);
-        if (!pe_can_read(ctx, signature_ptr,
-                         LIBPE_SIZEOF_MEMBER(pe_file_t, signature))) {
+        if (! pe_can_read(ctx, signature_ptr,
+                          LIBPE_SIZEOF_MEMBER(pe_file_t, signature))) {
             return LIBPE_E_INVALID_LFANEW;
         }
 
@@ -210,13 +281,13 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
             signature_ptr, LIBPE_SIZEOF_MEMBER(pe_file_t, signature));
 
     } else if (pe_machine_type_name(ctx->pe.dos_hdr->e_magic) != NULL) {
-        ctx->pe.coff_hdr = (void *)ctx->pe.dos_hdr;
+        ctx->pe.coff_hdr = (void *) ctx->pe.dos_hdr;
         ctx->pe.dos_hdr  = NULL;
     } else {
         return LIBPE_E_NOT_A_PE_FILE;
     }
 
-    if (!pe_can_read(ctx, ctx->pe.coff_hdr, sizeof(IMAGE_COFF_HEADER))) {
+    if (! pe_can_read(ctx, ctx->pe.coff_hdr, sizeof(IMAGE_COFF_HEADER))) {
         return LIBPE_E_MISSING_COFF_HEADER;
     }
 
@@ -230,8 +301,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
 
         // Figure out whether it's a PE32 or PE32+.
         uint16_t *opt_type_ptr = ctx->pe.optional_hdr_ptr;
-        if (!pe_can_read(ctx, opt_type_ptr,
-                         LIBPE_SIZEOF_MEMBER(IMAGE_OPTIONAL_HEADER, type))) {
+        if (! pe_can_read(ctx, opt_type_ptr,
+                          LIBPE_SIZEOF_MEMBER(IMAGE_OPTIONAL_HEADER, type))) {
             return LIBPE_E_MISSING_OPTIONAL_HEADER;
         }
 
@@ -245,8 +316,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
                 != sizeof(IMAGE_ROM_OPTIONAL_HEADER)) {
                 return LIBPE_E_UNSUPPORTED_IMAGE;
             }
-            if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
-                             sizeof(IMAGE_ROM_OPTIONAL_HEADER))) {
+            if (! pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
+                              sizeof(IMAGE_ROM_OPTIONAL_HEADER))) {
                 return LIBPE_E_MISSING_OPTIONAL_HEADER;
             }
             ctx->pe.optional_hdr._rom   = ctx->pe.optional_hdr_ptr;
@@ -259,8 +330,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
                 < sizeof(IMAGE_OPTIONAL_HEADER_32)) {
                 return LIBPE_E_UNSUPPORTED_IMAGE;
             }
-            if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
-                             sizeof(IMAGE_OPTIONAL_HEADER_32))) {
+            if (! pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
+                              sizeof(IMAGE_OPTIONAL_HEADER_32))) {
                 return LIBPE_E_MISSING_OPTIONAL_HEADER;
             }
             ctx->pe.optional_hdr._32    = ctx->pe.optional_hdr_ptr;
@@ -275,8 +346,8 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
                 < sizeof(IMAGE_OPTIONAL_HEADER_64)) {
                 return LIBPE_E_UNSUPPORTED_IMAGE;
             }
-            if (!pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
-                             sizeof(IMAGE_OPTIONAL_HEADER_64))) {
+            if (! pe_can_read(ctx, ctx->pe.optional_hdr_ptr,
+                              sizeof(IMAGE_OPTIONAL_HEADER_64))) {
                 return LIBPE_E_MISSING_OPTIONAL_HEADER;
             }
             ctx->pe.optional_hdr._64    = ctx->pe.optional_hdr_ptr;
@@ -307,7 +378,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
 
     uint32_t sections_offset
         = sizeof(IMAGE_FILE_HEADER)
-          + (uint32_t)ctx->pe.coff_hdr->SizeOfOptionalHeader;
+          + (uint32_t) ctx->pe.coff_hdr->SizeOfOptionalHeader;
     ctx->pe.sections_ptr = LIBPE_PTR_ADD(ctx->pe.coff_hdr, sections_offset);
 
     if (ctx->pe.num_directories > 0) {
@@ -346,7 +417,7 @@ pe_err_e pe_parse(pe_ctx_t *ctx)
             if (symbols_offset + ctx->pe.num_symbols * 18 < ctx->map_size) {
                 ctx->pe.strings_ptr  = LIBPE_PTR_ADD(ctx->pe.symbols_ptr,
                                                      ctx->pe.num_symbols * 18);
-                ctx->pe.strings_size = *(uint32_t *)ctx->pe.strings_ptr;
+                ctx->pe.strings_size = *(uint32_t *) ctx->pe.strings_ptr;
                 if (ctx->pe.strings_size < 4
                     || symbols_offset + ctx->pe.num_symbols * 18
                                + ctx->pe.strings_size
@@ -422,7 +493,7 @@ bool pe_is_rom(const pe_ctx_t *ctx)
 
 bool pe_is_dll(const pe_ctx_t *ctx)
 {
-    if (!pe_is_exec(ctx)) {
+    if (! pe_is_exec(ctx)) {
         return false;
     }
     if (ctx->pe.coff_hdr == NULL) {
@@ -431,7 +502,7 @@ bool pe_is_dll(const pe_ctx_t *ctx)
     return ctx->pe.coff_hdr->Characteristics & IMAGE_FILE_DLL ? true : false;
 }
 
-uint64_t pe_filesize(const pe_ctx_t *ctx) { return (uint64_t)ctx->map_size; }
+uint64_t pe_filesize(const pe_ctx_t *ctx) { return (uint64_t) ctx->map_size; }
 
 // return the section of given rva
 IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva)
@@ -518,9 +589,9 @@ uint64_t pe_ofs2rva(const pe_ctx_t *ctx, uint64_t ofs)
     return 0;
 }
 
-IMAGE_DOS_HEADER      *pe_dos(pe_ctx_t *ctx) { return ctx->pe.dos_hdr; }
+IMAGE_DOS_HEADER *pe_dos(pe_ctx_t *ctx) { return ctx->pe.dos_hdr; }
 
-IMAGE_COFF_HEADER     *pe_coff(pe_ctx_t *ctx) { return ctx->pe.coff_hdr; }
+IMAGE_COFF_HEADER *pe_coff(pe_ctx_t *ctx) { return ctx->pe.coff_hdr; }
 
 IMAGE_OPTIONAL_HEADER *pe_optional(pe_ctx_t *ctx)
 {
@@ -543,7 +614,8 @@ IMAGE_DATA_DIRECTORY **pe_directories(pe_ctx_t *ctx)
 IMAGE_DATA_DIRECTORY *pe_directory_by_entry(pe_ctx_t           *ctx,
                                             ImageDirectoryEntry entry)
 {
-    if (ctx->pe.directories == NULL || entry > ctx->pe.num_directories - 1) {
+    if (ctx->pe.directories == NULL
+        || entry > (ImageDirectoryEntry) (ctx->pe.num_directories - 1)) {
         return NULL;
     }
 
@@ -554,14 +626,14 @@ uint16_t pe_sections_count(const pe_ctx_t *ctx) { return ctx->pe.num_sections; }
 
 IMAGE_SECTION_HEADER **pe_sections(pe_ctx_t *ctx) { return ctx->pe.sections; }
 
-IMAGE_SECTION_HEADER  *pe_section_by_name(pe_ctx_t *ctx, const char *name)
+IMAGE_SECTION_HEADER *pe_section_by_name(pe_ctx_t *ctx, const char *name)
 {
     if (ctx->pe.sections == NULL || name == NULL) {
         return NULL;
     }
 
     for (uint32_t i = 0; i < ctx->pe.num_sections; i++) {
-        if (strncmp((const char *)ctx->pe.sections[i]->Name, name,
+        if (strncmp((const char *) ctx->pe.sections[i]->Name, name,
                     SECTION_NAME_SIZE)
             == 0) {
             return ctx->pe.sections[i];
@@ -575,8 +647,12 @@ const char *pe_section_name(const pe_ctx_t             *ctx,
                             char *out_name, size_t out_name_size)
 {
     assert(ctx != NULL);
-    assert(out_name_size >= SECTION_NAME_SIZE + 1);
-    strncpy(out_name, (const char *)section_hdr->Name, SECTION_NAME_SIZE);
+    // assert(out_name_size >= SECTION_NAME_SIZE + 1);
+    if (out_name_size >= SECTION_NAME_SIZE + 1) {
+        return NULL;
+    }
+
+    strncpy(out_name, (const char *) section_hdr->Name, SECTION_NAME_SIZE);
     out_name[SECTION_NAME_SIZE] = '\0';
     if (out_name[0] == '/' && out_name[1] >= '0' && out_name[1] <= '9'
         && ctx->pe.strings_ptr) {
@@ -585,7 +661,7 @@ const char *pe_section_name(const pe_ctx_t             *ctx,
         errno           = 0;
         offset          = strtol(out_name + 1, &endptr, 10);
         if (errno == 0 && *endptr == 0 && offset >= 0
-            && offset < ctx->pe.strings_size) {
+            && offset < (long) ctx->pe.strings_size) {
             return ctx->pe.strings_ptr + offset;
         }
     }
@@ -982,7 +1058,7 @@ bool pe_is_repro(pe_ctx_t *ctx)
     const IMAGE_DEBUG_DIRECTORY *debugs = LIBPE_PTR_ADD(ctx->map_addr, ofs);
     uint32_t                     count  = dir->Size / sizeof(debugs[0]);
     for (uint32_t i = 0; i < count; i++) {
-        if (!pe_can_read(ctx, &debugs[i], sizeof(debugs[i]))) {
+        if (! pe_can_read(ctx, &debugs[i], sizeof(debugs[i]))) {
             return false;
         }
         if (debugs[i].Type == IMAGE_DEBUG_TYPE_REPRO) {

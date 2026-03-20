@@ -21,6 +21,8 @@
 
 #include "libpe/imports.h"
 
+#include "compat.h"
+#include "libpe/dir_import.h"
 #include "libpe/macros.h"
 #include "libpe/pe.h"
 
@@ -32,7 +34,7 @@
 
 static uint32_t get_dll_count(pe_ctx_t *ctx)
 {
-    uint32_t                    count = 0;
+    uint32_t count = 0;
 
     const IMAGE_DATA_DIRECTORY *dir
         = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_IMPORT);
@@ -83,7 +85,7 @@ static uint32_t get_dll_count(pe_ctx_t *ctx)
 
 static uint32_t get_delay_dll_count(pe_ctx_t *ctx)
 {
-    uint32_t                    count = 0;
+    uint32_t count = 0;
 
     const IMAGE_DATA_DIRECTORY *dir
         = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
@@ -223,10 +225,10 @@ static pe_err_e parse_imported_functions(pe_ctx_t          *ctx,
     char         fname[MAX_FUNCTION_NAME];
     const size_t size_fname = sizeof(fname);
 
-    bool         is_ordinal = false;
-    uint16_t     ordinal    = 0;
-    uint16_t     hint       = 0;
-    uint64_t     ofs        = offset - (rva_based ? 0 : ctx->pe.imagebase);
+    bool     is_ordinal = false;
+    uint16_t ordinal    = 0;
+    uint16_t hint       = 0;
+    uint64_t ofs        = offset - (rva_based ? 0 : ctx->pe.imagebase);
 
     for (uint32_t i = 0; i < imported_dll->functions_count; i++) {
         switch (ctx->pe.optional_hdr.type) {
@@ -331,7 +333,7 @@ static pe_err_e parse_imported_functions(pe_ctx_t          *ctx,
         imported_dll->functions[i].ordinal = ordinal;
 
         if (! is_ordinal) {
-            imported_dll->functions[i].name = strdup(fname);
+            imported_dll->functions[i].name = readpe_strdup(fname);
             if (imported_dll->functions[i].name == NULL) {
                 imported_dll->err = LIBPE_E_ALLOCATION_FAILURE;
                 return imported_dll->err;
@@ -356,7 +358,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         return NULL;
     }
 
-    imports->err             = LIBPE_E_OK;
+    imports->err = LIBPE_E_OK;
 
     imports->dll_count       = get_dll_count(ctx);
     imports->delay_dll_count = get_delay_dll_count(ctx);
@@ -414,7 +416,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         ofs += sizeof(IMAGE_IMPORT_DESCRIPTOR);
         const uint64_t aux = ofs; // Store current ofs
 
-        ofs                = pe_rva2ofs(ctx, id->Name);
+        ofs = pe_rva2ofs(ctx, id->Name);
         if (ofs == 0) {
             break;
         }
@@ -425,11 +427,11 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
             break;
         }
 
-        pe_imported_dll_t *const dll           = &imports->dlls[i];
+        pe_imported_dll_t *const dll = &imports->dlls[i];
 
         // Allocate string to store DLL name
-        const size_t             dll_name_size = MAX_DLL_NAME;
-        dll->name                              = calloc(1, dll_name_size);
+        const size_t dll_name_size = MAX_DLL_NAME;
+        dll->name                  = calloc(1, dll_name_size);
         if (dll->name == NULL) {
             imports->err = LIBPE_E_ALLOCATION_FAILURE;
             return imports;
@@ -442,9 +444,9 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         // itself, this must be done explicitly.
         dll->name[dll_name_size - 1] = '\0';
 
-        ofs                          = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk
-                                                           ? id->u1.OriginalFirstThunk
-                                                           : id->FirstThunk);
+        ofs = pe_rva2ofs(ctx, id->u1.OriginalFirstThunk
+                                  ? id->u1.OriginalFirstThunk
+                                  : id->FirstThunk);
         if (ofs == 0) {
             break;
         }
@@ -488,7 +490,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         ofs += sizeof(IMAGE_DELAYLOAD_DESCRIPTOR);
         const uint64_t aux = ofs; // Store current ofs
 
-        ofs                = pe_rva2ofs(
+        ofs = pe_rva2ofs(
             ctx, dd->DllNameRVA
                      - (dd->Attributes.u1.RvaBased ? 0 : ctx->pe.imagebase));
         if (ofs == 0) {
@@ -501,11 +503,11 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
             break;
         }
 
-        pe_imported_dll_t *const dll           = &imports->delay_dlls[i];
+        pe_imported_dll_t *const dll = &imports->delay_dlls[i];
 
         // Allocate string to store DLL name
-        const size_t             dll_name_size = MAX_DLL_NAME;
-        dll->name                              = calloc(1, dll_name_size);
+        const size_t dll_name_size = MAX_DLL_NAME;
+        dll->name                  = calloc(1, dll_name_size);
         if (dll->name == NULL) {
             imports->err = LIBPE_E_ALLOCATION_FAILURE;
             return imports;
@@ -518,7 +520,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         // itself, this must be done explicitly.
         dll->name[dll_name_size - 1] = '\0';
 
-        ofs                          = pe_rva2ofs(ctx, dd->ImportNameTableRVA);
+        ofs = pe_rva2ofs(ctx, dd->ImportNameTableRVA);
         if (ofs == 0) {
             break;
         }
@@ -528,7 +530,7 @@ pe_imports_t *pe_imports(pe_ctx_t *ctx)
         // IMAGE_DELAYLOAD_DESCRIPTOR v1. LINK.EXE from Visual C++ 7.0/2002 and
         // new generates IMAGE_DELAYLOAD_DESCRIPTOR v2.
         pe_err_e parse_err = parse_imported_functions(
-            ctx, dll, ofs, dd->Attributes.u1.RvaBased);
+            ctx, dll, ofs, (dd->Attributes.u1.RvaBased != 0));
         if (parse_err != LIBPE_E_OK) {
             imports->err = parse_err;
             return imports;

@@ -135,7 +135,7 @@ void pe_error_print(FILE *stream, pe_err_e error)
 #elif defined(_GNU_SOURCE) // GNU-specific
         const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof errmsg);
 #elif defined(_MSC_VER)    // C11
-        int         ret        = strerror_s(errmsg, sizeof(errmsg), errno);
+        /* int ret = */ strerror_s(errmsg, sizeof(errmsg), errno);
         const char *errmsg_ptr = errmsg;
 #else                      // Fallback to XSI-compliant
         /* int ret = */ strerror_r(errno, errmsg, sizeof errmsg);

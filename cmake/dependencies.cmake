@@ -31,5 +31,7 @@ list(APPEND content uthash)
 FetchContent_MakeAvailable(${content})
 
 add_library(uthash INTERFACE)
-target_include_directories(uthash INTERFACE ${uthash_SOURCE_DIR}/include)
-
+target_include_directories(uthash INTERFACE SYSTEM ${uthash_SOURCE_DIR}/src)
+set_target_properties(uthash PROPERTIES
+    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${uthash_SOURCE_DIR}/src"
+)

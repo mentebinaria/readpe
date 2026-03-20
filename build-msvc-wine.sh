@@ -47,11 +47,11 @@ CMAKE_ARGS=(
     -DCMAKE_CXX_COMPILER=$BIN/cl
     -DCMAKE_SYSTEM_NAME=Windows
     -DVCPKG_TARGET_TRIPLET=x64-windows
-    -DVCPKG_OVERLAY_TRIPLETS=./msvc-wine
+    # -DVCPKG_OVERLAY_TRIPLETS=./msvc-wine
     -DVCPKG_MANIFEST_INSTALL=OFF
     -DVCPKG_MANIFEST_MODE=ON
     -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
-    -DOpenSSL_DIR=$VCPKG_ROOT/installed/x64-windows/share/openssl
+    # -DOpenSSL_DIR=$VCPKG_ROOT/installed/x64-windows/share/openssl
 )
 
 # Vcpkg uses pwsh and dumpbin to copy dependencies into the output directory for executables.

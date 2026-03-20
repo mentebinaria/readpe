@@ -25,6 +25,10 @@ endif()
 
 option(LIBPE_LINK_SSDEEP "LINK SSDEEP GPL2 code into libpe" ${DEFAULT_LINK_SSDEEP})
 
+if(!VCPKG_ROOT)
+    set(VCPKG_ROOT "$ENV{VCPKG_ROOT}")
+endif()
+
 include(dependencies)
 
 if(MSVC)
@@ -35,15 +39,11 @@ if(MSVC)
     if(CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
         include(cmake/toolchains/msvc-wine.cmake)
 
-        # My wine installation of msvc does not like my CRT
-        add_definitions(
-            -D_CRT_SECURE_NO_WARNINGS
-        )
-
         set(OPENSSL_ROOT_DIR ${VCPKG_ROOT}/installed/x64-windows)
     endif()
 
     add_definitions(
+        -D_CRT_SECURE_NO_WARNINGS
         -D_SLURP_EXECUTABLE
     )
 
@@ -52,7 +52,7 @@ if(MSVC)
 
     # TODO: This might not work on windows
     install(PROGRAMS
-        "${VCPKG_ROOT}/installed/x64-windows/bin/libcrypto-3-x64.dll"
+        "${VCPKG_ROOT}/packages/openssl_x64-windows/bin/libcrypto-3-x64.dll"
         DESTINATION bin
     )
 endif()

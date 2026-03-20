@@ -48,8 +48,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define USE_MY_ASPRINTF
-
 #ifdef __cplusplus
 extern "C" {
 #endif

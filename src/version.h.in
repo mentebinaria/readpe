@@ -1,0 +1,9 @@
+
+#pragma once
+#ifndef READPE_VERSION_H
+#define READPE_VERSION_H
+
+const char *READPE_VERSION = "@readpe_VERSION@";
+
+#endif
+

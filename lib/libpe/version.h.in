@@ -1,0 +1,9 @@
+
+#pragma once
+#ifndef LIBPE_VERSION_H
+#define LIBPE_VERSION_H
+
+const char *LIBPE_VERSION = "@libpe_VERSION@";
+
+#endif
+

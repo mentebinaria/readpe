@@ -1,0 +1,529 @@
+/* vim :set ts=4 sw=4 sts=4 et : */
+/*
+    readpe - the PE file analyzer toolkit
+
+    scan.c - search for suspicious things in PE files.
+
+    Copyright (C) 2013 - 2025 readpe authors
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+    In addition, as a special exception, the copyright holders give
+    permission to link the code of portions of this program with the
+    OpenSSL library under certain conditions as described in each
+    individual source file, and distribute linked combinations
+    including the two.
+
+    You must obey the GNU General Public License in all respects
+    for all of the code used other than OpenSSL.  If you modify
+    file(s) with this exception, you may extend this exception to your
+    version of the file(s), but you are not obligated to do so.  If you
+    do not wish to do so, delete this exception statement from your
+    version.  If you delete this exception statement from all source
+    files in the program, then also delete it here.
+*/
+
+#include "libpe/context.h"
+#include "libpe/macros.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+#include "readpe/output.h"
+
+#include <ctype.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+#include <time.h>
+
+// check for abnormal dos stub (common in packed files)
+static bool normal_dos_stub(pe_ctx_t *ctx, uint32_t *stub_offset)
+{
+    static const uint8_t dos_stub[]
+        = "\x0e"         // push cs
+          "\x1f"         // pop ds
+          "\xba\x0e\x00" // mov dx, 0x0e
+          "\xb4\x09"     // mov ah, 0x09
+          "\xcd\x21"     // int 0x21
+          "\xb8\x01\x4c" // mov ax, 0x4c01
+          "\xcd\x21"     // int 0x21
+          "This program cannot be run in DOS mode.\r\r\n$";
+
+    const size_t dos_stub_size
+        = sizeof(dos_stub) - 1; // -1 to ignore ending null
+
+    const IMAGE_DOS_HEADER *dos = pe_dos(ctx);
+    if (dos == NULL) {
+        LIBPE_WARNING("unable to retrieve PE DOS header");
+        return false;
+    }
+
+    *stub_offset = (uint32_t) dos->e_cparhdr << 4;
+
+    // dos stub starts at e_cparhdr shifted by 4
+    const char *dos_stub_ptr = LIBPE_PTR_ADD(ctx->map_addr, *stub_offset);
+    if (! pe_can_read(ctx, dos_stub_ptr, dos_stub_size)) {
+        LIBPE_WARNING("unable to seek in file");
+        return false;
+    }
+
+    return memcmp(dos_stub, dos_stub_ptr, dos_stub_size) == 0;
+}
+
+static const IMAGE_SECTION_HEADER *pe_check_fake_entrypoint(pe_ctx_t *ctx,
+                                                            uint32_t  ep)
+{
+    const uint16_t num_sections = pe_sections_count(ctx);
+    if (num_sections == 0) {
+        return NULL;
+    }
+
+    const IMAGE_SECTION_HEADER *section = pe_rva2section(ctx, ep);
+    if (section == NULL) {
+        return NULL;
+    }
+
+    if (section->Characteristics & IMAGE_SCN_CNT_CODE) {
+        return NULL;
+    }
+
+    return section;
+}
+
+static uint32_t pe_get_tls_directory(pe_ctx_t *ctx)
+{
+    if (ctx->pe.num_directories == 0
+        || ctx->pe.num_directories > MAX_DIRECTORIES) {
+        return 0;
+    }
+
+    const IMAGE_DATA_DIRECTORY *directory
+        = pe_directory_by_entry(ctx, IMAGE_DIRECTORY_ENTRY_TLS);
+    if (directory == NULL) {
+        return 0;
+    }
+
+    if (directory->Size == 0) {
+        return 0;
+    }
+
+    return directory->VirtualAddress;
+}
+
+/*
+ * -1 - fake tls callbacks detected
+ *  0 - no tls directory
+ * >0 - number of callbacks functions found
+ */
+static int pe_get_tls_callbacks(pe_ctx_t *ctx, bool verbose)
+{
+    int ret = 0;
+
+    const IMAGE_OPTIONAL_HEADER *optional_hdr = pe_optional(ctx);
+    if (optional_hdr == NULL) {
+        return 0;
+    }
+
+    IMAGE_SECTION_HEADER **const sections = pe_sections(ctx);
+    if (sections == NULL) {
+        return 0;
+    }
+
+    const uint64_t tls_addr = pe_get_tls_directory(ctx);
+    if (tls_addr == 0) {
+        return 0;
+    }
+
+    const uint16_t num_sections = pe_sections_count(ctx);
+
+    uint64_t ofs = 0;
+
+    // search for tls in all sections
+    for (uint16_t i = 0, j = 0; i < num_sections; i++) {
+        if (tls_addr >= sections[i]->VirtualAddress
+            && tls_addr < (sections[i]->VirtualAddress
+                           + sections[i]->SizeOfRawData)) {
+            ofs = tls_addr - sections[i]->VirtualAddress
+                  + sections[i]->PointerToRawData;
+
+            switch (optional_hdr->type) {
+            default:
+                return 0;
+            case MAGIC_PE32_0:
+            case MAGIC_PE32: {
+                const IMAGE_TLS_DIRECTORY32 *tls_dir
+                    = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                if (! pe_can_read(ctx, tls_dir,
+                                  sizeof(IMAGE_TLS_DIRECTORY32))) {
+                    // TODO: Should we report something?
+                    return 0;
+                }
+
+                if (! (tls_dir->AddressOfCallBacks
+                       & optional_hdr->_32->ImageBase)) {
+                    break;
+                }
+
+                ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks
+                                          - optional_hdr->_32->ImageBase);
+                break;
+            }
+            case MAGIC_PE64: {
+                const IMAGE_TLS_DIRECTORY64 *tls_dir
+                    = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                if (! pe_can_read(ctx, tls_dir,
+                                  sizeof(IMAGE_TLS_DIRECTORY64))) {
+                    // TODO: Should we report something?
+                    return 0;
+                }
+
+                if (! (tls_dir->AddressOfCallBacks
+                       & optional_hdr->_64->ImageBase)) {
+                    break;
+                }
+
+                ofs = pe_rva2ofs(ctx, tls_dir->AddressOfCallBacks
+                                          - optional_hdr->_64->ImageBase);
+                break;
+            }
+            }
+
+            ret = -1; // tls directory and section exists
+
+            char     value[MAX_MSG];
+            uint32_t funcaddr = 0;
+
+            do {
+                const uint32_t *funcaddr_ptr
+                    = LIBPE_PTR_ADD(ctx->map_addr, ofs);
+                if (! pe_can_read(ctx, funcaddr_ptr, sizeof(*funcaddr_ptr))) {
+                    // TODO: Should we report something?
+                    return 0;
+                }
+
+                if (funcaddr == *funcaddr_ptr) {
+                    LIBPE_WARNING("TLS self reference detected!");
+                    return 0;
+                }
+
+                // TODO: No longer shadow global
+                funcaddr = *funcaddr_ptr;
+                if (funcaddr) {
+                    ret = ++j; // function found
+
+                    if (verbose) {
+                        snprintf(value, MAX_MSG, "%#x", funcaddr);
+                        output("TLS callback function", value);
+                    }
+                }
+            } while (funcaddr);
+
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
+static bool strisprint(const char *string)
+{
+    const char *s = string;
+
+    if (strncmp(string, ".tls", 5) == 0) {
+        return false;
+    }
+
+    if (*s++ != '.') {
+        return false;
+    }
+
+    while (*s) {
+        if (! isalpha((int) *s)) {
+            return false;
+        }
+
+        s++;
+    }
+    return true;
+}
+
+static void stradd(char *dest, const char *src, bool *pad)
+{
+    if (*pad) {
+        strcat(dest, ", ");
+    }
+
+    strcat(dest, src);
+    *pad = true;
+}
+
+static void print_strange_sections(pe_ctx_t *ctx)
+{
+    const uint16_t num_sections = pe_sections_count(ctx);
+    if (num_sections == 0) {
+        return;
+    }
+
+    char value[MAX_MSG];
+
+    if (ctx->pe.num_sections <= 2) {
+        snprintf(value, MAX_MSG, "%d (low)", num_sections);
+    } else if (ctx->pe.num_sections > 8) {
+        snprintf(value, MAX_MSG, "%d (high)", num_sections);
+    } else {
+        snprintf(value, MAX_MSG, "%d", num_sections);
+    }
+
+    output("section count", value);
+
+    IMAGE_SECTION_HEADER **const sections = pe_sections(ctx);
+
+    output_open_scope("sections", OUTPUT_SCOPE_TYPE_ARRAY);
+
+    bool aux = false;
+    for (uint16_t i = 0; i < num_sections; i++, aux = false) {
+        output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
+        memset(&value, 0, sizeof(value));
+
+        if (! strisprint((const char *) sections[i]->Name)) {
+            stradd(value, "suspicious name", &aux);
+        }
+
+        if (sections[i]->SizeOfRawData == 0) {
+            stradd(value, "zero length", &aux);
+        } else if (sections[i]->SizeOfRawData <= 512) {
+            stradd(value, "small length", &aux);
+        }
+
+        // rwx or writable + executable code
+        if (sections[i]->Characteristics & (uint32_t) IMAGE_SCN_MEM_WRITE
+            && (sections[i]->Characteristics & IMAGE_SCN_CNT_CODE
+                || sections[i]->Characteristics & IMAGE_SCN_MEM_EXECUTE)) {
+            stradd(value, "self-modifying", &aux);
+        }
+
+        if (! aux) {
+            strncpy(value, "normal", 7);
+        }
+
+        output((const char *) sections[i]->Name, value);
+        output_close_scope(); // section
+    }
+    output_close_scope(); // sections
+}
+
+static bool normal_imagebase(pe_ctx_t *ctx)
+{
+    return (ctx->pe.imagebase == 0x100000000 || ctx->pe.imagebase == 0x1000000
+            || ctx->pe.imagebase == 0x400000);
+}
+
+// FIX: Already in libpe!
+// new anti-disassembly technique with undocumented Intel FPU instructions
+// static bool fpu_trick(pe_ctx_t *ctx)
+//{
+//   const char *opcode_ptr = ctx->map_addr;
+//
+//  for (uint32_t i=0, times=0; i < ctx->map_size; i++) {
+//      if (*opcode_ptr++ == '\xdf') {
+//          if (++times == 4)
+//              return true;
+//      }
+//      else
+//          times = 0;
+//  }
+//
+//  return false;
+//}
+
+static void print_timestamp(bool verbose, const IMAGE_COFF_HEADER *hdr_coff_ptr)
+{
+    const time_t now = time(NULL);
+    static char  value[MAX_MSG];
+
+    if (hdr_coff_ptr->TimeDateStamp == 0) {
+        snprintf(value, MAX_MSG, "zero/invalid");
+    } else if (hdr_coff_ptr->TimeDateStamp < 946692000) {
+        snprintf(value, MAX_MSG, "too old (pre-2000)");
+    } else if (hdr_coff_ptr->TimeDateStamp > (uint32_t) now) {
+        snprintf(value, MAX_MSG, "future time");
+    } else {
+        snprintf(value, MAX_MSG, "normal");
+    }
+
+    if (verbose) {
+        // FIX: Bigger string because week-day abbreviation is locale dependant.
+        static char timestr[64];
+        strftime(timestr, sizeof timestr, " - %a, %d %b %Y %H:%M:%S UTC",
+                 gmtime((time_t *) &hdr_coff_ptr->TimeDateStamp));
+
+        strcat(value, timestr);
+    }
+
+    output("timestamp", value);
+}
+
+static int8_t cpl_analysis(pe_ctx_t *ctx)
+{
+    const IMAGE_COFF_HEADER *hdr_coff_ptr = pe_coff(ctx);
+    const IMAGE_DOS_HEADER  *hdr_dos_ptr  = pe_dos(ctx);
+
+    if (hdr_coff_ptr == NULL || hdr_dos_ptr == NULL) {
+        return -1;
+    }
+
+    static const uint16_t characteristics1
+        = (IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED
+           | IMAGE_FILE_LOCAL_SYMS_STRIPPED | IMAGE_FILE_BYTES_REVERSED_LO
+           | IMAGE_FILE_32BIT_MACHINE | IMAGE_FILE_DLL
+           | IMAGE_FILE_BYTES_REVERSED_HI);
+    static const uint16_t characteristics2
+        = (IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED
+           | IMAGE_FILE_LOCAL_SYMS_STRIPPED | IMAGE_FILE_BYTES_REVERSED_LO
+           | IMAGE_FILE_32BIT_MACHINE | IMAGE_FILE_DEBUG_STRIPPED
+           | IMAGE_FILE_DLL | IMAGE_FILE_BYTES_REVERSED_HI);
+    static const uint16_t characteristics3
+        = (IMAGE_FILE_EXECUTABLE_IMAGE | IMAGE_FILE_LINE_NUMS_STRIPPED
+           | IMAGE_FILE_32BIT_MACHINE | IMAGE_FILE_DEBUG_STRIPPED
+           | IMAGE_FILE_DLL);
+
+    if ((hdr_coff_ptr->TimeDateStamp == 708992537
+         || hdr_coff_ptr->TimeDateStamp > 1354555867)
+        && (hdr_coff_ptr->Characteristics == characteristics1
+            || // equals 0xa18e
+            hdr_coff_ptr->Characteristics == characteristics2
+            ||                                                 // equals 0xa38e
+            hdr_coff_ptr->Characteristics == characteristics3) // equals 0x2306
+        && hdr_dos_ptr->e_sp == 0xb8) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void pe_scan(pe_ctx_t *ctx, bool verbose)
+{
+    // File entropy
+    const double entropy = pe_calculate_entropy_file(ctx);
+
+    static char value[MAX_MSG];
+
+    if (entropy < 7.0) {
+        snprintf(value, MAX_MSG, "%f (normal)", entropy);
+    } else {
+        snprintf(value, MAX_MSG, "%f (probably packed)", entropy);
+    }
+    output("file entropy", value);
+
+    if (pe_is_dll(ctx)) {
+        char ret = cpl_analysis(ctx);
+        switch (ret) {
+        case 1:
+            output("cpl analysis", "malware");
+            break;
+        default:
+            output("cpl analysis:", "no threat");
+            break;
+        }
+    }
+
+    output("fpu anti-disassembly", pe_fpu_trick(ctx) ? "yes" : "no");
+
+    // imagebase analysis
+    if (! normal_imagebase(ctx)) {
+        if (verbose) {
+            snprintf(value, MAX_MSG, "suspicious - %#" PRIx64,
+                     ctx->pe.imagebase);
+        } else {
+            snprintf(value, MAX_MSG, "suspicious");
+        }
+    } else {
+        if (verbose) {
+            snprintf(value, MAX_MSG, "normal - %#" PRIx64, ctx->pe.imagebase);
+        } else {
+            snprintf(value, MAX_MSG, "normal");
+        }
+    }
+    output("imagebase", value);
+
+    const IMAGE_OPTIONAL_HEADER *optional = pe_optional(ctx);
+    if (optional == NULL) {
+        LIBPE_WARNING("unable to read optional header");
+    } else {
+        uint32_t ep
+            = (optional->_32
+                   ? optional->_32->AddressOfEntryPoint
+                   : (optional->_64 ? optional->_64->AddressOfEntryPoint : 0));
+
+        // fake ep
+        if (ep == 0) {
+            snprintf(value, MAX_MSG, "null");
+        } else if (pe_check_fake_entrypoint(ctx, ep)) {
+            if (verbose) {
+                snprintf(value, MAX_MSG, "fake - va: %#x - raw: %#" PRIx64, ep,
+                         pe_rva2ofs(ctx, ep));
+            } else {
+                snprintf(value, MAX_MSG, "fake");
+            }
+        } else {
+            if (verbose) {
+                snprintf(value, MAX_MSG, "normal - va: %#x - raw: %#" PRIx64,
+                         ep, pe_rva2ofs(ctx, ep));
+            } else {
+                snprintf(value, MAX_MSG, "normal");
+            }
+        }
+
+        output("entrypoint", value);
+    }
+
+    // dos stub
+    uint32_t stub_offset = 0;
+    if (! normal_dos_stub(ctx, &stub_offset)) {
+        if (verbose) {
+            snprintf(value, MAX_MSG, "suspicious - raw: %#x", stub_offset);
+        } else {
+            snprintf(value, MAX_MSG, "suspicious");
+        }
+    } else {
+        snprintf(value, MAX_MSG, "normal");
+    }
+
+    output("DOS stub", value);
+
+    // tls callbacks
+    int callbacks = pe_get_tls_callbacks(ctx, verbose);
+
+    if (callbacks == 0) {
+        snprintf(value, MAX_MSG, "not found");
+    } else if (callbacks == -1) {
+        snprintf(value, MAX_MSG, "found - no functions");
+    } else if (callbacks > 0) {
+        snprintf(value, MAX_MSG, "found - %d function(s)", callbacks);
+    }
+
+    output("TLS directory", value);
+
+    // invalid timestamp
+    const IMAGE_COFF_HEADER *coff = pe_coff(ctx);
+    if (coff == NULL) {
+        LIBPE_WARNING("unable to read coff header");
+    } else {
+        print_timestamp(verbose, coff);
+    }
+
+    // section analysis
+    print_strange_sections(ctx);
+}
+

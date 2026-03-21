@@ -1,0 +1,36 @@
+#include <windows.h>
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     1,0,0,0
+PRODUCTVERSION  1,0,0,0
+FILEFLAGSMASK   0x3fL
+#ifdef _DEBUG
+FILEFLAGS       0x1L
+#else
+FILEFLAGS       0x0L
+#endif
+FILEOS          0x4L
+FILETYPE        0x1L
+FILESUBTYPE     0x0L
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904b0"
+        {
+            VALUE "Comments",         "Executable to throw against test\0"
+            VALUE "CompanyName",      "readpe\0"
+            VALUE "FileDescription",  "base file\0"
+            VALUE "FileVersion",      "1.0.0.0\0"
+            VALUE "InternalName",     "texe\0"
+            VALUE "LegalCopyright",   "GPL-2\0"
+            VALUE "OriginalFilename", "t.exe\0"
+            VALUE "ProductName",      "TExe\0"
+            VALUE "ProductVersion",   "1.0.0.0\0"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x409, 1200
+    }
+}
+

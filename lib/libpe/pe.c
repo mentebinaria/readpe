@@ -648,7 +648,7 @@ const char *pe_section_name(const pe_ctx_t             *ctx,
 {
     assert(ctx != NULL);
     // assert(out_name_size >= SECTION_NAME_SIZE + 1);
-    if (out_name_size >= SECTION_NAME_SIZE + 1) {
+    if (out_name_size < SECTION_NAME_SIZE + 1) {
         return NULL;
     }
 

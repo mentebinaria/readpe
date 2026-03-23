@@ -88,7 +88,6 @@ else()
     )
 endif()
 
-install (FILES ${HEADERS} DESTINATION include/libpe)
 target_include_directories(pe
   PUBLIC
     $<BUILD_INTERFACE:${CURRENT_SOURCE_DIR}>
@@ -96,31 +95,35 @@ target_include_directories(pe
 )
 add_library(readpe::libpe ALIAS pe)
 
-install(TARGETS pe
-    EXPORT pe-targets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib${LIB_SUFFIX}
-    ARCHIVE DESTINATION lib${LIB_SUFFIX}
-)
+if(!LIBPE_STATIC)
+    install (FILES ${HEADERS} DESTINATION include/libpe)
 
-export(EXPORT pe-targets
-       FILE "${CMAKE_BINARY_DIR}/pe-targets.cmake"
-       NAMESPACE readpe::
-)
+    install(TARGETS pe
+        EXPORT pe-targets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib${LIB_SUFFIX}
+        ARCHIVE DESTINATION lib${LIB_SUFFIX}
+    )
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(pe-config.cmake.in ${CMAKE_BINARY_DIR}/pe-config.cmake
-    INSTALL_DESTINATION "${CMAKE_BINARY_DIR}"
-    # PATH_VARS ${CMAKE_SOURCE_DIR}/include
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+    export(EXPORT pe-targets
+           FILE "${CMAKE_BINARY_DIR}/pe-targets.cmake"
+           NAMESPACE readpe::
+    )
 
-# Install the targets (install)
-install(EXPORT pe-targets
-        FILE pe-targets.cmake
-        NAMESPACE readpe::
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(pe-config.cmake.in ${CMAKE_BINARY_DIR}/pe-config.cmake
+        INSTALL_DESTINATION "${CMAKE_BINARY_DIR}"
+        # PATH_VARS ${CMAKE_SOURCE_DIR}/include
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+
+    # Install the targets (install)
+    install(EXPORT pe-targets
+            FILE pe-targets.cmake
+            NAMESPACE readpe::
+            DESTINATION "${CMAKE_BINARY_DIR}")
+
+    # Install the CMake config file
+    install(FILES ${CMAKE_BINARY_DIR}/pe-config.cmake
         DESTINATION "${CMAKE_BINARY_DIR}")
-
-# Install the CMake config file
-install(FILES ${CMAKE_BINARY_DIR}/pe-config.cmake
-    DESTINATION "${CMAKE_BINARY_DIR}")
+endif()
 

@@ -58,7 +58,7 @@ extern "C" {
 static const uint32_t IMAGE_ORDINAL_FLAG32 = 0x80000000;
 static const uint64_t IMAGE_ORDINAL_FLAG64 = 0x8000000000000000;
 #define IMAGE_ORDINAL_MASK(ctx) \
-  ((ctx->pe.optional_hdr.type == MAGIC_PE32) ? \
+  ((ctx->pe.optional_hdr.type == MAGIC_PE32_0 || ctx->pe.optional_hdr.type == MAGIC_PE32) ? \
    IMAGE_ORDINAL_FLAG32 : IMAGE_ORDINAL_FLAG64)
 
 #define SIGNATURE_PE 0x00004550 // PE\0\0 in little-endian

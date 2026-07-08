@@ -41,7 +41,7 @@ jobs:
         submodules: 'true'
 
     - name: Compile
-      run: CFLAGS="-I$(brew --prefix openssl@1.1)/include/" LDFLAGS="-L$(brew --prefix openssl@1.1)/lib/" make
+      run: CFLAGS="-I$(brew --prefix openssl@3)/include/" LDFLAGS="-L$(brew --prefix openssl@3)/lib/" make
       
   build-win64:
 

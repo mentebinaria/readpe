@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+set_and_check(readpe_INCLUDEDIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+
+include(${CMAKE_CURRENT_LIST_DIR}/readpe-targets.cmake)
+
+set(readpe_INCLUDE_DIRS ${readpe_INCLUDEDIR})
+

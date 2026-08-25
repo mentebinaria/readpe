@@ -130,7 +130,6 @@ static void to_format(const struct format *format, const output_type_e type,
     case OUTPUT_TYPE_SCOPE_OPEN:
         switch (scope->type) {
         case OUTPUT_SCOPE_TYPE_DOCUMENT:
-            printf(INDENT(indent++, "{"));
             num_attr = 0;
             break;
         case OUTPUT_SCOPE_TYPE_OBJECT:
@@ -139,6 +138,7 @@ static void to_format(const struct format *format, const output_type_e type,
                 putchar(',');
             }
             putchar('\n');
+
             // NOTE: We don't want duplicate keys inside the array.
             if (key && ! is_within_array) {
                 printf(INDENT(indent++, "\"%s\": {"), escaped_key);
@@ -166,21 +166,19 @@ static void to_format(const struct format *format, const output_type_e type,
         }
         break;
     case OUTPUT_TYPE_SCOPE_CLOSE:
-        if (indent <= 0) {
+        if (indent <= 0 && scope->type != OUTPUT_SCOPE_TYPE_DOCUMENT) {
             fprintf(stderr, "json: programming error? indent is <= 0");
             abort();
         }
         putchar('\n');
         switch (scope->type) {
-        case OUTPUT_SCOPE_TYPE_DOCUMENT:
-            printf(INDENT(--indent, "}\n"));
-            break;
         case OUTPUT_SCOPE_TYPE_OBJECT:
             printf(INDENT(--indent, "}"));
             break;
         case OUTPUT_SCOPE_TYPE_ARRAY:
             printf(INDENT(--indent, "]"));
             break;
+        case OUTPUT_SCOPE_TYPE_DOCUMENT:
         default:
             break;
         }

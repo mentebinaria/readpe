@@ -2,7 +2,7 @@
 /*
         readpe - the PE file analyzer toolkit
 
-        Copyright (C) 2025 readpe authors
+        Copyright (C) 2025 - 2026 readpe authors
 
         This program is free software: you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -42,35 +42,77 @@
 extern "C" {
 #endif
 
-/* Settings which are set with arguments
- */
+struct readpe_settings_certificates {
+    void *output_path;
+    void *format;
+};
+
+struct readpe_settings_resource {
+    bool info;
+    bool names;
+    bool statistics;
+    bool tree;
+};
+
+struct readpe_settings_section {
+    char        *name;
+    unsigned int index;
+};
+
+struct readpe_settings_string {
+    int min_length;
+    int offset;
+    int section;
+};
+
 struct readpe_settings {
+    char *plugins_path;
+    char *format;
+
+    bool all;
+    bool file_version;
+    bool list;
+    bool verbose;
+
     int mode;
     int context;
 
-    char *format;
-    // bool help;
-    bool  list;
-    bool  verbose;
-    bool  file_version;
+    struct readpe_settings_certificates *certificates;
+    struct readpe_settings_resource     *resource;
+    struct readpe_settings_section      *section;
+    struct readpe_settings_string       *string;
 
-    bool res_info;
-    bool res_named;
-    bool res_statistics;
-    bool res_tree;
-
-    int str_offset;
-    int str_section;
-    int str_min_length;
-
-    void *cert_out;
-    void *cert_format;
-
-    char        *section_name;
-    unsigned int section_index;
-
-    bool all;
+    // TODO: Add functionality
+    // Plugins should be able to register a settings struct
+    void *plugins[];
 };
+
+// Plugins should use these so changes to the structs don't lead to page errors
+char *readpe_get_plugins_path(void);
+char *readpe_get_format(void);
+bool  readpe_get_all(void);
+bool  readpe_get_file_version(void);
+bool  readpe_get_list(void);
+bool  readpe_get_verbose(void);
+int   readpe_get_mode(void);
+int   readpe_get_context(void);
+
+void *readpe_get_certificates_output_path(void);
+void *readpe_get_certificates_format(void);
+
+bool readpe_get_resource_info_enabled(void);
+bool readpe_get_resource_names_enabled(void);
+bool readpe_get_resource_statistics_enabled(void);
+bool readpe_get_resource_tree_enabled(void);
+
+char        *readpe_get_section_name(void);
+unsigned int readpe_get_section_index(void);
+
+int readpe_get_string_min_length(void);
+int readpe_get_string_offset(void);
+int readpe_get_string_section(void);
+
+void readpe_set_all(bool all);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -2,7 +2,7 @@
 /*
     readpe - the PE file analyzer toolkit
 
-    Copyright (C) 2013 - 2025 readpe authors
+    Copyright (C) 2013 - 2026 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -79,11 +79,11 @@ void print_imports(pe_ctx_t *ctx)
 
 void print_dependencies(pe_ctx_t *ctx)
 {
-    output_open_scope("Dependencies", OUTPUT_SCOPE_TYPE_ARRAY);
+    output_open_scope(NULL, OUTPUT_SCOPE_TYPE_ARRAY);
     const pe_imports_t *imports = pe_imports(ctx);
     for (size_t i = 0; i < imports->dll_count; i++) {
         const pe_imported_dll_t *dll = &imports->dlls[i];
-        output(dll->name, NULL);
+        output(NULL, dll->name);
     }
     output_close_scope();
 }

@@ -33,6 +33,7 @@
     files in the program, then also delete it here.
 */
 
+#include "helper.h"
 #include "readpe/api.h"
 #include "readpe/output.h"
 #include "readpe/plugin.h"
@@ -106,6 +107,11 @@ static void to_format(const format_t *format, const output_type_e type,
     char *const escaped_key   = format->escape_fn(format, key);
     char *const escaped_value = format->escape_fn(format, value);
 
+    char group_name[MAX_MSG] = {0};
+    if (key) {
+        snprintf(group_name, MAX_MSG, " name=\"%s\"", escaped_key);
+    }
+
     //
     // Quoting http://www.w3schools.com/xml/xml_elements.asp
     //
@@ -128,10 +134,10 @@ static void to_format(const format_t *format, const output_type_e type,
             indent++;
             break;
         case OUTPUT_SCOPE_TYPE_OBJECT:
-            printf(INDENT(indent++, "<object name=\"%s\">\n"), escaped_key);
+            printf(INDENT(indent++, "<object%s>\n"), group_name);
             break;
         case OUTPUT_SCOPE_TYPE_ARRAY:
-            printf(INDENT(indent++, "<array name=\"%s\">\n"), escaped_key);
+            printf(INDENT(indent++, "<array%s>\n"), group_name);
             break;
         }
         break;

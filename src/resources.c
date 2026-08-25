@@ -38,6 +38,7 @@
 
 #include "compat.h"
 #include "libpe/context.h"
+#include "libpe/dir_resources.h"
 #include "libpe/macros.h"
 #include "libpe/pe.h"
 #include "libpe/types_resources.h"
@@ -51,6 +52,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <utlist.h>
@@ -58,10 +60,12 @@
 static const char *g_resourceDir = "resources";
 
 // TODO: Build tree
-// static const unsigned char *g_tree__      = u8"─";
-// static const unsigned char *g_tree_i      = u8"│";
-// static const unsigned char *g_tree_l      = u8"└";
-// static const unsigned char *g_tree_t      = u8"├";
+// static const unsigned char *g_tree__ = u8"─";
+// static const unsigned char *g_tree_i = u8"│";
+static const unsigned char g_tree_l[9] = u8"└";
+static const unsigned char g_tree_t[8] = u8"├";
+
+static const unsigned char g_tree_pipe[4][25] = {u8"", u8"│", u8"││", u8"│││"};
 
 #pragma pack(push, 1)
 typedef struct {
@@ -121,6 +125,7 @@ struct resource_stats {
     int totalDataEntry;
 };
 
+// TODO: include -h/--humanreadable option to convert size to KB/MB
 static void print_resource_node(const pe_resource_node_t *node)
 {
     char value[MAX_MSG];
@@ -134,7 +139,7 @@ static void print_resource_node(const pe_resource_node_t *node)
             = node->raw.resourceDirectory;
 
         snprintf(value, MAX_MSG, "Resource Directory / %d", node->dirLevel);
-        output("\nNode Type / Level", value);
+        output("Node Type / Level", value);
 
         snprintf(value, MAX_MSG, "%d", resourceDirectory->Characteristics);
         output("Characteristics", value);
@@ -160,7 +165,7 @@ static void print_resource_node(const pe_resource_node_t *node)
             = node->raw.directoryEntry;
 
         snprintf(value, MAX_MSG, "Directory Entry / %d", node->dirLevel);
-        output("\nNode Type / Level", value);
+        output("Node Type / Level", value);
 
         snprintf(value, MAX_MSG, "%d", directoryEntry->u0.data.NameOffset);
         output("Name offset", value);
@@ -181,7 +186,7 @@ static void print_resource_node(const pe_resource_node_t *node)
             = node->raw.dataString;
 
         snprintf(value, MAX_MSG, "Data String / %d", node->dirLevel);
-        output("\nNode Type / Level", value);
+        output("Node Type / Level", value);
 
         snprintf(value, MAX_MSG, "%d", dataString->Length);
         output("String len", value);
@@ -201,7 +206,7 @@ static void print_resource_node(const pe_resource_node_t *node)
         const IMAGE_RESOURCE_DATA_ENTRY *const dataEntry = node->raw.dataEntry;
 
         snprintf(value, MAX_MSG, "Data Entry / %d", node->dirLevel);
-        output("\nNode Type / Level", value);
+        output("Node Type / Level", value);
 
         snprintf(value, MAX_MSG, "%x", dataEntry->OffsetToData);
         output("OffsetToData", value);
@@ -225,9 +230,14 @@ static void print_resource_nodes(const pe_resource_node_t *node)
         return;
     }
 
+    output_open_scope(NULL, OUTPUT_SCOPE_TYPE_OBJECT);
     print_resource_node(node);
+    output_close_scope();
 
+    // output_open_scope("Children", OUTPUT_SCOPE_TYPE_ARRAY);
     print_resource_nodes(node->childNode);
+    // output_close_scope();
+
     print_resource_nodes(node->nextNode);
 }
 
@@ -287,9 +297,12 @@ static void print_resource_node_list(const pe_resource_node_t *node)
     }
 
     char node_info[MAX_PATH];
+    char node_out[1024];
     memset(node_info, 0, sizeof(node_info));
     build_resource_node_filename(node_info, sizeof(node_info), node);
-    printf("%s (%d bytes)\n", node_info, node->raw.dataEntry->Size);
+    snprintf(node_out, 1024, "%s (%d bytes)", node_info,
+             node->raw.dataEntry->Size);
+    output(NULL, node_out);
 }
 
 static void print_resource_list(const pe_resource_node_t *node)
@@ -304,38 +317,181 @@ static void print_resource_list(const pe_resource_node_t *node)
     print_resource_list(node->nextNode);
 }
 
-static void print_resource_node_leaf(const pe_resource_node_t *node,
-                                     uint8_t                   depth)
+static void print_resources_tree_directory(pe_ctx_t                 *ctx,
+                                           const pe_resource_node_t *node);
+static void print_resources_tree_dir_entry(pe_ctx_t                 *ctx,
+                                           const pe_resource_node_t *node);
+static void print_resources_tree_entry(pe_ctx_t                 *ctx,
+                                       const pe_resource_node_t *node);
+// static void print_resources_tree_string(pe_ctx_t                 *ctx,
+//                                         const pe_resource_node_t *node);
+
+static void print_resources_tree_string(pe_ctx_t                 *ctx,
+                                        const pe_resource_node_t *node)
 {
-    switch (node->type) {
-    case LIBPE_RDT_DIRECTORY_ENTRY:
-        printf("D");
-        break;
-    case LIBPE_RDT_DATA_ENTRY:
-        printf("F");
-        break;
-    default:
+    UNUSED(ctx);
+    if (node == NULL) {
         return;
     }
-
-    printf("%*s+", depth - 1, "");
-
-    char node_info[MAX_PATH];
-    memset(node_info, 0, sizeof(node_info));
-    build_resource_node_filename(node_info, sizeof(node_info), node);
-    printf("%s (%d bytes)\n", node_info, node->raw.dataEntry->Size);
+    printf("%s", node->name);
+    printf(" (string)");
+    printf("\n");
 }
 
-static void print_resource_branch(const pe_resource_node_t *node, uint8_t depth)
+static void print_resources_tree_entry(pe_ctx_t                 *ctx,
+                                       const pe_resource_node_t *node)
 {
     if (node == NULL) {
         return;
     }
 
-    print_resource_node_leaf(node, depth);
+    const IMAGE_RESOURCE_DATA_ENTRY *entry = node->raw.dataEntry;
 
-    print_resource_branch(node->childNode, depth + 1);
-    print_resource_branch(node->nextNode, depth);
+    IMAGE_RESOURCE_DIRECTORY_ENTRY *pentry
+        = node->parentNode->raw.directoryEntry;
+    // parent = node->parentNode->raw.directoryEntry;
+    //
+    IMAGE_RESOURCE_DIRECTORY_ENTRY *pppppentry
+        = node->parentNode->parentNode->parentNode->parentNode->parentNode->raw
+              .directoryEntry;
+
+    // const VS_FIXEDFILEINFO *info_ptr
+    //     = pe_resource_get_fixedfileinfo(ctx, node, NULL);
+
+    const pe_resource_entry_info_t *e_info
+        = pe_resource_entry_info_lookup(pppppentry->u0.data.NameOffset);
+
+    // if (info_ptr) {
+    //     printf(" %d", info_ptr->dwSignature);
+    // } else {
+    //     printf(" [NOFIXEDINFO]");
+    // }
+
+    // printf(" %s", node->name);
+    if (pentry->u0.data.NameIsString) {
+        printf(" %d", pentry->u0.Name);
+    } else {
+        const uint64_t raw_data_offset = pe_rva2ofs(ctx, entry->OffsetToData);
+        const size_t   raw_data_size   = entry->Size;
+        uint8_t *raw_data_ptr = LIBPE_PTR_ADD(ctx->map_addr, raw_data_offset);
+        if (pe_can_read(ctx, raw_data_ptr, raw_data_size)) {
+            char hash[1024];
+            pe_hash_raw_data(hash, 1024, "sha1", raw_data_ptr, raw_data_size);
+            printf(" %s", hash);
+        } else {
+            printf(" %" PRIu64, raw_data_offset);
+        }
+    }
+
+    if (e_info) {
+        // printf(" %s", e_info->name);
+        printf("%s", e_info->extension);
+        // printf(" %s", e_info->dir_name);
+    } else {
+        printf(".NOINFO");
+    }
+
+    printf("\n");
+}
+
+static void print_resources_tree_dir_entry(pe_ctx_t                 *ctx,
+                                           const pe_resource_node_t *node)
+{
+    if (node == NULL) {
+        return;
+    }
+
+    bool node_is_dir = (bool) node->raw.directoryEntry->u1.data.DataIsDirectory;
+    // bool name_is_str = node->raw.directoryEntry->u0.data.NameIsString;
+
+    const pe_resource_entry_info_t *info = NULL;
+
+    if (node->depth >= 1) {
+        if (node_is_dir) {
+            info = pe_resource_entry_info_lookup(
+                node->raw.directoryEntry->u0.data.NameOffset);
+
+        } else {
+            info = pe_resource_entry_info_lookup(
+                node->raw.directoryEntry->u1.OffsetToData);
+        }
+    }
+    const pe_resource_node_t *child = node->childNode;
+
+    if (! child) {
+        return;
+    }
+
+    // if (! node_is_dir) {
+    //     // node->raw.directoryEntry->u1.
+    // }
+
+    switch (child->type) {
+    case LIBPE_RDT_RESOURCE_DIRECTORY:
+        assert(node_is_dir);
+
+        // TODO: BAD! This only works on none localized standard resources
+        // ALSO: Resources can technically have up to 2**31 layers
+        if (node->depth <= 1) {
+            if (info) {
+                printf(" %s", info->dir_name);
+            } else {
+                printf(" %d", node->raw.directoryEntry->u0.Id);
+            }
+
+            printf("\n");
+            print_resources_tree_directory(ctx, child);
+        } else {
+            for (int i = child->raw.resourceDirectory->NumberOfIdEntries; i;
+                 --i) {
+                print_resources_tree_dir_entry(ctx, child->childNode);
+            }
+        }
+        break;
+    case LIBPE_RDT_DIRECTORY_ENTRY:
+        print_resources_tree_dir_entry(ctx, child);
+        break;
+    case LIBPE_RDT_DATA_STRING:
+        print_resources_tree_string(ctx, child);
+        break;
+    case LIBPE_RDT_DATA_ENTRY:
+        print_resources_tree_entry(ctx, child);
+        break;
+    }
+}
+
+static void print_resources_tree_directory(pe_ctx_t                 *ctx,
+                                           const pe_resource_node_t *node)
+{
+    if (node == NULL) {
+        return;
+    }
+
+    const pe_resource_node_t *child = node->childNode;
+    for (int i = node->raw.resourceDirectory->NumberOfIdEntries; i; --i) {
+        if (! child) {
+            continue;
+        }
+        printf("%s%s", g_tree_pipe[(child->dirLevel - 1) % 4],
+               (i == 1 ? g_tree_l : g_tree_t));
+
+        switch (child->type) {
+        case LIBPE_RDT_RESOURCE_DIRECTORY:
+            print_resources_tree_directory(ctx, child);
+            break;
+        case LIBPE_RDT_DIRECTORY_ENTRY:
+            print_resources_tree_dir_entry(ctx, child);
+            break;
+        case LIBPE_RDT_DATA_STRING:
+            print_resources_tree_string(ctx, child);
+            break;
+        case LIBPE_RDT_DATA_ENTRY:
+            print_resources_tree_entry(ctx, child);
+            break;
+        }
+
+        child = child->nextNode;
+    }
 }
 
 static void restore_resource_icon(struct stored_resource         *resource,
@@ -343,8 +499,8 @@ static void restore_resource_icon(struct stored_resource         *resource,
                                   void *raw_data_ptr, size_t raw_data_size)
 {
     if (memcmp(raw_data_ptr, "\x89PNG", 4) == 0) {
-        // A PNG icon is stored along with its original header, so just return
-        // untouched.
+        // A PNG icon is stored along with its original header, so just
+        // return untouched.
         return;
     }
 
@@ -364,9 +520,9 @@ static void restore_resource_icon(struct stored_resource         *resource,
     ICODIRENTRY direntry
         = {.biWidth     = (unsigned char) bitmap->biWidth,
            .biHeight    = (unsigned char) (bitmap->biHeight
-                                        / ((entry_info->type == RT_ICON
-                                            || entry_info->type == RT_CURSOR
-                                            || entry_info->type == RT_BITMAP)
+                                           / ((entry_info->type == RT_ICON
+                                               || entry_info->type == RT_CURSOR
+                                               || entry_info->type == RT_BITMAP)
                                                   ? 2
                                                   : 1)),
            .biClrUsed   = 0, // What should we put here?
@@ -400,8 +556,8 @@ static void restore_resource(struct stored_resource         *resource,
     assert(resource != NULL);
     assert(raw_data_ptr != NULL);
 
-    // If we don't know this type or the data size is 0, just return with the
-    // raw information untouched.
+    // If we don't know this type or the data size is 0, just return
+    // with the raw information untouched.
     if (entry_info == NULL || raw_data_size == 0) {
         goto fallback_untouched;
     }
@@ -440,7 +596,8 @@ static void save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node,
     if (! pe_can_read(ctx, raw_data_ptr, raw_data_size)) {
         // TODO: Should we report something?
         fprintf(stderr,
-                "Attempted to read range [ %p, %p ] which is not within the "
+                "Attempted to read range [ %p, %p ] which is not "
+                "within the "
                 "mapped range [ %p, %p ]\n",
                 (void *) raw_data_ptr,
                 LIBPE_PTR_ADD(raw_data_ptr, raw_data_size), ctx->map_addr,
@@ -458,8 +615,8 @@ static void save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node,
     const pe_resource_node_t *folder_node
         = pe_resource_find_parent_node_by_type_and_level(
             node, LIBPE_RDT_DIRECTORY_ENTRY,
-            LIBPE_RDT_LEVEL1); // dirLevel == 1 is where Resource Types are
-                               // defined.
+            LIBPE_RDT_LEVEL1); // dirLevel == 1 is where Resource Types
+                               // are defined.
     const pe_resource_entry_info_t *entry_info = pe_resource_entry_info_lookup(
         folder_node->raw.directoryEntry->u0.Name);
     if (entry_info != NULL) {
@@ -482,13 +639,13 @@ static void save_resource(pe_ctx_t *ctx, const pe_resource_node_t *node,
 
     const pe_resource_node_t *name_node
         = pe_resource_find_parent_node_by_type_and_level(
-            node, LIBPE_RDT_DIRECTORY_ENTRY, LIBPE_RDT_LEVEL2); // dirLevel == 2
+            node, LIBPE_RDT_DIRECTORY_ENTRY,
+            LIBPE_RDT_LEVEL2); // dirLevel == 2
     if (name_node == NULL) {
         // TODO: Should we report something?
         free(dirName);
-        fprintf(
-            stderr,
-            "pe_resource_find_parent_node_by_type_and_level returned NULL\n");
+        fprintf(stderr, "pe_resource_find_parent_node_by_type_and_level "
+                        "returned NULL\n");
         return;
     }
     // fprintf(stderr, "DEBUG: Name=%d\n",
@@ -656,7 +813,8 @@ void print_resources_list(pe_ctx_t *ctx)
 void print_resources_tree(pe_ctx_t *ctx)
 {
     pe_resource_node_t *root_node = get_root_node(ctx);
-    print_resource_branch(root_node, 0);
+    printf("resources\n");
+    print_resources_tree_directory(ctx, root_node);
 }
 
 void print_resources(pe_ctx_t *ctx)

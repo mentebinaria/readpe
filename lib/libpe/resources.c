@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2025 libpe authors
+    Copyright (C) 2010 - 2026 libpe authors
 
     This file is part of libpe.
 
@@ -577,9 +577,8 @@ static bool pe_resource_parse_nodes(pe_ctx_t *ctx, pe_resource_node_t *node)
         }
 
         // Is it a directory?
-        if (entry_ptr->u1.data
-                .DataIsDirectory) { // entry->u1.OffsetToData &
-                                    // IMAGE_RESOURCE_DATA_IS_DIRECTORY
+        if (entry_ptr->u1.data.DataIsDirectory) {
+            // entry->u1.OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY
             IMAGE_RESOURCE_DIRECTORY *child_resdir_ptr
                 = LIBPE_PTR_ADD(ctx->cached_data.resources->resource_base_ptr,
                                 entry_ptr->u1.data.OffsetToDirectory);

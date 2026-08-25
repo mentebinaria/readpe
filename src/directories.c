@@ -120,7 +120,12 @@ void print_directories(pe_ctx_t *ctx)
 void print_directory_list(pe_ctx_t *ctx, bool verbose)
 {
 
-    output_open_scope("Data directories", OUTPUT_SCOPE_TYPE_ARRAY);
+    if (verbose) {
+        output_open_scope("Data directories", OUTPUT_SCOPE_TYPE_OBJECT);
+    } else {
+        output_open_scope(NULL, OUTPUT_SCOPE_TYPE_ARRAY);
+    }
+
     // output_open_scope(NULL, OUTPUT_SCOPE_TYPE_ARRAY);
     const uint32_t num_directories = pe_directories_count(ctx);
     if (num_directories == 0 || num_directories > MAX_DIRECTORIES) {
@@ -137,11 +142,9 @@ void print_directory_list(pe_ctx_t *ctx, bool verbose)
     for (uint32_t i = 0; i < num_directories; i++) {
         if (directories[i]->Size) {
             if (verbose) {
-                output_open_scope("Directory", OUTPUT_SCOPE_TYPE_OBJECT);
                 snprintf(s, MAX_MSG, "%#x (%" PRIu32 " bytes)",
                          directories[i]->VirtualAddress, directories[i]->Size);
                 output(pe_directory_name(i), s);
-                output_close_scope(); // Directory
             } else {
                 output(NULL, pe_directory_name(i));
             }

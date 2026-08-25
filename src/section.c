@@ -35,16 +35,21 @@
 #include "libpe/context.h"
 #include "libpe/macros.h"
 #include "libpe/pe.h"
+#include "readpe/config.h"
 #include "readpe/helper.h"
 #include "readpe/output.h"
 #include "readpe/readpe.h"
 
 #include <inttypes.h>
 
-void print_sections(pe_ctx_t *ctx)
-{
+static const char *const s_section  = "Section";
+static const char *const s_sections = "Sections";
 
-    output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
+void print_sections(pe_ctx_t *ctx, struct readpe_config *config)
+{
+    const char *label = s_sections;
+
+    output_open_scope(label, OUTPUT_SCOPE_TYPE_ARRAY);
 
     const uint32_t num_sections = pe_sections_count(ctx);
     if (num_sections == 0 || num_sections > MAX_SECTIONS) {
@@ -60,15 +65,20 @@ void print_sections(pe_ctx_t *ctx)
     }
 
     for (uint32_t i = 0; i < num_sections; i++) {
-        print_section(ctx, sections[i], NULL);
+        print_section(ctx, sections[i], NULL, config);
     }
 
     output_close_scope(); // sections
 }
 
-void print_sections_list(pe_ctx_t *ctx)
+void print_sections_list(pe_ctx_t *ctx, struct readpe_config *config)
 {
-    output_open_scope("Sections", OUTPUT_SCOPE_TYPE_ARRAY);
+    const char *label = NULL;
+    if (config->verbose) {
+        label = s_sections;
+    }
+
+    output_open_scope(label, OUTPUT_SCOPE_TYPE_ARRAY);
 
     const uint32_t num_sections = pe_sections_count(ctx);
     if (num_sections == 0 || num_sections > MAX_SECTIONS) {
@@ -95,7 +105,7 @@ void print_sections_list(pe_ctx_t *ctx)
 }
 
 void print_section(pe_ctx_t *ctx, IMAGE_SECTION_HEADER *section,
-                   const char *section_name)
+                   const char *section_name, struct readpe_config *config)
 {
 #ifdef LIBPE_ENABLE_OUTPUT_COMPAT_WITH_V06
     static const char *const flags_name[]
@@ -128,9 +138,14 @@ void print_section(pe_ctx_t *ctx, IMAGE_SECTION_HEADER *section,
            IMAGE_SCN_MEM_WRITE};
 
     static const size_t max_flags = LIBPE_SIZEOF_ARRAY(valid_flags);
+    static char         s[MAX_MSG];
 
-    static char s[MAX_MSG];
-    output_open_scope("Section", OUTPUT_SCOPE_TYPE_OBJECT);
+    const char *label = NULL;
+    if (config->verbose) {
+        label = s_section;
+    }
+
+    output_open_scope(label, OUTPUT_SCOPE_TYPE_OBJECT);
 
     if (section_name == NULL) {
         static char section_name_buffer[SECTION_NAME_SIZE + 1];
@@ -187,10 +202,11 @@ void print_section(pe_ctx_t *ctx, IMAGE_SECTION_HEADER *section,
     output_close_scope(); // Section
 }
 
-void print_section_by_name(pe_ctx_t *ctx, const char *section_name)
+void print_section_by_name(pe_ctx_t *ctx, const char *section_name,
+                           struct readpe_config *config)
 {
     IMAGE_SECTION_HEADER *section = pe_section_by_name(ctx, section_name);
     // IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
-    print_section(ctx, section, section_name);
+    print_section(ctx, section, section_name, config);
 }
 

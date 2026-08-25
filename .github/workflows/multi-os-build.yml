@@ -70,7 +70,7 @@ jobs:
   build-win64-msvc:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - uses: ilammy/msvc-dev-cmd@v1
     - name: Install OpenSSL
       run: vcpkg install --triplet x64-windows

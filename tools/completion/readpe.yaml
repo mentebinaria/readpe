@@ -1,0 +1,208 @@
+---
+prog: "readpe"
+help: "Read PE file headers and meta information"
+positionals:
+- number: 1
+  complete: ["file"]
+  capture: "READPE"
+options:
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["exec", "readpe --get-output-plugins"]
+- option_strings: ["--file-version"]
+  help: "Show PE file version"
+  final: true
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-v", "--version"]
+  help: "Print program version"
+  final: true
+- option_strings: ["--get-output-plugins"]
+  help: "Print available output plugins"
+  final: true
+  hidden: true
+---
+prog: "readpe header"
+options: &EXTENDED
+- option_strings: ["-a", "--all"]
+  help: "Print all headers"
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["exec", "readpe --get-output-plugins"]
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-l", "--list"]
+  help: "Print list of present headers"
+- option_strings: ["-v", "--verbose"]
+  help: "Print more verbose"
+  final: true
+- option_strings: ["-V", "--version"]
+  help: "Print program version"
+  final: true
+---
+prog: "readpe header dos"
+options: &DEFAULT
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["exec", "readpe --get-output-plugins"]
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-v", "--verbose"]
+  help: "Print more verbose"
+  final: true
+---
+prog: "readpe header coff"
+options:
+  *DEFAULT
+---
+prog: "readpe header optional"
+options:
+  *DEFAULT
+---
+prog: "readpe directories"
+options:
+  *EXTENDED
+---
+prog: "readpe exports"
+options:
+  *DEFAULT
+---
+prog: "readpe imports"
+options:
+  *EXTENDED
+---
+prog: "readpe resources"
+options:
+- option_strings: ["--file-version"]
+  help: "Show PE file version"
+  final: true
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["exec", "readpe --get-output-plugins"]
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-l", "--list"]
+  help: "Print list of present headers"
+- option_strings: ["-s", "--statistics"]
+  help: "Print resources statistics"
+- option_strings: ["-t", "--tree"]
+  help: "Prints resources as a directory tree"
+- option_strings: ["-v", "--verbose"]
+  help: "Print more verbose"
+  final: true
+- option_strings: ["-V", "--version"]
+  help: "Print program version"
+  final: true
+---
+prog: "readpe resources extract"
+options:
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-n", "--named"]
+  help: "Extracts resources with filenames"
+- option_strings: ["-V", "--version"]
+  help: "Print program version"
+  final: true
+---
+prog: "readpe certificates"
+options:
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["choices", ["x509", "pem", "der"]]
+- option_strings: ["-o", "--out"]
+  help: "Set output filename"
+- option_strings: ["-V", "--version"]
+  help: "Print program version"
+  final: true
+---
+prog: "readpe features"
+options:
+  *DEFAULT
+---
+prog: "readpe security"
+options:
+  *DEFAULT
+---
+prog: "readpe section"
+positionals:
+- number: 1
+  complete: ["exec", "readpe $READPE section --list"]
+  capture: "SECTION"
+options:
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["exec", "readpe --get-output-plugins"]
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-v", "--verbose"]
+  help: "Print more verbose"
+  final: true
+
+- option_strings: ["-a", "--all"]
+  help: "Print all headers"
+- option_strings: ["-l", "--list"]
+  help: "Print list of present headers"
+- option_strings: ["-i", "--index"]
+  help: "INDEX"
+  complete: ["choices", ["@1"]]
+- option_strings: ["-n", "--name"]
+  help: "NAME"
+  complete: ["choices", [".text"]]
+---
+# prog: "readpe strings"
+# ---
+prog: "readpe scan"
+options:
+- option_strings: ["-f", "--format"]
+  metavar: "FORMAT"
+  help: "Set output format"
+  complete: ["exec", "readpe --get-output-plugins"]
+- option_strings: ["-h", "--help"]
+  help: "Print this message"
+  final: true
+- option_strings: ["-v", "--verbose"]
+  help: "Print more verbose"
+  final: true
+- option_strings: ["-V", "--version"]
+  help: "Print program version"
+  final: true
+---
+prog: "readpe hash"
+options:
+  *DEFAULT
+---
+prog: "readpe header hash"
+options:
+  *DEFAULT
+---
+prog: "readpe header dos hash"
+options:
+  *DEFAULT
+---
+prog: "readpe header coff hash"
+options:
+  *DEFAULT
+---
+prog: "readpe header optional hash"
+options:
+  *DEFAULT
+---
+prog: "readpe section hash"
+options:
+  *DEFAULT
+

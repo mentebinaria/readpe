@@ -1,5 +1,8 @@
 project(libpe LANGUAGES C VERSION ${readpe_VERSION})
 
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
 set(HEADERS
     ${CMAKE_SOURCE_DIR}/include/libpe/context.h
     ${CMAKE_SOURCE_DIR}/include/libpe/directories.h
@@ -35,17 +38,14 @@ set(SOURCES
 )
 
 set(LIBPE_LINKING SHARED)
-if(LIBPE_STATIC)
+if(LIBPE_BUILD_STATIC)
     set(LIBPE_LINKING STATIC)
 endif()
 
-find_package(OpenSSL REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 add_library(pe ${LIBPE_LINKING} ${HEADERS} ${SOURCES})
-
-if(WIN32)
-    set_target_properties(pe PROPERTIES PREFIX "lib")
-endif()
+add_library(readpe::libpe ALIAS pe)
 
 target_link_libraries(pe PRIVATE
     OpenSSL::Crypto
@@ -53,27 +53,23 @@ target_link_libraries(pe PRIVATE
     uthash
 )
 
-if(LIBPE_LINK_SSDEEP)
-    target_link_libraries(pe PRIVATE fuzzy)
-    target_compile_definitions(pe PRIVATE
-        -DLIBPE_LINK_SSDEEP=1
-    )
-endif()
-
-# target_include_directories(pe SYSTEM PRIVATE
-#     "${uthash_INCLUDE_DIR}"
-#     "${uthash_SOURCE_DIR}/include"
-# )
-
 target_include_directories(pe PRIVATE
     "${CMAKE_SOURCE_DIR}/include"
 )
 
+target_include_directories(pe
+  PUBLIC
+    $<BUILD_INTERFACE:${CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/libpe>
+)
+
+# Warnings for better code
 if(MSVC)
     target_compile_options(pe PRIVATE
         /W4
     )
-else()
+elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_link_libraries(pe PRIVATE m)
     target_compile_options(pe PRIVATE
         -Wall
         -Wextra
@@ -88,42 +84,80 @@ else()
     )
 endif()
 
-target_include_directories(pe
-  PUBLIC
-    $<BUILD_INTERFACE:${CURRENT_SOURCE_DIR}>
-    $<INSTALL_INTERFACE:include/libpe>
-)
-add_library(readpe::libpe ALIAS pe)
+# Make sure to call it libpe.dll under windows
+if(WIN32)
+    set_target_properties(pe PROPERTIES PREFIX "lib")
+endif()
 
-if(!LIBPE_STATIC)
-    install (FILES ${HEADERS} DESTINATION include/libpe)
-
-    install(TARGETS pe
-        EXPORT pe-targets
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib${LIB_SUFFIX}
-        ARCHIVE DESTINATION lib${LIB_SUFFIX}
+# Slurp file instead of memory mapping
+if(LIBPE_SLURP_PE_FILE)
+    target_compile_definitions(pe PRIVATE
+        -D_SLURP_PE_FILE
     )
+endif()
 
-    export(EXPORT pe-targets
-           FILE "${CMAKE_BINARY_DIR}/pe-targets.cmake"
+# Link in libfuzzy (GPL)
+if(LIBPE_LINK_SSDEEP)
+    target_link_libraries(pe PRIVATE fuzzy)
+    target_compile_definitions(pe PRIVATE
+        -DLIBPE_LINK_SSDEEP=1
+    )
+endif()
+
+# Install libpe
+install(TARGETS pe
+    EXPORT libpe-targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Install libpe headers
+if(LIBPE_PACK_HEADERS)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/libpe
+        DESTINATION include/
+        FILES_MATCHING
+        PATTERN "*.h"
+    )
+endif()
+
+# Install cmake files for linking against libpe (find_package)
+if(LIBPE_PACK_CMAKE_FILES)
+    export(EXPORT libpe-targets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/libpe-targets.cmake"
            NAMESPACE readpe::
     )
 
-    include(CMakePackageConfigHelpers)
-    configure_package_config_file(pe-config.cmake.in ${CMAKE_BINARY_DIR}/pe-config.cmake
-        INSTALL_DESTINATION "${CMAKE_BINARY_DIR}"
-        # PATH_VARS ${CMAKE_SOURCE_DIR}/include
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO)
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/libpe-config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/libpe-config.cmake
+        INSTALL_DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+        PATH_VARS
+            CMAKE_INSTALL_INCLUDEDIR
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO
+    )
 
-    # Install the targets (install)
-    install(EXPORT pe-targets
-            FILE pe-targets.cmake
+    install(EXPORT libpe-targets
+            FILE libpe-targets.cmake
             NAMESPACE readpe::
-            DESTINATION "${CMAKE_BINARY_DIR}")
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libpe
+    )
 
-    # Install the CMake config file
-    install(FILES ${CMAKE_BINARY_DIR}/pe-config.cmake
-        DESTINATION "${CMAKE_BINARY_DIR}")
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpe-config.cmake
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/libpe
+    )
+endif()
+
+# Install pkg-config files as alternative of linking against libpe w\o cmake
+if(LIBPE_PACK_PKGCONF_FILES)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/libpe.pc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/libpe.pc
+        @ONLY
+    )
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpe.pc
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    )
 endif()
 

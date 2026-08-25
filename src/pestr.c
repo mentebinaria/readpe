@@ -34,32 +34,45 @@
     files in the program, then also delete it here.
 */
 
-#include "common.h"
+#include "libpe/context.h"
+#include "libpe/pe.h"
+#include "readpe/helper.h"
+
 #include <ctype.h>
+#include <errno.h>
+#include <getopt.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <wchar.h>
 #include <wctype.h>
-#include <errno.h>
-#include <limits.h>
 
-#define PROGRAM "pestr"
-#define BUFSIZE 4
+#define PROGRAM     "pestr"
+#define TOOLKIT     "[TOOLKIT]"
+#define COPY        "[COPY]"
+#define BUFSIZE     4
 #define LINE_BUFFER 32768
 
 typedef struct {
     unsigned short strsize;
-    bool offset;
-    bool section;
+    bool           offset;
+    bool           section;
 } options_t;
 
 static void usage(void)
 {
-    printf("Usage: %s OPTIONS FILE\n"
+    printf(
+        "Usage: %s OPTIONS FILE\n"
         "Search for strings in PE files\n"
         "\nExample: %s acrobat.exe\n"
         "\nOptions:\n"
-        " -n, --min-length                       Set minimum string length (default: 4).\n"
+        " -n, --min-length                       Set minimum string length "
+        "(default: 4).\n"
         " -o, --offset                           Show string offset in file.\n"
-        " -s, --section                          Show string section, if exists.\n"
+        " -s, --section                          Show string section, if "
+        "exists.\n"
         " -V, --version                          Show version.\n"
         " --help                                 Show this help.\n",
         PROGRAM, PROGRAM);
@@ -68,7 +81,7 @@ static void usage(void)
 static void free_options(options_t *options)
 {
     // FIX: Don't need to test for NULL pointer.
-    //if (options == NULL)
+    // if (options == NULL)
     //  return;
 
     free(options);
@@ -82,49 +95,48 @@ static options_t *parse_options(int argc, char *argv[])
     static const char short_options[] = "osn:V";
 
     static const struct option long_options[] = {
-        { "offset",          no_argument,        NULL, 'o' },
-        { "section",         no_argument,        NULL, 's' },
-        { "min-length",      required_argument,  NULL, 'n' },
-        { "help",            no_argument,        NULL,  1  },
-        { "version",         no_argument,        NULL, 'V' },
-        { NULL,              0,                  NULL,  0  }
+        {"offset",     no_argument,       NULL, 'o'},
+        {"section",    no_argument,       NULL, 's'},
+        {"min-length", required_argument, NULL, 'n'},
+        {"help",       no_argument,       NULL, 1  },
+        {"version",    no_argument,       NULL, 'V'},
+        {NULL,         0,                 NULL, 0  }
     };
 
     int c, ind;
-    while ((c = getopt_long(argc, argv, short_options, long_options, &ind)))
-    {
-        if (c < 0)
+    while ((c = getopt_long(argc, argv, short_options, long_options, &ind))) {
+        if (c < 0) {
             break;
+        }
 
-        switch (c)
-        {
-            case 1:     // --help option
-                usage();
-                exit(EXIT_SUCCESS);
-            case 'o':
-                options->offset = true;
-                break;
-            case 's':
-                options->section = true;
-                break;
-            case 'n':
-            {
-                // FIX: errno isn't automatically zeroed if already set.
-                errno = 0;
-                unsigned long value = strtoul(optarg, NULL, 0);
-                if (value == ULONG_MAX && errno == ERANGE) {
-                    fprintf(stderr, "The original (nonnegated) value would overflow");
-                    exit(EXIT_FAILURE);
-                }
-                options->strsize = (unsigned char)value;
-                break;
-            }
-            case 'V':
-                printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
-                exit(EXIT_SUCCESS);
-            default:
-                fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
+        switch (c) {
+        case 1: // --help option
+            usage();
+            exit(EXIT_SUCCESS);
+        case 'o':
+            options->offset = true;
+            break;
+        case 's':
+            options->section = true;
+            break;
+        case 'n': {
+            // FIX: errno isn't automatically zeroed if already set.
+            errno               = 0;
+            unsigned long value = strtoul(optarg, NULL, 0);
+            if (value == ULONG_MAX && errno == ERANGE) {
+                fprintf(stderr,
+                        "The original (nonnegated) value would overflow");
                 exit(EXIT_FAILURE);
+            }
+            options->strsize = (unsigned char) value;
+            break;
+        }
+        case 'V':
+            printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
+            exit(EXIT_SUCCESS);
+        default:
+            fprintf(stderr, "%s: try '--help' for more information\n", PROGRAM);
+            exit(EXIT_FAILURE);
         }
     }
     return options;
@@ -135,26 +147,24 @@ static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
 {
     IMAGE_SECTION_HEADER **sections = pe_sections(ctx);
 
-    for (uint16_t i=0; i < ctx->pe.num_sections; i++) {
+    for (uint16_t i = 0; i < ctx->pe.num_sections; i++) {
         uint32_t sect_offset = sections[i]->PointerToRawData;
-        uint32_t sect_size = sections[i]->SizeOfRawData;
+        uint32_t sect_size   = sections[i]->SizeOfRawData;
 
         if (offset >= sect_offset && offset < (sect_offset + sect_size)) {
-            return (unsigned char *)sections[i]->Name;
+            return (unsigned char *) sections[i]->Name;
         }
     }
 
     return NULL;
 }
 
-static void printb( pe_ctx_t *ctx,
-                    const options_t *options,
-                    const uint8_t *bytes,
-                    size_t pos,
-                    size_t end,
-                    bool is_wide) {
-    if (options->offset)
+static void printb(pe_ctx_t *ctx, const options_t *options,
+                   const uint8_t *bytes, size_t pos, size_t end, bool is_wide)
+{
+    if (options->offset) {
         printf("%#lx\t", (unsigned long) pos);
+    }
 
     if (options->section) {
         char *s = (char *) ofs2section(ctx, pos);
@@ -164,18 +174,20 @@ static void printb( pe_ctx_t *ctx,
     // printf("%s\t", is_wide ? "U16LE" : "U8" );
 
     if (is_wide) {
-        for (;pos < end;) {
+        for (; pos < end;) {
             // Byte swap; Internal PE uses little endian while C uses big endian
-            wchar_t wc = bytes[pos] | bytes[pos+1]<<8;
-            if ( wc ) {
-                putwchar( wc );
+            wchar_t wc = bytes[pos] | bytes[pos + 1] << 8;
+            if (wc) {
+                putwchar(wc);
             }
             pos += 2;
         }
     } else {
-        for (;pos < end; ++pos ) {
-            char c = bytes[pos];
-            if ( c ) putchar( c );
+        for (; pos < end; ++pos) {
+            char c = (char) bytes[pos];
+            if (c) {
+                putchar(c);
+            }
         }
     }
 
@@ -191,8 +203,8 @@ int main(int argc, char *argv[])
 
     options_t *options = parse_options(argc, argv); // opcoes
 
-    const char *path = argv[argc-1];
-    pe_ctx_t ctx;
+    const char *path = argv[argc - 1];
+    pe_ctx_t    ctx;
 
     pe_err_e err = pe_load_file(&ctx, path);
     if (err != LIBPE_E_OK) {
@@ -206,59 +218,70 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    if (!pe_is_pe(&ctx))
+    if (! pe_is_pe(&ctx)) {
         EXIT_ERROR("not a valid PE file");
+    }
 
-    const uint64_t pe_size = pe_filesize(&ctx);
+    const uint64_t pe_size     = pe_filesize(&ctx);
     const uint8_t *pe_raw_data = ctx.map_addr;
 
     uint16_t chunk;
-    size_t buff_start = 0;
-    size_t odd_wbuff_start = 0;
-    size_t even_wbuff_start = 0;
+    size_t   buff_start       = 0;
+    size_t   odd_wbuff_start  = 0;
+    size_t   even_wbuff_start = 0;
 
     for (size_t pe_raw_offset = 0; pe_raw_offset < pe_size; ++pe_raw_offset) {
         const uint8_t byte = pe_raw_data[pe_raw_offset];
 
-        if (pe_raw_offset+1 < pe_size)
+        if (pe_raw_offset + 1 < pe_size) {
             // Byte swap; Internal PE uses little endian while C uses big endian
-            chunk = byte | pe_raw_data[pe_raw_offset+1]<<8;
-        else
+            chunk = (uint16_t) (byte | pe_raw_data[pe_raw_offset + 1] << 8);
+        } else {
             chunk = 0;
+        }
 
         if (isprint(byte)) {
-            if ( buff_start == 0 ) {
+            if (buff_start == 0) {
                 buff_start = pe_raw_offset;
             }
         } else {
-            if ( buff_start != 0 ) {
-                if ((pe_raw_offset - buff_start) >= (options->strsize ? options->strsize : 4))
-                    printb(&ctx, options, pe_raw_data, buff_start, pe_raw_offset, false);
+            if (buff_start != 0) {
+                if ((pe_raw_offset - buff_start)
+                    >= (options->strsize ? options->strsize : 4)) {
+                    printb(&ctx, options, pe_raw_data, buff_start,
+                           pe_raw_offset, false);
+                }
                 buff_start = 0;
             }
         }
 
         if (iswprint(chunk)) {
-            if( pe_raw_offset & 0x1 ) {
-                if ( odd_wbuff_start == 0 ) {
+            if (pe_raw_offset & 0x1) {
+                if (odd_wbuff_start == 0) {
                     odd_wbuff_start = pe_raw_offset;
                 }
             } else {
-                if ( even_wbuff_start == 0 ) {
+                if (even_wbuff_start == 0) {
                     even_wbuff_start = pe_raw_offset;
                 }
             }
         } else {
-            if( pe_raw_offset & 0x1 ) {
-                if ( odd_wbuff_start != 0 ) {
-                    if ((pe_raw_offset - odd_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
-                        printb(&ctx, options, pe_raw_data, odd_wbuff_start, pe_raw_offset, true);
+            if (pe_raw_offset & 0x1) {
+                if (odd_wbuff_start != 0) {
+                    if ((pe_raw_offset - odd_wbuff_start) / 2
+                        >= (options->strsize ? options->strsize : 4)) {
+                        printb(&ctx, options, pe_raw_data, odd_wbuff_start,
+                               pe_raw_offset, true);
+                    }
                     odd_wbuff_start = 0;
                 }
             } else {
-                if ( even_wbuff_start != 0 ) {
-                    if ((pe_raw_offset - even_wbuff_start)/2 >= (options->strsize ? options->strsize : 4))
-                        printb(&ctx, options, pe_raw_data, even_wbuff_start, pe_raw_offset, true);
+                if (even_wbuff_start != 0) {
+                    if ((pe_raw_offset - even_wbuff_start) / 2
+                        >= (options->strsize ? options->strsize : 4)) {
+                        printb(&ctx, options, pe_raw_data, even_wbuff_start,
+                               pe_raw_offset, true);
+                    }
                     even_wbuff_start = 0;
                 }
             }
@@ -277,3 +300,4 @@ int main(int argc, char *argv[])
 
     return EXIT_SUCCESS;
 }
+

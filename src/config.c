@@ -38,6 +38,7 @@
 
 #include "compat.h"
 
+#include <assert.h>
 #include <libpe/error.h>
 #include <libpe/utils.h>
 #include <stdarg.h>
@@ -139,12 +140,34 @@ int readpe_load_config(struct readpe_config *const config)
         }
     }
 
-    // OBS: If asprintf isn't available to your system, use the definition above
-    //      using -DUSE_MY_ASPRINTF at compile time.
-    if (asprintf(&buff, "%s/" DEFAULT_CONFIG_PATH, pe_utils_get_homedir())
+#if defined(_MSC_VER)
+    if (asprintf(&buff, "%s/readpe/" DEFAULT_CONFIG_FILENAME, getenv("APPDATA"))
         < 0) {
         return -1;
     }
+
+#elif defined(__linux__) && ! defined(__CYGWIN__)
+    char *xdg = getenv("XDG_CONFIG_HOME");
+    if (xdg) {
+        if (asprintf(&buff, "%s/readpe/" DEFAULT_CONFIG_FILENAME, xdg) < 0) {
+            return -1;
+        }
+
+    } else {
+        if (asprintf(&buff, "%s/.config/readpe/" DEFAULT_CONFIG_FILENAME,
+                     pe_utils_get_homedir())
+            < 0) {
+            return -1;
+        }
+    }
+
+#else
+    if (asprintf(&buff, "%s/" DEFAULT_CONFIG_FILENAME, pe_utils_get_homedir())
+        < 0) {
+        return -1;
+    }
+
+#endif
 
     ret = pe_utils_is_file_readable(buff);
     if (ret == LIBPE_E_OK) {

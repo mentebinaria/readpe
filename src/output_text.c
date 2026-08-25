@@ -33,6 +33,7 @@
     files in the program, then also delete it here.
 */
 
+#include "output.h"
 #include "readpe/api.h"
 #include "readpe/plugin.h"
 #include "readpe/plugin/output.h"
@@ -79,7 +80,7 @@ static void to_format(const format_t *format, const output_type_e type,
         case OUTPUT_SCOPE_TYPE_OBJECT:
             if (key) {
                 printf(INDENT(indent++, "%s\n"), escaped_key);
-            } else {
+            } else if (indent != 0) {
                 indent++;
             }
             break;
@@ -87,13 +88,16 @@ static void to_format(const format_t *format, const output_type_e type,
             // putchar('\n');
             if (key) {
                 printf(INDENT(indent++, "%s\n"), escaped_key);
-            } else {
+            } else if (indent != 0) {
                 indent++;
             }
             break;
         }
         break;
     case OUTPUT_TYPE_SCOPE_CLOSE:
+        if (scope->type == OUTPUT_SCOPE_TYPE_ARRAY && indent > 1) {
+            putchar('\n');
+        }
         indent--;
         break;
     case OUTPUT_TYPE_ATTRIBUTE: {
@@ -102,10 +106,14 @@ static void to_format(const format_t *format, const output_type_e type,
             printf(INDENT(indent, "%s:%*c%s\n"), escaped_key,
                    (int) (SPACES - key_size), ' ', escaped_value);
         } else if (key) {
-            printf(INDENT(indent, "%s\n"), escaped_key);
+            printf(INDENT(indent, "%s:\n"), escaped_key);
         } else if (value) {
-            printf(INDENT(indent, "%*c%s\n"), (int) (SPACES - key_size + 1),
-                   ' ', escaped_value);
+            if (indent) {
+                printf(INDENT(indent, "%*c%s\n"), (int) (SPACES - key_size + 1),
+                       ' ', escaped_value);
+            } else {
+                printf("%s\n", escaped_value);
+            }
         }
         break;
     }
@@ -162,4 +170,9 @@ struct readpe_output_plugin readpe_plugin = {
      .unloaded   = plugin_unloaded},
     &g_format
 };
+
+struct readpe_output_plugin *get_default_output_plugin(void)
+{
+    return &readpe_plugin;
+}
 

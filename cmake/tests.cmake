@@ -7,7 +7,7 @@ ExternalProject_Add(texe
     INSTALL_COMMAND ""
 )
 
-file(WRITE "${CMAKE_BINARY_DIR}/pev.conf" "plugins_dir=src/plugins")
+file(WRITE "${CMAKE_BINARY_DIR}/readpe.conf" "plugins_dir=src/plugins")
 
 set(TEXE "texe-prefix/src/texe-build/t.exe")
 set(TRPE "src/readpe")

@@ -41,7 +41,6 @@
 #include "readpe/helper.h"
 #include "readpe/output.h"
 #include "readpe/readpe.h"
-#include "readpe/settings.h"
 
 #include <getopt.h>
 #include <openssl/crypto.h>
@@ -53,7 +52,7 @@
 
 #define PROGRAM "pesec"
 
-static struct readpe_settings g_settings;
+static struct readpe_config g_config;
 
 static void usage(void)
 {
@@ -108,10 +107,10 @@ static void parse_options(int argc, char *argv[])
             printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
             exit(EXIT_SUCCESS);
         case 'c':
-            g_settings.cert_format = optarg;
+            g_config.certificates.format = optarg;
             break;
         case 'o':
-            g_settings.cert_out = optarg;
+            g_config.certificates.output_path = optarg;
             break;
         case 'V':
             printf("%s %s\n%s\n", PROGRAM, TOOLKIT, COPY);
@@ -161,8 +160,8 @@ int pesec(int argc, char *argv[])
     print_securities(&ctx);
 
     // certificados
-    print_certificates_info(&ctx, g_settings.cert_format, g_settings.cert_out,
-                            false);
+    print_certificates_info(&ctx, g_config.certificates.format,
+                            g_config.certificates.output_path, false);
 
     output_close_document();
 

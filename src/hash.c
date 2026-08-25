@@ -2,7 +2,7 @@
 /*
     readpe - the PE file analyzer toolkit
 
-    Copyright (C) 2012 - 2025 readpe authors
+    Copyright (C) 2012 - 2026 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,10 +35,10 @@
 #include "libpe/macros.h"
 #include "libpe/pe.h"
 #include "modes.h"
+#include "readpe/config.h"
 #include "readpe/helper.h"
 #include "readpe/output.h"
 #include "readpe/readpe.h"
-#include "readpe/settings.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -229,9 +229,9 @@ void print_section_hash_by_name(pe_ctx_t *ctx, char *name)
     print_section_hash(ctx, section);
 }
 
-void print_hash(pe_ctx_t *ctx, const struct readpe_settings *settings)
+void print_hash(pe_ctx_t *ctx, const struct readpe_config *config)
 {
-    switch (settings->context) {
+    switch (config->context) {
     case MODE_HEADERS:
         output_open_scope("headers", OUTPUT_SCOPE_TYPE_ARRAY);
 
@@ -266,10 +266,10 @@ void print_hash(pe_ctx_t *ctx, const struct readpe_settings *settings)
         output_close_scope(); // sections
         break;
     case MODE_SECTION:
-        if (settings->section_name != NULL) {
-            print_section_hash_by_name(ctx, settings->section_name);
-        } else if (settings->section_index > 0) {
-            print_section_hash_by_index(ctx, settings->section_index);
+        if (config->section.name != NULL) {
+            print_section_hash_by_name(ctx, config->section.name);
+        } else if (config->section.index > 0) {
+            print_section_hash_by_index(ctx, config->section.index);
         }
         break;
     default:

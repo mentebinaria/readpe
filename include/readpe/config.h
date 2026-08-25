@@ -1,10 +1,10 @@
 /* vim :set ts=4 sw=4 sts=4 et : */
 /*
-    pev - the PE file analyzer toolkit
+    readpe - the PE file analyzer toolkit
 
     config.h
 
-    Copyright (C) 2013 - 2025 readpe authors
+    Copyright (C) 2013 - 2026 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,23 +45,92 @@ extern "C" {
 #endif
 
 struct readpe_config; // Forward declaration.
+
 typedef bool (*readpe_config_parse_callback_t)(
     struct readpe_config *const config, const char *name, const char *value);
 typedef void (*readpe_config_cleanup_callback_t)(void *data);
 
+struct readpe_config_certificates {
+    void *output_path;
+    void *format;
+};
+
+struct readpe_config_resource {
+    bool info;
+    bool names;
+    bool statistics;
+    bool tree;
+};
+
+struct readpe_config_section {
+    char        *name;
+    unsigned int index;
+};
+
+struct readpe_config_string {
+    int min_length;
+    int offset;
+    int section;
+};
+
 struct readpe_config {
     const char *plugins_path;
+    char       *format;
+
+    bool all;
+    bool file_version;
+    bool list;
+    bool verbose;
+
+    int mode;
+    int context;
+
+    struct readpe_config_certificates certificates;
+    struct readpe_config_resource     resource;
+    struct readpe_config_section      section;
+    struct readpe_config_string       string;
+
     struct {
         readpe_config_parse_callback_t   parse_callback;
         readpe_config_cleanup_callback_t cleanup_callback;
         void                            *data;
     } user_defined;
+    // TODO: Add functionality
+    // Plugins should be able to register a config struct
+    void *plugins;
 };
 
 const char *readpe_plugins_path(void);
 
 int  readpe_load_config(struct readpe_config *const config);
 void readpe_cleanup_config(struct readpe_config *const config);
+
+// Plugins should use these so changes to the structs don't lead to page errors
+char *readpe_get_plugins_path(void);
+char *readpe_get_format(void);
+bool  readpe_get_all(void);
+bool  readpe_get_file_version(void);
+bool  readpe_get_list(void);
+bool  readpe_get_verbose(void);
+int   readpe_get_mode(void);
+int   readpe_get_context(void);
+
+void *readpe_get_certificates_output_path(void);
+void *readpe_get_certificates_format(void);
+
+bool readpe_get_resource_info_enabled(void);
+bool readpe_get_resource_names_enabled(void);
+bool readpe_get_resource_statistics_enabled(void);
+bool readpe_get_resource_tree_enabled(void);
+
+char        *readpe_get_section_name(void);
+unsigned int readpe_get_section_index(void);
+
+int readpe_get_string_min_length(void);
+int readpe_get_string_offset(void);
+int readpe_get_string_section(void);
+
+void readpe_set_all(bool all);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -2,7 +2,7 @@
 /*
         readpe - the PE file analyzer toolkit
 
-        Copyright (C) 2025 readpe authors
+        Copyright (C) 2025 - 2026 readpe authors
 
         This program is free software: you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ void readpe_initialize(struct readpe_config *config)
     memset(config, 0, sizeof(*config));
     readpe_load_config(config);
     plugins_load_all(config);
-    output_init(); /* Requires plugin for text output. */
+    output_init(config); /* Requires plugin for text output. */
 }
 
 void readpe_finalize(struct readpe_config *config)

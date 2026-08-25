@@ -1,7 +1,7 @@
 /*
     libpe - the PE library
 
-    Copyright (C) 2010 - 2017 libpe authors
+    Copyright (C) 2010 - 2026 libpe authors
 
     This file is part of libpe.
 
@@ -38,7 +38,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifndef _SLURP_EXECUTABLE
+#ifndef _SLURP_PE_FILE
 #include <sys/mman.h>
 #include <sys/stat.h>
 #endif
@@ -56,8 +56,9 @@ pe_err_e pe_load_file(pe_ctx_t *ctx, const char *path)
     return pe_load_file_ext(ctx, path, 0);
 }
 
+// TODO: Reevaluate the differences between these implementations
 // Load entire executable into memory instead of memory mapping
-#ifdef _SLURP_EXECUTABLE
+#ifdef _SLURP_PE_FILE
 pe_err_e pe_load_file_ext(pe_ctx_t *ctx, const char *path, pe_options_e options)
 {
     // Cleanup the whole struct.
@@ -514,7 +515,7 @@ IMAGE_SECTION_HEADER *pe_rva2section(pe_ctx_t *ctx, uint64_t rva)
     for (uint32_t i = 0; i < ctx->pe.num_sections; i++) {
         const uint64_t start = ctx->pe.sections[i]->VirtualAddress;
         const uint64_t end   = ctx->pe.sections[i]->VirtualAddress
-                             + ctx->pe.sections[i]->Misc.VirtualSize;
+                               + ctx->pe.sections[i]->Misc.VirtualSize;
         if (rva >= start && rva <= end) {
             return ctx->pe.sections[i];
         }

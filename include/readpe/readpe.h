@@ -4,7 +4,7 @@
 
         readpe.h
 
-        Copyright (C) 2023 readpe authors
+        Copyright (C) 2023 - 2026 readpe authors
 
         This program is free software: you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-struct readpe_settings;
+struct readpe_config;
 
 typedef enum CERT_FORMAT {
     CERT_FORMAT_X509 = 1,
@@ -70,10 +70,11 @@ void print_coff_header(pe_ctx_t *ctx);
 void print_optional_header(pe_ctx_t *ctx);
 
 void print_section(pe_ctx_t *ctx, IMAGE_SECTION_HEADER *section,
-                   const char *section_name);
-void print_section_by_name(pe_ctx_t *ctx, const char *section_name);
-void print_sections(pe_ctx_t *ctx);
-void print_sections_list(pe_ctx_t *ctx);
+                   const char *section_name, struct readpe_config *config);
+void print_section_by_name(pe_ctx_t *ctx, const char *section_name,
+                           struct readpe_config *config);
+void print_sections(pe_ctx_t *ctx, struct readpe_config *config);
+void print_sections_list(pe_ctx_t *ctx, struct readpe_config *config);
 
 IMAGE_DATA_DIRECTORY **get_pe_directories(pe_ctx_t *ctx);
 void                   print_directories(pe_ctx_t *ctx);
@@ -89,7 +90,7 @@ void print_resources_stats(pe_ctx_t *ctx);
 void print_file_version(pe_ctx_t *ctx);
 void extract_all_resources(pe_ctx_t *ctx, bool named);
 
-void print_hash(pe_ctx_t *ctx, const struct readpe_settings *settings);
+void print_hash(pe_ctx_t *ctx, const struct readpe_config *config);
 void print_content_hash(pe_ctx_t *ctx);
 void print_dos_header_hash(pe_ctx_t *ctx);
 void print_coff_header_hash(pe_ctx_t *ctx);

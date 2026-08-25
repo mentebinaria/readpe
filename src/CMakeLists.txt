@@ -1,5 +1,8 @@
 project(readpe LANGUAGES C VERSION ${readpe_VERSION})
 
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
 set(HEADERS
     ${CMAKE_SOURCE_DIR}/include/readpe/config.h
     ${CMAKE_SOURCE_DIR}/include/readpe/output.h
@@ -8,10 +11,6 @@ set(HEADERS
     ${CMAKE_SOURCE_DIR}/include/readpe/helper.h
 
     ${CMAKE_SOURCE_DIR}/include/readpe/plugin/output.h
-
-    plugins.h
-    stack.h
-    dylib.h
 )
 
 set(SOURCES
@@ -36,9 +35,13 @@ set(SOURCES
     scan.c
     section.c
     security.c
+
+    plugins.h
+    stack.h
+    dylib.h
 )
 
-if(READPE_LEGACY)
+if(READPE_BUILD_LINK_NAME_SUPPORT)
     if(BUILD_DISASSEMBLER)
         list(APPEND SOURCES legacy/pedis.c )
     endif()
@@ -60,51 +63,19 @@ if(READPE_LEGACY)
     )
 endif()
 
-# if(LIBPE_STATIC)
-#     if(WIN32)
-#         set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
-#     else()
-#         set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-#         set(CMAKE_EXE_LINKER_FLAGS "-no-pie -static")
-#     endif()
-# endif()
-
 if(WIN32)
-    if(!MSVC)
-        list(APPEND SOURCES windows/cpload.c)
-    endif()
-
-    # add_definitions(-DVER_COMPANYNAME_STR="")
-    add_definitions(-DVER_FILEVERSION_STR="${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},0")
+    # TODO
+    # list(APPEND SOURCES windows/cpload.c)
 endif()
 
-add_compile_definitions(
-    SHAREDIR=""
-    PLUGINSDIR="src/plugins"
-)
-
-if(MSVC)
-    find_package(OpenSSL)
-else()
-    find_package(OpenSSL REQUIRED)
+if(BUILD_READPE_ONLY)
+    find_package(libpe REQUIRED)
 endif()
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 
 configure_file(version.h.in version.h @ONLY)
-add_definitions(-DHAS_CMAKE_VERSION)
 
 add_executable(readpe ${HEADERS} ${SOURCES})
-target_include_directories(readpe PRIVATE
-    "${CMAKE_SOURCE_DIR}/include/readpe"
-    "${CMAKE_SOURCE_DIR}/include"
-    "${CMAKE_CURRENT_BINARY_DIR}"
-)
-
-if(LIBPE_LINK_SSDEEP)
-    target_compile_definitions(pe PRIVATE
-        -DLIBPE_LINK_SSDEEP=1
-    )
-endif()
-
 target_link_libraries(readpe PRIVATE
     OpenSSL::Crypto
     readpe::compat
@@ -112,21 +83,29 @@ target_link_libraries(readpe PRIVATE
     uthash
 )
 
-if(READPE_LEGACY)
-    if(BUILD_DISASSEMBLER)
-        target_link_libraries(readpe PRIVATE udis86)
-        target_compile_definitions(readpe PRIVATE
-            READPE_DISASSEMBLER=1
-        )
-    endif()
+target_include_directories(readpe PRIVATE
+    "${CMAKE_SOURCE_DIR}/include"
+    "${CMAKE_SOURCE_DIR}/include/readpe"
+    "${CMAKE_CURRENT_BINARY_DIR}"
+)
 
-    target_compile_definitions(readpe PRIVATE
-        READPE_LEGACY=1
-    )
-endif()
+target_include_directories(readpe PUBLIC
+    $<BUILD_INTERFACE:${CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/readpe>
+)
 
+target_compile_definitions(readpe PRIVATE
+    HAS_CMAKE_VERSION=1
+    # -DVER_COMPANYNAME_STR=""
+    VER_FILEVERSION_STR="${PROJECT_VERSION_MAJOR},${PROJECT_VERSION_MINOR},${PROJECT_VERSION_PATCH},0"
+
+    SHAREDIR=""
+    PLUGINSDIR="plugins"
+)
+
+# Warnings for better code
 if(MSVC)
-    target_link_libraries(readpe PRIVATE dirent)
+    target_link_libraries(readpe PRIVATE dirent dl)
     target_compile_options(readpe PRIVATE /W4 /WX)
 elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_link_libraries(readpe PRIVATE m)
@@ -145,10 +124,77 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     )
 endif()
 
+if(LIBPE_LINK_SSDEEP)
+    target_compile_definitions(pe PRIVATE
+        -DLIBPE_LINK_SSDEEP=1
+    )
+endif()
+
+if(READPE_BUILD_LINK_NAME_SUPPORT)
+    # TODO: Currently not in readpe
+    if(BUILD_DISASSEMBLER)
+        target_link_libraries(readpe PRIVATE udis86)
+        target_compile_definitions(readpe PRIVATE
+            READPE_DISASSEMBLER=1
+        )
+    endif()
+
+    target_compile_definitions(readpe PRIVATE
+        READPE_LINK_NAMES=1
+    )
+endif()
+
+# Install readpe
 install(TARGETS readpe
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
+    EXPORT readpe-targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+if(READPE_PACK_COMPLETION)
+    install(FILES
+        ${CMAKE_SOURCE_DIR}/tools/completion/readpe.bash
+        ${CMAKE_SOURCE_DIR}/tools/completion/readpe.fsh
+        ${CMAKE_SOURCE_DIR}/tools/completion/readpe.zsh
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/readpe
+    )
+endif()
+
+# Install readpe headers for plugin development
+if(READPE_PACK_HEADERS)
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/readpe
+        DESTINATION include/
+        FILES_MATCHING
+        PATTERN "*.h"
+    )
+endif()
+
+# Install readpe cmake files for plugin development
+if(READPE_PACK_CMAKE_FILES)
+    export(EXPORT readpe-targets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/readpe-targets.cmake"
+           NAMESPACE readpe::
+    )
+
+    configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/readpe-config.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/readpe-config.cmake
+        INSTALL_DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+        PATH_VARS
+            CMAKE_INSTALL_INCLUDEDIR
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO
+    )
+
+    install(EXPORT readpe-targets
+            FILE readpe-targets.cmake
+            NAMESPACE readpe::
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/readpe
+    )
+
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/readpe-config.cmake
+            DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/readpe
+    )
+endif()
 

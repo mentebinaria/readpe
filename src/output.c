@@ -4,7 +4,7 @@
 
     output.c - Symbols and APIs to be used to output data in multiple formats.
 
-    Copyright (C) 2012 - 2025 readpe authors
+    Copyright (C) 2012 - 2026 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,11 +36,12 @@
 
 #include "readpe/output.h"
 
+#include "api.h"
 #include "compat.h"
 #include "libpe/utils.h"
+#include "readpe/config.h"
 #include "readpe/plugin/output.h"
 #include "stack.h"
-#include "sys/queue.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -48,6 +49,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/queue.h>
 
 //
 // Global variables
@@ -55,12 +57,13 @@
 
 const unsigned int TEXT_SPACES = 32;
 
-static bool            g_is_document_open = false;
-static const format_t *g_format           = NULL;
-static STACK_TYPE     *g_scope_stack      = NULL;
-static int             g_argc             = 0;
-static char          **g_argv             = NULL;
-static char           *g_cmdline          = NULL;
+static bool                        g_is_document_open = false;
+static const format_t             *g_format           = NULL;
+static const struct readpe_config *g_config           = NULL;
+static STACK_TYPE                 *g_scope_stack      = NULL;
+static int                         g_argc             = 0;
+static char                      **g_argv             = NULL;
+static char                       *g_cmdline          = NULL;
 
 typedef struct _format_entry {
     const format_t *format;
@@ -69,84 +72,6 @@ typedef struct _format_entry {
 
 static SLIST_HEAD(_format_t_list, _format_entry) g_registered_formats
     = SLIST_HEAD_INITIALIZER(g_registered_formats);
-
-//
-// Internal text output
-//
-
-static char *escape_text(const struct format *format, const char *str)
-{
-    return readpe_output_api_ptr()->escape(format, str);
-}
-
-static void to_text_format(const format_t *format, const output_type_e type,
-                           const output_scope_t *scope, const char *key,
-                           const char *value)
-{
-    static int indent = 0;
-
-    char *const escaped_key   = format->escape_fn(format, key);
-    char *const escaped_value = format->escape_fn(format, value);
-
-    switch (type) {
-    default:
-        break;
-    case OUTPUT_TYPE_SCOPE_OPEN:
-        switch (scope->type) {
-        default:
-            break;
-        case OUTPUT_SCOPE_TYPE_DOCUMENT:
-            break;
-        case OUTPUT_SCOPE_TYPE_OBJECT:
-            if (key) {
-                printf(INDENT(indent++, "%s\n"), escaped_key);
-            } else {
-                indent++;
-            }
-            break;
-        case OUTPUT_SCOPE_TYPE_ARRAY:
-            // putchar('\n');
-            if (key) {
-                printf(INDENT(indent++, "%s\n"), escaped_key);
-            } else {
-                indent++;
-            }
-            break;
-        }
-        break;
-    case OUTPUT_TYPE_SCOPE_CLOSE:
-        indent--;
-        break;
-    case OUTPUT_TYPE_ATTRIBUTE: {
-        const size_t key_size = key ? strlen(key) : 0;
-        if (key && value) {
-            printf(INDENT(indent, "%s:%*c%s\n"), escaped_key,
-                   (int) (TEXT_SPACES - key_size), ' ', escaped_value);
-        } else if (key) {
-            printf(INDENT(indent, "%s\n"), escaped_key);
-        } else if (value) {
-            printf(INDENT(indent, "%*c%s\n"),
-                   (int) (TEXT_SPACES - key_size + 1), ' ', escaped_value);
-        }
-        break;
-    }
-    }
-
-    if (escaped_key != NULL) {
-        free(escaped_key);
-    }
-    if (escaped_value != NULL) {
-        free(escaped_value);
-    }
-}
-
-// ----------------------------------------------------------------------------
-
-static const struct format g_text_format = {.id             = 0,
-                                            .name           = "text",
-                                            .output_fn      = &to_text_format,
-                                            .escape_fn      = &escape_text,
-                                            .entities_table = NULL};
 
 // ----------------------------------------------------------------------------
 
@@ -217,9 +142,12 @@ void output_plugin_unregister_format(const format_t *format)
 
 void output(const char *key, const char *value) { output_keyval(key, value); }
 
-void output_init(void)
+void output_init(struct readpe_config *config)
 {
-    g_format      = &g_text_format;
+    struct readpe_output_plugin *text = get_default_output_plugin();
+    text->readpe_plugin.initialize(readpe_api_ptr());
+    g_format      = text->format;
+    g_config      = config;
     g_scope_stack = STACK_ALLOC(15);
     if (g_scope_stack == NULL) {
         abort();

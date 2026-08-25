@@ -1,0 +1,9 @@
+libdir=@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@
+includedir=@CMAKE_INSTALL_PREFIX@/include/libpe
+
+Name: libpe
+Description: Library to read PE file information
+Version: @PROJECT_VERSION@
+Requires:
+Libs: -L${libdir} -lpe
+Cflags: -I${includedir}

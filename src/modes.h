@@ -2,7 +2,7 @@
 /*
         readpe - the PE file analyzer toolkit
 
-        Copyright (C) 2025 readpe authors
+        Copyright (C) 2025 - 2026 readpe authors
 
         This program is free software: you can redistribute it and/or modify
         it under the terms of the GNU General Public License as published by
@@ -41,9 +41,9 @@ extern "C" {
 #endif
 
 enum MODES {
-    MODE_BASE  = 0,
+    MODE_BASE = 0,
 
-    MODE_START = 1000,
+    MODE_START = 256,
     MODE_HEADERS,
     MODE_HEADERS_DOS,
     MODE_HEADERS_COFF,
@@ -51,9 +51,9 @@ enum MODES {
     MODE_DIRECTORIES,
     MODE_EXPORTS,
     MODE_IMPORTS,
-    MODE_RESOURCES, // -- peres
+    MODE_RESOURCES,
     // MODE_EXCEPTIONS,
-    MODE_CERTIFICATES, // not part of image / -- pesec
+    MODE_CERTIFICATES, // not part of image
     // MODE_BASE_RELOCATIONS,
     // MODE_DEBUG,
     // MODE_ARCHITECTURE,
@@ -64,29 +64,28 @@ enum MODES {
     // MODE_IAT,
     // MODE_DELAY_IMPORT_DESCRIPTOR,
     // MODE_CLR_RUNTIME_HEADER,
-    MODE_SECURITY, // Duplicate of MODE_CERTIFICATES,
+    MODE_SECURITY, // security/features
     MODE_SECTIONS,
     MODE_SECTION,
-    // MODE_LIBRARIES, // -- peldd
 
-    COMMAND_START = 2000,
-    COMMAND_LIST,
-    COMMAND_SCAN, // -- pescan
+    COMMAND_START,
+    COMMAND_SCAN,
     COMMAND_EXTRACT,
-    COMMAND_HASH,    // -- pehash
-                     // COMMAND_HASH_MD5,
-                     // COMMAND_HASH_SHA1,
-                     // COMMAND_HASH_SHA256,
-                     // COMMAND_HASH_SSDEEP,
-                     // COMMAND_HASH_IMPHASH,
-    COMMAND_STRINGS, // -- pestr
+    COMMAND_HASH,
+    // COMMAND_HASH_MD5,
+    // COMMAND_HASH_SHA1,
+    // COMMAND_HASH_SHA256,
+    // COMMAND_HASH_SSDEEP,
+    // COMMAND_HASH_IMPHASH,
+    COMMAND_STRINGS,
     // MODE_STRINGS_ASCII,
     // MODE_STRINGS_UNICODE,
 
-    // COMMAND_DISASSAMBLE = 100000, // -- pedis
-    // COMMAND_PACK,                 // -- pepack
-    // COMMAND_ADDRESSING_RELATIVE, // -- ofs2rva
-    // COMMAND_ADDRESSING_OFFSET,   // -- rva2ofs
+    // COMMAND_DISASSAMBLE = 100000,
+    // COMMAND_PACK,
+    // COMMAND_ADDRESSING_RELATIVE,
+    // COMMAND_ADDRESSING_OFFSET,
+    COMMAND_END
 };
 
 #ifdef __cplusplus

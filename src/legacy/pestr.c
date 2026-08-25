@@ -36,9 +36,9 @@
 
 #include "legacy.h"
 #include "libpe/pe.h"
+#include "readpe/config.h"
 #include "readpe/helper.h"
 #include "readpe/readpe.h"
-#include "readpe/settings.h"
 
 #include <ctype.h>
 #include <errno.h>
@@ -52,7 +52,7 @@
 #define BUFSIZE     4
 #define LINE_BUFFER 32768
 
-static struct readpe_settings g_settings;
+static struct readpe_config g_config;
 
 static void usage(void)
 {
@@ -96,10 +96,10 @@ static void parse_options(int argc, char *argv[])
             usage();
             exit(EXIT_SUCCESS);
         case 'o':
-            g_settings.str_offset = true;
+            g_config.string.offset = true;
             break;
         case 's':
-            g_settings.str_section = true;
+            g_config.string.section = true;
             break;
         case 'n': {
             // FIX: errno isn't automatically zeroed if already set.
@@ -110,7 +110,7 @@ static void parse_options(int argc, char *argv[])
                         "The original (nonnegated) value would overflow");
                 exit(EXIT_FAILURE);
             }
-            g_settings.str_min_length = (unsigned char) value;
+            g_config.string.min_length = (unsigned char) value;
             break;
         }
         case 'V':
@@ -144,11 +144,11 @@ static unsigned char *ofs2section(pe_ctx_t *ctx, uint64_t offset)
 static void printb(pe_ctx_t *ctx, const uint8_t *bytes, size_t pos, size_t end,
                    bool is_wide)
 {
-    if (g_settings.str_offset) {
+    if (g_config.string.offset) {
         printf("%#lx\t", (unsigned long) pos);
     }
 
-    if (g_settings.str_section) {
+    if (g_config.string.section) {
         char *s = (char *) ofs2section(ctx, pos);
         printf("%s\t", s ? s : "[none]");
     }
@@ -203,8 +203,8 @@ void print_strings(pe_ctx_t *ctx)
         } else {
             if (buff_start != 0) {
                 if ((int) (pe_raw_offset - buff_start)
-                    >= (g_settings.str_min_length ? g_settings.str_min_length
-                                                  : 4)) {
+                    >= (g_config.string.min_length ? g_config.string.min_length
+                                                   : 4)) {
                     printb(ctx, pe_raw_data, buff_start, pe_raw_offset, false);
                 }
                 buff_start = 0;
@@ -225,8 +225,8 @@ void print_strings(pe_ctx_t *ctx)
             if (pe_raw_offset & 0x1) {
                 if (odd_wbuff_start != 0) {
                     if ((int) (pe_raw_offset - odd_wbuff_start) / 2
-                        >= (g_settings.str_min_length
-                                ? g_settings.str_min_length
+                        >= (g_config.string.min_length
+                                ? g_config.string.min_length
                                 : 4)) {
                         printb(ctx, pe_raw_data, odd_wbuff_start, pe_raw_offset,
                                true);
@@ -236,8 +236,8 @@ void print_strings(pe_ctx_t *ctx)
             } else {
                 if (even_wbuff_start != 0) {
                     if ((int) (pe_raw_offset - even_wbuff_start) / 2
-                        >= (g_settings.str_min_length
-                                ? g_settings.str_min_length
+                        >= (g_config.string.min_length
+                                ? g_config.string.min_length
                                 : 4)) {
                         printb(ctx, pe_raw_data, even_wbuff_start,
                                pe_raw_offset, true);

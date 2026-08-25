@@ -1,10 +1,10 @@
 /* vim :set ts=4 sw=4 sts=4 et : */
 /*
-    pev - the PE file analyzer toolkit
+    readpe - the PE file analyzer toolkit
 
     output.h - Symbols and APIs to be used to output data in multiple formats.
 
-    Copyright (C) 2012 - 2025 readpe authors
+    Copyright (C) 2012 - 2026 readpe authors
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,6 +47,10 @@ extern "C" {
 
 typedef int format_id_t;
 
+// Forward declaration
+struct format;
+struct readpe_config;
+
 typedef enum {
     OUTPUT_TYPE_SCOPE_UNKNOWN = 0,
     OUTPUT_TYPE_SCOPE_OPEN    = 1,
@@ -68,8 +72,6 @@ typedef struct {
     output_scope_type_e parent_type;
 } output_scope_t;
 
-struct format; // Forward declaration
-
 typedef void (*output_fn)(const struct format *format, const output_type_e type,
                           const output_scope_t *scope, const char *key,
                           const char *value);
@@ -87,8 +89,8 @@ typedef struct format {
     const entity_table_t entities_table;
 } format_t;
 
-void output_init(void); // IMPORTANT: Requires the text plugin to be loaded.
-void output_term(void);
+void            output_init(struct readpe_config *config);
+void            output_term(void);
 const char     *output_cmdline(void);
 void            output_set_cmdline(int argc, char *argv[]);
 const format_t *output_format(void);
@@ -103,6 +105,8 @@ void   output_open_scope(const char *scope_name, output_scope_type_e type);
 void   output_close_scope(void);
 void   output(const char *key, const char *value);
 void   output_keyval(const char *key, const char *value);
+
+struct readpe_output_plugin *get_default_output_plugin(void);
 
 #ifdef __cplusplus
 } // extern "C"

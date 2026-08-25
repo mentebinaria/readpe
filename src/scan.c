@@ -293,7 +293,7 @@ static void print_strange_sections(pe_ctx_t *ctx)
 
     bool aux = false;
     for (uint16_t i = 0; i < num_sections; i++, aux = false) {
-        output_open_scope("section", OUTPUT_SCOPE_TYPE_OBJECT);
+        output_open_scope(NULL, OUTPUT_SCOPE_TYPE_OBJECT);
         memset(&value, 0, sizeof(value));
 
         if (! strisprint((const char *) sections[i]->Name)) {

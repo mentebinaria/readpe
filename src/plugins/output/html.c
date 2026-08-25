@@ -132,11 +132,15 @@ static void to_format(const format_t *format, const output_type_e type,
             break;
         case OUTPUT_SCOPE_TYPE_OBJECT:
             printf(INDENT(indent++, "<%s class=\"object\">\n"), wrap_el);
-            printf(INDENT(indent, "<h2>%s</h2>\n"), escaped_key);
+            if (key != NULL) {
+                printf(INDENT(indent, "<h2>%s</h2>\n"), escaped_key);
+            }
             break;
         case OUTPUT_SCOPE_TYPE_ARRAY:
             printf(INDENT(indent++, "<%s class=\"array\">\n"), wrap_el);
-            printf(INDENT(indent, "<h2>%s</h2>\n"), escaped_key);
+            if (key != NULL) {
+                printf(INDENT(indent, "<h2>%s</h2>\n"), escaped_key);
+            }
             printf(INDENT(indent++, "<ul>\n"));
             break;
         }

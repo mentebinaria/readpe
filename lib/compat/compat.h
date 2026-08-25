@@ -93,14 +93,27 @@ ssize_t readpe_getline(char **restrict lineptr, size_t *restrict n,
 // -- Standard C -- //
 // ---------------- //
 #else
+
+#include <stdint.h>
+
+ssize_t readpe_getline(char **restrict lineptr, size_t *restrict n,
+                       FILE *restrict stream);
+
+#if (__STDC_VERSION__ >= 202311L)
+#define readpe_strdup  strdup
+#define readpe_strndup strndup
+#else
+char *readpe_strndup(const char *src, size_t size);
+#endif
+
 /* TODO:
- * readpe_getline     Already implemented for MSVC
- * readpe_strndup     Already implemented for MSVC / C23 Standard
- * readpe_strdup      C23 Standard
+ * readpe_strdup      Requires C23 Standard
  * readpe_access      Doable by trying to open the file
  * readpe_strncasecmp Doable but unicode makes this harder
  * readpe_mkdir       Impossible; Ironically easy with C++
  */
+
+// As long as there are open TODOs we can't build this project on standard C
 #error "Your compiler or operating system is currently not supported"
 // -- Standard C END --
 #endif

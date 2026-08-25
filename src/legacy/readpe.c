@@ -259,7 +259,7 @@ int readpe(int argc, char *argv[])
     // sections
     if (options->all_sections || options->all) {
         if (pe_sections(&ctx) != NULL) {
-            print_sections(&ctx);
+            print_sections(&ctx, &config);
         } else {
             LIBPE_WARNING("unable to read sections");
         }

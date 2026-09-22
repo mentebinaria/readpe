@@ -7,19 +7,19 @@ and analyze PE (Portable Executables) binaries.
 
     git clone https://github.com/mentebinaria/readpe.git
 
-## How to build on Linux
+## How to build and install on Linux
 
     cd readpe
-    make
 
-**NOTE**: You may need to install OpenSSL using your package manager. Examples:
+    # Install required packages
+    apt install make build-essential libpcre2-dev
 
-    apt install libssl-dev
+    # You may need to install OpenSSL using your package manager. Examples:
+    sudo apt install libssl-dev
     yum install openssl-devel
 
-## How to install on Linux
-
-    cd readpe
+    # Then build and install
+    make
     sudo make install
     echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/libpe.conf
     sudo ldconfig

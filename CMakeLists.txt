@@ -91,7 +91,7 @@ endif()
 
 if(CYGWIN)
     # TODO: These are probably not needed anymore
-    ##  cp $(PEV_DIR)/userdb.txt $(ZIPDIR)
+    ##  cp $(PEV_DIR)/userdb.ini $(ZIPDIR)
     ##  cp $(PEV_DIR)/windows/run.bat $(ZIPDIR)/
     install(PROGRAMS
         /usr/bin/cygwin1.dll

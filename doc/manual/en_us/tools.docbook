@@ -100,7 +100,7 @@ Search for packers in PE files
 Example: pepack putty.exe
 
 Options:
- -d, --database &lt;file&gt;                  use database file (default: ./userdb.txt)
+ -d, --database &lt;file&gt;                  use database file (default: ./userdb.ini)
  -f, --format &lt;text|csv|xml|html&gt;       change output format (default: text)
  -V, --version                                show version and exit
  --help                                       show this help and exit

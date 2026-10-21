@@ -62,7 +62,7 @@ static void usage(void)
            "\nExample: %s putty.exe\n"
            "\nOptions:\n"
            " -d, --database <file>                  Use database file "
-           "(default: ./userdb.txt).\n"
+           "(default: ./userdb.ini).\n"
            " -f, --format <%s>  Change output format (default: text).\n"
            " -V, --version                          Show version.\n"
            " --help                                 Show this help.\n",
@@ -159,14 +159,14 @@ static bool generic_packer(pe_ctx_t *ctx, uint64_t entrypoint)
 // FIX: Changed function name 'cause this don't 'load' anything.
 static bool opendb(FILE **fp, const options_t *options)
 {
-    const char *dbfile = options->dbfile ? options->dbfile : "userdb.txt";
+    const char *dbfile = options->dbfile ? options->dbfile : "userdb.ini";
 
     *fp = fopen(dbfile, "r");
     // FIXME(jweyrich): Granted read permission to the informed dbfile, this
     // will succeed even if it's a directory!
     if (! *fp) {
         // SHAREDIR is defined via CPPFLAGS in the Makefile
-        *fp = fopen(SHAREDIR "/userdb.txt", "r");
+        *fp = fopen(SHAREDIR "/userdb.ini", "r");
     }
 
     return *fp != NULL;

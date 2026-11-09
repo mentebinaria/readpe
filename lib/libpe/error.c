@@ -118,12 +118,9 @@ void pe_error_print(FILE *stream, pe_err_e error) {
 		// Since we define _GNU_SOURCE in our Makefile, strerror_r should be GNU-compliant.
 		// However, looks like if you're on macOS, strerror_r is XSI-compliant.
 
-#if defined(__DARWIN_C_LEVEL) // XSI-compliant
-		/* int ret = */ strerror_r(errno, errmsg, sizeof errmsg);
-		const char *errmsg_ptr = errmsg;
-#elif defined(_GNU_SOURCE) // GNU-specific
+#if defined(__GLIBC__) && defined(_GNU_SOURCE) // we have GNU strerror_r
 		const char *errmsg_ptr = strerror_r(errno, errmsg, sizeof errmsg);
-#else // Fallback to XSI-compliant
+#else // we don't have it
 		/* int ret = */ strerror_r(errno, errmsg, sizeof errmsg);
 		const char *errmsg_ptr = errmsg;
 #endif
